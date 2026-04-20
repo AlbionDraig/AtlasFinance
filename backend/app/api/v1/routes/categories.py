@@ -7,7 +7,7 @@ from app.api.deps import get_current_user
 from app.db.base import get_db
 from app.models.user import User
 from app.schemas.category import CategoryCreate, CategoryRead
-from app.services.finance_service import create_category
+from app.services.finance_service import create_category, list_categories
 
 router = APIRouter()
 
@@ -22,3 +22,12 @@ def create_category_endpoint(
         return create_category(db, current_user.id, payload)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/")
+def list_categories_endpoint(
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> list[CategoryRead]:
+    categories = list_categories(db, current_user.id)
+    return [CategoryRead.model_validate(category) for category in categories]

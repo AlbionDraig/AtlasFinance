@@ -38,6 +38,11 @@ def create_bank(db: Session, user_id: int, payload: BankCreate) -> Bank:
     return bank
 
 
+def list_banks(db: Session, user_id: int) -> list[Bank]:
+    query = select(Bank).where(Bank.user_id == user_id).order_by(Bank.created_at.desc())
+    return list(db.scalars(query).all())
+
+
 def create_account(db: Session, user_id: int, payload: AccountCreate) -> Account:
     bank = db.get(Bank, payload.bank_id)
     if not bank or bank.user_id != user_id:
@@ -54,6 +59,11 @@ def create_account(db: Session, user_id: int, payload: AccountCreate) -> Account
     db.commit()
     db.refresh(account)
     return account
+
+
+def list_accounts(db: Session, user_id: int) -> list[Account]:
+    query = select(Account).join(Bank).where(Bank.user_id == user_id).order_by(Account.created_at.desc())
+    return list(db.scalars(query).all())
 
 
 def create_pocket(db: Session, user_id: int, payload: PocketCreate) -> Pocket:
@@ -81,7 +91,26 @@ def create_category(db: Session, user_id: int, payload: CategoryCreate) -> Categ
     return category
 
 
-def register_transaction(db: Session, user_id: int, payload: TransactionCreate) -> Transaction:
+def list_categories(db: Session, user_id: int) -> list[Category]:
+    query = select(Category).where(Category.user_id == user_id).order_by(Category.created_at.desc())
+    return list(db.scalars(query).all())
+
+
+def _apply_transaction_effect(account: Account, transaction_type: TransactionType, amount: Decimal) -> None:
+    if transaction_type == TransactionType.INCOME:
+        account.current_balance += amount
+    else:
+        account.current_balance -= amount
+
+
+def _revert_transaction_effect(account: Account, transaction_type: TransactionType, amount: Decimal) -> None:
+    if transaction_type == TransactionType.INCOME:
+        account.current_balance -= amount
+    else:
+        account.current_balance += amount
+
+
+def _validate_transaction_payload(db: Session, user_id: int, payload: TransactionCreate) -> Account:
     account = db.get(Account, payload.account_id)
     if not account or account.bank.user_id != user_id:
         raise ValueError("Invalid account for user")
@@ -96,6 +125,12 @@ def register_transaction(db: Session, user_id: int, payload: TransactionCreate) 
         if not category or category.user_id != user_id:
             raise ValueError("Invalid category for user")
 
+    return account
+
+
+def register_transaction(db: Session, user_id: int, payload: TransactionCreate) -> Transaction:
+    account = _validate_transaction_payload(db, user_id, payload)
+
     txn = Transaction(
         description=payload.description,
         amount=payload.amount,
@@ -109,14 +144,48 @@ def register_transaction(db: Session, user_id: int, payload: TransactionCreate) 
     )
     db.add(txn)
 
-    if payload.transaction_type == TransactionType.INCOME:
-        account.current_balance += payload.amount
-    else:
-        account.current_balance -= payload.amount
+    _apply_transaction_effect(account, payload.transaction_type, payload.amount)
 
     db.commit()
     db.refresh(txn)
     return txn
+
+
+def update_transaction(db: Session, user_id: int, transaction_id: int, payload: TransactionCreate) -> Transaction:
+    txn = db.get(Transaction, transaction_id)
+    if not txn or txn.user_id != user_id:
+        raise ValueError("Transaction not found")
+
+    old_account = txn.account
+    _revert_transaction_effect(old_account, txn.transaction_type, txn.amount)
+
+    new_account = _validate_transaction_payload(db, user_id, payload)
+
+    txn.description = payload.description
+    txn.amount = payload.amount
+    txn.currency = payload.currency
+    txn.transaction_type = payload.transaction_type
+    txn.occurred_at = payload.occurred_at
+    txn.account_id = payload.account_id
+    txn.category_id = payload.category_id
+    txn.pocket_id = payload.pocket_id
+
+    _apply_transaction_effect(new_account, payload.transaction_type, payload.amount)
+
+    db.commit()
+    db.refresh(txn)
+    return txn
+
+
+def delete_transaction(db: Session, user_id: int, transaction_id: int) -> None:
+    txn = db.get(Transaction, transaction_id)
+    if not txn or txn.user_id != user_id:
+        raise ValueError("Transaction not found")
+
+    account = txn.account
+    _revert_transaction_effect(account, txn.transaction_type, txn.amount)
+    db.delete(txn)
+    db.commit()
 
 
 def list_transactions(
