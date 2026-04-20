@@ -1,7 +1,7 @@
 import pytest
 
-from app.services.auth_service import authenticate_user, create_user
 from app.schemas.user import UserCreate
+from app.services.auth_service import authenticate_user, create_user
 
 
 def test_create_and_authenticate_user(db_session):

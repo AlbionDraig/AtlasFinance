@@ -21,4 +21,4 @@ def create_pocket_endpoint(
     try:
         return create_pocket(db, current_user.id, payload)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

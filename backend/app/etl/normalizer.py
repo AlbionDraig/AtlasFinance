@@ -2,9 +2,9 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
+from app.etl.classifier import classify_transaction
 from app.models.enums import Currency, TransactionType
 from app.schemas.etl import NormalizedTransaction
-from app.etl.classifier import classify_transaction
 
 BANK_COLUMN_MAPS = {
     "bancolombia": {

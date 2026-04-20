@@ -17,7 +17,7 @@ def register(payload: UserCreate, db: Annotated[Session, Depends(get_db)]) -> Us
     try:
         user = create_user(db, payload)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return user
 
 

@@ -31,4 +31,4 @@ def upload_transactions(
             content=content,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
