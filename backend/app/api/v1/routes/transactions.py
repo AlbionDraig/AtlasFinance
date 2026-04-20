@@ -13,7 +13,7 @@ from app.services.finance_service import list_transactions, register_transaction
 router = APIRouter()
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, responses={400: {"description": "Bad Request"}})
 def create_transaction_endpoint(
     payload: TransactionCreate,
     db: Annotated[Session, Depends(get_db)],

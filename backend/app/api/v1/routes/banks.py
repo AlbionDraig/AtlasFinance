@@ -12,7 +12,7 @@ from app.services.finance_service import create_bank
 router = APIRouter()
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, responses={400: {"description": "Bad Request"}})
 def create_bank_endpoint(
     payload: BankCreate,
     db: Annotated[Session, Depends(get_db)],

@@ -1,17 +1,22 @@
+from uuid import uuid4
+
+TEST_PASSWORD = f"AtlasFinanceTestPwd-{uuid4().hex}"
+
+
 def _auth_headers(client):
     register_resp = client.post(
         "/api/v1/auth/register",
         json={
             "email": "api@test.com",
             "full_name": "API User",
-            "password": "StrongPass123",
+            "password": TEST_PASSWORD,
         },
     )
     assert register_resp.status_code == 201
 
     login_resp = client.post(
         "/api/v1/auth/login",
-        json={"email": "api@test.com", "password": "StrongPass123"},
+        json={"email": "api@test.com", "password": TEST_PASSWORD},
     )
     assert login_resp.status_code == 200
     token = login_resp.json()["access_token"]

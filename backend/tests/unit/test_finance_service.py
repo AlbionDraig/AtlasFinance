@@ -16,13 +16,15 @@ from app.services.finance_service import (
     register_transaction,
 )
 
+TEST_PASSWORD = "AtlasFinanceTestPwd123!"
+
 
 def test_register_transaction_updates_balance_and_metrics(db_session, monkeypatch):
     monkeypatch.setattr("app.services.finance_service.convert_currency", lambda amount, _f, _t: amount)
 
     user = create_user(
         db_session,
-        UserCreate(email="metrics@test.com", full_name="Metrics", password="StrongPass123"),
+        UserCreate(email="metrics@test.com", full_name="Metrics", password=TEST_PASSWORD),
     )
     bank = create_bank(db_session, user.id, BankCreate(name="Bancolombia", country_code="CO"))
     account = create_account(

@@ -12,7 +12,7 @@ from app.services.ingestion_service import ingest_transactions
 router = APIRouter()
 
 
-@router.post("/upload")
+@router.post("/upload", responses={400: {"description": "Bad Request"}})
 def upload_transactions(
     source: Annotated[str, Form(...)],
     account_id: Annotated[int, Form(...)],

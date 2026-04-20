@@ -12,7 +12,7 @@ from app.services.auth_service import authenticate_user, create_user
 router = APIRouter()
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED, responses={400: {"description": "Bad Request"}})
 def register(payload: UserCreate, db: Annotated[Session, Depends(get_db)]) -> UserRead:
     try:
         user = create_user(db, payload)
@@ -21,7 +21,7 @@ def register(payload: UserCreate, db: Annotated[Session, Depends(get_db)]) -> Us
     return user
 
 
-@router.post("/login")
+@router.post("/login", responses={401: {"description": "Unauthorized"}})
 def login(payload: UserLogin, db: Annotated[Session, Depends(get_db)]) -> Token:
     user = authenticate_user(db, payload.email, payload.password)
     if not user:
