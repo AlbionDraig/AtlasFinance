@@ -1,8 +1,5 @@
 name: Atlas Finance CI
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-
 on:
   push:
     branches: ["main", "develop"]
@@ -40,12 +37,12 @@ jobs:
         run: |
           pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-report=xml:backend/coverage.xml --cov-fail-under=85
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: backend/coverage.xml
-          use_oidc: true
-          fail_ci_if_error: false
+      - name: Upload coverage to Codecov (CLI)
+        shell: bash
+        run: |
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov
+          ./codecov -f backend/coverage.xml -n atlas-finance-ci -Z || echo "Codecov upload skipped or failed; continuing without failing CI"
 
       - name: Build smoke check
         run: |
