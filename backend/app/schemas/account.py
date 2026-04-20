@@ -9,7 +9,7 @@ class AccountCreate(BaseModel):
     name: str = Field(min_length=2, max_length=120)
     account_type: AccountType
     currency: Currency
-    current_balance: Decimal = Field(default=0, ge=0)
+    current_balance: Decimal = Field(default=Decimal(0), ge=0)
     bank_id: int
 
 

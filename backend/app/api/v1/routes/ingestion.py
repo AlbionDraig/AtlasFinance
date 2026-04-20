@@ -27,7 +27,7 @@ def upload_transactions(
             user_id=current_user.id,
             account_id=account_id,
             source=source,
-            filename=file.filename,
+            filename=file.filename or "upload",
             content=content,
         )
     except ValueError as exc:

@@ -25,7 +25,10 @@ def get_current_user(
 
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-        user_id = int(payload.get("sub"))
+        sub = payload.get("sub")
+        if sub is None:
+            raise ValueError("sub claim is missing")
+        user_id = int(sub)
     except (JWTError, TypeError, ValueError) as exc:
         raise credentials_exception from exc
 

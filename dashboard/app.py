@@ -62,7 +62,7 @@ with st.sidebar:
 
 headers = {"Authorization": f"Bearer {token}"} if token else {}
 
-if not token.strip():
+if not token or not token.strip():
     st.warning("Debes iniciar sesion o pegar un JWT valido para consultar metricas.")
     st.stop()
 
@@ -70,18 +70,18 @@ if not token.strip():
 def fetch_json(path: str, params: dict | None = None) -> dict | list:
     response = requests.get(f"{api_base_url}{path}", headers=headers, params=params, timeout=15)
     response.raise_for_status()
-    return response.json()
+    return response.json()  # type: ignore
 
 
 try:
-    metrics = fetch_json("/metrics/dashboard", params={"currency": target_currency})
-    transactions = fetch_json(
+    metrics: dict = fetch_json("/metrics/dashboard", params={"currency": target_currency})  # type: ignore
+    transactions: list = fetch_json(
         "/transactions/",
         params={
             "start_date": f"{date_from.isoformat()}T00:00:00",
             "end_date": f"{date_to.isoformat()}T23:59:59",
         },
-    )
+    )  # type: ignore
 except Exception as exc:
     if "401" in str(exc):
         st.error("Token invalido o expirado. Vuelve a iniciar sesion en la barra lateral.")

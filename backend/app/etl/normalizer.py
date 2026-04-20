@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from decimal import Decimal
 
 import pandas as pd
 
@@ -42,6 +43,8 @@ def normalize_dataframe(df: pd.DataFrame, source: str) -> list[NormalizedTransac
         occurred_at = pd.to_datetime(row[column_map["date"]], errors="coerce")
         if pd.isna(occurred_at):
             occurred_at = datetime.now(timezone.utc)
+        else:
+            occurred_at = occurred_at.to_pydatetime()
 
         raw_currency = str(row[column_map["currency"]]).upper().strip()
         currency = Currency.USD if raw_currency == "USD" else Currency.COP
@@ -49,9 +52,9 @@ def normalize_dataframe(df: pd.DataFrame, source: str) -> list[NormalizedTransac
         normalized.append(
             NormalizedTransaction(
                 description=description,
-                amount=abs(float(row[column_map["amount"]])),
+                amount=Decimal(str(abs(float(row[column_map["amount"]])))),
                 transaction_type=txn_type,
-                occurred_at=occurred_at.to_pydatetime() if hasattr(occurred_at, "to_pydatetime") else occurred_at,
+                occurred_at=occurred_at,
                 currency=currency,
                 category=category,
             )

@@ -7,7 +7,7 @@ from app.models.enums import Currency
 
 class PocketCreate(BaseModel):
     name: str = Field(min_length=2, max_length=120)
-    balance: Decimal = Field(default=0, ge=0)
+    balance: Decimal = Field(default=Decimal(0), ge=0)
     currency: Currency
     account_id: int
 

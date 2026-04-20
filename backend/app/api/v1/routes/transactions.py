@@ -32,4 +32,5 @@ def list_transactions_endpoint(
     start_date: Annotated[datetime | None, Query()] = None,
     end_date: Annotated[datetime | None, Query()] = None,
 ) -> list[TransactionRead]:
-    return list_transactions(db, current_user.id, start_date=start_date, end_date=end_date)
+    transactions = list_transactions(db, current_user.id, start_date=start_date, end_date=end_date)
+    return [TransactionRead.model_validate(t) for t in transactions]
