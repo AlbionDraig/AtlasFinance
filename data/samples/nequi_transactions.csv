@@ -1,0 +1,7 @@
+date,detail,amount,direction,currency
+2026-02-01,Freelance payment,800,in,USD
+2026-02-04,Cafe coworking,12,out,USD
+2026-02-09,Metro ticket,3,out,USD
+2026-02-14,Groceries,85,out,USD
+2026-03-01,Freelance payment,850,in,USD
+2026-03-03,Taxi airport,25,out,USD

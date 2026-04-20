@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16
+    container_name: atlas-db
+    environment:
+      POSTGRES_DB: atlas_finance
+      POSTGRES_USER: atlas
+      POSTGRES_PASSWORD: atlas
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atlas -d atlas_finance"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: atlas-backend
+    env_file:
+      - backend/.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+volumes:
+  postgres_data:
