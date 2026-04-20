@@ -1,6 +1,12 @@
 # Atlas Finance
 
+[![CI](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/ci.yml/badge.svg)](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/AlbionDraig/AtlasFinance/graph/badge.svg?branch=main)](https://codecov.io/gh/AlbionDraig/AtlasFinance)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Atlas Finance es una plataforma de gestion financiera personal (fase inicial de un futuro SaaS). Esta version esta pensada para un unico usuario, con arquitectura modular para escalar.
+
+Repositorio oficial: https://github.com/AlbionDraig/AtlasFinance
 
 ## 1. Que incluye este proyecto
 
@@ -28,18 +34,18 @@ El proyecto esta organizado para separar responsabilidades:
 
 ```text
 backend/
-  app/
-    api/
-    core/
-    db/
-    etl/
-    models/
-    schemas/
-    services/
-    main.py
-  tests/
-  requirements.txt
-  .env.example
+	app/
+		api/
+		core/
+		db/
+		etl/
+		models/
+		schemas/
+		services/
+		main.py
+	tests/
+	requirements.txt
+	.env.example
 dashboard/
 docker/
 data/samples/
@@ -74,7 +80,7 @@ Monedas soportadas en fase inicial:
 ### Paso 1: clonar y entrar al proyecto
 
 ```bash
-git clone <tu-repo>
+git clone https://github.com/AlbionDraig/AtlasFinance.git
 cd AtlasFinance
 ```
 
@@ -149,7 +155,7 @@ Archivos de ejemplo:
 
 ## 9. Dashboard local
 
-Con backend arriba y token JWT valido:
+Con backend arriba:
 
 ```bash
 streamlit run dashboard/app.py
@@ -158,7 +164,7 @@ streamlit run dashboard/app.py
 Luego en la barra lateral:
 
 - Base URL de API (`http://localhost:8000/api/v1`)
-- Token JWT
+- Login con email/password para generar JWT automaticamente (o pegar JWT manual)
 - Moneda objetivo
 - Rango de fechas
 
@@ -168,7 +174,7 @@ Luego en la barra lateral:
 
 ```bash
 pip install -r backend/requirements.txt
-pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-fail-under=85
+pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-report=xml:backend/coverage.xml --cov-fail-under=85
 ```
 
 ### Opcion B: CI (GitHub Actions)
@@ -178,9 +184,55 @@ El pipeline `.github/workflows/ci.yml` ejecuta:
 - Lint con Ruff
 - Tests unitarios/integracion
 - Verificacion de cobertura minima (85%)
+- Publicacion del reporte de cobertura en Codecov
 - Build smoke check
 
-## 11. Roadmap recomendado (siguientes fases)
+## 11. CI/CD (GitHub Actions)
+
+### Flujo actual
+
+- Workflow: `.github/workflows/ci.yml`
+- Nombre del workflow: `Atlas Finance CI`
+- Disparadores:
+	- Push a `main` y `develop`
+	- Pull Request contra cualquier rama
+
+### Etapas del pipeline
+
+1. **Checkout** del repositorio
+2. **Setup Python 3.12**
+3. **Instalacion de dependencias** desde `backend/requirements.txt`
+4. **Lint** con Ruff sobre `backend/app` y `backend/tests`
+5. **Tests + Coverage Gate** con `pytest` y cobertura minima `85%`
+6. **Upload de cobertura** a Codecov (`backend/coverage.xml`)
+7. **Build smoke check** compilando modulos Python (`compileall`)
+
+### Variables usadas en CI
+
+En el job de pruebas se inyectan variables para ejecucion aislada:
+
+- `DATABASE_URL=sqlite+pysqlite:///:memory:`
+- `SECRET_KEY=ci-secret-key`
+
+### Como replicar CI en local
+
+Desde la raiz del proyecto:
+
+```bash
+python -m pip install -r backend/requirements.txt
+python -m ruff check backend/app backend/tests
+python -m pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-report=xml:backend/coverage.xml --cov-fail-under=85
+python -m compileall backend/app
+```
+
+### Recomendaciones para despliegue futuro (fase SaaS)
+
+- Agregar job de build y push de imagen Docker a un registry
+- Agregar job de deploy (staging/production) con aprobacion manual
+- Configurar secrets en GitHub (`SECRET_KEY`, credenciales de DB, etc.)
+- Habilitar proteccion de rama `main` con CI obligatorio
+
+## 12. Roadmap recomendado (siguientes fases)
 
 - Multiusuario avanzado con roles
 - Multi-tenant para SaaS
@@ -190,8 +242,22 @@ El pipeline `.github/workflows/ci.yml` ejecuta:
 - Migraciones de BD (Alembic)
 - Despliegue cloud automatizado
 
-## 12. Notas de seguridad
+## 13. Notas de seguridad
 
 - Cambiar `SECRET_KEY` en produccion
 - Nunca subir `.env` al repositorio
 - Usar HTTPS y rotacion de tokens en despliegues reales
+
+## 14. Licencia
+
+Este proyecto esta publicado bajo licencia MIT.
+
+Consulta el texto completo en `LICENSE`.
+
+## 15. Documentacion adicional recomendada
+
+Este repositorio ya incluye plantillas base para colaboracion y mantenimiento:
+
+- `CONTRIBUTING.md`
+- `SECURITY.md`
+- `CHANGELOG.md`

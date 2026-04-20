@@ -8,6 +8,9 @@ on:
 jobs:
   test-lint-build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout
@@ -32,7 +35,14 @@ jobs:
           DATABASE_URL: sqlite+pysqlite:///:memory:
           SECRET_KEY: ci-secret-key
         run: |
-          pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-fail-under=85
+          pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-report=xml:backend/coverage.xml --cov-fail-under=85
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: backend/coverage.xml
+          use_oidc: true
+          fail_ci_if_error: false
 
       - name: Build smoke check
         run: |
