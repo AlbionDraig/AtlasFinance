@@ -20,6 +20,7 @@ def upload_transactions(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> IngestionResult:
+    """Ingest a bank export file and persist normalized transactions."""
     try:
         content = file.file.read()
         return ingest_transactions(

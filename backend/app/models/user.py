@@ -7,6 +7,7 @@ CASCADE_DELETE = "all, delete-orphan"
 
 
 class User(Base):
+    """Application user with ownership over financial resources."""
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

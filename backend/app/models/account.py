@@ -8,6 +8,7 @@ from app.models.enums import AccountType, Currency
 
 
 class Account(Base):
+    """Bank account used as source of balances and transactions."""
     __tablename__ = "accounts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

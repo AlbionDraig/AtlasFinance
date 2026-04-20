@@ -9,6 +9,7 @@ from app.models.enums import Currency
 
 
 class Investment(Base):
+    """Investment position linked to a user and a financial institution."""
     __tablename__ = "investments"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

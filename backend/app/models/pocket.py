@@ -8,6 +8,7 @@ from app.models.enums import Currency
 
 
 class Pocket(Base):
+    """Sub-balance partition inside an account for specific goals."""
     __tablename__ = "pockets"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

@@ -18,6 +18,7 @@ def create_pocket_endpoint(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> PocketRead:
+    """Create a pocket under an account owned by the authenticated user."""
     try:
         return create_pocket(db, current_user.id, payload)
     except ValueError as exc:

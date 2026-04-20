@@ -7,6 +7,7 @@ from app.models.enums import Currency, TransactionType
 
 
 class TransactionCreate(BaseModel):
+    """Payload used to create or update a transaction."""
     description: str = Field(min_length=2, max_length=255)
     amount: Decimal = Field(gt=0)
     currency: Currency
@@ -18,6 +19,7 @@ class TransactionCreate(BaseModel):
 
 
 class TransactionRead(BaseModel):
+    """Serialized transaction response exposed by the API."""
     id: int
     description: str
     amount: Decimal

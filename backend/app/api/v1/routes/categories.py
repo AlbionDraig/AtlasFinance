@@ -18,6 +18,7 @@ def create_category_endpoint(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> CategoryRead:
+    """Create a spending category for the authenticated user."""
     try:
         return create_category(db, current_user.id, payload)
     except ValueError as exc:
@@ -29,5 +30,6 @@ def list_categories_endpoint(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[CategoryRead]:
+    """Return categories that belong to the authenticated user."""
     categories = list_categories(db, current_user.id)
     return [CategoryRead.model_validate(category) for category in categories]

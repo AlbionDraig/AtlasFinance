@@ -5,6 +5,7 @@ from app.db.base import Base
 
 
 class Category(Base):
+    """User-defined category used to classify transactions."""
     __tablename__ = "categories"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

@@ -12,6 +12,7 @@ from app.schemas.etl import IngestionResult
 
 
 def parse_tabular_file(filename: str, content: bytes) -> pd.DataFrame:
+    """Parse CSV/XLS/XLSX bytes into a pandas DataFrame."""
     lower = filename.lower()
     if lower.endswith(".csv"):
         return pd.read_csv(BytesIO(content))
@@ -28,6 +29,7 @@ def ingest_transactions(
     filename: str,
     content: bytes,
 ) -> IngestionResult:
+    """Normalize and persist imported transactions for a user account."""
     account = db.get(Account, account_id)
     if not account or account.bank.user_id != user_id:
         raise ValueError("Invalid account for user")

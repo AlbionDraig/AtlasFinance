@@ -7,6 +7,7 @@ from app.schemas.user import UserCreate
 
 
 def create_user(db: Session, payload: UserCreate) -> User:
+    """Create a user account if the email is not already registered."""
     existing = db.scalar(select(User).where(User.email == payload.email))
     if existing:
         raise ValueError("Email already registered")
@@ -23,6 +24,7 @@ def create_user(db: Session, payload: UserCreate) -> User:
 
 
 def authenticate_user(db: Session, email: str, password: str) -> User | None:
+    """Validate credentials and return user on success, otherwise None."""
     user = db.scalar(select(User).where(User.email == email))
     if not user:
         return None

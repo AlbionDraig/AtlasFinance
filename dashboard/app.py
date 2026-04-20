@@ -16,6 +16,7 @@ else:
 
 
 def resolve_api_base() -> str:
+    """Resolve backend API base URL from env/secrets with localhost fallback."""
     env_value = os.getenv("ATLAS_API_BASE_URL")
     if env_value:
         return env_value
@@ -27,6 +28,7 @@ def resolve_api_base() -> str:
 
 
 def init_session() -> None:
+    """Initialize Streamlit session state keys used across the app."""
     st.session_state.setdefault("jwt_token", "")
     st.session_state.setdefault("api_base_url", resolve_api_base())
 
@@ -39,6 +41,7 @@ def api_request(
     params: dict | None = None,
     auth: bool = True,
 ) -> requests.Response:
+    """Execute an HTTP request to Atlas API with optional JWT auth header."""
     headers: dict[str, str] = {}
     if auth and st.session_state["jwt_token"]:
         headers["Authorization"] = f"Bearer {st.session_state['jwt_token']}"
@@ -55,12 +58,14 @@ def api_request(
 
 
 def parse_iso_datetime(value: str) -> datetime:
+    """Parse API datetime strings, supporting trailing Z timezone format."""
     if value.endswith("Z"):
         value = value.replace("Z", "+00:00")
     return datetime.fromisoformat(value)
 
 
 def login_view() -> None:
+    """Render public authentication screen with login and registration tabs."""
     st.title("Atlas Finance")
     st.subheader("Inicia sesion para gestionar tus finanzas")
 
@@ -136,6 +141,7 @@ def login_view() -> None:
 
 
 def create_base_data_section(banks: list[dict], accounts: list[dict]) -> None:
+    """Render helper forms to create banks, accounts and categories."""
     st.subheader("Configuracion inicial")
     col_bank, col_account, col_category = st.columns(3)
 
@@ -216,6 +222,7 @@ def create_base_data_section(banks: list[dict], accounts: list[dict]) -> None:
 
 
 def render_transactions_tab() -> None:
+    """Render CRUD UI for user movements (create, edit, delete)."""
     try:
         banks_response = api_request("GET", "/banks/")
         accounts_response = api_request("GET", "/accounts/")
@@ -372,6 +379,7 @@ def render_transactions_tab() -> None:
 
 
 def render_dashboard_tab() -> None:
+    """Render private financial dashboard with KPI cards and charts."""
     st.subheader("Dashboard")
     currency = st.selectbox("Moneda objetivo", ["COP", "USD"], index=0)
     d_col_1, d_col_2 = st.columns(2)
@@ -437,6 +445,7 @@ def render_dashboard_tab() -> None:
 
 
 def app() -> None:
+    """Main entry point enforcing auth-first flow and private tabs."""
     st.set_page_config(page_title="Atlas Finance", layout="wide")
     init_session()
 

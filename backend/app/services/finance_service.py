@@ -23,6 +23,7 @@ from app.services.currency_service import convert_currency
 
 
 def _get_user(db: Session, user_id: int) -> User:
+    """Return an existing user or raise a domain-level validation error."""
     user = db.get(User, user_id)
     if not user:
         raise ValueError("User not found")
@@ -30,6 +31,7 @@ def _get_user(db: Session, user_id: int) -> User:
 
 
 def create_bank(db: Session, user_id: int, payload: BankCreate) -> Bank:
+    """Create a bank owned by the authenticated user."""
     _get_user(db, user_id)
     bank = Bank(name=payload.name, country_code=payload.country_code.upper(), user_id=user_id)
     db.add(bank)
@@ -39,11 +41,13 @@ def create_bank(db: Session, user_id: int, payload: BankCreate) -> Bank:
 
 
 def list_banks(db: Session, user_id: int) -> list[Bank]:
+    """List user banks ordered by newest first."""
     query = select(Bank).where(Bank.user_id == user_id).order_by(Bank.created_at.desc())
     return list(db.scalars(query).all())
 
 
 def create_account(db: Session, user_id: int, payload: AccountCreate) -> Account:
+    """Create an account linked to one of the user's banks."""
     bank = db.get(Bank, payload.bank_id)
     if not bank or bank.user_id != user_id:
         raise ValueError("Invalid bank for user")
@@ -62,11 +66,13 @@ def create_account(db: Session, user_id: int, payload: AccountCreate) -> Account
 
 
 def list_accounts(db: Session, user_id: int) -> list[Account]:
+    """List accounts that belong to the authenticated user."""
     query = select(Account).join(Bank).where(Bank.user_id == user_id).order_by(Account.created_at.desc())
     return list(db.scalars(query).all())
 
 
 def create_pocket(db: Session, user_id: int, payload: PocketCreate) -> Pocket:
+    """Create a pocket under an account that belongs to the user."""
     account = db.get(Account, payload.account_id)
     if not account or account.bank.user_id != user_id:
         raise ValueError("Invalid account for user")
@@ -84,6 +90,7 @@ def create_pocket(db: Session, user_id: int, payload: PocketCreate) -> Pocket:
 
 
 def create_category(db: Session, user_id: int, payload: CategoryCreate) -> Category:
+    """Create a custom category for the authenticated user."""
     category = Category(name=payload.name, user_id=user_id)
     db.add(category)
     db.commit()
@@ -92,11 +99,13 @@ def create_category(db: Session, user_id: int, payload: CategoryCreate) -> Categ
 
 
 def list_categories(db: Session, user_id: int) -> list[Category]:
+    """List categories owned by the authenticated user."""
     query = select(Category).where(Category.user_id == user_id).order_by(Category.created_at.desc())
     return list(db.scalars(query).all())
 
 
 def _apply_transaction_effect(account: Account, transaction_type: TransactionType, amount: Decimal) -> None:
+    """Apply transaction impact to account balance."""
     if transaction_type == TransactionType.INCOME:
         account.current_balance += amount
     else:
@@ -104,6 +113,7 @@ def _apply_transaction_effect(account: Account, transaction_type: TransactionTyp
 
 
 def _revert_transaction_effect(account: Account, transaction_type: TransactionType, amount: Decimal) -> None:
+    """Revert a previously applied transaction impact from account balance."""
     if transaction_type == TransactionType.INCOME:
         account.current_balance -= amount
     else:
@@ -111,6 +121,7 @@ def _revert_transaction_effect(account: Account, transaction_type: TransactionTy
 
 
 def _validate_transaction_payload(db: Session, user_id: int, payload: TransactionCreate) -> Account:
+    """Validate ownership/relations and return the destination account."""
     account = db.get(Account, payload.account_id)
     if not account or account.bank.user_id != user_id:
         raise ValueError("Invalid account for user")
@@ -129,6 +140,7 @@ def _validate_transaction_payload(db: Session, user_id: int, payload: Transactio
 
 
 def register_transaction(db: Session, user_id: int, payload: TransactionCreate) -> Transaction:
+    """Create a transaction and update the account running balance."""
     account = _validate_transaction_payload(db, user_id, payload)
 
     txn = Transaction(
@@ -152,6 +164,7 @@ def register_transaction(db: Session, user_id: int, payload: TransactionCreate) 
 
 
 def update_transaction(db: Session, user_id: int, transaction_id: int, payload: TransactionCreate) -> Transaction:
+    """Update a transaction and keep account balances consistent."""
     txn = db.get(Transaction, transaction_id)
     if not txn or txn.user_id != user_id:
         raise ValueError("Transaction not found")
@@ -178,6 +191,7 @@ def update_transaction(db: Session, user_id: int, transaction_id: int, payload: 
 
 
 def delete_transaction(db: Session, user_id: int, transaction_id: int) -> None:
+    """Delete a transaction and reverse its balance effect."""
     txn = db.get(Transaction, transaction_id)
     if not txn or txn.user_id != user_id:
         raise ValueError("Transaction not found")
@@ -194,6 +208,7 @@ def list_transactions(
     start_date: datetime | None = None,
     end_date: datetime | None = None,
 ) -> list[Transaction]:
+    """Return user transactions optionally filtered by date range."""
     query = select(Transaction).where(Transaction.user_id == user_id)
     if start_date:
         query = query.where(Transaction.occurred_at >= start_date)
@@ -204,6 +219,7 @@ def list_transactions(
 
 
 def get_dashboard_metrics(db: Session, user_id: int, target_currency: str = "COP") -> DashboardMetrics:
+    """Aggregate net worth, income, expenses and savings rate in a target currency."""
     accounts = db.scalars(select(Account).join(Bank).where(Bank.user_id == user_id)).all()
     investments = db.scalars(select(Investment).where(Investment.user_id == user_id)).all()
     transactions = db.scalars(select(Transaction).where(Transaction.user_id == user_id)).all()

@@ -14,6 +14,7 @@ router = APIRouter()
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, responses={400: {"description": "Bad Request"}})
 def register(payload: UserCreate, db: Annotated[Session, Depends(get_db)]) -> UserRead:
+    """Register a new user with hashed password."""
     try:
         user = create_user(db, payload)
     except ValueError as exc:
@@ -23,6 +24,7 @@ def register(payload: UserCreate, db: Annotated[Session, Depends(get_db)]) -> Us
 
 @router.post("/login", responses={401: {"description": "Unauthorized"}})
 def login(payload: UserLogin, db: Annotated[Session, Depends(get_db)]) -> Token:
+    """Authenticate a user and return a signed JWT access token."""
     user = authenticate_user(db, payload.email, payload.password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")

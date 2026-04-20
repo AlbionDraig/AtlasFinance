@@ -5,6 +5,7 @@ from app.db.base import Base
 
 
 class Bank(Base):
+    """Financial institution container for user accounts and investments."""
     __tablename__ = "banks"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

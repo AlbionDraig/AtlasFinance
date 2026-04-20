@@ -18,4 +18,5 @@ def get_metrics_endpoint(
     current_user: Annotated[User, Depends(get_current_user)],
     currency: str = "COP",
 ) -> DashboardMetrics:
+    """Return aggregated dashboard metrics in the requested currency."""
     return get_dashboard_metrics(db, current_user.id, target_currency=currency.upper())

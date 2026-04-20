@@ -8,6 +8,7 @@ settings = get_settings()
 
 
 def convert_currency(amount: Decimal, from_currency: str, to_currency: str) -> Decimal:
+    """Convert an amount using external FX API, with safe fallback to original value."""
     if from_currency == to_currency:
         return amount
 

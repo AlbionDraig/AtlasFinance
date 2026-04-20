@@ -106,6 +106,7 @@ Esto inicia:
 
 - PostgreSQL en puerto 5432
 - Backend FastAPI en puerto 8000
+- Dashboard Streamlit en puerto 8502
 
 ### Paso 4: verificar API
 
@@ -127,14 +128,22 @@ Endpoint: `POST /api/v1/auth/login`
 ### 7.3 Crear banco, cuenta y categoria
 
 - `POST /api/v1/banks/`
+- `GET /api/v1/banks/`
 - `POST /api/v1/accounts/`
+- `GET /api/v1/accounts/`
 - `POST /api/v1/categories/`
+- `GET /api/v1/categories/`
 
 ### 7.4 Registrar transaccion manual
 
 Endpoint: `POST /api/v1/transactions/`
 
-### 7.5 Consultar metricas
+### 7.5 Editar o eliminar transaccion
+
+- `PUT /api/v1/transactions/{transaction_id}`
+- `DELETE /api/v1/transactions/{transaction_id}`
+
+### 7.6 Consultar metricas
 
 Endpoint: `GET /api/v1/metrics/dashboard?currency=COP`
 
@@ -155,18 +164,31 @@ Archivos de ejemplo:
 
 ## 9. Dashboard local
 
-Con backend arriba:
+Con backend arriba, puedes usar dos opciones:
+
+### Opcion A: dashboard con Docker (recomendada)
+
+```bash
+docker compose up -d --build
+```
+
+Abre:
+
+- http://localhost:8502
+
+### Opcion B: dashboard desde entorno local de Python
 
 ```bash
 streamlit run dashboard/app.py
 ```
 
-Luego en la barra lateral:
+Flujo actual del dashboard:
 
-- Base URL de API (`http://localhost:8000/api/v1`)
-- Login con email/password para generar JWT automaticamente (o pegar JWT manual)
-- Moneda objetivo
-- Rango de fechas
+- Pantalla inicial de Login y Registro
+- Luego de autenticar, dos secciones privadas:
+	- `Movimientos`: crear, editar y eliminar transacciones
+	- `Dashboard`: metricas y graficos
+- El sidebar solo muestra estado de sesion y boton de cierre de sesion
 
 ## 10. Ejecutar pruebas y cobertura
 

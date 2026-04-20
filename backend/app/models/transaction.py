@@ -9,6 +9,7 @@ from app.models.enums import Currency, TransactionType
 
 
 class Transaction(Base):
+    """Financial movement associated with user, account and optional category/pocket."""
     __tablename__ = "transactions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

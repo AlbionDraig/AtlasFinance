@@ -24,6 +24,7 @@ def create_transaction_endpoint(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> TransactionRead:
+    """Create a transaction and update account balance accordingly."""
     try:
         return register_transaction(db, current_user.id, payload)
     except ValueError as exc:
@@ -37,6 +38,7 @@ def list_transactions_endpoint(
     start_date: Annotated[datetime | None, Query()] = None,
     end_date: Annotated[datetime | None, Query()] = None,
 ) -> list[TransactionRead]:
+    """List user transactions with optional date range filtering."""
     transactions = list_transactions(db, current_user.id, start_date=start_date, end_date=end_date)
     return [TransactionRead.model_validate(t) for t in transactions]
 
@@ -48,6 +50,7 @@ def update_transaction_endpoint(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> TransactionRead:
+    """Update a transaction and keep balances consistent."""
     try:
         return update_transaction(db, current_user.id, transaction_id, payload)
     except ValueError as exc:
@@ -63,6 +66,7 @@ def delete_transaction_endpoint(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
+    """Delete a transaction and reverse its balance effect."""
     try:
         delete_transaction(db, current_user.id, transaction_id)
     except ValueError as exc:

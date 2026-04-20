@@ -18,6 +18,7 @@ def create_bank_endpoint(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> BankRead:
+    """Create a bank for the authenticated user."""
     try:
         return create_bank(db, current_user.id, payload)
     except ValueError as exc:
@@ -29,5 +30,6 @@ def list_banks_endpoint(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[BankRead]:
+    """Return all banks owned by the authenticated user."""
     banks = list_banks(db, current_user.id)
     return [BankRead.model_validate(bank) for bank in banks]
