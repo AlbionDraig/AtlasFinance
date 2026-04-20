@@ -14,7 +14,7 @@ Repositorio oficial: https://github.com/AlbionDraig/AtlasFinance
 - Base de datos PostgreSQL (via SQLAlchemy)
 - ETL para carga manual por CSV/Excel (formatos bancarios)
 - Clasificacion automatica basica de gastos
-- Dashboard local en Streamlit
+- Frontend local en Streamlit
 - Seguridad base con hash de password y JWT
 - Docker para desarrollo y base de produccion
 - Pruebas unitarias e integracion
@@ -28,7 +28,7 @@ El proyecto esta organizado para separar responsabilidades:
 - Services: logica de negocio (creacion de bancos, cuentas, transacciones, metricas)
 - Models: entidades SQLAlchemy y relaciones
 - ETL: parseo de archivos, normalizacion por banco y clasificacion
-- Dashboard: visualizacion en Streamlit consumiendo la API
+- Frontend: interfaz en Streamlit consumiendo la API
 
 ## 3. Estructura del repositorio
 
@@ -46,7 +46,7 @@ backend/
 	tests/
 	requirements.txt
 	.env.example
-dashboard/
+frontend/
 docker/
 data/samples/
 .github/workflows/
@@ -106,7 +106,7 @@ Esto inicia:
 
 - PostgreSQL en puerto 5432
 - Backend FastAPI en puerto 8000
-- Dashboard Streamlit en puerto 8502
+- Frontend Streamlit en puerto 8502
 
 ### Paso 4: verificar API
 
@@ -162,11 +162,11 @@ Archivos de ejemplo:
 - `data/samples/bancolombia_transactions.csv`
 - `data/samples/nequi_transactions.csv`
 
-## 9. Dashboard local
+## 9. Frontend local
 
 Con backend arriba, puedes usar dos opciones:
 
-### Opcion A: dashboard con Docker (recomendada)
+### Opcion A: frontend con Docker (recomendada)
 
 ```bash
 docker compose up -d --build
@@ -176,13 +176,13 @@ Abre:
 
 - http://localhost:8502
 
-### Opcion B: dashboard desde entorno local de Python
+### Opcion B: frontend desde entorno local de Python
 
 ```bash
-streamlit run dashboard/app.py
+streamlit run frontend/main.py
 ```
 
-Flujo actual del dashboard:
+Flujo actual del frontend:
 
 - Pantalla inicial de Login y Registro
 - Luego de autenticar, dos secciones privadas:

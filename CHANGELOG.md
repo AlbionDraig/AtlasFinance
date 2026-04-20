@@ -11,7 +11,7 @@ The format is inspired by Keep a Changelog and semantic versioning.
 - Base architecture for Atlas Finance (FastAPI, SQLAlchemy, ETL, Streamlit)
 - JWT auth and password hashing
 - Docker setup for backend + PostgreSQL
-- Docker setup for dashboard (frontend) integrated in `docker-compose.yml`
+- Docker setup for frontend integrated in `docker-compose.yml`
 - CI workflow with lint, tests, and coverage gate
 - Coverage upload to Codecov
 - Project governance docs: CONTRIBUTING, SECURITY, LICENSE
@@ -21,10 +21,10 @@ The format is inspired by Keep a Changelog and semantic versioning.
 
 ### Changed
 
-- Dashboard authentication flow now supports in-app login/registration and JWT session handling
-- Dashboard UX now follows auth-first flow (login first, dashboard after authentication)
-- Dashboard movement module now supports create/edit/delete operations from UI
-- Documentation updated to reflect dockerized dashboard and current API flow
+- Frontend authentication flow now supports in-app login/registration and JWT session handling
+- Frontend UX now follows auth-first flow (login first, app modules after authentication)
+- Frontend movement module now supports create/edit/delete operations from UI
+- Documentation updated to reflect dockerized frontend and current API flow
 
 ### Fixed
 

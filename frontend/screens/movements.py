@@ -1,146 +1,16 @@
 from __future__ import annotations
 
-import os
 from datetime import date, datetime, time
 
 import pandas as pd
 import requests
 import streamlit as st
-from streamlit.errors import StreamlitSecretNotFoundError
 
-REQUEST_TIMEOUT = 15
-if hasattr(st, "rerun"):
-    RERUN = st.rerun
-else:
-    RERUN = st.experimental_rerun
+from modules.api_client import api_request, parse_iso_datetime
+from modules.config import RERUN
 
 
-def resolve_api_base() -> str:
-    """Resolve backend API base URL from env/secrets with localhost fallback."""
-    env_value = os.getenv("ATLAS_API_BASE_URL")
-    if env_value:
-        return env_value
-
-    try:
-        return st.secrets.get("api_base_url", "http://localhost:8000/api/v1")
-    except StreamlitSecretNotFoundError:
-        return "http://localhost:8000/api/v1"
-
-
-def init_session() -> None:
-    """Initialize Streamlit session state keys used across the app."""
-    st.session_state.setdefault("jwt_token", "")
-    st.session_state.setdefault("api_base_url", resolve_api_base())
-
-
-def api_request(
-    method: str,
-    path: str,
-    *,
-    payload: dict | None = None,
-    params: dict | None = None,
-    auth: bool = True,
-) -> requests.Response:
-    """Execute an HTTP request to Atlas API with optional JWT auth header."""
-    headers: dict[str, str] = {}
-    if auth and st.session_state["jwt_token"]:
-        headers["Authorization"] = f"Bearer {st.session_state['jwt_token']}"
-
-    response = requests.request(
-        method,
-        f"{st.session_state['api_base_url']}{path}",
-        json=payload,
-        params=params,
-        headers=headers,
-        timeout=REQUEST_TIMEOUT,
-    )
-    return response
-
-
-def parse_iso_datetime(value: str) -> datetime:
-    """Parse API datetime strings, supporting trailing Z timezone format."""
-    if value.endswith("Z"):
-        value = value.replace("Z", "+00:00")
-    return datetime.fromisoformat(value)
-
-
-def login_view() -> None:
-    """Render public authentication screen with login and registration tabs."""
-    st.title("Atlas Finance")
-    st.subheader("Inicia sesion para gestionar tus finanzas")
-
-    tab_login, tab_register = st.tabs(["Login", "Registro"])
-
-    with tab_login:
-        with st.form("login_form"):
-            email = st.text_input("Email")
-            password = st.text_input("Password", type="password")
-            login_submit = st.form_submit_button("Iniciar sesion", use_container_width=True)
-
-        if login_submit:
-            if not email or not password:
-                st.error("Debes ingresar email y password.")
-            else:
-                try:
-                    response = api_request(
-                        "POST",
-                        "/auth/login",
-                        payload={"email": email, "password": password},
-                        auth=False,
-                    )
-                    response.raise_for_status()
-                    st.session_state["jwt_token"] = response.json().get("access_token", "")
-                    if not st.session_state["jwt_token"]:
-                        st.error("La API no devolvio access_token.")
-                    else:
-                        st.success("Sesion iniciada correctamente.")
-                        RERUN()
-                except requests.HTTPError as exc:
-                    detail = "Credenciales invalidas."
-                    try:
-                        detail = response.json().get("detail", detail)
-                    except Exception:
-                        pass
-                    st.error(f"Error de login: {detail}")
-                except requests.RequestException as exc:
-                    st.error(f"No se pudo conectar a la API: {exc}")
-
-    with tab_register:
-        with st.form("register_form"):
-            full_name = st.text_input("Nombre completo")
-            email = st.text_input("Email de registro")
-            password = st.text_input("Password (minimo 8 caracteres)", type="password")
-            register_submit = st.form_submit_button("Crear cuenta", use_container_width=True)
-
-        if register_submit:
-            if not full_name or not email or len(password) < 8:
-                st.error("Completa todos los campos y usa una clave de minimo 8 caracteres.")
-            else:
-                try:
-                    response = api_request(
-                        "POST",
-                        "/auth/register",
-                        payload={
-                            "email": email,
-                            "full_name": full_name,
-                            "password": password,
-                        },
-                        auth=False,
-                    )
-                    response.raise_for_status()
-                    st.success("Cuenta creada. Ahora inicia sesion en la pestana Login.")
-                except requests.HTTPError:
-                    detail = "No se pudo crear la cuenta."
-                    try:
-                        detail = response.json().get("detail", detail)
-                    except Exception:
-                        pass
-                    st.error(f"Error de registro: {detail}")
-                except requests.RequestException as exc:
-                    st.error(f"No se pudo conectar a la API: {exc}")
-
-
-def create_base_data_section(banks: list[dict], accounts: list[dict]) -> None:
+def _render_base_entities_forms(banks: list[dict], accounts: list[dict]) -> None:
     """Render helper forms to create banks, accounts and categories."""
     st.subheader("Configuracion inicial")
     col_bank, col_account, col_category = st.columns(3)
@@ -221,7 +91,7 @@ def create_base_data_section(banks: list[dict], accounts: list[dict]) -> None:
         st.warning("Necesitas al menos una cuenta para registrar gastos o ingresos.")
 
 
-def render_transactions_tab() -> None:
+def movements_screen() -> None:
     """Render CRUD UI for user movements (create, edit, delete)."""
     try:
         banks_response = api_request("GET", "/banks/")
@@ -239,7 +109,7 @@ def render_transactions_tab() -> None:
     categories = categories_response.json()
     transactions = transactions_response.json()
 
-    create_base_data_section(banks, accounts)
+    _render_base_entities_forms(banks, accounts)
 
     st.subheader("Registrar movimiento")
     account_options = {f"{a['name']} ({a['currency']}) - ID {a['id']}": a["id"] for a in accounts}
@@ -376,97 +246,3 @@ def render_transactions_tab() -> None:
             RERUN()
         else:
             st.error(response.json().get("detail", "No se pudo eliminar el movimiento."))
-
-
-def render_dashboard_tab() -> None:
-    """Render private financial dashboard with KPI cards and charts."""
-    st.subheader("Dashboard")
-    currency = st.selectbox("Moneda objetivo", ["COP", "USD"], index=0)
-    d_col_1, d_col_2 = st.columns(2)
-    with d_col_1:
-        date_from = st.date_input("Desde", value=date(date.today().year, 1, 1), key="db_from")
-    with d_col_2:
-        date_to = st.date_input("Hasta", value=date.today(), key="db_to")
-
-    try:
-        metrics_resp = api_request("GET", "/metrics/dashboard", params={"currency": currency})
-        tx_resp = api_request(
-            "GET",
-            "/transactions/",
-            params={
-                "start_date": f"{date_from.isoformat()}T00:00:00",
-                "end_date": f"{date_to.isoformat()}T23:59:59",
-            },
-        )
-        metrics_resp.raise_for_status()
-        tx_resp.raise_for_status()
-    except requests.RequestException as exc:
-        st.error(f"Error consultando la API: {exc}")
-        return
-
-    metrics = metrics_resp.json()
-    transactions = tx_resp.json()
-
-    kpi_1, kpi_2, kpi_3, kpi_4 = st.columns(4)
-    kpi_1.metric("Patrimonio Neto", f"{metrics['net_worth']:.2f} {currency}")
-    kpi_2.metric("Ingresos", f"{metrics['total_income']:.2f} {currency}")
-    kpi_3.metric("Gastos", f"{metrics['total_expenses']:.2f} {currency}")
-    kpi_4.metric("% Ahorro", f"{metrics['savings_rate']:.2f}%")
-
-    if not transactions:
-        st.info("No hay transacciones para el rango seleccionado.")
-        return
-
-    df = pd.DataFrame(transactions)
-    df["occurred_at"] = pd.to_datetime(df["occurred_at"], utc=True).dt.tz_convert(None)
-    df["month"] = df["occurred_at"].dt.to_period("M").astype(str)
-
-    st.subheader("Ingresos vs Gastos por Mes")
-    monthly = (
-        df.groupby(["month", "transaction_type"], as_index=False)["amount"]
-        .sum()
-        .pivot(index="month", columns="transaction_type", values="amount")
-        .fillna(0)
-    )
-    st.bar_chart(monthly)
-
-    st.subheader("Evolucion Mensual de Flujo")
-    monthly["cashflow"] = monthly.get("income", 0) - monthly.get("expense", 0)
-    st.line_chart(monthly[["cashflow"]])
-
-    st.subheader("Gastos por Categoria")
-    exp_df = df[df["transaction_type"] == "expense"].copy()
-    if not exp_df.empty and "category_id" in exp_df.columns:
-        category_breakdown = exp_df.groupby("category_id", as_index=False)["amount"].sum()
-        st.dataframe(category_breakdown, width="stretch")
-
-    st.subheader("Transacciones")
-    st.dataframe(df.sort_values("occurred_at", ascending=False), width="stretch")
-
-
-def app() -> None:
-    """Main entry point enforcing auth-first flow and private tabs."""
-    st.set_page_config(page_title="Atlas Finance", layout="wide")
-    init_session()
-
-    if not st.session_state["jwt_token"]:
-        login_view()
-        st.stop()
-
-    with st.sidebar:
-        st.success("Sesion activa")
-        if st.button("Cerrar sesion", use_container_width=True):
-            st.session_state["jwt_token"] = ""
-            RERUN()
-
-    st.title("Atlas Finance")
-    tab_transactions, tab_dashboard = st.tabs(["Movimientos", "Dashboard"])
-
-    with tab_transactions:
-        render_transactions_tab()
-
-    with tab_dashboard:
-        render_dashboard_tab()
-
-
-app()

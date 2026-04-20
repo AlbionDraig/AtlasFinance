@@ -31,11 +31,11 @@ services:
     volumes:
       - ./backend:/app
 
-  dashboard:
+  frontend:
     build:
       context: .
-      dockerfile: docker/Dockerfile.dashboard
-    container_name: atlas-dashboard
+      dockerfile: docker/Dockerfile.frontend
+    container_name: atlas-frontend
     environment:
       ATLAS_API_BASE_URL: http://backend:8000/api/v1
     depends_on:
@@ -44,7 +44,7 @@ services:
     ports:
       - "8502:8501"
     volumes:
-      - ./dashboard:/app/dashboard
+      - ./frontend:/app/frontend
 
 volumes:
   postgres_data:
