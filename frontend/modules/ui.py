@@ -15,16 +15,19 @@ def inject_theme() -> None:
 
         /* â”€â”€ Design tokens: light â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         :root {
-            --c-bg:       #f4f5f7;
+            --c-bg:       #f2f5f9;
             --c-surface:  #ffffff;
             --c-surfaceL: rgba(255,255,255,0.6);
-            --c-border:   rgba(0,0,0,0.07);
-            --c-text:     #0f1115;
-            --c-muted:    #4B5563;
-            --c-accent:   #6366f1;
-            --c-accent2:  #8b5cf6;
-            --c-up:       #10b981;
-            --c-down:     #f43f5e;
+            --c-border:   rgba(17, 36, 67, 0.10);
+            --c-text:     #0f172a;
+            --c-muted:    #475569;
+            --c-accent:   #1f6fb2;
+            --c-accent2:  #16a3b8;
+            --c-up:       #0f9d7a;
+            --c-down:     #d94b64;
+            --c-brand1:   #1f3f8a;
+            --c-brand2:   #2b66bc;
+            --c-brand3:   #16a3b8;
             --shadow-sm:  0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
             --shadow-md:  0 2px 8px rgba(0,0,0,0.07), 0 12px 32px rgba(0,0,0,0.05);
             --r:          12px;
@@ -229,15 +232,47 @@ def inject_theme() -> None:
             display: none !important;
         }
 
-        /* Top navigation row: unify tabs + logout into a single toolbar. */
+        /* Top navigation row: single pill container wrapping tabs + Más. */
         .stHorizontalBlock:has([data-testid="stButtonGroup"]) {
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.56) 100%) !important;
-            border: 1px solid var(--c-border) !important;
-            border-radius: 14px !important;
-            padding: 0.45rem 0.65rem !important;
+            background: var(--c-surface) !important;
+            border: none !important;
+            border-radius: 999px !important;
+            padding: 4px 4px 4px 4px !important;
             margin: 0.3rem 0 0.35rem 0 !important;
-            box-shadow: var(--shadow-sm) !important;
+            box-shadow: inset 0 0 0 1px var(--c-border), var(--shadow-sm) !important;
             align-items: center !important;
+            width: fit-content !important;
+        }
+
+        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has([data-testid="stPopoverButton"]),
+        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) {
+            width: fit-content !important;
+            margin: 0.14rem auto 0.32rem auto !important;
+            padding: 4px !important;
+            border-radius: 999px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0 !important;
+        }
+
+        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has([data-testid="stPopoverButton"]) > [data-testid="stColumn"],
+        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) > [data-testid="stColumn"] {
+            flex: 0 0 auto !important;
+            width: auto !important;
+            min-width: 0 !important;
+        }
+
+        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) > [data-testid="stColumn"]:last-child {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) > [data-testid="stColumn"]:last-child [data-testid="stElementContainer"],
+        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) > [data-testid="stColumn"]:last-child [data-testid="stMarkdown"],
+        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) > [data-testid="stColumn"]:last-child [data-testid="stMarkdownContainer"] {
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
         .stHorizontalBlock:has([data-testid="stButtonGroup"]) > [data-testid="stColumn"] {
@@ -261,11 +296,11 @@ def inject_theme() -> None:
 
         /* Navigation group fallback (radio/segmented) styled like tabs. */
         [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] {
-            background: var(--c-surface) !important;
+            background: transparent !important;
             border-radius: 999px !important;
-            padding: 5px !important;
-            gap: 6px !important;
-            box-shadow: inset 0 0 0 1px var(--c-border) !important;
+            padding: 0 !important;
+            gap: 5px !important;
+            box-shadow: none !important;
             width: fit-content !important;
             max-width: 100% !important;
             overflow-x: auto !important;
@@ -273,6 +308,101 @@ def inject_theme() -> None:
             display: inline-flex !important;
             flex-wrap: nowrap !important;
             scrollbar-width: none !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+        }
+
+        div[data-testid="stElementContainer"]:has([data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) {
+            width: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+        }
+
+        .stHorizontalBlock:has([data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) [data-testid="stPopoverButton"] {
+            min-height: 36px !important;
+            border-radius: 999px !important;
+            border: none !important;
+            background: transparent !important;
+            color: var(--c-muted) !important;
+            font-size: 0.84rem !important;
+            font-weight: 600 !important;
+            padding: 0 1.08rem !important;
+            min-width: auto !important;
+            white-space: nowrap !important;
+            box-shadow: none !important;
+            transition: background 180ms cubic-bezier(0.22, 1, 0.36, 1), color 180ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1), transform 180ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 0.28rem !important;
+        }
+
+        .stHorizontalBlock:has([data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) [data-testid="stPopoverButton"]:hover {
+            background: rgba(31, 111, 178, 0.10) !important;
+            color: #173a74 !important;
+            box-shadow: inset 0 0 0 1px rgba(31, 111, 178, 0.16) !important;
+            transform: translateY(-0.5px) scale(1.01) !important;
+        }
+
+        .stHorizontalBlock:has([data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) [data-testid="stPopoverButton"] [data-testid="stIconMaterial"] {
+            display: none !important;
+        }
+
+        .stHorizontalBlock:has([data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) [data-testid="stPopoverButton"]::after {
+            content: " ›" !important;
+            font-size: 0.88rem !important;
+            line-height: 1 !important;
+            opacity: 0.55 !important;
+            margin-top: 0 !important;
+        }
+
+        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]) .af-nav-more-disabled {
+            height: 36px !important;
+            min-height: 36px !important;
+            min-width: auto !important;
+            border-radius: 999px !important;
+            border: none !important;
+            background: transparent !important;
+            color: var(--c-muted) !important;
+            font-size: 0.84rem !important;
+            font-weight: 600 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 1.08rem !important;
+            user-select: none !important;
+            margin-left: 0 !important;
+            box-shadow: none !important;
+            white-space: nowrap !important;
+            letter-spacing: 0 !important;
+            opacity: 0.45 !important;
+        }
+
+        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]) .af-nav-more-disabled > span {
+            display: inline-block !important;
+            line-height: 1 !important;
+            opacity: 0.95 !important;
+        }
+
+        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has([data-testid="stPopoverButton"]) [data-testid="stButton"] > button {
+            min-height: 36px !important;
+            border-radius: 999px !important;
+            border: 1px solid var(--c-border) !important;
+            background: rgba(248, 250, 252, 0.92) !important;
+            color: #64748b !important;
+            font-size: 0.84rem !important;
+            font-weight: 700 !important;
+            padding: 0 0.86rem !important;
+            min-width: 74px !important;
+            box-shadow: none !important;
+        }
+
+        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has([data-testid="stPopoverButton"]) [data-testid="stButton"] > button:disabled {
+            opacity: 1 !important;
+            border-color: rgba(100, 116, 139, 0.28) !important;
+            background: rgba(248, 250, 252, 0.98) !important;
+            color: #94a3b8 !important;
+            cursor: default !important;
         }
 
         [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]::-webkit-scrollbar {
@@ -284,14 +414,20 @@ def inject_theme() -> None:
             border: none !important;
             background: transparent !important;
             color: var(--c-muted) !important;
-            min-height: 40px !important;
+            min-height: 36px !important;
             flex: 0 0 auto !important;
             white-space: nowrap !important;
-            padding: 0 1.25rem !important;
+            padding: 0 1.08rem !important;
             font-weight: 600 !important;
-            font-size: 0.875rem !important;
+            font-size: 0.84rem !important;
             box-shadow: none !important;
-            transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease !important;
+            transform: translateY(0) scale(1) !important;
+            transition:
+                background 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                transform 180ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+            will-change: transform, background, box-shadow !important;
         }
 
         [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button p,
@@ -302,9 +438,16 @@ def inject_theme() -> None:
         }
 
         [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button:hover {
-            background: rgba(99, 102, 241, 0.08) !important;
-            color: var(--c-text) !important;
-            transform: translateY(-1px) !important;
+            background: rgba(31, 111, 178, 0.10) !important;
+            color: #173a74 !important;
+            box-shadow: inset 0 0 0 1px rgba(31, 111, 178, 0.16) !important;
+            transform: translateY(-0.5px) scale(1.01) !important;
+        }
+
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button:hover p,
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button:hover span,
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button:hover div {
+            color: #173a74 !important;
         }
 
         [data-testid="stButtonGroup"] [role="radiogroup"] > button[kind="segmented_controlActive"],
@@ -315,6 +458,28 @@ def inject_theme() -> None:
             color: #fff !important;
             box-shadow: 0 6px 14px rgba(99, 102, 241, 0.28) !important;
             border: none !important;
+        }
+
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button[aria-checked="true"]:hover,
+        [data-testid="stButtonGroup"] [role="radiogroup"] > button[kind="segmented_controlActive"]:hover,
+        [data-testid="stButtonGroup"] [role="radiogroup"] > button[data-testid="stBaseButton-segmented_controlActive"]:hover {
+            background-image: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent2) 100%) !important;
+            background-color: var(--c-accent) !important;
+            color: #ffffff !important;
+            box-shadow: 0 6px 14px rgba(31, 111, 178, 0.30) !important;
+            transform: translateY(-0.25px) scale(1.005) !important;
+        }
+
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button[aria-checked="true"]:hover p,
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button[aria-checked="true"]:hover span,
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button[aria-checked="true"]:hover div,
+        [data-testid="stButtonGroup"] [role="radiogroup"] > button[kind="segmented_controlActive"]:hover p,
+        [data-testid="stButtonGroup"] [role="radiogroup"] > button[kind="segmented_controlActive"]:hover span,
+        [data-testid="stButtonGroup"] [role="radiogroup"] > button[kind="segmented_controlActive"]:hover div,
+        [data-testid="stButtonGroup"] [role="radiogroup"] > button[data-testid="stBaseButton-segmented_controlActive"]:hover p,
+        [data-testid="stButtonGroup"] [role="radiogroup"] > button[data-testid="stBaseButton-segmented_controlActive"]:hover span,
+        [data-testid="stButtonGroup"] [role="radiogroup"] > button[data-testid="stBaseButton-segmented_controlActive"]:hover div {
+            color: #ffffff !important;
         }
 
         [data-testid="stButtonGroup"] [role="radiogroup"] > button[kind="segmented_controlActive"] p,
@@ -602,15 +767,16 @@ def inject_theme() -> None:
 
         /* Topbar with integrated profile control. */
         .stHorizontalBlock:has(.af-topbar-copy) {
-            background: linear-gradient(128deg, #5f66e8 0%, #7460ea 52%, #8a59e6 100%) !important;
-            border-radius: 12px !important;
-            padding: 0.78rem 0.92rem !important;
-            margin: 0.18rem 0 0.28rem 0 !important;
+            background: linear-gradient(120deg, var(--c-brand1) 0%, var(--c-brand2) 54%, var(--c-brand3) 100%) !important;
+            border-radius: 14px !important;
+            padding: 0.86rem 1.25rem !important;
+            margin: 0.14rem 0 0.28rem 0 !important;
             align-items: stretch !important;
-            border: 1px solid rgba(255, 255, 255, 0.16) !important;
-            box-shadow: 0 12px 26px rgba(76, 70, 184, 0.24) !important;
+            border: none !important;
+            box-shadow: 0 10px 24px rgba(17, 49, 97, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
             overflow: hidden !important;
             position: relative !important;
+            isolation: isolate !important;
         }
 
         .stHorizontalBlock:has(.af-topbar-copy) > [data-testid="stColumn"] {
@@ -628,24 +794,24 @@ def inject_theme() -> None:
         }
 
         .stHorizontalBlock:has(.af-topbar-copy)::after {
+            content: none !important;
+        }
+
+        .stHorizontalBlock:has(.af-topbar-copy)::before {
             content: "" !important;
             position: absolute !important;
-            top: -34px !important;
-            right: 52px !important;
-            width: 140px !important;
-            height: 140px !important;
-            border-radius: 999px !important;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 68%) !important;
+            inset: 0 !important;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 42%) !important;
             pointer-events: none !important;
         }
 
         .af-topbar-copy .kicker {
-            font-size: 0.66rem !important;
+            font-size: 0.63rem !important;
             font-weight: 800 !important;
-            letter-spacing: 0.12em !important;
-            color: rgba(255, 255, 255, 0.82) !important;
+            letter-spacing: 0.16em !important;
+            color: rgba(231, 240, 255, 0.9) !important;
             text-transform: uppercase !important;
-            margin-bottom: 0.16rem !important;
+            margin-bottom: 0.22rem !important;
         }
 
         .af-topbar-copy {
@@ -656,12 +822,13 @@ def inject_theme() -> None:
         }
 
         .af-topbar-copy p {
-            font-size: 1rem !important;
+            font-size: 0.98rem !important;
             margin: 0 !important;
             color: #fff !important;
-            font-weight: 600 !important;
-            opacity: 0.98 !important;
-            line-height: 1.3 !important;
+            font-weight: 550 !important;
+            opacity: 0.97 !important;
+            line-height: 1.35 !important;
+            max-width: 720px !important;
         }
 
         .stHorizontalBlock:has(.af-topbar-copy) > [data-testid="stColumn"]:last-child {
@@ -691,17 +858,17 @@ def inject_theme() -> None:
 
         .stHorizontalBlock:has(.af-topbar-copy) [data-testid="stPopoverButton"] {
             border-radius: 999px !important;
-            width: 42px !important;
-            height: 42px !important;
-            min-width: 42px !important;
-            min-height: 42px !important;
+            width: 40px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+            min-height: 40px !important;
             padding: 0 !important;
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
-            background: linear-gradient(160deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.08) 100%) !important;
-            box-shadow: 0 7px 16px rgba(37, 31, 98, 0.22) !important;
+            border: 1px solid rgba(255, 255, 255, 0.32) !important;
+            background: linear-gradient(165deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.09) 100%) !important;
+            box-shadow: none !important;
             color: #fff !important;
             font-weight: 800 !important;
             letter-spacing: 0.02em !important;
@@ -716,7 +883,7 @@ def inject_theme() -> None:
 
         .stHorizontalBlock:has(.af-topbar-copy) [data-testid="stPopoverButton"]:hover {
             transform: translateY(-1px) !important;
-            box-shadow: 0 9px 20px rgba(30, 27, 75, 0.24) !important;
+            box-shadow: none !important;
         }
 
         .stHorizontalBlock:has(.af-topbar-copy) [data-testid="stPopoverButton"] [data-testid="stIconMaterial"] {
@@ -726,7 +893,7 @@ def inject_theme() -> None:
         .stHorizontalBlock:has(.af-topbar-copy) [data-testid="stPopoverButton"] p {
             margin: 0 !important;
             color: #fff !important;
-            font-size: 0.79rem !important;
+            font-size: 0.75rem !important;
             font-weight: 800 !important;
             letter-spacing: 0.03em !important;
             line-height: 1 !important;

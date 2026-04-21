@@ -136,23 +136,73 @@ def app() -> None:
     with topbar_right:
         _render_profile_menu(initials, full_name, email)
 
-    if hasattr(st, "segmented_control"):
-        current_section = st.segmented_control(
-            "",
-            options=options,
-            default=default_label,
-            key="main_section",
-            label_visibility="collapsed",
-        )
+    current_section = st.session_state.get("main_section", default_label)
+    if current_section not in section_options:
+        current_section = default_label
+
+    max_visible_tabs = 4
+    if len(options) <= max_visible_tabs:
+        primary_options = options
+        overflow_options: list[str] = []
     else:
-        current_section = st.radio(
-            "",
-            options,
-            index=0,
-            horizontal=True,
-            key="main_section",
-            label_visibility="collapsed",
-        )
+        fixed_primary = options[: max_visible_tabs - 1]
+        overflow = options[max_visible_tabs - 1 :]
+        if current_section in overflow:
+            primary_options = fixed_primary + [current_section]
+            overflow_options = [label for label in overflow if label != current_section]
+        else:
+            primary_options = fixed_primary + [overflow[0]]
+            overflow_options = [label for label in overflow if label != overflow[0]]
+
+    nav_main, nav_more = st.columns([11, 1], gap="small")
+    with nav_main:
+        if hasattr(st, "segmented_control"):
+            selected_primary = st.segmented_control(
+                "",
+                options=primary_options,
+                default=current_section if current_section in primary_options else primary_options[0],
+                label_visibility="collapsed",
+            )
+        else:
+            primary_index = (
+                primary_options.index(current_section)
+                if current_section in primary_options
+                else 0
+            )
+            selected_primary = st.radio(
+                "",
+                primary_options,
+                index=primary_index,
+                horizontal=True,
+                label_visibility="collapsed",
+            )
+        if selected_primary:
+            current_section = selected_primary
+
+    with nav_more:
+        if overflow_options and hasattr(st, "popover"):
+            with st.popover("Más", use_container_width=False):
+                st.caption("Secciones adicionales")
+                for label in overflow_options:
+                    if st.button(label, key=f"main_overflow_{section_options[label]}", use_container_width=True):
+                        st.session_state["main_section"] = label
+                        RERUN()
+        elif overflow_options:
+            selected_extra = st.selectbox(
+                "Más",
+                options=overflow_options,
+                index=0,
+                label_visibility="collapsed",
+            )
+            if selected_extra:
+                current_section = selected_extra
+        else:
+            st.markdown(
+                '<div class="af-nav-more-disabled"><span>Más</span></div>',
+                unsafe_allow_html=True,
+            )
+
+    st.session_state["main_section"] = current_section
 
     current_key = section_options.get(current_section, section_options[default_label])
     section_renderers[current_key]()

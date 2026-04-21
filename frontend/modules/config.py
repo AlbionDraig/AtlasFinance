@@ -8,7 +8,8 @@ import streamlit.components.v1 as components
 
 from streamlit.errors import StreamlitSecretNotFoundError
 
-REQUEST_TIMEOUT = 15
+REQUEST_TIMEOUT = 20
+REQUEST_RETRIES = 2
 AUTH_COOKIE_NAME = "atlas_jwt_token"
 
 
