@@ -1,15 +1,28 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 
 import streamlit as st
 from streamlit.errors import StreamlitSecretNotFoundError
 
 REQUEST_TIMEOUT = 15
-if hasattr(st, "rerun"):
-    RERUN = st.rerun
-else:
-    RERUN = st.experimental_rerun
+
+
+def _resolve_rerun() -> Callable[[], object]:
+    """Return the supported Streamlit rerun function for the active version."""
+    rerun = getattr(st, "rerun", None)
+    if callable(rerun):
+        return rerun
+
+    experimental_rerun = getattr(st, "experimental_rerun", None)
+    if callable(experimental_rerun):
+        return experimental_rerun
+
+    raise RuntimeError("No compatible Streamlit rerun function is available")
+
+
+RERUN = _resolve_rerun()
 
 
 def resolve_api_base() -> str:

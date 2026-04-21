@@ -21,6 +21,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile.backend
     container_name: atlas-backend
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app"]
     env_file:
       - backend/.env
     ports:
@@ -38,6 +39,7 @@ services:
     container_name: atlas-frontend
     environment:
       ATLAS_API_BASE_URL: http://backend:8000/api/v1
+      STREAMLIT_SERVER_FILE_WATCHER_TYPE: poll
     depends_on:
       backend:
         condition: service_started
