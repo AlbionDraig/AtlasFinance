@@ -238,8 +238,8 @@ def inject_theme() -> None:
             border: none !important;
             border-radius: 999px !important;
             padding: 4px 4px 4px 4px !important;
-            margin: 0.3rem 0 0.35rem 0 !important;
-            box-shadow: inset 0 0 0 1px var(--c-border), var(--shadow-sm) !important;
+            margin: 0.22rem 0 0.28rem 0 !important;
+            box-shadow: inset 0 0 0 1px var(--c-border), 0 1px 4px rgba(15, 23, 42, 0.06) !important;
             align-items: center !important;
             width: fit-content !important;
         }
@@ -325,7 +325,7 @@ def inject_theme() -> None:
             background: transparent !important;
             color: var(--c-muted) !important;
             font-size: 0.84rem !important;
-            font-weight: 600 !important;
+            font-weight: 650 !important;
             padding: 0 1.08rem !important;
             min-width: auto !important;
             white-space: nowrap !important;
@@ -375,7 +375,7 @@ def inject_theme() -> None:
             box-shadow: none !important;
             white-space: nowrap !important;
             letter-spacing: 0 !important;
-            opacity: 0.45 !important;
+            opacity: 0.58 !important;
         }
 
         .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]) .af-nav-more-disabled > span {
@@ -769,11 +769,11 @@ def inject_theme() -> None:
         .stHorizontalBlock:has(.af-topbar-copy) {
             background: linear-gradient(120deg, var(--c-brand1) 0%, var(--c-brand2) 54%, var(--c-brand3) 100%) !important;
             border-radius: 14px !important;
-            padding: 0.86rem 1.25rem !important;
-            margin: 0.14rem 0 0.28rem 0 !important;
+            padding: 0.76rem 1.2rem !important;
+            margin: 0.12rem 0 0.2rem 0 !important;
             align-items: stretch !important;
             border: none !important;
-            box-shadow: 0 10px 24px rgba(17, 49, 97, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+            box-shadow: 0 8px 20px rgba(17, 49, 97, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
             overflow: hidden !important;
             position: relative !important;
             isolation: isolate !important;
@@ -1066,18 +1066,88 @@ def inject_theme() -> None:
             margin-top: 0.1rem !important;
         }
 
+        [data-testid="stVerticalBlockBorderWrapper"] {
+            border-color: rgba(17, 36, 67, 0.12) !important;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.92) 100%) !important;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04) !important;
+        }
+
+        .af-filter-status {
+            min-height: 38px !important;
+            border-radius: 10px !important;
+            font-size: 0.78rem !important;
+            font-weight: 600 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            padding: 0.45rem 0.7rem !important;
+            line-height: 1.25 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .af-filter-status.pending {
+            color: #8a4b00 !important;
+            background: rgba(245, 158, 11, 0.13) !important;
+            border: 1px solid rgba(245, 158, 11, 0.28) !important;
+        }
+
+        .af-filter-status.clean {
+            color: #065f46 !important;
+            background: rgba(34, 197, 94, 0.16) !important;
+            border: 1px solid rgba(22, 163, 74, 0.34) !important;
+        }
+
+        .af-active-meta {
+            margin: 0.36rem 0 0.2rem 0 !important;
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 0.45rem !important;
+        }
+
+        .af-active-meta .meta-chip {
+            display: inline-flex !important;
+            align-items: center !important;
+            border-radius: 999px !important;
+            border: 1px solid rgba(148, 163, 184, 0.32) !important;
+            background: rgba(248, 250, 252, 0.96) !important;
+            color: #334155 !important;
+            font-size: 0.73rem !important;
+            font-weight: 600 !important;
+            padding: 0.23rem 0.62rem !important;
+            letter-spacing: 0.01em !important;
+        }
+
         /* KPI metric card */
         .af-kpi {
             background: var(--c-surface) !important;
             border: 1px solid var(--c-border) !important;
             border-radius: var(--r) !important;
-            padding: 1.25rem 1.4rem !important;
+            padding: 1.1rem 1.25rem !important;
             box-shadow: var(--shadow-sm) !important;
             margin-bottom: 0.55rem !important;
-            min-height: 148px !important;
+            min-height: 136px !important;
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
+        }
+
+        @media (min-width: 1025px) {
+            [data-testid="stVerticalBlockBorderWrapper"]:has([data-testid="stDateInput"]):has([data-testid="stSelectbox"]) {
+                padding: 0.12rem 0.2rem !important;
+            }
+
+            [data-testid="stVerticalBlockBorderWrapper"]:has([data-testid="stDateInput"]):has([data-testid="stSelectbox"]) [data-testid="stHorizontalBlock"] {
+                gap: 0.4rem !important;
+            }
+
+            [data-testid="stVerticalBlockBorderWrapper"]:has([data-testid="stDateInput"]):has([data-testid="stSelectbox"]) [data-testid="stElementContainer"] {
+                margin-bottom: 0.2rem !important;
+            }
+
+            [data-testid="stVerticalBlockBorderWrapper"]:has([data-testid="stDateInput"]):has([data-testid="stSelectbox"]) .stButton > button {
+                min-height: 34px !important;
+                padding: 0.38rem 0.78rem !important;
+            }
         }
 
         .af-kpi .kpi-label {
@@ -1552,7 +1622,7 @@ def inject_theme() -> None:
             }
 
             .af-kpi {
-                min-height: 140px !important;
+                min-height: 132px !important;
                 padding: 1rem 1.1rem !important;
             }
 
@@ -1589,7 +1659,7 @@ def inject_theme() -> None:
             }
 
             .af-kpi {
-                min-height: 130px !important;
+                min-height: 122px !important;
                 padding: 0.9rem 1rem !important;
                 margin-bottom: 0.4rem !important;
             }
@@ -1673,7 +1743,7 @@ def inject_theme() -> None:
             }
 
             .af-kpi {
-                min-height: 120px !important;
+                min-height: 112px !important;
                 padding: 0.8rem 0.9rem !important;
                 margin-bottom: 0.3rem !important;
             }
