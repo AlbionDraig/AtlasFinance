@@ -8,32 +8,76 @@ import streamlit as st
 
 from modules.api_client import api_request, parse_iso_datetime
 from modules.config import RERUN
-from modules.ui import render_info_card, render_section_header
+from modules.notifications import show_error, show_success
+from modules.ui import (
+    render_breadcrumbs,
+    render_empty_state,
+    render_field_with_tooltip,
+    render_form_label,
+    render_info_card,
+    render_section_header,
+    show_form_error,
+    validate_number_field,
+    validate_text_field,
+)
 
 
 def _show_api_result(response: requests.Response, success_message: str, error_message: str) -> None:
     """Show common success or error feedback for form submissions."""
     if response.ok:
-        st.success(success_message)
+        show_success(success_message)
         RERUN()
         return
 
-    st.error(response.json().get("detail", error_message))
+    try:
+        error_detail = response.json().get("detail", error_message)
+    except Exception:
+        error_detail = error_message
+    show_error(error_detail)
 
 
 def _render_bank_form() -> None:
     """Render bank creation form and handle submission."""
     with st.form("create_bank_form"):
-        st.markdown("**Crear banco**")
-        bank_name = st.text_input("Nombre del banco", key="bank_name")
-        country_code = st.text_input("Pais (codigo)", value="CO", max_chars=3, key="country_code")
-        submit_bank = st.form_submit_button("Guardar banco", use_container_width=True)
+        render_field_with_tooltip(
+            "Nombre del banco",
+            "Nombre de tu institución financiera",
+            required=True,
+            hint="Ej: Bancolombia, BBVA, Scotiabank, Nequi"
+        )
+        bank_name = st.text_input(
+            "Nombre del banco",
+            key="bank_name",
+            placeholder="Ingresa el nombre del banco",
+            label_visibility="collapsed",
+        )
+        
+        render_field_with_tooltip(
+            "País (código)",
+            "Código de país en ISO 3166-1 alpha-2",
+            required=True,
+            hint="Código de 2 letras. Ej: CO (Colombia), US (USA), AR (Argentina)"
+        )
+        country_code = st.text_input(
+            "Pais (codigo)",
+            value="CO",
+            max_chars=3,
+            key="country_code",
+            label_visibility="collapsed",
+        )
+        
+        submit_bank = st.form_submit_button("✓ Guardar banco", use_container_width=True)
 
     if not submit_bank:
         return
 
-    if len(bank_name.strip()) < 2:
-        st.error("El nombre del banco debe tener al menos 2 caracteres.")
+    is_valid, error_msg = validate_text_field(bank_name, min_length=2, field_name="Nombre del banco")
+    if not is_valid:
+        show_form_error("Validación", error_msg)
+        return
+
+    if len(country_code.strip()) < 2:
+        show_form_error("Validación", "Código de país debe tener 2 letras (ej: CO, US).")
         return
 
     response = api_request(
@@ -41,7 +85,7 @@ def _render_bank_form() -> None:
         "/banks/",
         payload={"name": bank_name.strip(), "country_code": country_code.strip().upper() or "CO"},
     )
-    _show_api_result(response, "Banco creado.", "No se pudo crear el banco.")
+    _show_api_result(response, "✓ Banco creado exitosamente.", "No se pudo crear el banco.")
 
 
 def _render_account_form(banks: list[dict]) -> None:
@@ -94,19 +138,25 @@ def _render_account_form(banks: list[dict]) -> None:
 def _render_category_form() -> None:
     """Render category creation form and handle submission."""
     with st.form("create_category_form"):
-        st.markdown("**Crear categoria**")
-        category_name = st.text_input("Nombre de categoria", key="category_name")
-        submit_category = st.form_submit_button("Guardar categoria", use_container_width=True)
+        render_form_label("Nombre de categoría", required=True, hint="Ej: Alimentación, Transporte, Entretenimiento")
+        category_name = st.text_input(
+            "Nombre de categoria",
+            key="category_name",
+            placeholder="Ingresa el nombre de la categoría",
+            label_visibility="collapsed",
+        )
+        submit_category = st.form_submit_button("✓ Guardar categoría", use_container_width=True)
 
     if not submit_category:
         return
 
-    if len(category_name.strip()) < 2:
-        st.error("La categoria debe tener al menos 2 caracteres.")
+    is_valid, error_msg = validate_text_field(category_name, min_length=2, field_name="Nombre de categoría")
+    if not is_valid:
+        show_form_error("Validación", error_msg)
         return
 
     response = api_request("POST", "/categories/", payload={"name": category_name.strip()})
-    _show_api_result(response, "Categoria creada.", "No se pudo crear la categoria.")
+    _show_api_result(response, "✓ Categoría creada exitosamente.", "No se pudo crear la categoría.")
 
 
 def _render_base_entities_forms(banks: list[dict], accounts: list[dict]) -> None:
@@ -116,19 +166,36 @@ def _render_base_entities_forms(banks: list[dict], accounts: list[dict]) -> None
         "Configuracion inicial",
         "Crea tu estructura base antes de registrar movimientos.",
     )
+    
+    # Show setup guidance if empty
+    if not banks:
+        st.info("👉 **Paso 1:** Crea un banco para comenzar. Necesitas al menos un banco para crear cuentas.")
+    
+    if not accounts:
+        st.warning("⚠️ **Paso 2:** Necesitas crear una cuenta de banco para registrar movimientos.")
+    
     setup_bank, setup_account, setup_category = st.tabs(["Banco", "Cuenta", "Categoria"])
 
     with setup_bank:
+        if not banks:
+            st.info("📋 No tienes bancos registrados todavía. Crea uno para empezar.")
         _render_bank_form()
 
     with setup_account:
-        _render_account_form(banks)
+        if not banks:
+            render_empty_state(
+                "No hay bancos disponibles",
+                "Necesitas crear un banco primero antes de poder crear cuentas.",
+                icon="🏦",
+            )
+        else:
+            _render_account_form(banks)
 
     with setup_category:
         _render_category_form()
 
     if not accounts:
-        st.warning("Necesitas al menos una cuenta para registrar gastos o ingresos.")
+        st.warning("⚠️ **Activar:** Registra tu primera transacción en la pestaña 'Registrar'.")
 
 
 def _load_movement_data() -> tuple[list[dict], list[dict], list[dict], list[dict]] | None:
@@ -314,7 +381,11 @@ def _render_edit_transaction_section(
     """Render edit/delete controls for existing transactions."""
     render_section_header("Edicion", "Editar o eliminar movimientos", "Selecciona un registro y actualiza sus datos.")
     if not transactions:
-        st.info("Aun no tienes movimientos registrados.")
+        render_empty_state(
+            "Sin movimientos registrados",
+            "No hay transacciones todavía. Regresa a la pestaña 'Registrar' para crear tu primer movimiento.",
+            icon="📊",
+        )
         return
 
     _render_transactions_table(transactions)
@@ -390,6 +461,12 @@ def movements_screen() -> None:
         return
 
     banks, accounts, categories, transactions = movement_data
+
+    # Breadcrumbs navigation
+    render_breadcrumbs([
+        ("Dashboard", False),
+        ("Movimientos", True),
+    ])
 
     summary_col_1, summary_col_2, summary_col_3 = st.columns([1.1, 1.1, 1])
     with summary_col_1:

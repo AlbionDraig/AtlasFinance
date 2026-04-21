@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 import html
+from typing import Callable
 
 import streamlit as st
 
@@ -19,7 +20,7 @@ def inject_theme() -> None:
             --c-surfaceL: rgba(255,255,255,0.6);
             --c-border:   rgba(0,0,0,0.07);
             --c-text:     #0f1115;
-            --c-muted:    #6b7280;
+            --c-muted:    #4B5563;
             --c-accent:   #6366f1;
             --c-accent2:  #8b5cf6;
             --c-up:       #10b981;
@@ -30,6 +31,95 @@ def inject_theme() -> None:
             --r-sm:       8px;
             --font:       'Inter', system-ui, sans-serif;
             --font-mono:  'JetBrains Mono', monospace;
+        }
+
+        /* ── Animations and Transitions ──────────────────────────────────── */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
         }
 
         /* â”€â”€ Base â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -110,18 +200,20 @@ def inject_theme() -> None:
             color: var(--c-muted) !important;
             background: transparent !important;
             border: none !important;
-            transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease !important;
+            transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease !important;
         }
 
         .stTabs [data-baseweb="tab"]:hover {
             background: rgba(99, 102, 241, 0.08) !important;
             color: var(--c-text) !important;
+            transform: translateY(-1px) !important;
         }
 
         .stTabs [data-baseweb="tab"][aria-selected="true"] {
             background: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent2) 100%) !important;
             color: #fff !important;
             box-shadow: 0 6px 14px rgba(99, 102, 241, 0.28) !important;
+            animation: slideUp 0.25s ease-out !important;
         }
 
         .stTabs [data-baseweb="tab"][aria-selected="true"] p,
@@ -149,7 +241,7 @@ def inject_theme() -> None:
             padding: 0.55rem 1.1rem !important;
             line-height: 1.2 !important;
             text-align: center !important;
-            transition: opacity 0.15s, transform 0.1s !important;
+            transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s !important;
             box-shadow: 0 4px 14px rgba(99,102,241,0.28) !important;
         }
 
@@ -169,6 +261,19 @@ def inject_theme() -> None:
         .stFormSubmitButton > button:hover {
             opacity: 0.86 !important;
             transform: translateY(-1px) !important;
+            box-shadow: 0 6px 20px rgba(99,102,241,0.35) !important;
+        }
+
+        .stButton > button:active,
+        .stFormSubmitButton > button:active {
+            transform: translateY(1px) !important;
+        }
+
+        .stButton > button:disabled,
+        .stFormSubmitButton > button:disabled {
+            opacity: 0.5 !important;
+            cursor: not-allowed !important;
+            transform: none !important;
         }
 
         /* â”€â”€ Inputs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -340,6 +445,13 @@ def inject_theme() -> None:
             padding: 1rem 1.2rem !important;
             margin-bottom: 0.75rem !important;
             box-shadow: var(--shadow-sm) !important;
+            animation: slideUp 0.4s ease-out !important;
+            transition: box-shadow 0.2s ease, transform 0.2s ease !important;
+        }
+
+        .af-card:hover {
+            box-shadow: var(--shadow-md) !important;
+            transform: translateY(-2px) !important;
         }
 
         .af-card h3 {
@@ -746,6 +858,290 @@ def inject_theme() -> None:
             color: var(--c-muted) !important;
         }
 
+        /* ── Form validation styles ──────────────────────────────────── */
+        .form-field-required {
+            color: #DC2626 !important;
+        }
+
+        .form-field-hint {
+            display: block !important;
+            font-size: 0.75rem !important;
+            color: #4B5563 !important;
+            margin-top: 0.25rem !important;
+            font-style: italic !important;
+        }
+
+        .form-error-message {
+            display: block !important;
+            font-size: 0.8rem !important;
+            color: #DC2626 !important;
+            margin-top: 0.3rem !important;
+            font-weight: 500 !important;
+        }
+
+        .stTextInput input.error,
+        .stNumberInput input.error,
+        textarea.error {
+            border-color: #EF4444 !important;
+            background: #FEF2F2 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+        }
+
+        .stTextInput input.success,
+        .stNumberInput input.success,
+        textarea.success {
+            border-color: #10B981 !important;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12) !important;
+        }
+
+        .input-help-text {
+            font-size: 0.75rem !important;
+            color: #4B5563 !important;
+            margin-top: 0.2rem !important;
+        }
+
+        .breadcrumb-nav {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            margin-bottom: 1rem !important;
+            font-size: 0.85rem !important;
+        }
+
+        .breadcrumb-item {
+            color: #4B5563 !important;
+        }
+
+        .breadcrumb-item.active {
+            color: var(--c-accent) !important;
+            font-weight: 600 !important;
+        }
+
+        .breadcrumb-separator {
+            color: var(--c-border) !important;
+            margin: 0 0.25rem !important;
+        }
+
+        .empty-state {
+            text-align: center !important;
+            padding: 2rem 1rem !important;
+            background: var(--c-surface) !important;
+            border: 1px solid var(--c-border) !important;
+            border-radius: var(--r) !important;
+        }
+
+        .empty-state-icon {
+            font-size: 2.5rem !important;
+            margin-bottom: 0.8rem !important;
+            opacity: 0.6 !important;
+        }
+
+        .empty-state-title {
+            font-size: 1.1rem !important;
+            font-weight: 600 !important;
+            color: var(--c-text) !important;
+            margin-bottom: 0.4rem !important;
+        }
+
+        .empty-state-text {
+            font-size: 0.875rem !important;
+            color: var(--c-muted) !important;
+            margin-bottom: 1rem !important;
+            line-height: 1.5 !important;
+        }
+
+        /* ── Responsive design ──────────────────────────────────── */
+        @media (max-width: 1024px) {
+            .block-container {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+                max-width: 100% !important;
+            }
+
+            .af-kpi {
+                min-height: 140px !important;
+                padding: 1rem 1.1rem !important;
+            }
+
+            .af-kpi .kpi-label {
+                font-size: 0.64rem !important;
+                margin-bottom: 0.4rem !important;
+            }
+
+            .af-kpi .kpi-value {
+                font-size: clamp(1.15rem, 2vw, 1.6rem) !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .block-container {
+                padding-top: 1rem !important;
+                padding-bottom: 2rem !important;
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+            }
+
+            [data-testid="stColumn"] {
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+
+            .af-hero {
+                padding: 1rem 1.25rem !important;
+                margin-bottom: 1rem !important;
+            }
+
+            .af-hero h1 {
+                font-size: clamp(1.2rem, 2.5vw, 1.8rem) !important;
+            }
+
+            .af-kpi {
+                min-height: 130px !important;
+                padding: 0.9rem 1rem !important;
+                margin-bottom: 0.4rem !important;
+            }
+
+            .af-kpi .kpi-label {
+                font-size: 0.6rem !important;
+                margin-bottom: 0.3rem !important;
+            }
+
+            .af-kpi .kpi-value {
+                font-size: clamp(1rem, 1.8vw, 1.3rem) !important;
+            }
+
+            .stTabs [data-baseweb="tab"] {
+                padding: 0 0.8rem !important;
+                height: 36px !important;
+                font-size: 0.8rem !important;
+            }
+
+            .stButton > button,
+            .stFormSubmitButton > button {
+                width: 100% !important;
+                padding: 0.5rem 1rem !important;
+                font-size: 0.8rem !important;
+            }
+
+            .af-card {
+                padding: 1rem !important;
+            }
+
+            .af-table {
+                font-size: 0.7rem !important;
+            }
+
+            .af-table td {
+                padding: 0.4rem 0.6rem !important;
+            }
+
+            .empty-state {
+                padding: 1.5rem 1rem !important;
+            }
+
+            .empty-state-icon {
+                font-size: 2rem !important;
+                margin-bottom: 0.6rem !important;
+            }
+
+            .empty-state-title {
+                font-size: 0.95rem !important;
+            }
+
+            .empty-state-text {
+                font-size: 0.8rem !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .block-container {
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+                padding-top: 0.75rem !important;
+            }
+
+            .af-hero {
+                padding: 0.85rem 1rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+
+            .af-hero.compact {
+                padding: 0.7rem 0.9rem !important;
+                margin-bottom: 0.6rem !important;
+            }
+
+            .af-hero h1 {
+                font-size: clamp(1rem, 3vw, 1.4rem) !important;
+                margin-bottom: 0.2rem !important;
+            }
+
+            .af-hero p {
+                font-size: 0.75rem !important;
+            }
+
+            .af-kpi {
+                min-height: 120px !important;
+                padding: 0.8rem 0.9rem !important;
+                margin-bottom: 0.3rem !important;
+            }
+
+            .af-kpi .kpi-value {
+                font-size: clamp(0.9rem, 2vw, 1.1rem) !important;
+                margin-bottom: 0.2rem !important;
+            }
+
+            .stTabs [data-baseweb="tab-list"] {
+                padding: 4px !important;
+                gap: 4px !important;
+                width: 100% !important;
+            }
+
+            .stTabs [data-baseweb="tab"] {
+                padding: 0 0.6rem !important;
+                height: 32px !important;
+                font-size: 0.75rem !important;
+            }
+
+            .breadcrumb-nav {
+                margin-bottom: 0.75rem !important;
+                font-size: 0.75rem !important;
+                flex-wrap: wrap !important;
+            }
+
+            .af-card {
+                padding: 0.85rem !important;
+                margin-bottom: 0.6rem !important;
+            }
+
+            .af-info-card {
+                padding: 0.7rem 0.9rem !important;
+            }
+
+            .af-table-wrap {
+                overflow-x: auto !important;
+            }
+
+            [data-testid="stDataFrame"] {
+                max-width: 100% !important;
+            }
+
+            .empty-state {
+                padding: 1.25rem 0.75rem !important;
+            }
+
+            .empty-state-icon {
+                font-size: 1.75rem !important;
+            }
+
+            .empty-state-title {
+                font-size: 0.9rem !important;
+            }
+
+            .empty-state-text {
+                font-size: 0.75rem !important;
+            }
+        }
+
         </style>
         """,
         unsafe_allow_html=True,
@@ -887,3 +1283,196 @@ def render_html_table(rows: list[dict], columns: list[str], *, col_labels: dict[
         f'<div class="af-table-wrap"><table class="af-table"><thead><tr>{header}</tr></thead><tbody>{body}</tbody></table></div>',
         unsafe_allow_html=True,
     )
+
+
+def render_breadcrumbs(items: list[tuple[str, bool]]) -> None:
+    """Render navigation breadcrumbs.
+    
+    Args:
+        items: List of (label, is_active) tuples
+    """
+    html_parts = ['<div class="breadcrumb-nav">']
+    for i, (label, is_active) in enumerate(items):
+        if i > 0:
+            html_parts.append('<span class="breadcrumb-separator">/</span>')
+        cls = "breadcrumb-item active" if is_active else "breadcrumb-item"
+        html_parts.append(f'<span class="{cls}">{html.escape(label)}</span>')
+    html_parts.append('</div>')
+    st.markdown("".join(html_parts), unsafe_allow_html=True)
+
+
+def render_empty_state(
+    title: str,
+    message: str,
+    icon: str = "📭",
+    *,
+    button_label: str | None = None,
+    button_action: Callable[[], None] | None = None,
+) -> bool:
+    """Render an empty state with optional CTA button.
+    
+    Args:
+        title: Title text
+        message: Description text
+        icon: Emoji or text icon
+        button_label: Optional button text
+        button_action: Optional callback function
+    
+    Returns:
+        True if button was clicked, False otherwise
+    """
+    st.markdown(
+        f"""
+        <div class="empty-state">
+            <div class="empty-state-icon">{html.escape(icon)}</div>
+            <div class="empty-state-title">{html.escape(title)}</div>
+            <div class="empty-state-text">{html.escape(message)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    
+    if button_label:
+        col1, col2, col3 = st.columns([1, 1.2, 1])
+        with col2:
+            clicked = st.button(button_label, use_container_width=True)
+            if clicked and button_action:
+                button_action()
+            return clicked
+    
+    return False
+
+
+def render_form_label(label: str, required: bool = False, hint: str = "") -> None:
+    """Render a form label with optional required indicator and hint text.
+    
+    Args:
+        label: Label text
+        required: If True, shows red asterisk
+        hint: Optional small help text below label
+    """
+    required_html = '<span class="form-field-required">*</span>' if required else ""
+    hint_html = f'<div class="form-field-hint">{html.escape(hint)}</div>' if hint else ""
+    
+    st.markdown(
+        f"""
+        <div>
+            <strong>{html.escape(label)}&nbsp;{required_html}</strong>
+            {hint_html}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def show_form_error(field_name: str, message: str) -> None:
+    """Show inline form field error message."""
+    st.markdown(
+        f'<div class="form-error-message">❌ {html.escape(field_name)}: {html.escape(message)}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def validate_text_field(value: str, min_length: int = 1, field_name: str = "Campo") -> tuple[bool, str]:
+    """Validate text field.
+    
+    Args:
+        value: Field value to validate
+        min_length: Minimum required length
+        field_name: Name of field for error messages
+    
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    if not value or len(value.strip()) < min_length:
+        return False, f"{field_name} debe tener al menos {min_length} caracteres."
+    return True, ""
+
+
+def validate_number_field(value: float, min_value: float = 0, field_name: str = "Número") -> tuple[bool, str]:
+    """Validate numeric field.
+    
+    Args:
+        value: Field value to validate
+        min_value: Minimum allowed value
+        field_name: Name of field for error messages
+    
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    if value < min_value:
+        return False, f"{field_name} debe ser mayor o igual a {min_value}."
+    return True, ""
+
+
+def show_loading_indicator(message: str = "Procesando...") -> None:
+    """Show a loading indicator with message.
+    
+    Args:
+        message: Text to display while loading
+    """
+    col1, col2 = st.columns([0.05, 0.95])
+    with col1:
+        st.markdown(
+            """
+            <div style="display: inline-block; animation: spin 1s linear infinite; font-size: 1.2rem;">
+            ⏳
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with col2:
+        st.write(message)
+
+
+def render_tooltip_icon(tooltip_text: str) -> None:
+    """Render a small tooltip icon that shows help text on hover.
+    
+    Args:
+        tooltip_text: Text to show in tooltip
+    """
+    st.markdown(
+        f"""
+        <span style="position: relative; display: inline-block; margin-left: 0.3rem; cursor: help;">
+            <span style="color: var(--c-muted); font-weight: bold; font-size: 0.8rem;">?</span>
+            <span style="visibility: hidden; width: 200px; background-color: #1F2937; color: #fff; text-align: left; 
+                         border-radius: 6px; padding: 8px; position: absolute; z-index: 1000; bottom: 125%; left: 50%; 
+                         margin-left: -100px; opacity: 0; transition: opacity 0.3s; font-size: 0.75rem; line-height: 1.3;">
+                {html.escape(tooltip_text)}
+                <span style="content: ''; position: absolute; top: 100%; left: 50%; margin-left: -5px; 
+                           border-width: 5px; border-style: solid; border-color: #1F2937 transparent transparent transparent;"></span>
+            </span>
+        </span>
+        <span style="position: relative; display: inline-block; margin-left: 0.3rem; cursor: help;">
+            <span style="visibility: hidden; width: 200px; background-color: #1F2937; color: #fff; text-align: left; 
+                         border-radius: 6px; padding: 8px; position: absolute; z-index: 1000; bottom: 125%; left: 50%; 
+                         margin-left: -100px; opacity: 1; transition: opacity 0.3s; font-size: 0.75rem; line-height: 1.3;">
+                {html.escape(tooltip_text)}
+            </span>
+        </span>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_field_with_tooltip(
+    label: str,
+    tooltip: str,
+    required: bool = False,
+    hint: str = "",
+) -> None:
+    """Render a form field label with integrated tooltip and help text.
+    
+    Args:
+        label: Field label
+        tooltip: Tooltip text (short explanation)
+        required: If True, shows required indicator
+        hint: Optional help text below label
+    """
+    col1, col2 = st.columns([0.92, 0.08])
+    with col1:
+        render_form_label(label, required=required, hint=hint)
+    with col2:
+        if tooltip:
+            render_tooltip_icon(tooltip)
+
