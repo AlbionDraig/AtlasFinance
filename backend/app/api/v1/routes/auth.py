@@ -4,6 +4,7 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from jose import ExpiredSignatureError, JWTError, jwt
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_current_user
 from app.core.config import get_settings
 from app.core.security import create_access_token
 from app.db.base import get_db
@@ -36,6 +37,12 @@ def login(payload: UserLogin, db: Annotated[Session, Depends(get_db)], response:
 
     access_token = create_access_token(subject=user.id, response=response)
     return Token(access_token=access_token)
+
+
+@router.get("/me")
+def read_current_user(current_user: Annotated[User, Depends(get_current_user)]) -> UserRead:
+    """Return the authenticated user profile."""
+    return current_user
 
 
 @router.post("/refresh", responses={401: {"description": "Unauthorized"}})

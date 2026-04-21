@@ -46,6 +46,8 @@ def init_session() -> None:
     st.session_state.setdefault("jwt_token", st.context.cookies.get(AUTH_COOKIE_NAME, ""))
     st.session_state.setdefault("auth_cookie_sync", None)
     st.session_state.setdefault("auth_notice", None)
+    st.session_state.setdefault("user_full_name", "")
+    st.session_state.setdefault("user_email", "")
 
     st.session_state.setdefault("api_base_url", resolve_api_base())
 
@@ -58,6 +60,8 @@ def persist_jwt_token(token: str) -> None:
 def clear_auth_session(message: str | None = None) -> None:
     """Clear auth state and optionally set a user-facing notice."""
     st.session_state["jwt_token"] = ""
+    st.session_state["user_full_name"] = ""
+    st.session_state["user_email"] = ""
     st.session_state["auth_cookie_sync"] = ""
     if message is not None:
         st.session_state["auth_notice"] = message

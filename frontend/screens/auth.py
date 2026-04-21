@@ -46,6 +46,12 @@ def _handle_login_submit(email: str, password: str) -> None:
         jwt_token = response.json().get("access_token", "")
         st.session_state["jwt_token"] = jwt_token
 
+        profile_response = api_request("GET", "/auth/me")
+        if profile_response.ok:
+            profile = profile_response.json()
+            st.session_state["user_full_name"] = str(profile.get("full_name") or "").strip()
+            st.session_state["user_email"] = str(profile.get("email") or "").strip()
+
         # Persist the token to local storage
         persist_jwt_token(jwt_token)
 

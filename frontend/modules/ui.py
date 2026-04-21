@@ -229,6 +229,108 @@ def inject_theme() -> None:
             display: none !important;
         }
 
+        /* Top navigation row: unify tabs + logout into a single toolbar. */
+        .stHorizontalBlock:has([data-testid="stButtonGroup"]) {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.56) 100%) !important;
+            border: 1px solid var(--c-border) !important;
+            border-radius: 14px !important;
+            padding: 0.45rem 0.65rem !important;
+            margin: 0.3rem 0 0.35rem 0 !important;
+            box-shadow: var(--shadow-sm) !important;
+            align-items: center !important;
+        }
+
+        .stHorizontalBlock:has([data-testid="stButtonGroup"]) > [data-testid="stColumn"] {
+            display: flex !important;
+            align-items: center !important;
+        }
+
+        .stHorizontalBlock:has([data-testid="stButtonGroup"]) > [data-testid="stColumn"]:last-child [data-testid="stButton"] {
+            width: 100% !important;
+            display: flex !important;
+            justify-content: flex-end !important;
+        }
+
+        .stHorizontalBlock:has([data-testid="stButtonGroup"]) > [data-testid="stColumn"]:last-child .stButton > button {
+            width: auto !important;
+            min-width: 190px !important;
+            min-height: 40px !important;
+            border-radius: 999px !important;
+            padding: 0 1.2rem !important;
+        }
+
+        /* Navigation group fallback (radio/segmented) styled like tabs. */
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] {
+            background: var(--c-surface) !important;
+            border-radius: 999px !important;
+            padding: 5px !important;
+            gap: 6px !important;
+            box-shadow: inset 0 0 0 1px var(--c-border) !important;
+            width: fit-content !important;
+            max-width: 100% !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            display: inline-flex !important;
+            flex-wrap: nowrap !important;
+            scrollbar-width: none !important;
+        }
+
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]::-webkit-scrollbar {
+            height: 0 !important;
+        }
+
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button {
+            border-radius: 999px !important;
+            border: none !important;
+            background: transparent !important;
+            color: var(--c-muted) !important;
+            min-height: 40px !important;
+            flex: 0 0 auto !important;
+            white-space: nowrap !important;
+            padding: 0 1.25rem !important;
+            font-weight: 600 !important;
+            font-size: 0.875rem !important;
+            box-shadow: none !important;
+            transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease !important;
+        }
+
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button p,
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button span,
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button div {
+            color: var(--c-muted) !important;
+            font-weight: 600 !important;
+        }
+
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button:hover {
+            background: rgba(99, 102, 241, 0.08) !important;
+            color: var(--c-text) !important;
+            transform: translateY(-1px) !important;
+        }
+
+        [data-testid="stButtonGroup"] [role="radiogroup"] > button[kind="segmented_controlActive"],
+        [data-testid="stButtonGroup"] [role="radiogroup"] > button[data-testid="stBaseButton-segmented_controlActive"],
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button[aria-checked="true"] {
+            background-color: var(--c-accent) !important;
+            background-image: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent2) 100%) !important;
+            color: #fff !important;
+            box-shadow: 0 6px 14px rgba(99, 102, 241, 0.28) !important;
+            border: none !important;
+        }
+
+        [data-testid="stButtonGroup"] [role="radiogroup"] > button[kind="segmented_controlActive"] p,
+        [data-testid="stButtonGroup"] [role="radiogroup"] > button[data-testid="stBaseButton-segmented_controlActive"] p,
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button[aria-checked="true"] p,
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button[aria-checked="true"] span,
+        [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"] > button[aria-checked="true"] div {
+            color: #fff !important;
+            font-weight: 700 !important;
+        }
+
+        /* Hide empty labels created by collapsed nav control fallback. */
+        .stRadio > label p:empty {
+            display: none !important;
+        }
+
         /* â”€â”€ Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         .stButton > button,
         .stFormSubmitButton > button {
@@ -329,25 +431,33 @@ def inject_theme() -> None:
             font-size: 0.8125rem !important;
         }
 
+        [data-testid="stWidgetLabel"] {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 0.22rem !important;
+        }
+
         /* Make help icons clearly recognizable as information controls. */
         [data-testid="stWidgetLabel"] button {
-            width: 19px !important;
-            height: 19px !important;
-            min-width: 19px !important;
+            width: 18px !important;
+            height: 18px !important;
+            min-width: 18px !important;
             border-radius: 999px !important;
-            border: 1px solid rgba(99, 102, 241, 0.72) !important;
-            background: var(--c-accent) !important;
-            color: #ffffff !important;
+            border: 1px solid rgba(99, 102, 241, 0.38) !important;
+            background: rgba(99, 102, 241, 0.12) !important;
+            color: var(--c-accent) !important;
             padding: 0 !important;
-            margin-left: 0.28rem !important;
+            margin-left: 0 !important;
             position: relative !important;
-            transition: opacity 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease !important;
+            opacity: 0.96 !important;
+            transition: background 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease, opacity 0.16s ease !important;
         }
 
         [data-testid="stWidgetLabel"] button:hover {
-            opacity: 0.9 !important;
+            background: rgba(99, 102, 241, 0.20) !important;
             transform: translateY(-1px) !important;
-            box-shadow: 0 3px 10px rgba(99, 102, 241, 0.35) !important;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.18) !important;
+            opacity: 1 !important;
         }
 
         [data-testid="stWidgetLabel"] button svg {
@@ -355,7 +465,7 @@ def inject_theme() -> None:
         }
 
         [data-testid="stWidgetLabel"] button::before {
-            content: "i" !important;
+            content: "ℹ" !important;
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
@@ -363,8 +473,8 @@ def inject_theme() -> None:
             height: 100% !important;
             font-size: 0.68rem !important;
             line-height: 1 !important;
-            font-weight: 800 !important;
-            color: #ffffff !important;
+            font-weight: 700 !important;
+            color: var(--c-accent) !important;
             font-family: var(--font) !important;
         }
 
@@ -449,6 +559,221 @@ def inject_theme() -> None:
 
         .af-hero.compact p {
             font-size: 0.8rem !important;
+        }
+
+        .af-hero.no-title {
+            padding: 0.72rem 1.1rem !important;
+            margin-bottom: 0.7rem !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 0.85rem !important;
+            position: relative !important;
+            overflow: hidden !important;
+        }
+
+        .af-hero.no-title .kicker {
+            margin-bottom: 0.22rem !important;
+            opacity: 0.9 !important;
+        }
+
+        .af-hero.no-title p {
+            font-size: 0.8rem !important;
+            opacity: 0.92 !important;
+            line-height: 1.25 !important;
+            max-width: 620px !important;
+        }
+
+        .af-hero.no-title::before {
+            content: "" !important;
+            position: absolute !important;
+            top: -18px !important;
+            right: 62px !important;
+            width: 96px !important;
+            height: 96px !important;
+            border-radius: 999px !important;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 68%) !important;
+            pointer-events: none !important;
+        }
+
+        .af-hero.no-title::after {
+            content: none !important;
+        }
+
+        /* Topbar with integrated profile control. */
+        .stHorizontalBlock:has(.af-topbar-copy) {
+            background: linear-gradient(128deg, #5f66e8 0%, #7460ea 52%, #8a59e6 100%) !important;
+            border-radius: 12px !important;
+            padding: 0.78rem 0.92rem !important;
+            margin: 0.18rem 0 0.28rem 0 !important;
+            align-items: stretch !important;
+            border: 1px solid rgba(255, 255, 255, 0.16) !important;
+            box-shadow: 0 12px 26px rgba(76, 70, 184, 0.24) !important;
+            overflow: hidden !important;
+            position: relative !important;
+        }
+
+        .stHorizontalBlock:has(.af-topbar-copy) > [data-testid="stColumn"] {
+            align-self: stretch !important;
+        }
+
+        .stHorizontalBlock:has(.af-topbar-copy) > [data-testid="stColumn"]:first-child {
+            display: flex !important;
+            align-items: center !important;
+            min-height: 48px !important;
+        }
+
+        [data-testid="stButtonGroup"] {
+            margin-top: 0 !important;
+        }
+
+        .stHorizontalBlock:has(.af-topbar-copy)::after {
+            content: "" !important;
+            position: absolute !important;
+            top: -34px !important;
+            right: 52px !important;
+            width: 140px !important;
+            height: 140px !important;
+            border-radius: 999px !important;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 68%) !important;
+            pointer-events: none !important;
+        }
+
+        .af-topbar-copy .kicker {
+            font-size: 0.66rem !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.12em !important;
+            color: rgba(255, 255, 255, 0.82) !important;
+            text-transform: uppercase !important;
+            margin-bottom: 0.16rem !important;
+        }
+
+        .af-topbar-copy {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            min-height: 48px !important;
+        }
+
+        .af-topbar-copy p {
+            font-size: 1rem !important;
+            margin: 0 !important;
+            color: #fff !important;
+            font-weight: 600 !important;
+            opacity: 0.98 !important;
+            line-height: 1.3 !important;
+        }
+
+        .stHorizontalBlock:has(.af-topbar-copy) > [data-testid="stColumn"]:last-child {
+            display: flex !important;
+            justify-content: flex-end !important;
+            align-items: center !important;
+        }
+
+        .stHorizontalBlock:has(.af-topbar-copy) > [data-testid="stColumn"]:last-child [data-testid="stHorizontalBlock"] {
+            align-items: center !important;
+            justify-content: flex-end !important;
+            gap: 0.35rem !important;
+            width: 100% !important;
+        }
+
+        .af-topbar-user-label {
+            color: rgba(255, 255, 255, 0.92) !important;
+            font-size: 0.78rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.02em !important;
+            text-align: right !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            max-width: 112px !important;
+        }
+
+        .stHorizontalBlock:has(.af-topbar-copy) [data-testid="stPopoverButton"] {
+            border-radius: 999px !important;
+            width: 42px !important;
+            height: 42px !important;
+            min-width: 42px !important;
+            min-height: 42px !important;
+            padding: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            background: linear-gradient(160deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.08) 100%) !important;
+            box-shadow: 0 7px 16px rgba(37, 31, 98, 0.22) !important;
+            color: #fff !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.02em !important;
+        }
+
+        .stHorizontalBlock:has(.af-topbar-copy) [data-testid="stPopover"] {
+            width: auto !important;
+            margin-left: auto !important;
+            display: inline-flex !important;
+            justify-content: flex-end !important;
+        }
+
+        .stHorizontalBlock:has(.af-topbar-copy) [data-testid="stPopoverButton"]:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 9px 20px rgba(30, 27, 75, 0.24) !important;
+        }
+
+        .stHorizontalBlock:has(.af-topbar-copy) [data-testid="stPopoverButton"] [data-testid="stIconMaterial"] {
+            display: none !important;
+        }
+
+        .stHorizontalBlock:has(.af-topbar-copy) [data-testid="stPopoverButton"] p {
+            margin: 0 !important;
+            color: #fff !important;
+            font-size: 0.79rem !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.03em !important;
+            line-height: 1 !important;
+            text-align: center !important;
+            width: 100% !important;
+        }
+
+        .stHorizontalBlock:has(.af-topbar-copy) [data-testid="stPopoverButton"] > div {
+            margin: 0 !important;
+            width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        .stHorizontalBlock:has(.af-topbar-copy) [data-testid="stPopoverButton"] > div > div:first-child {
+            width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        .stHorizontalBlock:has(.af-topbar-copy) [data-testid="stPopoverButton"] > div > div:last-child {
+            display: none !important;
+        }
+
+        [data-testid="stPopoverBody"] {
+            min-width: 272px !important;
+            max-width: 292px !important;
+            padding: 0.95rem 0.95rem 0.88rem !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(99, 102, 241, 0.16) !important;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.2) !important;
+        }
+
+        [data-testid="stPopoverBody"] [data-testid="stMarkdownContainer"] p {
+            margin-bottom: 0.2rem !important;
+        }
+
+        [data-testid="stPopoverBody"] [data-testid="stCaptionContainer"] {
+            margin-bottom: 0.38rem !important;
+        }
+
+        [data-testid="stPopoverBody"] .stButton > button {
+            min-height: 38px !important;
+            border-radius: 10px !important;
+            font-size: 0.9rem !important;
         }
 
         /* Section heading */
@@ -558,6 +883,20 @@ def inject_theme() -> None:
 
         .af-info-card.tone-impact {
             border-left-color: rgba(236,72,153,0.48) !important;
+        }
+
+        /* Dashboard title block compactness (without wrapper divs). */
+        .stApp h2 {
+            margin: 0 0 0.25rem 0 !important;
+        }
+
+        .stApp h3 {
+            margin-top: 0.7rem !important;
+            margin-bottom: 0.3rem !important;
+        }
+
+        [data-testid="stCaptionContainer"] {
+            margin-top: 0.1rem !important;
         }
 
         /* KPI metric card */
@@ -1250,15 +1589,17 @@ def render_hero(
         hero_classes.append("compact")
     if narrow:
         hero_classes.append("narrow")
+    if not title.strip():
+        hero_classes.append("no-title")
     hero_class = " ".join(hero_classes)
+    hero_parts = [f'<div class="kicker">{html.escape(kicker)}</div>']
+    if title.strip():
+        hero_parts.append(f"<h1>{html.escape(title)}</h1>")
+    if copy.strip():
+        hero_parts.append(f"<p>{html.escape(copy)}</p>")
+
     st.markdown(
-        f"""
-        <div class="{hero_class}">
-            <div class="kicker">{html.escape(kicker)}</div>
-            <h1>{html.escape(title)}</h1>
-            <p>{html.escape(copy)}</p>
-        </div>
-        """,
+        f'<div class="{hero_class}">{"".join(hero_parts)}</div>',
         unsafe_allow_html=True,
     )
 

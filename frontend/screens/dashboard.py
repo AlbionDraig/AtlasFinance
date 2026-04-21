@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -322,41 +322,71 @@ def dashboard_screen() -> None:
     st.markdown("## Panorama financiero")
     st.caption("Vista general de tus finanzas en el período elegido.")
 
-    # ── Filter state (rendered later, before charts) ───────────────────────
+    # ── Filter state (draft + applied) ──────────────────────────────────────
+    today = date.today()
+    default_from = date(today.year, 1, 1)
+    default_to = today
+
+    # Applied values drive API queries and cards/charts.
     if "db_currency" not in st.session_state:
         st.session_state["db_currency"] = "COP"
     if "db_period" not in st.session_state:
         st.session_state["db_period"] = "Año actual"
-
-    today = date.today()
     if "db_from" not in st.session_state:
-        st.session_state["db_from"] = date(today.year, 1, 1)
+        st.session_state["db_from"] = default_from
     if "db_to" not in st.session_state:
-        st.session_state["db_to"] = today
+        st.session_state["db_to"] = default_to
 
-    currency = st.session_state["db_currency"]
-    period_preset = st.session_state["db_period"]
+    # Draft values are what user edits in the filter panel before applying.
+    if "db_currency_draft" not in st.session_state:
+        st.session_state["db_currency_draft"] = st.session_state["db_currency"]
+    if "db_period_draft" not in st.session_state:
+        st.session_state["db_period_draft"] = st.session_state["db_period"]
+    if "db_from_draft" not in st.session_state:
+        st.session_state["db_from_draft"] = st.session_state["db_from"]
+    if "db_to_draft" not in st.session_state:
+        st.session_state["db_to_draft"] = st.session_state["db_to"]
 
-    if period_preset == "Últimos 30 días":
-        preset_from, preset_to = today - timedelta(days=29), today
-    elif period_preset == "Últimos 90 días":
-        preset_from, preset_to = today - timedelta(days=89), today
-    elif period_preset == "Año actual":
-        preset_from, preset_to = date(today.year, 1, 1), today
+    # Apply deferred reset for widget-bound draft values before widgets render.
+    if st.session_state.get("db_reset_pending", False):
+        st.session_state["db_currency_draft"] = st.session_state.get("db_currency", "COP")
+        st.session_state["db_period_draft"] = st.session_state.get("db_period", "Año actual")
+        st.session_state["db_from_draft"] = st.session_state.get("db_from", default_from)
+        st.session_state["db_to_draft"] = st.session_state.get("db_to", default_to)
+        st.session_state["db_reset_pending"] = False
+
+    # Keep draft dates deterministic for non-custom presets.
+    draft_period = st.session_state["db_period_draft"]
+    if draft_period == "Últimos 30 días":
+        draft_from, draft_to = today - timedelta(days=29), today
+    elif draft_period == "Últimos 90 días":
+        draft_from, draft_to = today - timedelta(days=89), today
+    elif draft_period == "Año actual":
+        draft_from, draft_to = date(today.year, 1, 1), today
     else:
-        preset_from, preset_to = date(today.year, 1, 1), today
+        draft_from, draft_to = st.session_state["db_from_draft"], st.session_state["db_to_draft"]
 
-    # For preset periods we ignore manual values and keep a deterministic window.
-    if period_preset != "Personalizado":
-        st.session_state["db_from"] = preset_from
-        st.session_state["db_to"] = preset_to
+    if draft_period != "Personalizado":
+        st.session_state["db_from_draft"] = draft_from
+        st.session_state["db_to_draft"] = draft_to
 
-    date_from = st.session_state["db_from"]
-    date_to = st.session_state["db_to"]
+    # Applied period/date used for backend calls.
+    applied_period = st.session_state["db_period"]
+    if applied_period == "Últimos 30 días":
+        date_from, date_to = today - timedelta(days=29), today
+    elif applied_period == "Últimos 90 días":
+        date_from, date_to = today - timedelta(days=89), today
+    elif applied_period == "Año actual":
+        date_from, date_to = date(today.year, 1, 1), today
+    else:
+        date_from, date_to = st.session_state["db_from"], st.session_state["db_to"]
+
     invalid_range_swapped = False
     if date_from > date_to:
         date_from, date_to = date_to, date_from
         invalid_range_swapped = True
+
+    currency = st.session_state["db_currency"]
 
     # ── Data fetch ────────────────────────────────────────────────────────────
     try:
@@ -431,7 +461,6 @@ def dashboard_screen() -> None:
         )
 
     if not transactions:
-        st.info("No hay transacciones en el periodo que elegiste.")
         return
 
     # ── DataFrame prep ────────────────────────────────────────────────────────
@@ -486,41 +515,84 @@ def dashboard_screen() -> None:
 
     # ── Filters (UI position requested: after cards, before charts) ─────────
     st.markdown("### Filtros")
+    filter_panel = st.container(border=True)
+    with filter_panel:
+        f1, f2, f3, f4 = st.columns([1, 1, 1, 1])
+        with f1:
+            st.selectbox(
+                "Moneda",
+                ["COP", "USD"],
+                key="db_currency_draft",
+                help="Selecciona la moneda en la que quieres ver montos, tarjetas y gráficos.",
+            )
+        with f2:
+            st.selectbox(
+                "Período",
+                ["Año actual", "Últimos 90 días", "Últimos 30 días", "Personalizado"],
+                key="db_period_draft",
+                help="Define el rango de tiempo para analizar tus finanzas.",
+            )
+        with f3:
+            st.date_input(
+                "Desde",
+                key="db_from_draft",
+                disabled=st.session_state["db_period_draft"] != "Personalizado",
+                help="Fecha inicial del análisis. Solo se activa cuando eliges 'Personalizado'.",
+            )
+        with f4:
+            st.date_input(
+                "Hasta",
+                key="db_to_draft",
+                disabled=st.session_state["db_period_draft"] != "Personalizado",
+                help="Fecha final del análisis. Solo se activa cuando eliges 'Personalizado'.",
+            )
 
-    f1, f2, f3, f4 = st.columns([1, 1, 1, 1])
-    with f1:
-        st.selectbox(
-            "Moneda",
-            ["COP", "USD"],
-            key="db_currency",
-            help="Selecciona la moneda en la que quieres ver montos, tarjetas y gráficos.",
+        b1, b2, b3 = st.columns([1, 1, 4])
+        with b1:
+            apply_clicked = st.button("Aplicar", use_container_width=True, type="primary")
+        with b2:
+            reset_clicked = st.button("Restablecer", use_container_width=True, type="secondary")
+
+    # Compare draft vs applied to indicate pending changes.
+    pending_changes = (
+        st.session_state["db_currency_draft"] != st.session_state["db_currency"]
+        or st.session_state["db_period_draft"] != st.session_state["db_period"]
+        or (
+            st.session_state["db_period_draft"] == "Personalizado"
+            and (
+                st.session_state["db_from_draft"] != st.session_state["db_from"]
+                or st.session_state["db_to_draft"] != st.session_state["db_to"]
+            )
         )
-    with f2:
-        st.selectbox(
-            "Período",
-            ["Año actual", "Últimos 90 días", "Últimos 30 días", "Personalizado"],
-            key="db_period",
-            help="Define el rango de tiempo para analizar tus finanzas.",
-        )
-    with f3:
-        st.date_input(
-            "Desde",
-            key="db_from",
-            disabled=st.session_state["db_period"] != "Personalizado",
-            help="Fecha inicial del análisis. Solo se activa cuando eliges 'Personalizado'.",
-        )
-    with f4:
-        st.date_input(
-            "Hasta",
-            key="db_to",
-            disabled=st.session_state["db_period"] != "Personalizado",
-            help="Fecha final del análisis. Solo se activa cuando eliges 'Personalizado'.",
-        )
+    )
+
+    if apply_clicked:
+        st.session_state["db_currency"] = st.session_state["db_currency_draft"]
+        st.session_state["db_period"] = st.session_state["db_period_draft"]
+        st.session_state["db_from"] = st.session_state["db_from_draft"]
+        st.session_state["db_to"] = st.session_state["db_to_draft"]
+        st.session_state["db_last_applied"] = datetime.now().strftime("%H:%M:%S")
+        st.rerun()
+
+    if reset_clicked:
+        st.session_state["db_currency"] = "COP"
+        st.session_state["db_period"] = "Año actual"
+        st.session_state["db_from"] = default_from
+        st.session_state["db_to"] = default_to
+        st.session_state["db_reset_pending"] = True
+        st.session_state["db_last_applied"] = datetime.now().strftime("%H:%M:%S")
+        st.rerun()
+
+    if pending_changes:
+        st.info("Tienes cambios pendientes en filtros. Presiona 'Aplicar' para actualizar la vista.")
 
     if invalid_range_swapped:
         st.warning("Ajustamos el período automáticamente porque la fecha 'Desde' era mayor que 'Hasta'.")
     days_in_range = (date_to - date_from).days + 1
-    st.caption(f"Período activo: {days_in_range} días · {date_from.isoformat()} a {date_to.isoformat()}")
+    last_applied = st.session_state.get("db_last_applied", "ahora")
+    st.caption(
+        f"Período activo: {days_in_range} días · {date_from.isoformat()} a {date_to.isoformat()} · Última actualización: {last_applied}"
+    )
 
     st.markdown("### Análisis")
 
@@ -576,4 +648,5 @@ def dashboard_screen() -> None:
 
     with st.expander("¿Qué muestra este gráfico?"):
         st.write(chart_description[chart_type])
+
 
