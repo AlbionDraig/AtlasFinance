@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from fastapi import Response
 from jose import jwt
 from passlib.context import CryptContext
-from fastapi import Response
 
 from app.core.config import get_settings
 
