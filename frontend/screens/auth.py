@@ -7,7 +7,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from modules.api_client import api_request
-from modules.config import RERUN
+from modules.config import RERUN, persist_jwt_token
 from modules.ui import render_hero
 
 
@@ -43,7 +43,12 @@ def _handle_login_submit(email: str, password: str) -> None:
             auth=False,
         )
         response.raise_for_status()
-        st.session_state["jwt_token"] = response.json().get("access_token", "")
+        jwt_token = response.json().get("access_token", "")
+        st.session_state["jwt_token"] = jwt_token
+
+        # Persist the token to local storage
+        persist_jwt_token(jwt_token)
+
         if not st.session_state["jwt_token"]:
             st.error("La API no devolvio access_token.")
             return
@@ -336,6 +341,10 @@ def _render_auth_side_panel(active_view: str) -> None:
 
 def login_screen() -> None:
     """Render public authentication screen with login and registration tabs."""
+    auth_notice = st.session_state.pop("auth_notice", None)
+    if auth_notice:
+        st.warning(auth_notice)
+
     render_hero(
         "Atlas Finance",
         "Inicia sesión para ver tu panel financiero.",

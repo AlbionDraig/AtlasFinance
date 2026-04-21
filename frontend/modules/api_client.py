@@ -5,7 +5,7 @@ from datetime import datetime
 import requests
 import streamlit as st
 
-from modules.config import REQUEST_TIMEOUT
+from modules.config import REQUEST_TIMEOUT, RERUN, clear_auth_session
 
 
 def api_request(
@@ -29,6 +29,11 @@ def api_request(
         headers=headers,
         timeout=REQUEST_TIMEOUT,
     )
+
+    if auth and response.status_code == 401:
+        clear_auth_session("Tu sesión expiró. Inicia sesión de nuevo.")
+        RERUN()
+
     return response
 
 

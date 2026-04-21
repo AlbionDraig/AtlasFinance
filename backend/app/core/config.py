@@ -1,4 +1,5 @@
 from functools import lru_cache
+import os
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -10,7 +11,8 @@ class Settings(BaseSettings):
 
     secret_key: str = "change-this-in-production"
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 120
+    access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 120))
+    refresh_token_expire_minutes: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_MINUTES", 1440))  # 1 day
 
     exchange_rate_api_url: str = "https://api.exchangerate.host/"
     default_currency: str = "COP"

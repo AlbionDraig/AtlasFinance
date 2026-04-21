@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from modules.config import RERUN, init_session
+from modules.config import RERUN, init_session, persist_jwt_token, sync_auth_cookie
 from modules.ui import inject_theme, render_hero
 from screens.auth import login_screen
 from screens.dashboard import dashboard_screen
@@ -18,6 +18,7 @@ def app() -> None:
     )
     init_session()
     inject_theme()
+    sync_auth_cookie()
 
     if not st.session_state["jwt_token"]:
         login_screen()
@@ -27,6 +28,7 @@ def app() -> None:
     with top_right:
         if st.button("Cerrar sesión", type="primary", use_container_width=True):
             st.session_state["jwt_token"] = ""
+            persist_jwt_token("")
             RERUN()
 
     render_hero(

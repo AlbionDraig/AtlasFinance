@@ -4,9 +4,12 @@ import os
 from collections.abc import Callable
 
 import streamlit as st
+import streamlit.components.v1 as components
+
 from streamlit.errors import StreamlitSecretNotFoundError
 
 REQUEST_TIMEOUT = 15
+AUTH_COOKIE_NAME = "atlas_jwt_token"
 
 
 def _resolve_rerun() -> Callable[[], object]:
@@ -39,5 +42,45 @@ def resolve_api_base() -> str:
 
 def init_session() -> None:
     """Initialize Streamlit session state keys used across the app."""
-    st.session_state.setdefault("jwt_token", "")
+    # Restore JWT only from the current browser's cookie on first session init.
+    st.session_state.setdefault("jwt_token", st.context.cookies.get(AUTH_COOKIE_NAME, ""))
+    st.session_state.setdefault("auth_cookie_sync", None)
+    st.session_state.setdefault("auth_notice", None)
+
     st.session_state.setdefault("api_base_url", resolve_api_base())
+
+
+def persist_jwt_token(token: str) -> None:
+    """Queue a browser-cookie sync for the auth token."""
+    st.session_state["auth_cookie_sync"] = token
+
+
+def clear_auth_session(message: str | None = None) -> None:
+    """Clear auth state and optionally set a user-facing notice."""
+    st.session_state["jwt_token"] = ""
+    st.session_state["auth_cookie_sync"] = ""
+    if message is not None:
+        st.session_state["auth_notice"] = message
+
+
+def sync_auth_cookie() -> None:
+    """Apply pending auth cookie updates in the browser for refresh persistence."""
+    token = st.session_state.get("auth_cookie_sync")
+    if token is None:
+        return
+
+    if token:
+        script = f"""
+        <script>
+        window.parent.document.cookie = "{AUTH_COOKIE_NAME}=" + encodeURIComponent({token!r}) + "; path=/; max-age=86400; SameSite=Lax";
+        </script>
+        """
+    else:
+        script = f"""
+        <script>
+        window.parent.document.cookie = "{AUTH_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+        </script>
+        """
+
+    components.html(script, height=0)
+    st.session_state["auth_cookie_sync"] = None
