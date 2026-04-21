@@ -8,6 +8,7 @@ import streamlit as st
 
 from modules.api_client import api_request, parse_iso_datetime
 from modules.config import RERUN
+from modules.ui import render_info_card, render_section_header
 
 
 def _show_api_result(response: requests.Response, success_message: str, error_message: str) -> None:
@@ -106,7 +107,11 @@ def _render_category_form() -> None:
 
 def _render_base_entities_forms(banks: list[dict], accounts: list[dict]) -> None:
     """Render helper forms to create banks, accounts and categories."""
-    st.subheader("Configuracion inicial")
+    render_section_header(
+        "Setup",
+        "Configuracion inicial",
+        "Primero arma tu ecosistema base: bancos, cuentas y categorias para que el feed financiero tenga contexto.",
+    )
     col_bank, col_account, col_category = st.columns(3)
 
     with col_bank:
@@ -188,7 +193,11 @@ def _handle_create_transaction(
 
 def _render_create_transaction_form(account_options: dict[str, int], category_options: dict[str, int | None]) -> None:
     """Render transaction creation form and handle submission."""
-    st.subheader("Registrar movimiento")
+    render_section_header(
+        "Publicar",
+        "Registrar movimiento",
+        "Cada gasto o ingreso entra como una nueva publicacion privada dentro de tu historial financiero.",
+    )
     with st.form("create_transaction_form"):
         t_col_1, t_col_2, t_col_3 = st.columns(3)
         with t_col_1:
@@ -291,7 +300,11 @@ def _render_edit_transaction_section(
     category_options: dict[str, int | None],
 ) -> None:
     """Render edit/delete controls for existing transactions."""
-    st.subheader("Editar o eliminar movimientos")
+    render_section_header(
+        "Edicion",
+        "Editar o eliminar movimientos",
+        "Ajusta cualquier entrada del historial sin perder velocidad de trabajo ni visibilidad del conjunto.",
+    )
     if not transactions:
         st.info("Aun no tienes movimientos registrados.")
         return
@@ -368,6 +381,18 @@ def movements_screen() -> None:
         return
 
     banks, accounts, categories, transactions = movement_data
+
+    summary_col_1, summary_col_2 = st.columns([1.2, 1])
+    with summary_col_1:
+        render_info_card(
+            "Sala de movimientos",
+            "Este espacio concentra configuracion, registro y edicion para que el trabajo operativo se sienta continuo y no fragmentado.",
+        )
+    with summary_col_2:
+        render_info_card(
+            "Actividad actual",
+            f"Bancos: {len(banks)} | Cuentas: {len(accounts)} | Categorias: {len(categories)} | Movimientos: {len(transactions)}",
+        )
 
     _render_base_entities_forms(banks, accounts)
     account_options, category_options = _build_options(accounts, categories)
