@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import date, datetime, time
 
-import pandas as pd
 import requests
 import streamlit as st
 
@@ -10,15 +9,10 @@ from modules.api_client import api_request, parse_iso_datetime
 from modules.config import RERUN
 from modules.notifications import show_error, show_success
 from modules.ui import (
-    render_breadcrumbs,
     render_empty_state,
-    render_field_with_tooltip,
-    render_form_label,
     render_info_card,
     render_section_header,
-    show_form_error,
-    validate_number_field,
-    validate_text_field,
+    render_tx_feed,
 )
 
 
@@ -34,168 +28,6 @@ def _show_api_result(response: requests.Response, success_message: str, error_me
     except Exception:
         error_detail = error_message
     show_error(error_detail)
-
-
-def _render_bank_form() -> None:
-    """Render bank creation form and handle submission."""
-    with st.form("create_bank_form"):
-        render_field_with_tooltip(
-            "Nombre del banco",
-            "Nombre de tu institución financiera",
-            required=True,
-            hint="Ej: Bancolombia, BBVA, Scotiabank, Nequi"
-        )
-        bank_name = st.text_input(
-            "Nombre del banco",
-            key="bank_name",
-            placeholder="Ingresa el nombre del banco",
-            label_visibility="collapsed",
-        )
-        
-        render_field_with_tooltip(
-            "País (código)",
-            "Código de país en ISO 3166-1 alpha-2",
-            required=True,
-            hint="Código de 2 letras. Ej: CO (Colombia), US (USA), AR (Argentina)"
-        )
-        country_code = st.text_input(
-            "Pais (codigo)",
-            value="CO",
-            max_chars=3,
-            key="country_code",
-            label_visibility="collapsed",
-        )
-        
-        submit_bank = st.form_submit_button("✓ Guardar banco", use_container_width=True)
-
-    if not submit_bank:
-        return
-
-    is_valid, error_msg = validate_text_field(bank_name, min_length=2, field_name="Nombre del banco")
-    if not is_valid:
-        show_form_error("Validación", error_msg)
-        return
-
-    if len(country_code.strip()) < 2:
-        show_form_error("Validación", "Código de país debe tener 2 letras (ej: CO, US).")
-        return
-
-    response = api_request(
-        "POST",
-        "/banks/",
-        payload={"name": bank_name.strip(), "country_code": country_code.strip().upper() or "CO"},
-    )
-    _show_api_result(response, "✓ Banco creado exitosamente.", "No se pudo crear el banco.")
-
-
-def _render_account_form(banks: list[dict]) -> None:
-    """Render account creation form and handle submission."""
-    with st.form("create_account_form"):
-        st.markdown("**Crear cuenta**")
-        submit_disabled = not bool(banks)
-        if not banks:
-            st.info("Primero crea un banco.")
-            bank_options: dict[str, int] = {}
-            account_name = ""
-            account_type = "savings"
-            account_currency = "COP"
-            balance = 0.0
-            selected_bank = ""
-        else:
-            bank_options = {f"{b['name']} (ID {b['id']})": b["id"] for b in banks}
-            account_name = st.text_input("Nombre de la cuenta", key="account_name")
-            account_type = st.selectbox("Tipo", ["savings", "checking"], key="account_type")
-            account_currency = st.selectbox("Moneda", ["COP", "USD"], key="account_currency")
-            balance = st.number_input("Saldo inicial", min_value=0.0, step=10.0, key="account_balance")
-            selected_bank = st.selectbox("Banco", list(bank_options.keys()), key="selected_bank")
-        submit_account = st.form_submit_button(
-            "Guardar cuenta",
-            use_container_width=True,
-            disabled=submit_disabled,
-        )
-
-    if not submit_account:
-        return
-
-    if len(account_name.strip()) < 2:
-        st.error("El nombre de la cuenta debe tener al menos 2 caracteres.")
-        return
-
-    response = api_request(
-        "POST",
-        "/accounts/",
-        payload={
-            "name": account_name.strip(),
-            "account_type": account_type,
-            "currency": account_currency,
-            "current_balance": balance,
-            "bank_id": bank_options[selected_bank],
-        },
-    )
-    _show_api_result(response, "Cuenta creada.", "No se pudo crear la cuenta.")
-
-
-def _render_category_form() -> None:
-    """Render category creation form and handle submission."""
-    with st.form("create_category_form"):
-        render_form_label("Nombre de categoría", required=True, hint="Ej: Alimentación, Transporte, Entretenimiento")
-        category_name = st.text_input(
-            "Nombre de categoria",
-            key="category_name",
-            placeholder="Ingresa el nombre de la categoría",
-            label_visibility="collapsed",
-        )
-        submit_category = st.form_submit_button("✓ Guardar categoría", use_container_width=True)
-
-    if not submit_category:
-        return
-
-    is_valid, error_msg = validate_text_field(category_name, min_length=2, field_name="Nombre de categoría")
-    if not is_valid:
-        show_form_error("Validación", error_msg)
-        return
-
-    response = api_request("POST", "/categories/", payload={"name": category_name.strip()})
-    _show_api_result(response, "✓ Categoría creada exitosamente.", "No se pudo crear la categoría.")
-
-
-def _render_base_entities_forms(banks: list[dict], accounts: list[dict]) -> None:
-    """Render helper forms to create banks, accounts and categories."""
-    render_section_header(
-        "Setup",
-        "Configuracion inicial",
-        "Crea tu estructura base antes de registrar movimientos.",
-    )
-    
-    # Show setup guidance if empty
-    if not banks:
-        st.info("👉 **Paso 1:** Crea un banco para comenzar. Necesitas al menos un banco para crear cuentas.")
-    
-    if not accounts:
-        st.warning("⚠️ **Paso 2:** Necesitas crear una cuenta de banco para registrar movimientos.")
-    
-    setup_bank, setup_account, setup_category = st.tabs(["Banco", "Cuenta", "Categoria"])
-
-    with setup_bank:
-        if not banks:
-            st.info("📋 No tienes bancos registrados todavía. Crea uno para empezar.")
-        _render_bank_form()
-
-    with setup_account:
-        if not banks:
-            render_empty_state(
-                "No hay bancos disponibles",
-                "Necesitas crear un banco primero antes de poder crear cuentas.",
-                icon="🏦",
-            )
-        else:
-            _render_account_form(banks)
-
-    with setup_category:
-        _render_category_form()
-
-    if not accounts:
-        st.warning("⚠️ **Activar:** Registra tu primera transacción en la pestaña 'Registrar'.")
 
 
 def _load_movement_data() -> tuple[list[dict], list[dict], list[dict], list[dict]] | None:
@@ -220,10 +52,25 @@ def _load_movement_data() -> tuple[list[dict], list[dict], list[dict], list[dict
 
 
 def _build_options(accounts: list[dict], categories: list[dict]) -> tuple[dict[str, int], dict[str, int | None]]:
-    """Build selectbox label-to-id maps for accounts and categories."""
-    account_options = {f"{a['name']} ({a['currency']}) - ID {a['id']}": a["id"] for a in accounts}
-    category_options: dict[str, int | None] = {"(Sin categoria)": None}
-    category_options.update({f"{c['name']} - ID {c['id']}": c["id"] for c in categories})
+    """Build user-friendly selectbox labels (without exposing DB IDs)."""
+    account_options: dict[str, int] = {}
+    account_label_counts: dict[str, int] = {}
+    for account in accounts:
+        base_label = f"{account['name']} ({account['currency']})"
+        count = account_label_counts.get(base_label, 0) + 1
+        account_label_counts[base_label] = count
+        label = base_label if count == 1 else f"{base_label} ({count})"
+        account_options[label] = account["id"]
+
+    category_options: dict[str, int | None] = {"Sin categoría": None}
+    category_label_counts: dict[str, int] = {}
+    for category in categories:
+        base_label = str(category.get("name") or "Categoría")
+        count = category_label_counts.get(base_label, 0) + 1
+        category_label_counts[base_label] = count
+        label = base_label if count == 1 else f"{base_label} ({count})"
+        category_options[label] = category["id"]
+
     return account_options, category_options
 
 
@@ -303,30 +150,28 @@ def _render_create_transaction_form(account_options: dict[str, int], category_op
         )
 
 
-def _render_transactions_table(transactions: list[dict]) -> None:
-    """Render transactions overview table."""
-    tx_df = pd.DataFrame(transactions)
-    tx_df["occurred_at"] = pd.to_datetime(tx_df["occurred_at"])
-    display_cols = [
-        "id",
-        "occurred_at",
-        "description",
-        "amount",
-        "currency",
-        "transaction_type",
-    ]
-    st.dataframe(
-        tx_df[display_cols].sort_values("occurred_at", ascending=False),
-        width="stretch",
-        height=300,
-    )
-
-
 def _build_transaction_selector(transactions: list[dict]) -> tuple[dict[str, dict], str, dict]:
     """Build transaction selector structures used by the edit form."""
-    transaction_options = {
-        f"#{t['id']} - {t['description']} ({t['amount']} {t['currency']})": t for t in transactions
-    }
+    transaction_options: dict[str, dict] = {}
+    tx_label_counts: dict[str, int] = {}
+
+    for tx in transactions:
+        description = str(tx.get("description") or "Movimiento")
+        currency = str(tx.get("currency") or "")
+        occurred_at = str(tx.get("occurred_at") or "")
+        date_short = occurred_at[:10] if len(occurred_at) >= 10 else occurred_at
+        amount = tx.get("amount", 0)
+        try:
+            amount_text = f"{float(amount):,.2f}"
+        except (TypeError, ValueError):
+            amount_text = str(amount)
+
+        base_label = f"{description} · {amount_text} {currency} · {date_short}".strip()
+        count = tx_label_counts.get(base_label, 0) + 1
+        tx_label_counts[base_label] = count
+        label = base_label if count == 1 else f"{base_label} ({count})"
+        transaction_options[label] = tx
+
     selected_tx_label = st.selectbox("Selecciona un movimiento", list(transaction_options.keys()))
     return transaction_options, selected_tx_label, transaction_options[selected_tx_label]
 
@@ -388,8 +233,67 @@ def _render_edit_transaction_section(
         )
         return
 
-    _render_transactions_table(transactions)
-    _, _, selected_tx = _build_transaction_selector(transactions)
+    # Show filterable transaction feed
+    st.markdown("### 📋 Transacciones recientes")
+    
+    f_col_1, f_col_2 = st.columns([2, 1])
+    with f_col_1:
+        tx_type_filter = st.radio(
+            "Tipo",
+            ["Todo", "Ingresos", "Gastos"],
+            horizontal=True,
+            key="mov_edit_type_filter",
+        )
+    with f_col_2:
+        limit = st.selectbox("Mostrar", [8, 12, 20, 30], index=1, key="mov_edit_limit")
+
+    filtered_txs = transactions
+    if tx_type_filter == "Ingresos":
+        filtered_txs = [t for t in filtered_txs if t.get("transaction_type") == "income"]
+    elif tx_type_filter == "Gastos":
+        filtered_txs = [t for t in filtered_txs if t.get("transaction_type") == "expense"]
+
+    # Sort by date descending
+    filtered_txs = sorted(filtered_txs, key=lambda t: t.get("occurred_at", ""), reverse=True)
+
+    render_tx_feed(filtered_txs, limit=limit)
+
+    st.divider()
+    st.markdown("### ✏️ Editar o eliminar")
+
+    # Apply same filters to edit form for consistency
+    edit_filter_col1, edit_filter_col2 = st.columns([2, 1])
+    with edit_filter_col1:
+        edit_type_filter = st.radio(
+            "Filtrar por tipo",
+            ["Todo", "Ingresos", "Gastos"],
+            horizontal=True,
+            key="mov_edit_form_type_filter",
+        )
+    with edit_filter_col2:
+        search_query = st.text_input("Buscar descripción", key="mov_edit_search", placeholder="Ej: Café, Gasolina")
+
+    # Filter transactions for selector
+    filtered_for_selector = transactions
+    if edit_type_filter == "Ingresos":
+        filtered_for_selector = [t for t in filtered_for_selector if t.get("transaction_type") == "income"]
+    elif edit_type_filter == "Gastos":
+        filtered_for_selector = [t for t in filtered_for_selector if t.get("transaction_type") == "expense"]
+    
+    if search_query.strip():
+        filtered_for_selector = [
+            t for t in filtered_for_selector 
+            if search_query.lower() in (t.get("description") or "").lower()
+        ]
+
+    # Sort by date descending for selector too
+    filtered_for_selector = sorted(filtered_for_selector, key=lambda t: t.get("occurred_at", ""), reverse=True)
+
+    if not filtered_for_selector:
+        st.warning("No hay transacciones que coincidan con los filtros.")
+        return
+
+    _, _, selected_tx = _build_transaction_selector(filtered_for_selector)
 
     selected_dt = parse_iso_datetime(selected_tx["occurred_at"])
     category_label_lookup = {value: key for key, value in category_options.items()}
@@ -462,35 +366,21 @@ def movements_screen() -> None:
 
     banks, accounts, categories, transactions = movement_data
 
-    # Breadcrumbs navigation
-    render_breadcrumbs([
-        ("Dashboard", False),
-        ("Movimientos", True),
-    ])
-
-    summary_col_1, summary_col_2, summary_col_3 = st.columns([1.1, 1.1, 1])
+    summary_col_1, summary_col_2 = st.columns(2)
     with summary_col_1:
         render_info_card(
-            "Estado",
-            f"Bancos: {len(banks)} | Cuentas: {len(accounts)}",
+            "Movimientos",
+            f"{len(transactions)} registrados",
+            sub=f"en {len(accounts)} cuenta(s)",
         )
     with summary_col_2:
         render_info_card(
-            "Catalogo",
-            f"Categorias: {len(categories)} | Movimientos: {len(transactions)}",
-        )
-    with summary_col_3:
-        render_info_card(
-            "Siguiente paso",
-            "1) Setup  2) Registrar  3) Gestionar",
+            "Categorías",
+            str(len(categories)),
+            sub="disponibles",
         )
 
-    st.info("Flujo recomendado: crea banco y cuenta, luego registra movimientos y finalmente edita si lo necesitas.")
-
-    tab_setup, tab_new, tab_manage = st.tabs(["Setup", "Registrar", "Gestionar"])
-
-    with tab_setup:
-        _render_base_entities_forms(banks, accounts)
+    tab_new, tab_manage = st.tabs(["Registrar", "Gestionar"])
 
     account_options, category_options = _build_options(accounts, categories)
 

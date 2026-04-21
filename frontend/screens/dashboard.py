@@ -11,8 +11,6 @@ from modules.api_client import api_request
 from modules.ui import (
     render_info_card,
     render_kpi_card,
-    render_section_header,
-    render_tx_feed,
 )
 
 # ── Plotly base layout ────────────────────────────────────────────────────────
@@ -27,17 +25,26 @@ _TITLE_COLOR = "#111827"  # gray-900
 _GRID_COLOR = "rgba(107,114,128,0.12)"
 
 
-def _format_category_label(raw: object) -> str:
-    """Return readable category labels even when backend sends numeric IDs."""
+def _format_category_label(raw: object, category_lookup: dict[int, str] | None = None) -> str:
+    """Return readable category labels, resolving numeric IDs via lookup when available."""
+    if raw is None:
+        return "Sin categoría"
+
     text = str(raw).strip()
+    if not text or text.lower() in {"none", "nan"}:
+        return "Sin categoría"
+
+    # When backend returns numeric category IDs, map them to names from /categories.
     try:
         num = float(text)
         if num.is_integer():
-            return f"Categoria {int(num)}"
+            category_id = int(num)
+            if category_lookup and category_id in category_lookup:
+                return category_lookup[category_id]
+            return "Sin categoría"
     except ValueError:
         pass
-    if text.isdigit():
-        return f"Categoria {text}"
+
     return text
 
 
@@ -190,7 +197,7 @@ def _chart_cashflow(monthly: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def _chart_categories(exp_df: pd.DataFrame) -> go.Figure:
+def _chart_categories(exp_df: pd.DataFrame, category_lookup: dict[int, str] | None = None) -> go.Figure:
     """Horizontal bar: top spending categories."""
     if exp_df.empty:
         return go.Figure(layout=_base_layout())
@@ -202,7 +209,7 @@ def _chart_categories(exp_df: pd.DataFrame) -> go.Figure:
         .sort_values("amount", ascending=True)
         .tail(10)
     )
-    cat["label"] = cat[cat_col].map(_format_category_label)
+    cat["label"] = cat[cat_col].map(lambda value: _format_category_label(value, category_lookup))
 
     palette = [
         "#6366f1", "#8b5cf6", "#a78bfa", "#818cf8",
@@ -248,7 +255,7 @@ def _chart_categories(exp_df: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def _chart_donut(exp_df: pd.DataFrame) -> go.Figure:
+def _chart_donut(exp_df: pd.DataFrame, category_lookup: dict[int, str] | None = None) -> go.Figure:
     """Donut chart: spending share by category."""
     if exp_df.empty:
         return go.Figure(layout=_base_layout())
@@ -260,7 +267,7 @@ def _chart_donut(exp_df: pd.DataFrame) -> go.Figure:
         .sort_values("amount", ascending=False)
         .head(8)
     )
-    cat["label"] = cat[cat_col].map(_format_category_label)
+    cat["label"] = cat[cat_col].map(lambda value: _format_category_label(value, category_lookup))
     total_spend = float(cat["amount"].sum())
 
     fig = go.Figure(
@@ -312,59 +319,44 @@ def _chart_donut(exp_df: pd.DataFrame) -> go.Figure:
 
 def dashboard_screen() -> None:
     """Render private financial dashboard with KPI cards and Plotly charts."""
-    render_section_header(
-        "Dashboard",
-        "Panorama financiero",
-        "Resumen claro de salud financiera y actividad reciente.",
-    )
+    st.markdown("## Panorama financiero")
+    st.caption("Vista general de tus finanzas en el período elegido.")
 
-    # ── Filters ──────────────────────────────────────────────────────────────
-    f1, f2, f3, f4 = st.columns([1, 1, 1, 1])
-    with f1:
-        currency = st.selectbox("Moneda", ["COP", "USD"], index=0)
-    with f2:
-        period_preset = st.selectbox(
-            "Periodo",
-            ["Ano actual", "Ultimos 90 dias", "Ultimos 30 dias", "Personalizado"],
-            index=0,
-            key="db_period",
-        )
+    # ── Filter state (rendered later, before charts) ───────────────────────
+    if "db_currency" not in st.session_state:
+        st.session_state["db_currency"] = "COP"
+    if "db_period" not in st.session_state:
+        st.session_state["db_period"] = "Año actual"
 
     today = date.today()
-    if period_preset == "Ultimos 30 dias":
+    if "db_from" not in st.session_state:
+        st.session_state["db_from"] = date(today.year, 1, 1)
+    if "db_to" not in st.session_state:
+        st.session_state["db_to"] = today
+
+    currency = st.session_state["db_currency"]
+    period_preset = st.session_state["db_period"]
+
+    if period_preset == "Últimos 30 días":
         preset_from, preset_to = today - timedelta(days=29), today
-    elif period_preset == "Ultimos 90 dias":
+    elif period_preset == "Últimos 90 días":
         preset_from, preset_to = today - timedelta(days=89), today
-    elif period_preset == "Ano actual":
+    elif period_preset == "Año actual":
         preset_from, preset_to = date(today.year, 1, 1), today
     else:
         preset_from, preset_to = date(today.year, 1, 1), today
 
-    with f3:
-        date_from = st.date_input(
-            "Desde",
-            value=preset_from,
-            key="db_from",
-            disabled=period_preset != "Personalizado",
-        )
-    with f4:
-        date_to = st.date_input(
-            "Hasta",
-            value=preset_to,
-            key="db_to",
-            disabled=period_preset != "Personalizado",
-        )
-
     # For preset periods we ignore manual values and keep a deterministic window.
     if period_preset != "Personalizado":
-        date_from, date_to = preset_from, preset_to
+        st.session_state["db_from"] = preset_from
+        st.session_state["db_to"] = preset_to
 
+    date_from = st.session_state["db_from"]
+    date_to = st.session_state["db_to"]
+    invalid_range_swapped = False
     if date_from > date_to:
-        st.error("La fecha 'Desde' no puede ser mayor que 'Hasta'.")
-        return
-
-    days_in_range = (date_to - date_from).days + 1
-    st.caption(f"Rango activo: {days_in_range} dias · {date_from.isoformat()} a {date_to.isoformat()}")
+        date_from, date_to = date_to, date_from
+        invalid_range_swapped = True
 
     # ── Data fetch ────────────────────────────────────────────────────────────
     try:
@@ -383,6 +375,20 @@ def dashboard_screen() -> None:
         st.error(f"Error consultando la API: {exc}")
         return
 
+    category_lookup: dict[int, str] = {}
+    try:
+        categories_resp = api_request("GET", "/categories/")
+        categories_resp.raise_for_status()
+        categories = categories_resp.json()
+        category_lookup = {
+            int(cat["id"]): str(cat.get("name") or "Sin categoría")
+            for cat in categories
+            if "id" in cat
+        }
+    except requests.RequestException:
+        # Dashboard remains usable even if category catalog fails temporarily.
+        category_lookup = {}
+
     metrics = metrics_resp.json()
     transactions = tx_resp.json()
 
@@ -400,16 +406,18 @@ def dashboard_screen() -> None:
             "Ingresos",
             f"{metrics.get('total_income', 0):,.2f}",
             currency,
-            badge="↑ periodo",
+            badge="↑ entrada",
             badge_type="up",
+            badge_tooltip="Dinero que entra en el periodo que elegiste.",
         )
     with k3:
         render_kpi_card(
             "Gastos",
             f"{metrics.get('total_expenses', 0):,.2f}",
             currency,
-            badge="↓ periodo",
+            badge="↓ salida",
             badge_type="down",
+            badge_tooltip="Dinero que sale en el periodo que elegiste.",
         )
     with k4:
         rate_type = "up" if savings >= 20 else ("flat" if savings >= 5 else "down")
@@ -419,10 +427,11 @@ def dashboard_screen() -> None:
             "del ingreso",
             badge="buena" if savings >= 20 else ("ok" if savings >= 5 else "baja"),
             badge_type=rate_type,
+            badge_tooltip="Calidad de ahorro en el periodo que elegiste.",
         )
 
     if not transactions:
-        st.info("No hay transacciones para el rango seleccionado.")
+        st.info("No hay transacciones en el periodo que elegiste.")
         return
 
     # ── DataFrame prep ────────────────────────────────────────────────────────
@@ -448,7 +457,7 @@ def dashboard_screen() -> None:
     if not exp_df.empty:
         cat_col = "category_name" if "category_name" in exp_df.columns else "category_id"
         cat_rank = exp_df.groupby(cat_col, as_index=False)["amount"].sum().sort_values("amount", ascending=False)
-        top_label = _format_category_label(cat_rank.iloc[0][cat_col])
+        top_label = _format_category_label(cat_rank.iloc[0][cat_col], category_lookup)
         top_value = float(cat_rank.iloc[0]["amount"])
         top_cat_text = f"{top_label} · {top_value:,.0f} {currency}"
 
@@ -457,91 +466,114 @@ def dashboard_screen() -> None:
         render_info_card(
             "Balance neto",
             f"{period_balance:,.0f} {currency}",
-            sub="Ingresos menos gastos del rango actual.",
+            sub="Ingresos menos gastos del período elegido.",
             tone="balance",
         )
     with i2:
         render_info_card(
             "Gasto promedio",
             f"{avg_expense:,.0f} {currency}",
-            sub="Ticket promedio por transaccion de egreso.",
+            sub="Promedio de gasto por transacción.",
             tone="expense",
         )
     with i3:
         render_info_card(
             "Mayor impacto",
             top_cat_text,
-            sub="Categoria con mayor peso en el periodo.",
+            sub="Categoría con mayor peso en el período.",
             tone="impact",
         )
 
-    tab_analysis, tab_activity = st.tabs(["Analisis", "Actividad reciente"])
+    # ── Filters (UI position requested: after cards, before charts) ─────────
+    st.markdown("### Filtros")
 
-    with tab_analysis:
-        render_section_header(
-            "Flujo mensual",
-            "Ingresos y gastos por mes",
-            "Comparación mensual de entradas, salidas y flujo neto.",
+    f1, f2, f3, f4 = st.columns([1, 1, 1, 1])
+    with f1:
+        st.selectbox(
+            "Moneda",
+            ["COP", "USD"],
+            key="db_currency",
+            help="Selecciona la moneda en la que quieres ver montos, tarjetas y gráficos.",
         )
-        c_left, c_right = st.columns([3, 2])
-        with c_left:
+    with f2:
+        st.selectbox(
+            "Período",
+            ["Año actual", "Últimos 90 días", "Últimos 30 días", "Personalizado"],
+            key="db_period",
+            help="Define el rango de tiempo para analizar tus finanzas.",
+        )
+    with f3:
+        st.date_input(
+            "Desde",
+            key="db_from",
+            disabled=st.session_state["db_period"] != "Personalizado",
+            help="Fecha inicial del análisis. Solo se activa cuando eliges 'Personalizado'.",
+        )
+    with f4:
+        st.date_input(
+            "Hasta",
+            key="db_to",
+            disabled=st.session_state["db_period"] != "Personalizado",
+            help="Fecha final del análisis. Solo se activa cuando eliges 'Personalizado'.",
+        )
+
+    if invalid_range_swapped:
+        st.warning("Ajustamos el período automáticamente porque la fecha 'Desde' era mayor que 'Hasta'.")
+    days_in_range = (date_to - date_from).days + 1
+    st.caption(f"Período activo: {days_in_range} días · {date_from.isoformat()} a {date_to.isoformat()}")
+
+    st.markdown("### Análisis")
+
+    chart_type = st.selectbox(
+        "Gráfico a mostrar",
+        [
+            "Ingresos vs gastos (barras)",
+            "Flujo neto mensual (área)",
+            "Top categorías (barras)",
+            "Distribución de gasto (donut)",
+        ],
+        key="db_chart_type",
+        help="Elige cómo quieres visualizar la información financiera en esta sección.",
+    )
+
+    chart_description = {
+        "Ingresos vs gastos (barras)": "Compara, mes a mes, cuánto dinero entró y cuánto salió. Te ayuda a ver rápidamente en qué meses gastaste más de lo que ingresaste.",
+        "Flujo neto mensual (área)": "Muestra el resultado final de cada mes (ingresos menos gastos). Si está por encima de cero, cerraste el mes en positivo; si está por debajo, gastaste más de lo que ingresó.",
+        "Top categorías (barras)": "Ordena las categorías donde más dinero gastaste. Sirve para identificar en qué temas se concentra la mayor parte de tus egresos.",
+        "Distribución de gasto (donut)": "Muestra qué porcentaje del gasto total representa cada categoría. Es útil para entender el peso relativo de cada tipo de gasto.",
+    }
+
+    if chart_type == "Ingresos vs gastos (barras)":
+        st.plotly_chart(
+            _chart_income_expense(monthly),
+            width="stretch",
+            config={"displayModeBar": False},
+        )
+    elif chart_type == "Flujo neto mensual (área)":
+        st.plotly_chart(
+            _chart_cashflow(monthly),
+            width="stretch",
+            config={"displayModeBar": False},
+        )
+    elif chart_type == "Top categorías (barras)":
+        if not exp_df.empty:
             st.plotly_chart(
-                _chart_income_expense(monthly),
+                _chart_categories(exp_df, category_lookup),
                 width="stretch",
                 config={"displayModeBar": False},
             )
-        with c_right:
+        else:
+            st.info("Sin gastos registrados en el período.")
+    elif chart_type == "Distribución de gasto (donut)":
+        if not exp_df.empty:
             st.plotly_chart(
-                _chart_cashflow(monthly),
+                _chart_donut(exp_df, category_lookup),
                 width="stretch",
                 config={"displayModeBar": False},
             )
+        else:
+            st.info("Sin gastos registrados en el período.")
 
-        render_section_header(
-            "Categorias",
-            "Distribucion del gasto",
-            "Top de categorias con mayor impacto en tus egresos.",
-        )
-        d_left, d_right = st.columns([3, 2])
-        with d_left:
-            if not exp_df.empty:
-                st.plotly_chart(
-                    _chart_categories(exp_df),
-                    width="stretch",
-                    config={"displayModeBar": False},
-                )
-            else:
-                st.info("Sin gastos registrados en el período.")
-        with d_right:
-            if not exp_df.empty:
-                st.plotly_chart(
-                    _chart_donut(exp_df),
-                    width="stretch",
-                    config={"displayModeBar": False},
-                )
-
-    with tab_activity:
-        render_section_header(
-            "Actividad",
-            "Ultimas transacciones",
-            "Feed reciente de movimientos para validacion rapida.",
-        )
-        recent = sorted(transactions, key=lambda t: t.get("occurred_at", ""), reverse=True)
-        a1, a2 = st.columns([2, 1])
-        with a1:
-            tx_type_filter = st.radio(
-                "Tipo",
-                ["Todo", "Ingresos", "Gastos"],
-                horizontal=True,
-                key="db_activity_type",
-            )
-        with a2:
-            limit = st.selectbox("Mostrar", [8, 12, 20, 30], index=1, key="db_activity_limit")
-
-        if tx_type_filter == "Ingresos":
-            recent = [t for t in recent if t.get("transaction_type") == "income"]
-        elif tx_type_filter == "Gastos":
-            recent = [t for t in recent if t.get("transaction_type") == "expense"]
-
-        render_tx_feed(recent, limit=limit)
+    with st.expander("¿Qué muestra este gráfico?"):
+        st.write(chart_description[chart_type])
 

@@ -329,6 +329,45 @@ def inject_theme() -> None:
             font-size: 0.8125rem !important;
         }
 
+        /* Make help icons clearly recognizable as information controls. */
+        [data-testid="stWidgetLabel"] button {
+            width: 19px !important;
+            height: 19px !important;
+            min-width: 19px !important;
+            border-radius: 999px !important;
+            border: 1px solid rgba(99, 102, 241, 0.72) !important;
+            background: var(--c-accent) !important;
+            color: #ffffff !important;
+            padding: 0 !important;
+            margin-left: 0.28rem !important;
+            position: relative !important;
+            transition: opacity 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease !important;
+        }
+
+        [data-testid="stWidgetLabel"] button:hover {
+            opacity: 0.9 !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 3px 10px rgba(99, 102, 241, 0.35) !important;
+        }
+
+        [data-testid="stWidgetLabel"] button svg {
+            display: none !important;
+        }
+
+        [data-testid="stWidgetLabel"] button::before {
+            content: "i" !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            height: 100% !important;
+            font-size: 0.68rem !important;
+            line-height: 1 !important;
+            font-weight: 800 !important;
+            color: #ffffff !important;
+            font-family: var(--font) !important;
+        }
+
         /* Hide Streamlit inline input helper hint (Press Enter to submit form). */
         [data-testid="InputInstructions"] {
             display: none !important;
@@ -564,6 +603,54 @@ def inject_theme() -> None:
             font-weight: 700 !important;
             padding: 2px 7px !important;
             border-radius: 999px !important;
+        }
+
+        .af-kpi .kpi-badge-wrap {
+            position: relative !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            cursor: help !important;
+        }
+
+        .af-kpi .kpi-badge-tip {
+            position: absolute !important;
+            left: 50% !important;
+            bottom: calc(100% + 8px) !important;
+            transform: translateX(-50%) translateY(4px) !important;
+            background: #111827 !important;
+            color: #f9fafb !important;
+            border-radius: 8px !important;
+            padding: 0.45rem 0.55rem !important;
+            min-width: 190px !important;
+            max-width: 240px !important;
+            font-size: 0.72rem !important;
+            line-height: 1.3 !important;
+            text-align: left !important;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.28) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            pointer-events: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            transition: opacity 0.18s ease, transform 0.18s ease !important;
+            z-index: 20 !important;
+            white-space: normal !important;
+        }
+
+        .af-kpi .kpi-badge-tip::after {
+            content: "" !important;
+            position: absolute !important;
+            left: 50% !important;
+            top: 100% !important;
+            transform: translateX(-50%) !important;
+            border-width: 6px 6px 0 6px !important;
+            border-style: solid !important;
+            border-color: #111827 transparent transparent transparent !important;
+        }
+
+        .af-kpi .kpi-badge-wrap:hover .kpi-badge-tip {
+            opacity: 1 !important;
+            visibility: visible !important;
+            transform: translateX(-50%) translateY(0) !important;
         }
 
         .kpi-badge.up   { background: rgba(16,185,129,0.12) !important; color: #10b981 !important; }
@@ -1206,13 +1293,29 @@ def render_info_card(title: str, value: str, *, sub: str = "", tone: str = "bala
     )
 
 
-def render_kpi_card(label: str, value: str, sub: str, *, badge: str = "", badge_type: str = "flat") -> None:
+def render_kpi_card(
+    label: str,
+    value: str,
+    sub: str,
+    *,
+    badge: str = "",
+    badge_type: str = "flat",
+    badge_tooltip: str = "",
+) -> None:
     """Render a metric card with optional delta badge."""
-    badge_html = (
-        f'<span class="kpi-badge {html.escape(badge_type)}">{html.escape(badge)}</span>'
-        if badge
-        else ""
-    )
+    badge_html = ""
+    if badge:
+        tooltip_html = (
+            f'<span class="kpi-badge-tip" role="tooltip">{html.escape(badge_tooltip)}</span>'
+            if badge_tooltip
+            else ""
+        )
+        badge_html = (
+            f'<span class="kpi-badge-wrap">'
+            f'<span class="kpi-badge {html.escape(badge_type)}">{html.escape(badge)}</span>'
+            f'{tooltip_html}'
+            f'</span>'
+        )
     st.markdown(
         f"""
         <div class="af-kpi">

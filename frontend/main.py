@@ -8,6 +8,7 @@ from modules.ui import inject_theme, render_hero
 from screens.auth import login_screen
 from screens.dashboard import dashboard_screen
 from screens.movements import movements_screen
+from screens.setup import setup_screen
 
 
 def app() -> None:
@@ -39,13 +40,16 @@ def app() -> None:
         kicker="Atlas Finance",
     )
 
-    tab_dashboard, tab_movements = st.tabs(["Dashboard", "Movimientos"])
+    tab_dashboard, tab_movements, tab_setup = st.tabs(["Dashboard", "Movimientos", "Configuración"])
 
     with tab_dashboard:
         dashboard_screen()
 
     with tab_movements:
         movements_screen()
+
+    with tab_setup:
+        setup_screen()
 
 
 app()
