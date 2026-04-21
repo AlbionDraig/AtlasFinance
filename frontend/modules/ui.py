@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import html
 
@@ -6,424 +6,560 @@ import streamlit as st
 
 
 def inject_theme() -> None:
-    """Apply the global social-inspired visual theme to the app."""
+    """Inject a minimalist design system with clean dark/light mode support."""
     st.markdown(
         """
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
 
+        /* â”€â”€ Design tokens: light â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         :root {
-            --bg-main: #f8f1ea;
-            --bg-top: #fff8f3;
-            --bg-bottom: #f6eee8;
-            --bg-panel: rgba(255, 255, 255, 0.82);
-            --bg-strong: #ffffff;
-            --text-main: #1f1714;
-            --text-soft: #6d5c55;
-            --line-soft: rgba(123, 82, 65, 0.14);
-            --accent-main: #ff5a36;
-            --accent-secondary: #ff8a3d;
-            --accent-tertiary: #e52e3d;
-            --accent-dark: #351611;
-            --success-soft: #e8fff1;
-            --warning-soft: #fff4df;
-            --shadow-soft: 0 24px 60px rgba(56, 23, 16, 0.12);
-            --input-bg: rgba(255, 255, 255, 0.85);
-            --input-line: rgba(108, 74, 59, 0.16);
-            --tab-bg: rgba(255, 255, 255, 0.55);
-            --sidebar-top: #231412;
-            --sidebar-bottom: #351611;
-            --sidebar-text: #fff7f4;
-            --header-bg: rgba(255, 248, 243, 0.86);
-            --widget-dark: #272836;
-            --widget-dark-text: #fff7f4;
+            --c-bg:       #f4f5f7;
+            --c-surface:  #ffffff;
+            --c-surfaceL: rgba(255,255,255,0.6);
+            --c-border:   rgba(0,0,0,0.07);
+            --c-text:     #0f1115;
+            --c-muted:    #6b7280;
+            --c-accent:   #6366f1;
+            --c-accent2:  #8b5cf6;
+            --c-up:       #10b981;
+            --c-down:     #f43f5e;
+            --shadow-sm:  0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+            --shadow-md:  0 2px 8px rgba(0,0,0,0.07), 0 12px 32px rgba(0,0,0,0.05);
+            --r:          12px;
+            --r-sm:       8px;
+            --font:       'Inter', system-ui, sans-serif;
+            --font-mono:  'JetBrains Mono', monospace;
         }
 
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-main: #0f1118;
-                --bg-top: #151925;
-                --bg-bottom: #0d0f15;
-                --bg-panel: rgba(22, 27, 39, 0.82);
-                --bg-strong: #171b28;
-                --text-main: #f5f1ee;
-                --text-soft: #b6adab;
-                --line-soft: rgba(255, 255, 255, 0.09);
-                --shadow-soft: 0 24px 60px rgba(0, 0, 0, 0.34);
-                --input-bg: rgba(18, 22, 33, 0.96);
-                --input-line: rgba(255, 255, 255, 0.09);
-                --tab-bg: rgba(18, 22, 33, 0.78);
-                --sidebar-top: #0c0e16;
-                --sidebar-bottom: #18121d;
-                --sidebar-text: #f7f0ec;
-                --header-bg: rgba(11, 14, 22, 0.86);
-                --widget-dark: #171b28;
-                --widget-dark-text: #f6f0eb;
-            }
-        }
-
+        /* â”€â”€ Base â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         html, body, [class*="css"] {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            color: var(--text-main);
-        }
-
-        html, body,
-        [data-testid="stAppViewContainer"],
-        [data-testid="stHeader"] {
-            color-scheme: light dark;
+            font-family: var(--font) !important;
+            color-scheme: light !important;
         }
 
         .stApp {
-            background:
-                radial-gradient(circle at top left, rgba(255, 112, 67, 0.18), transparent 25%),
-                radial-gradient(circle at 85% 10%, rgba(229, 46, 61, 0.14), transparent 20%),
-                linear-gradient(180deg, var(--bg-top) 0%, var(--bg-main) 52%, var(--bg-bottom) 100%);
-            color: var(--text-main);
+            background: var(--c-bg) !important;
+            color: var(--c-text) !important;
         }
 
         .block-container {
-            padding-top: 1.4rem;
-            padding-bottom: 2rem;
-            max-width: 1260px;
+            padding-top: 1.5rem !important;
+            padding-bottom: 3rem !important;
+            max-width: 1320px !important;
         }
 
+        /* â”€â”€ Global text colour â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .stApp h1, .stApp h2, .stApp h3,
+        .stApp h4, .stApp h5, .stApp h6,
+        .stApp p, .stApp label,
+        .stApp li, .stApp td, .stApp th {
+            color: var(--c-text) !important;
+        }
+
+        /* Hide the entire Streamlit header strip. */
         [data-testid="stHeader"] {
-            background: var(--header-bg);
-            backdrop-filter: blur(12px);
+            display: none !important;
+            height: 0 !important;
         }
 
-        [data-testid="stToolbar"] button,
-        [data-testid="stToolbar"] svg,
-        [data-testid="stToolbar"] * {
-            color: var(--text-main) !important;
-            fill: var(--text-main) !important;
+        /* Hide Streamlit default header actions (Deploy/theme/menu). */
+        [data-testid="stToolbar"],
+        [data-testid="stHeaderActionElements"],
+        [data-testid="stAppToolbar"],
+        [data-testid="stStatusWidget"],
+        button[kind="headerNoPadding"],
+        #MainMenu,
+        [data-testid="stDecoration"] {
+            display: none !important;
+            visibility: hidden !important;
         }
 
-        .stApp h1,
-        .stApp h2,
-        .stApp h3,
-        .stApp h4,
-        .stApp h5,
-        .stApp h6,
-        .stApp p,
-        .stApp label,
-        .stApp span,
-        .stApp div {
-            color: var(--text-main);
-        }
-
-        .stApp small,
-        .stApp .caption,
-        .stApp [data-testid="stCaptionContainer"],
-        .stApp [data-testid="stMarkdownContainer"] p,
-        .section-copy,
-        .content-card p,
-        .metric-card .metric-caption,
-        .metric-card .metric-label {
-            color: var(--text-soft) !important;
-        }
-
-        [data-testid="stWidgetLabel"],
-        [data-testid="stWidgetLabel"] *,
-        .stSelectbox label,
-        .stTextInput label,
-        .stNumberInput label,
-        .stDateInput label,
-        .stTimeInput label {
-            color: var(--text-main) !important;
-            font-weight: 700;
-        }
-
+        /* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, var(--sidebar-top) 0%, var(--sidebar-bottom) 100%);
-            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            background: linear-gradient(180deg, #ffffff 0%, #fcfcff 100%) !important;
+            border-right: 1px solid var(--c-border) !important;
+            padding-top: 0.2rem !important;
         }
 
-        [data-testid="stSidebar"] * {
-            color: var(--sidebar-text) !important;
-        }
-
-        [data-testid="stSidebar"] .stButton > button {
-            background: linear-gradient(135deg, #ff5a36 0%, #ff8a3d 100%);
-            color: white;
-            border: none;
-        }
-
+        /* â”€â”€ Tabs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         .stTabs [data-baseweb="tab-list"] {
-            gap: 0.75rem;
-            background: var(--tab-bg);
-            border: 1px solid var(--line-soft);
-            padding: 0.4rem;
-            border-radius: 999px;
-            backdrop-filter: blur(18px);
+            background: var(--c-surface) !important;
+            border: none !important;
+            border-radius: 999px !important;
+            padding: 5px !important;
+            gap: 6px !important;
+            box-shadow: inset 0 0 0 1px var(--c-border) !important;
+            width: fit-content !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            display: inline-flex !important;
+            margin-bottom: 0.35rem !important;
+        }
+
+        .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {
+            height: 0 !important;
         }
 
         .stTabs [data-baseweb="tab"] {
-            height: 3rem;
-            padding: 0 1.25rem;
-            border-radius: 999px;
-            color: var(--text-soft);
-            font-weight: 700;
+            border-radius: 999px !important;
+            padding: 0 1.35rem !important;
+            height: 40px !important;
+            font-weight: 600 !important;
+            font-size: 0.875rem !important;
+            color: var(--c-muted) !important;
+            background: transparent !important;
+            border: none !important;
+            transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease !important;
         }
 
-        .stTabs [aria-selected="true"] {
-            background: linear-gradient(135deg, var(--accent-main) 0%, var(--accent-secondary) 100%);
-            color: white;
+        .stTabs [data-baseweb="tab"]:hover {
+            background: rgba(99, 102, 241, 0.08) !important;
+            color: var(--c-text) !important;
         }
 
+        .stTabs [data-baseweb="tab"][aria-selected="true"] {
+            background: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent2) 100%) !important;
+            color: #fff !important;
+            box-shadow: 0 6px 14px rgba(99, 102, 241, 0.28) !important;
+        }
+
+        .stTabs [data-baseweb="tab"][aria-selected="true"] p,
+        .stTabs [data-baseweb="tab"][aria-selected="true"] span,
+        .stTabs [data-baseweb="tab"][aria-selected="true"] div {
+            color: #fff !important;
+        }
+
+        /* Remove default Streamlit tab underline/highlight bar. */
+        .stTabs [data-baseweb="tab-highlight"],
+        .stTabs [role="tablist"] + div {
+            display: none !important;
+        }
+
+        /* â”€â”€ Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         .stButton > button,
         .stFormSubmitButton > button {
-            border-radius: 16px;
-            border: none;
-            background: linear-gradient(135deg, var(--accent-main) 0%, var(--accent-secondary) 100%);
-            color: white;
-            font-weight: 800;
-            padding: 0.82rem 1rem;
-            box-shadow: 0 12px 28px rgba(229, 46, 61, 0.22);
+            border-radius: var(--r-sm) !important;
+            border: none !important;
+            background: var(--c-accent) !important;
+            color: #fff !important;
+            font-weight: 600 !important;
+            font-size: 0.875rem !important;
+            padding: 0.55rem 1.1rem !important;
+            line-height: 1.2 !important;
+            text-align: center !important;
+            transition: opacity 0.15s, transform 0.1s !important;
+            box-shadow: 0 4px 14px rgba(99,102,241,0.28) !important;
+        }
+
+        .stButton > button p,
+        .stFormSubmitButton > button p,
+        .stButton > button span,
+        .stFormSubmitButton > button span,
+        .stButton > button div,
+        .stFormSubmitButton > button div {
+            color: #ffffff !important;
+            margin: 0 !important;
+            line-height: 1.2 !important;
+            font-weight: 600 !important;
         }
 
         .stButton > button:hover,
         .stFormSubmitButton > button:hover {
-            filter: brightness(1.04);
-            transform: translateY(-1px);
+            opacity: 0.86 !important;
+            transform: translateY(-1px) !important;
         }
 
+        /* â”€â”€ Inputs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         .stTextInput input,
         .stNumberInput input,
         .stDateInput input,
         .stTimeInput input,
-        .stSelectbox [data-baseweb="select"],
-        .stMultiSelect [data-baseweb="select"],
         textarea {
-            border-radius: 16px !important;
-            border: 1px solid var(--input-line) !important;
-            background: var(--input-bg) !important;
-            color: var(--text-main) !important;
-            box-shadow: none !important;
+            background: var(--c-surface) !important;
+            border: 1px solid var(--c-border) !important;
+            border-radius: var(--r-sm) !important;
+            color: var(--c-text) !important;
+            font-family: var(--font) !important;
+            transition: border-color 0.15s, box-shadow 0.15s !important;
         }
 
-        .stTextInput input::placeholder,
-        .stNumberInput input::placeholder,
-        textarea::placeholder {
-            color: var(--text-soft) !important;
+        .stTextInput input:focus,
+        .stNumberInput input:focus,
+        textarea:focus {
+            border-color: var(--c-accent) !important;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.18) !important;
+            outline: none !important;
         }
 
-        .stTextInput [data-baseweb="base-input"],
-        .stNumberInput [data-baseweb="base-input"],
-        .stDateInput [data-baseweb="base-input"],
-        .stTimeInput [data-baseweb="base-input"],
         .stSelectbox [data-baseweb="select"] > div,
         .stMultiSelect [data-baseweb="select"] > div {
-            background: var(--input-bg) !important;
-            color: var(--text-main) !important;
-        }
-
-        .stSelectbox svg,
-        .stMultiSelect svg,
-        .stDateInput svg,
-        .stTimeInput svg {
-            fill: var(--text-soft) !important;
+            background: var(--c-surface) !important;
+            border: 1px solid var(--c-border) !important;
+            border-radius: var(--r-sm) !important;
+            color: var(--c-text) !important;
         }
 
         [role="listbox"] {
-            background: var(--bg-strong) !important;
-            border: 1px solid var(--line-soft) !important;
+            background: var(--c-surface) !important;
+            border: 1px solid var(--c-border) !important;
         }
 
-        [role="option"] {
-            color: var(--text-main) !important;
-        }
+        [role="option"] { color: var(--c-text) !important; }
 
+        [role="option"]:hover,
         [role="option"][aria-selected="true"] {
-            background: rgba(255, 90, 54, 0.14) !important;
+            background: rgba(99,102,241,0.10) !important;
         }
 
+        .stSelectbox svg,
+        .stDateInput svg,
+        .stTimeInput svg { fill: var(--c-muted) !important; }
+
+        [data-testid="stWidgetLabel"],
+        [data-testid="stWidgetLabel"] * {
+            color: var(--c-text) !important;
+            font-weight: 600 !important;
+            font-size: 0.8125rem !important;
+        }
+
+        /* Hide Streamlit inline input helper hint (Press Enter to submit form). */
+        [data-testid="InputInstructions"] {
+            display: none !important;
+        }
+
+        /* â”€â”€ Alerts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         .stAlert {
-            border-radius: 18px;
-            border: 1px solid var(--line-soft);
-            box-shadow: var(--shadow-soft);
+            border-radius: var(--r) !important;
+            border-width: 1px !important;
         }
 
-        .stSuccess,
-        .stWarning,
-        .stInfo,
-        .stError {
-            color: var(--text-main) !important;
-        }
-
-        [data-testid="stDataFrame"],
-        [data-testid="stMetric"] {
-            background: var(--bg-panel);
-            border: 1px solid var(--line-soft);
-            border-radius: 22px;
-            box-shadow: var(--shadow-soft);
+        /* â”€â”€ DataFrames â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        [data-testid="stDataFrame"] {
+            border-radius: var(--r) !important;
+            border: 1px solid var(--c-border) !important;
+            overflow: hidden !important;
+            box-shadow: var(--shadow-sm) !important;
         }
 
         [data-testid="stDataFrame"] * {
-            color: var(--text-main) !important;
+            color: var(--c-text) !important;
+            font-family: var(--font-mono) !important;
+            font-size: 0.8rem !important;
         }
 
-        .social-hero {
-            position: relative;
-            overflow: hidden;
-            padding: 2rem;
-            border-radius: 30px;
-            background:
-                radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 25%),
-                linear-gradient(135deg, #e52e3d 0%, #ff5a36 48%, #ff8a3d 100%);
-            color: white;
-            box-shadow: 0 28px 70px rgba(229, 46, 61, 0.24);
-            margin-bottom: 1.25rem;
+        /* â”€â”€ Custom components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+        /* Hero strip */
+        .af-hero {
+            border-radius: var(--r) !important;
+            padding: 1.75rem 2rem !important;
+            background: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent2) 100%) !important;
+            color: #fff !important;
+            margin-bottom: 1.5rem !important;
         }
 
-        .social-hero::after {
-            content: "";
-            position: absolute;
-            inset: auto -40px -50px auto;
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
+        .af-hero .kicker {
+            font-size: 0.68rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.12em !important;
+            text-transform: uppercase !important;
+            opacity: 0.7 !important;
+            margin-bottom: 0.4rem !important;
         }
 
-        .social-kicker {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-            padding: 0.45rem 0.8rem;
-            background: rgba(255, 255, 255, 0.16);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            border-radius: 999px;
-            font-size: 0.78rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 1rem;
+        .af-hero h1 {
+            font-size: clamp(1.5rem, 2.8vw, 2.4rem) !important;
+            font-weight: 700 !important;
+            line-height: 1.1 !important;
+            margin: 0 0 0.4rem !important;
+            color: #fff !important;
         }
 
-        .social-hero h1,
-        .social-hero h2 {
-            margin: 0;
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 700;
-            line-height: 1;
+        .af-hero p {
+            font-size: 0.875rem !important;
+            opacity: 0.85 !important;
+            margin: 0 !important;
+            color: #fff !important;
         }
 
-        .social-hero h1 {
-            font-size: clamp(2.2rem, 4vw, 4rem);
-            margin-bottom: 0.8rem;
+        /* Section heading */
+        .af-section { margin: 2rem 0 0.75rem !important; }
+
+        .af-section .eyebrow {
+            font-size: 0.68rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.12em !important;
+            text-transform: uppercase !important;
+            color: var(--c-accent) !important;
+            margin-bottom: 0.2rem !important;
         }
 
-        .social-hero p {
-            font-size: 1rem;
-            max-width: 680px;
-            color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 1rem;
+        .af-section h2 {
+            font-size: 1.2rem !important;
+            font-weight: 700 !important;
+            margin: 0 0 0.1rem !important;
+            color: var(--c-text) !important;
         }
 
-        .hero-pill-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.6rem;
+        .af-section p {
+            font-size: 0.83rem !important;
+            color: var(--c-muted) !important;
+            margin: 0 !important;
         }
 
-        .hero-pill {
-            padding: 0.55rem 0.9rem;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.14);
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            font-size: 0.86rem;
-            font-weight: 600;
+        /* Surface card */
+        .af-card {
+            background: var(--c-surface) !important;
+            border: 1px solid var(--c-border) !important;
+            border-radius: var(--r) !important;
+            padding: 1rem 1.2rem !important;
+            margin-bottom: 0.75rem !important;
+            box-shadow: var(--shadow-sm) !important;
         }
 
-        .content-card {
-            padding: 1.15rem 1.15rem 1rem;
-            border-radius: 24px;
-            background: var(--bg-panel);
-            border: 1px solid var(--line-soft);
-            box-shadow: var(--shadow-soft);
-            backdrop-filter: blur(18px);
-            margin-bottom: 1rem;
+        .af-card h3 {
+            font-size: 0.875rem !important;
+            font-weight: 700 !important;
+            margin: 0 0 0.25rem !important;
+            color: var(--c-text) !important;
         }
 
-        .content-card h3 {
-            margin: 0 0 0.35rem;
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.18rem;
+        .af-card p {
+            font-size: 0.82rem !important;
+            color: var(--c-muted) !important;
+            margin: 0 !important;
         }
 
-        .content-card p {
-            margin: 0;
-            color: var(--text-soft);
-            font-size: 0.94rem;
+        /* Compact insight card for short KPI context blocks */
+        .af-info-card {
+            min-height: 132px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-start !important;
+            margin-top: 0.35rem !important;
+            border-left-width: 4px !important;
+            border-left-style: solid !important;
+            border-left-color: rgba(99,102,241,0.35) !important;
+            gap: 0.35rem !important;
         }
 
-        .metric-card {
-            padding: 1.1rem;
-            border-radius: 22px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 248, 244, 0.78) 100%);
-            border: 1px solid rgba(123, 82, 65, 0.14);
-            box-shadow: var(--shadow-soft);
-            min-height: 148px;
+        .af-info-card .info-label {
+            font-size: 0.72rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.08em !important;
+            text-transform: uppercase !important;
+            color: var(--c-muted) !important;
+            margin-bottom: 0.5rem !important;
         }
 
-        .metric-card .metric-label {
-            color: var(--text-soft);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            font-size: 0.74rem;
-            font-weight: 800;
-            margin-bottom: 0.7rem;
+        .af-info-card .info-value {
+            font-family: var(--font-mono) !important;
+            font-size: 1.08rem !important;
+            font-weight: 500 !important;
+            color: var(--c-text) !important;
+            line-height: 1.3 !important;
+            word-break: break-word !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
         }
 
-        .metric-card .metric-value {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: clamp(1.5rem, 2vw, 2.3rem);
-            line-height: 1.05;
-            margin-bottom: 0.45rem;
+        .af-info-card .info-sub {
+            font-size: 0.78rem !important;
+            color: var(--c-muted) !important;
+            line-height: 1.25 !important;
+            margin-top: auto !important;
         }
 
-        .metric-card .metric-caption {
-            color: var(--text-soft);
-            font-size: 0.9rem;
+        .af-info-card.tone-balance {
+            border-left-color: rgba(99,102,241,0.5) !important;
         }
 
-        .section-eyebrow {
-            color: var(--accent-tertiary);
-            font-weight: 800;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            margin-bottom: 0.35rem;
+        .af-info-card.tone-expense {
+            border-left-color: rgba(245,158,11,0.55) !important;
         }
 
-        .section-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.5rem;
-            margin-bottom: 0.2rem;
-            color: var(--text-main) !important;
+        .af-info-card.tone-impact {
+            border-left-color: rgba(236,72,153,0.48) !important;
         }
 
-        .section-copy {
-            color: var(--text-soft);
-            margin-bottom: 1rem;
+        /* KPI metric card */
+        .af-kpi {
+            background: var(--c-surface) !important;
+            border: 1px solid var(--c-border) !important;
+            border-radius: var(--r) !important;
+            padding: 1.25rem 1.4rem !important;
+            box-shadow: var(--shadow-sm) !important;
+            margin-bottom: 0.55rem !important;
+            min-height: 148px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
         }
 
-        @media (max-width: 768px) {
-            .social-hero {
-                padding: 1.35rem;
-                border-radius: 24px;
-            }
-
-            .stTabs [data-baseweb="tab-list"] {
-                gap: 0.4rem;
-            }
-
-            .stTabs [data-baseweb="tab"] {
-                min-width: 0;
-                padding: 0 0.8rem;
-            }
+        .af-kpi .kpi-label {
+            font-size: 0.68rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.1em !important;
+            text-transform: uppercase !important;
+            color: var(--c-muted) !important;
+            margin-bottom: 0.6rem !important;
         }
+
+        .af-kpi .kpi-value {
+            font-family: var(--font-mono) !important;
+            font-size: clamp(1.35rem, 2vw, 1.9rem) !important;
+            font-weight: 500 !important;
+            line-height: 1 !important;
+            color: var(--c-text) !important;
+            margin-bottom: 0.4rem !important;
+        }
+
+        .af-kpi .kpi-sub {
+            font-size: 0.75rem !important;
+            color: var(--c-muted) !important;
+        }
+
+        .af-kpi .kpi-badge {
+            display: inline-block !important;
+            font-size: 0.7rem !important;
+            font-weight: 700 !important;
+            padding: 2px 7px !important;
+            border-radius: 999px !important;
+        }
+
+        .kpi-badge.up   { background: rgba(16,185,129,0.12) !important; color: #10b981 !important; }
+        .kpi-badge.down { background: rgba(244,63,94,0.12)  !important; color: #f43f5e !important; }
+        .kpi-badge.flat { background: rgba(107,114,128,0.12) !important; color: var(--c-muted) !important; }
+
+        /* Transaction feed */
+        .af-tx-row {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.75rem !important;
+            padding: 0.65rem 0 !important;
+            border-bottom: 1px solid var(--c-border) !important;
+        }
+
+        .af-tx-row:last-child { border-bottom: none !important; }
+
+        .af-tx-icon {
+            width: 34px !important;
+            height: 34px !important;
+            border-radius: 9px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 0.9rem !important;
+            flex-shrink: 0 !important;
+        }
+
+        .af-tx-icon.expense { background: rgba(244,63,94,0.12) !important; }
+        .af-tx-icon.income  { background: rgba(16,185,129,0.12) !important; }
+
+        .af-tx-meta { flex: 1 !important; min-width: 0 !important; }
+
+        .af-tx-meta .desc {
+            font-size: 0.875rem !important;
+            font-weight: 600 !important;
+            color: var(--c-text) !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+
+        .af-tx-meta .sub {
+            font-size: 0.75rem !important;
+            color: var(--c-muted) !important;
+        }
+
+        .af-tx-amount {
+            font-family: var(--font-mono) !important;
+            font-size: 0.875rem !important;
+            font-weight: 500 !important;
+            flex-shrink: 0 !important;
+        }
+
+        .af-tx-amount.expense { color: #f43f5e !important; }
+        .af-tx-amount.income  { color: #10b981 !important; }
+
+        /* Custom HTML table */
+        .af-table-wrap {
+            background: var(--c-surface) !important;
+            border: 1px solid var(--c-border) !important;
+            border-radius: var(--r) !important;
+            overflow: hidden !important;
+            box-shadow: var(--shadow-sm) !important;
+        }
+
+        .af-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-family: var(--font) !important;
+            font-size: 0.8125rem !important;
+        }
+
+        .af-table thead tr {
+            border-bottom: 1px solid var(--c-border) !important;
+        }
+
+        .af-table thead th {
+            padding: 0.65rem 0.85rem !important;
+            text-align: left !important;
+            font-size: 0.68rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.08em !important;
+            text-transform: uppercase !important;
+            color: var(--c-muted) !important;
+            white-space: nowrap !important;
+        }
+
+        .af-table tbody tr {
+            border-bottom: 1px solid var(--c-border) !important;
+            transition: background 0.1s !important;
+        }
+
+        .af-table tbody tr:last-child { border-bottom: none !important; }
+
+        .af-table tbody tr:hover {
+            background: rgba(99,102,241,0.05) !important;
+        }
+
+        .af-table td {
+            padding: 0.6rem 0.85rem !important;
+            color: var(--c-text) !important;
+            vertical-align: middle !important;
+        }
+
+        .af-table td.mono {
+            font-family: var(--font-mono) !important;
+            font-size: 0.8rem !important;
+        }
+
+        .af-table .badge-expense {
+            display: inline-block !important;
+            padding: 2px 8px !important;
+            border-radius: 999px !important;
+            font-size: 0.7rem !important;
+            font-weight: 700 !important;
+            background: rgba(244,63,94,0.12) !important;
+            color: #f43f5e !important;
+        }
+
+        .af-table .badge-income {
+            display: inline-block !important;
+            padding: 2px 8px !important;
+            border-radius: 999px !important;
+            font-size: 0.7rem !important;
+            font-weight: 700 !important;
+            background: rgba(16,185,129,0.12) !important;
+            color: #10b981 !important;
+        }
+
+        .af-table .amount-expense { color: #f43f5e !important; font-family: var(--font-mono) !important; }
+        .af-table .amount-income  { color: #10b981 !important; font-family: var(--font-mono) !important; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -431,60 +567,123 @@ def inject_theme() -> None:
 
 
 def render_hero(title: str, copy: str, *, kicker: str, pills: list[str] | None = None) -> None:
-    """Render a bold hero banner inspired by modern creator platforms."""
-    pill_markup = ""
-    if pills:
-        pill_markup = '<div class="hero-pill-row">' + "".join(
-            f'<span class="hero-pill">{html.escape(pill)}</span>' for pill in pills
-        ) + "</div>"
-
+    """Render a compact gradient hero strip."""
     st.markdown(
         f"""
-        <section class="social-hero">
-            <div class="social-kicker">{html.escape(kicker)}</div>
+        <div class="af-hero">
+            <div class="kicker">{html.escape(kicker)}</div>
             <h1>{html.escape(title)}</h1>
             <p>{html.escape(copy)}</p>
-            {pill_markup}
-        </section>
+        </div>
         """,
         unsafe_allow_html=True,
     )
 
 
 def render_section_header(eyebrow: str, title: str, copy: str) -> None:
-    """Render a section heading block."""
+    """Render a minimal section heading block."""
     st.markdown(
         f"""
-        <div class="section-eyebrow">{html.escape(eyebrow)}</div>
-        <div class="section-title">{html.escape(title)}</div>
-        <div class="section-copy">{html.escape(copy)}</div>
+        <div class="af-section">
+            <div class="eyebrow">{html.escape(eyebrow)}</div>
+            <h2>{html.escape(title)}</h2>
+            <p>{html.escape(copy)}</p>
+        </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-def render_info_card(title: str, copy: str) -> None:
-    """Render a glassy card for explanatory content."""
+def render_info_card(title: str, value: str, *, sub: str = "", tone: str = "balance") -> None:
+    """Render an insight card with value-first hierarchy and semantic accent."""
+    tone_safe = html.escape(tone if tone in {"balance", "expense", "impact"} else "balance")
+    sub_html = f'<div class="info-sub">{html.escape(sub)}</div>' if sub else ""
     st.markdown(
         f"""
-        <section class="content-card">
-            <h3>{html.escape(title)}</h3>
-            <p>{html.escape(copy)}</p>
-        </section>
+        <div class="af-card af-info-card tone-{tone_safe}">
+            <div class="info-label">{html.escape(title)}</div>
+            <div class="info-value">{html.escape(value)}</div>
+            {sub_html}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_kpi_card(label: str, value: str, sub: str, *, badge: str = "", badge_type: str = "flat") -> None:
+    """Render a metric card with optional delta badge."""
+    badge_html = (
+        f'<span class="kpi-badge {html.escape(badge_type)}">{html.escape(badge)}</span>'
+        if badge
+        else ""
+    )
+    st.markdown(
+        f"""
+        <div class="af-kpi">
+            <div class="kpi-label">{html.escape(label)}</div>
+            <div class="kpi-value">{html.escape(value)}</div>
+            <div class="kpi-sub">{html.escape(sub)}&nbsp;{badge_html}</div>
+        </div>
         """,
         unsafe_allow_html=True,
     )
 
 
 def render_metric_card(label: str, value: str, caption: str) -> None:
-    """Render a branded metric card."""
+    """Backwards-compatible alias for render_kpi_card."""
+    render_kpi_card(label, value, caption)
+
+
+def render_tx_feed(transactions: list[dict], *, limit: int = 10) -> None:
+    """Render a styled activity feed of recent transactions inside a card."""
+    rows_html = ""
+    for tx in transactions[:limit]:
+        tx_type = tx.get("transaction_type", "expense")
+        icon = "&#8595;" if tx_type == "expense" else "&#8593;"
+        sign = "&minus;" if tx_type == "expense" else "+"
+        desc = html.escape(str(tx.get("description") or "Sin descripcion"))
+        amount = tx.get("amount", 0)
+        currency = html.escape(str(tx.get("currency", "")))
+        date_raw = str(tx.get("occurred_at", ""))
+        date_short = date_raw[:10] if len(date_raw) >= 10 else date_raw
+        t = html.escape(tx_type)
+        # Single-line HTML per row — avoids Streamlit markdown parser treating newlines as breaks
+        rows_html += (f'<div class="af-tx-row">'
+                      f'<div class="af-tx-icon {t}">{icon}</div>'
+                      f'<div class="af-tx-meta"><div class="desc">{desc}</div><div class="sub">{date_short}</div></div>'
+                      f'<div class="af-tx-amount {t}">{sign}{amount:,.2f} {currency}</div>'
+                      f'</div>')
     st.markdown(
-        f"""
-        <section class="metric-card">
-            <div class="metric-label">{html.escape(label)}</div>
-            <div class="metric-value">{html.escape(value)}</div>
-            <div class="metric-caption">{html.escape(caption)}</div>
-        </section>
-        """,
+        f'<div class="af-card" style="padding:0.3rem 1.2rem;">{rows_html}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_html_table(rows: list[dict], columns: list[str], *, col_labels: dict[str, str] | None = None, max_rows: int = 200) -> None:
+    """Render a styled HTML table matching the design system."""
+    labels = col_labels or {}
+    header = "".join(f'<th>{html.escape(labels.get(c, c))}</th>' for c in columns)
+    body = ""
+    for row in rows[:max_rows]:
+        cells = ""
+        for col in columns:
+            val = row.get(col, "")
+            if col == "transaction_type":
+                badge_cls = "badge-expense" if val == "expense" else "badge-income"
+                label = "Gasto" if val == "expense" else "Ingreso"
+                cells += f'<td><span class="{badge_cls}">{label}</span></td>'
+            elif col == "amount":
+                tx_type = row.get("transaction_type", "expense")
+                amt_cls = "amount-expense" if tx_type == "expense" else "amount-income"
+                sign = "&minus;" if tx_type == "expense" else "+"
+                cells += f'<td class="{amt_cls}">{sign}{float(val):,.2f}</td>'
+            elif col == "occurred_at":
+                short = str(val)[:16] if len(str(val)) >= 16 else str(val)
+                cells += f'<td class="mono">{html.escape(short)}</td>'
+            else:
+                cells += f'<td>{html.escape(str(val))}</td>'
+        body += f'<tr>{cells}</tr>'
+    st.markdown(
+        f'<div class="af-table-wrap"><table class="af-table"><thead><tr>{header}</tr></thead><tbody>{body}</tbody></table></div>',
         unsafe_allow_html=True,
     )

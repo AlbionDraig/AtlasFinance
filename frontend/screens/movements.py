@@ -48,9 +48,9 @@ def _render_account_form(banks: list[dict]) -> None:
     """Render account creation form and handle submission."""
     with st.form("create_account_form"):
         st.markdown("**Crear cuenta**")
+        submit_disabled = not bool(banks)
         if not banks:
             st.info("Primero crea un banco.")
-            submit_account = False
             bank_options: dict[str, int] = {}
             account_name = ""
             account_type = "savings"
@@ -64,7 +64,11 @@ def _render_account_form(banks: list[dict]) -> None:
             account_currency = st.selectbox("Moneda", ["COP", "USD"], key="account_currency")
             balance = st.number_input("Saldo inicial", min_value=0.0, step=10.0, key="account_balance")
             selected_bank = st.selectbox("Banco", list(bank_options.keys()), key="selected_bank")
-            submit_account = st.form_submit_button("Guardar cuenta", use_container_width=True)
+        submit_account = st.form_submit_button(
+            "Guardar cuenta",
+            use_container_width=True,
+            disabled=submit_disabled,
+        )
 
     if not submit_account:
         return
@@ -110,17 +114,17 @@ def _render_base_entities_forms(banks: list[dict], accounts: list[dict]) -> None
     render_section_header(
         "Setup",
         "Configuracion inicial",
-        "Primero arma tu ecosistema base: bancos, cuentas y categorias para que el feed financiero tenga contexto.",
+        "Crea tu estructura base antes de registrar movimientos.",
     )
-    col_bank, col_account, col_category = st.columns(3)
+    setup_bank, setup_account, setup_category = st.tabs(["Banco", "Cuenta", "Categoria"])
 
-    with col_bank:
+    with setup_bank:
         _render_bank_form()
 
-    with col_account:
+    with setup_account:
         _render_account_form(banks)
 
-    with col_category:
+    with setup_category:
         _render_category_form()
 
     if not accounts:
@@ -196,25 +200,24 @@ def _render_create_transaction_form(account_options: dict[str, int], category_op
     render_section_header(
         "Publicar",
         "Registrar movimiento",
-        "Cada gasto o ingreso entra como una nueva publicacion privada dentro de tu historial financiero.",
+        "Registra gastos e ingresos con el minimo de campos necesarios.",
     )
     with st.form("create_transaction_form"):
-        t_col_1, t_col_2, t_col_3 = st.columns(3)
+        t_col_1, t_col_2 = st.columns(2)
         with t_col_1:
             description = st.text_input("Descripcion")
             amount = st.number_input("Monto", min_value=0.01, step=10.0)
             currency = st.selectbox("Moneda", ["COP", "USD"])
-        with t_col_2:
-            transaction_type = st.selectbox("Tipo", ["expense", "income"])
-            occurred_date = st.date_input("Fecha", value=date.today())
-            occurred_time = st.time_input("Hora", value=time(12, 0))
-        with t_col_3:
             selected_account_label = st.selectbox(
                 "Cuenta",
                 list(account_options.keys()) if account_options else ["No hay cuentas"],
                 disabled=not bool(account_options),
             )
+        with t_col_2:
+            transaction_type = st.selectbox("Tipo", ["expense", "income"])
             selected_category_label = st.selectbox("Categoria", list(category_options.keys()))
+            occurred_date = st.date_input("Fecha", value=date.today())
+            occurred_time = st.time_input("Hora", value=time(12, 0))
 
         submit_transaction = st.form_submit_button("Guardar movimiento", use_container_width=True)
 
@@ -237,9 +240,18 @@ def _render_transactions_table(transactions: list[dict]) -> None:
     """Render transactions overview table."""
     tx_df = pd.DataFrame(transactions)
     tx_df["occurred_at"] = pd.to_datetime(tx_df["occurred_at"])
+    display_cols = [
+        "id",
+        "occurred_at",
+        "description",
+        "amount",
+        "currency",
+        "transaction_type",
+    ]
     st.dataframe(
-        tx_df[["id", "description", "amount", "currency", "transaction_type", "occurred_at", "account_id", "category_id"]],
+        tx_df[display_cols].sort_values("occurred_at", ascending=False),
         width="stretch",
+        height=300,
     )
 
 
@@ -300,11 +312,7 @@ def _render_edit_transaction_section(
     category_options: dict[str, int | None],
 ) -> None:
     """Render edit/delete controls for existing transactions."""
-    render_section_header(
-        "Edicion",
-        "Editar o eliminar movimientos",
-        "Ajusta cualquier entrada del historial sin perder velocidad de trabajo ni visibilidad del conjunto.",
-    )
+    render_section_header("Edicion", "Editar o eliminar movimientos", "Selecciona un registro y actualiza sus datos.")
     if not transactions:
         st.info("Aun no tienes movimientos registrados.")
         return
@@ -353,6 +361,7 @@ def _render_edit_transaction_section(
 
         save_changes = st.form_submit_button("Guardar cambios", use_container_width=True)
 
+    st.caption("Tip: usa editar para ajustes menores y eliminar solo para movimientos incorrectos.")
     delete_transaction_clicked = st.button("Eliminar movimiento seleccionado", type="secondary", use_container_width=True)
 
     if save_changes:
@@ -382,19 +391,34 @@ def movements_screen() -> None:
 
     banks, accounts, categories, transactions = movement_data
 
-    summary_col_1, summary_col_2 = st.columns([1.2, 1])
+    summary_col_1, summary_col_2, summary_col_3 = st.columns([1.1, 1.1, 1])
     with summary_col_1:
         render_info_card(
-            "Sala de movimientos",
-            "Este espacio concentra configuracion, registro y edicion para que el trabajo operativo se sienta continuo y no fragmentado.",
+            "Estado",
+            f"Bancos: {len(banks)} | Cuentas: {len(accounts)}",
         )
     with summary_col_2:
         render_info_card(
-            "Actividad actual",
-            f"Bancos: {len(banks)} | Cuentas: {len(accounts)} | Categorias: {len(categories)} | Movimientos: {len(transactions)}",
+            "Catalogo",
+            f"Categorias: {len(categories)} | Movimientos: {len(transactions)}",
+        )
+    with summary_col_3:
+        render_info_card(
+            "Siguiente paso",
+            "1) Setup  2) Registrar  3) Gestionar",
         )
 
-    _render_base_entities_forms(banks, accounts)
+    st.info("Flujo recomendado: crea banco y cuenta, luego registra movimientos y finalmente edita si lo necesitas.")
+
+    tab_setup, tab_new, tab_manage = st.tabs(["Setup", "Registrar", "Gestionar"])
+
+    with tab_setup:
+        _render_base_entities_forms(banks, accounts)
+
     account_options, category_options = _build_options(accounts, categories)
-    _render_create_transaction_form(account_options, category_options)
-    _render_edit_transaction_section(transactions, account_options, category_options)
+
+    with tab_new:
+        _render_create_transaction_form(account_options, category_options)
+
+    with tab_manage:
+        _render_edit_transaction_section(transactions, account_options, category_options)

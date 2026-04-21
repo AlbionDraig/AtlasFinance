@@ -5,7 +5,7 @@ import streamlit as st
 
 from modules.api_client import api_request
 from modules.config import RERUN
-from modules.ui import render_hero, render_info_card, render_section_header
+from modules.ui import render_hero
 
 
 def _extract_error_detail(response: requests.Response | None, default_detail: str) -> str:
@@ -101,26 +101,12 @@ def _render_register_tab() -> None:
 def login_screen() -> None:
     """Render public authentication screen with login and registration tabs."""
     render_hero(
-        "Finanzas personales con presencia de plataforma social.",
-        "Entra, publica tus movimientos y lee tu progreso como si fuera un feed privado de decisiones inteligentes.",
-        kicker="Acceso privado",
-        pills=["Login rapido", "Registro simple", "Metricas visuales"],
+        "Atlas Finance",
+        "Inicia sesión para ver tu panel financiero.",
+        kicker="Bienvenido",
     )
 
-    intro_col, side_col = st.columns([1.3, 0.9])
-    with intro_col:
-        render_section_header(
-            "Bienvenida",
-            "Abre tu espacio financiero",
-            "Todo el flujo esta pensado para registrar gastos e ingresos sin parecer una hoja de calculo disfrazada.",
-        )
-    with side_col:
-        render_info_card(
-            "Lo que obtienes",
-            "Acceso a un tablero de patrimonio, movimientos editables y una experiencia mas expresiva para seguimiento diario.",
-        )
-
-    tab_login, tab_register = st.tabs(["Login", "Registro"])
+    tab_login, tab_register = st.tabs(["Iniciar sesión", "Registro"])
 
     with tab_login:
         _render_login_tab()
