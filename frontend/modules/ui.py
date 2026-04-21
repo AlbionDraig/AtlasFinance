@@ -132,6 +132,7 @@ def inject_theme() -> None:
 
         /* Remove default Streamlit tab underline/highlight bar. */
         .stTabs [data-baseweb="tab-highlight"],
+        .stTabs [data-baseweb="tab-border"],
         .stTabs [role="tablist"] + div {
             display: none !important;
         }
@@ -259,6 +260,15 @@ def inject_theme() -> None:
             margin-bottom: 1.5rem !important;
         }
 
+        .af-hero.compact {
+            padding: 1.05rem 1.35rem !important;
+            margin-bottom: 0.95rem !important;
+        }
+
+        .af-hero.compact.narrow {
+            max-width: 920px !important;
+        }
+
         .af-hero .kicker {
             font-size: 0.68rem !important;
             font-weight: 700 !important;
@@ -266,6 +276,11 @@ def inject_theme() -> None:
             text-transform: uppercase !important;
             opacity: 0.7 !important;
             margin-bottom: 0.4rem !important;
+        }
+
+        .af-hero.compact .kicker {
+            margin-bottom: 0.2rem !important;
+            font-size: 0.64rem !important;
         }
 
         .af-hero h1 {
@@ -276,11 +291,20 @@ def inject_theme() -> None:
             color: #fff !important;
         }
 
+        .af-hero.compact h1 {
+            font-size: clamp(1.3rem, 2.2vw, 1.9rem) !important;
+            margin-bottom: 0.22rem !important;
+        }
+
         .af-hero p {
             font-size: 0.875rem !important;
             opacity: 0.85 !important;
             margin: 0 !important;
             color: #fff !important;
+        }
+
+        .af-hero.compact p {
+            font-size: 0.8rem !important;
         }
 
         /* Section heading */
@@ -560,17 +584,193 @@ def inject_theme() -> None:
 
         .af-table .amount-expense { color: #f43f5e !important; font-family: var(--font-mono) !important; }
         .af-table .amount-income  { color: #10b981 !important; font-family: var(--font-mono) !important; }
+
+        /* Auth side panel */
+        .af-auth-side {
+            background: var(--c-surface) !important;
+            border: 1px solid var(--c-border) !important;
+            border-radius: var(--r) !important;
+            box-shadow: var(--shadow-sm) !important;
+            padding: 1rem 1.05rem !important;
+            margin-top: 0.2rem !important;
+        }
+
+        .af-auth-intro {
+            margin: 0 0 0.95rem !important;
+            padding: 0.72rem 0.82rem !important;
+            background: rgba(99,102,241,0.05) !important;
+            border: 1px solid rgba(99,102,241,0.17) !important;
+            border-left: 4px solid rgba(99,102,241,0.35) !important;
+            border-radius: 12px !important;
+        }
+
+        .af-auth-intro-tag {
+            display: inline-block !important;
+            margin: 0 0 0.32rem !important;
+            padding: 0.13rem 0.5rem !important;
+            border-radius: 999px !important;
+            background: rgba(99,102,241,0.11) !important;
+            color: #5b5de2 !important;
+            font-size: 0.66rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.08em !important;
+            text-transform: uppercase !important;
+        }
+
+        .af-auth-card-title {
+            display: block !important;
+            margin: 0 0 0.35rem !important;
+            font-size: 0.95rem !important;
+            font-weight: 700 !important;
+            color: var(--c-text) !important;
+            line-height: 1.25 !important;
+        }
+
+        .af-auth-card-copy {
+            margin: 0 !important;
+            font-size: 0.82rem !important;
+            line-height: 1.45 !important;
+            color: var(--c-muted) !important;
+        }
+
+        @media (max-width: 900px) {
+            .af-auth-side {
+                padding: 1rem !important;
+            }
+        }
+
+        .af-auth-side h3 {
+            margin: 0 0 0.45rem !important;
+            font-size: 0.95rem !important;
+            font-weight: 700 !important;
+            color: var(--c-text) !important;
+        }
+
+        .af-auth-side p {
+            margin: 0 0 0.7rem !important;
+            font-size: 0.82rem !important;
+            color: var(--c-muted) !important;
+            line-height: 1.45 !important;
+        }
+
+        .af-auth-note {
+            font-size: 0.78rem !important;
+            color: var(--c-text) !important;
+            background: rgba(99,102,241,0.07) !important;
+            border: 1px solid rgba(99,102,241,0.18) !important;
+            border-radius: 8px !important;
+            padding: 0.45rem 0.55rem !important;
+            margin-top: 0.45rem !important;
+        }
+
+        .af-pw-strength {
+            margin: 0.1rem 0 0.55rem !important;
+        }
+
+        .af-pw-strength-row {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            margin-bottom: 0.32rem !important;
+            font-size: 0.76rem !important;
+            color: var(--c-muted) !important;
+            font-weight: 600 !important;
+        }
+
+        .af-pw-strength-row .weak {
+            color: #f43f5e !important;
+        }
+
+        .af-pw-strength-row .medium {
+            color: #f59e0b !important;
+        }
+
+        .af-pw-strength-row .strong {
+            color: #10b981 !important;
+        }
+
+        .af-pw-strength-row .neutral {
+            color: var(--c-muted) !important;
+        }
+
+        .af-pw-strength-track {
+            width: 100% !important;
+            height: 8px !important;
+            border-radius: 999px !important;
+            background: rgba(107,114,128,0.18) !important;
+            overflow: hidden !important;
+        }
+
+        .af-pw-strength-fill {
+            height: 100% !important;
+            border-radius: 999px !important;
+            transition: width 0.18s ease !important;
+        }
+
+        .af-pw-strength-fill.weak {
+            background: #f43f5e !important;
+        }
+
+        .af-pw-strength-fill.medium {
+            background: #f59e0b !important;
+        }
+
+        .af-pw-strength-fill.strong {
+            background: #10b981 !important;
+        }
+
+        .af-pw-strength-fill.neutral {
+            background: #9ca3af !important;
+        }
+
+        .af-pw-checklist {
+            list-style: none !important;
+            margin: 0.35rem 0 0.55rem !important;
+            padding: 0 !important;
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 0.3rem 0.8rem !important;
+        }
+
+        .af-pw-checklist li {
+            font-size: 0.76rem !important;
+            line-height: 1.25 !important;
+        }
+
+        .af-pw-checklist li.ok {
+            color: #10b981 !important;
+            font-weight: 600 !important;
+        }
+
+        .af-pw-checklist li.pending {
+            color: var(--c-muted) !important;
+        }
+
         </style>
         """,
         unsafe_allow_html=True,
     )
 
 
-def render_hero(title: str, copy: str, *, kicker: str, pills: list[str] | None = None) -> None:
+def render_hero(
+    title: str,
+    copy: str,
+    *,
+    kicker: str,
+    pills: list[str] | None = None,
+    compact: bool = False,
+    narrow: bool = False,
+) -> None:
     """Render a compact gradient hero strip."""
+    hero_classes = ["af-hero"]
+    if compact:
+        hero_classes.append("compact")
+    if narrow:
+        hero_classes.append("narrow")
+    hero_class = " ".join(hero_classes)
     st.markdown(
         f"""
-        <div class="af-hero">
+        <div class="{hero_class}">
             <div class="kicker">{html.escape(kicker)}</div>
             <h1>{html.escape(title)}</h1>
             <p>{html.escape(copy)}</p>
