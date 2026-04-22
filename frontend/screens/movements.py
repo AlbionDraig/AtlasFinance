@@ -97,6 +97,12 @@ def _account_labels_for_currency(account_options: dict[str, int], currency: str)
     return labels
 
 
+def _currency_from_account_label(account_label: str) -> str | None:
+    """Extract currency code from account label like 'Ahorro (COP)'."""
+    match = re.search(r"\((COP|USD)\)(?:\s*\(\d+\))?$", str(account_label or ""))
+    return match.group(1) if match else None
+
+
 def _load_movement_data() -> tuple[list[dict], list[dict], list[dict], list[dict]] | None:
     """Fetch base data required by the movements screen."""
     try:
@@ -242,7 +248,6 @@ def _handle_create_transaction(
     selected_category_label: str,
     account_options: dict[str, int],
     category_options: dict[str, int | None],
-    is_initial_balance: bool,
 ) -> tuple[bool, dict | None]:
     """Validate and create a new transaction."""
     if not account_options:
@@ -272,7 +277,6 @@ def _handle_create_transaction(
         "occurred_at": occurred_at.isoformat(),
         "account_id": account_options[selected_account_label],
         "category_id": category_options[selected_category_label],
-        "is_initial_balance": is_initial_balance,
     }
     response = api_request("POST", "/transactions/", payload=payload)
     if response.ok:
@@ -308,46 +312,6 @@ def _undo_last_created_transaction() -> None:
         detail = response.json().get("detail", "No pudimos deshacer el último movimiento.")
     except Exception:
         detail = "No pudimos deshacer el último movimiento."
-    show_error(detail)
-
-
-def _undo_last_deleted_transaction() -> None:
-    """Recreate the most recently deleted transaction from session snapshot."""
-    deleted_tx = st.session_state.get("mov_last_deleted_tx")
-    if not deleted_tx:
-        show_warning("No hay una eliminación reciente para deshacer.")
-        return
-
-    payload = {
-        "description": str(deleted_tx.get("description") or "").strip(),
-        "amount": float(deleted_tx.get("amount") or 0.0),
-        "currency": str(deleted_tx.get("currency") or "COP"),
-        "transaction_type": str(deleted_tx.get("transaction_type") or "expense"),
-        "occurred_at": str(deleted_tx.get("occurred_at") or ""),
-        "account_id": deleted_tx.get("account_id"),
-        "category_id": deleted_tx.get("category_id"),
-    }
-
-    if (
-        len(payload["description"]) < 2
-        or payload["amount"] <= 0
-        or not payload["occurred_at"]
-        or not payload["account_id"]
-    ):
-        show_error("Faltan datos del movimiento eliminado, no pudimos restaurarlo.")
-        return
-
-    response = api_request("POST", "/transactions/", payload=payload)
-    if response.ok:
-        st.session_state.pop("mov_last_deleted_tx", None)
-        st.session_state["mov_undo_deleted_notice"] = "Se deshizo la eliminación del movimiento."
-        RERUN()
-        return
-
-    try:
-        detail = response.json().get("detail", "No pudimos restaurar el movimiento eliminado.")
-    except Exception:
-        detail = "No pudimos restaurar el movimiento eliminado."
     show_error(detail)
 
 
@@ -525,57 +489,33 @@ def _render_create_transaction_form(
             key="mov_form_category_label",
         )
 
-    row3_col1, row3_col2 = st.columns(2)
-    with row3_col1:
-        currency = select_field("Moneda", ["COP", "USD"], key="mov_form_currency")
-    with row3_col2:
-        occurred_date = date_field("Fecha", key="mov_form_date")
-
-    filtered_account_labels = _account_labels_for_currency(account_options, currency)
-    has_available_accounts = bool(filtered_account_labels)
-    account_label_options = filtered_account_labels if has_available_accounts else ["No hay cuentas"]
+    account_label_options = list(account_options.keys()) if account_options else ["No hay cuentas"]
+    has_available_accounts = bool(account_options)
 
     if has_available_accounts:
-        if st.session_state.get("mov_form_account_label") not in filtered_account_labels:
-            st.session_state["mov_form_account_label"] = filtered_account_labels[0]
+        if st.session_state.get("mov_form_account_label") not in account_label_options:
+            st.session_state["mov_form_account_label"] = account_label_options[0]
     elif st.session_state.get("mov_form_account_label") != "No hay cuentas":
         st.session_state["mov_form_account_label"] = "No hay cuentas"
 
-    row4_col1, row4_col2 = st.columns(2)
-    with row4_col1:
+    row3_col1, row3_col2 = st.columns(2)
+    with row3_col1:
         selected_account_label = select_field(
             "Cuenta",
             account_label_options,
             disabled=not has_available_accounts,
             key="mov_form_account_label",
         )
-    with row4_col2:
-        occurred_time = time_field("Hora", key="mov_form_time")
+    with row3_col2:
+        occurred_date = date_field("Fecha", key="mov_form_date")
 
-    selected_account_id = account_options.get(selected_account_label)
-    account_has_transactions = bool(
-        selected_account_id
-        and any(int(tx.get("account_id") or 0) == int(selected_account_id) for tx in transactions)
-    )
+    derived_currency = _currency_from_account_label(selected_account_label)
+    currency = derived_currency or str(st.session_state.get("mov_form_currency") or "COP")
+    st.session_state["mov_form_currency"] = currency
 
-    if "mov_form_is_initial_balance" not in st.session_state:
-        st.session_state["mov_form_is_initial_balance"] = False
-    if account_has_transactions:
-        st.session_state["mov_form_is_initial_balance"] = False
+    occurred_time = time_field("Hora", key="mov_form_time")
 
-    is_initial_balance = bool(
-        st.checkbox(
-            "Registrar como saldo inicial (solo una vez por cuenta)",
-            key="mov_form_is_initial_balance",
-            disabled=account_has_transactions,
-            help="Usa esta opción solo para el primer movimiento de una cuenta nueva.",
-        )
-    )
-
-    if account_has_transactions:
-        st.caption("Esta cuenta ya tiene movimientos, por lo que el saldo inicial no está disponible.")
-
-    st.caption("La moneda del movimiento debe ser la misma que la moneda de la cuenta.")
+    st.caption("La moneda se define automáticamente con la cuenta seleccionada.")
 
     create_has_pending_changes = bool(description.strip()) or float(amount) > 0.0
     edit_has_pending_changes = False
@@ -715,7 +655,6 @@ def _render_create_transaction_form(
                     selected_category_label,
                     account_options,
                     category_options,
-                    is_initial_balance,
                 )
 
                 if success:
@@ -1217,56 +1156,6 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
     return selected_tx
 
 
-def _render_undo_deleted_footer() -> None:
-    """Render undo action for last deleted movement at the bottom of the screen."""
-    last_deleted = st.session_state.get("mov_last_deleted_tx")
-    if not last_deleted:
-        return
-
-    try:
-        deleted_amount = f"{float(last_deleted.get('amount', 0)):,.2f}"
-    except (TypeError, ValueError):
-        deleted_amount = str(last_deleted.get("amount", "0"))
-
-    st.markdown(
-        """
-        <style>
-        .af-undo-footer {
-            border: 1px solid rgba(245, 158, 11, 0.35);
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(251, 191, 36, 0.08));
-            border-radius: 12px;
-            padding: 0.55rem 0.75rem;
-            margin-top: 0.15rem;
-            margin-bottom: 0.25rem;
-        }
-        .af-undo-footer strong {
-            color: #854d0e;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.divider()
-    st.markdown(
-        (
-            '<div class="af-undo-footer">'
-            "<strong>Acción reciente:</strong> Eliminaste un movimiento. Puedes deshacerlo desde aquí."
-            "</div>"
-        ),
-        unsafe_allow_html=True,
-    )
-    undo_info_col, undo_action_col = st.columns([5, 1])
-    with undo_info_col:
-        st.caption(
-            f"Último eliminado: {last_deleted.get('description', 'Movimiento')} · "
-            f"{deleted_amount} {last_deleted.get('currency', '')}"
-        )
-    with undo_action_col:
-        if btn("Deshacer eliminación", key="mov_undo_last_deleted", variant="warning", use_container_width=True):
-            _undo_last_deleted_transaction()
-
-
 def _handle_update_transaction(
     selected_tx: dict,
     edit_description: str,
@@ -1315,21 +1204,12 @@ def _handle_delete_transaction(selected_tx: dict) -> None:
     """Delete the selected transaction and show feedback."""
     response = api_request("DELETE", f"/transactions/{selected_tx['id']}")
     if response.status_code == 204:
-        st.session_state["mov_last_deleted_tx"] = {
-            "description": selected_tx.get("description"),
-            "amount": selected_tx.get("amount"),
-            "currency": selected_tx.get("currency"),
-            "transaction_type": selected_tx.get("transaction_type"),
-            "occurred_at": selected_tx.get("occurred_at"),
-            "account_id": selected_tx.get("account_id"),
-            "category_id": selected_tx.get("category_id"),
-        }
         st.session_state["mov_selected_tx_id"] = None
         st.session_state["mov_form_loaded_tx_id"] = None
         st.session_state["mov_clear_table_selection_pending"] = True
         st.session_state["mov_form_force_clean_reset"] = True
         st.session_state["mov_delete_dialog_tx_id"] = None
-        show_success("Movimiento eliminado. Usa 'Deshacer eliminación' si fue sin querer.")
+        show_success("Movimiento eliminado con éxito.")
         RERUN()
         return
 
@@ -1351,10 +1231,6 @@ def movements_screen() -> None:
     _, accounts, categories, transactions = movement_data
     account_options, category_options = _build_options(accounts, categories)
 
-    undo_notice = st.session_state.pop("mov_undo_deleted_notice", None)
-    if undo_notice:
-        show_success(undo_notice)
-
     if not transactions:
         render_empty_state(
             "Aún no tienes movimientos",
@@ -1366,4 +1242,3 @@ def movements_screen() -> None:
         selected_tx = _render_transactions_table(transactions, account_options)
     st.divider()
     _render_create_transaction_form(account_options, category_options, transactions, selected_tx=selected_tx)
-    _render_undo_deleted_footer()
