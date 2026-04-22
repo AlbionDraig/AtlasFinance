@@ -499,12 +499,19 @@ def _render_create_transaction_form(
         amount = number_field("Monto", min_value=min_amount, step=10.0, key="mov_form_amount")
         currency = select_field("Moneda", ["COP", "USD"], key="mov_form_currency")
         filtered_account_labels = _account_labels_for_currency(account_options, currency)
-        if st.session_state.get("mov_form_account_label") not in filtered_account_labels:
-            st.session_state["mov_form_account_label"] = filtered_account_labels[0]
+        has_available_accounts = bool(filtered_account_labels)
+        account_label_options = filtered_account_labels if has_available_accounts else ["No hay cuentas"]
+
+        if has_available_accounts:
+            if st.session_state.get("mov_form_account_label") not in filtered_account_labels:
+                st.session_state["mov_form_account_label"] = filtered_account_labels[0]
+        elif st.session_state.get("mov_form_account_label") != "No hay cuentas":
+            st.session_state["mov_form_account_label"] = "No hay cuentas"
+
         selected_account_label = select_field(
             "Cuenta",
-            filtered_account_labels if account_options else ["No hay cuentas"],
-            disabled=not bool(account_options),
+            account_label_options,
+            disabled=not has_available_accounts,
             key="mov_form_account_label",
         )
 

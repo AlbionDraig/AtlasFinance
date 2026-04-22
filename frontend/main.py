@@ -90,6 +90,10 @@ def app() -> None:
         login_screen()
         st.stop()
 
+    login_toast = st.session_state.pop("auth_login_toast", None)
+    if login_toast:
+        st.toast(str(login_toast), icon="✅")
+
     _ensure_user_profile_loaded()
 
     # Add future main sections in this single config list.
