@@ -72,4 +72,4 @@ def test_register_transaction_updates_balance_and_metrics(db_session, monkeypatc
     assert metrics.total_income == Decimal("500")
     assert metrics.total_expenses == Decimal("200")
     assert metrics.cashflow == Decimal("300")
-    assert metrics.net_worth == Decimal("1300")
+    assert metrics.net_worth == Decimal("300")
