@@ -361,7 +361,9 @@ def _render_create_transaction_form(
     elif selected_tx_id and st.session_state.get("mov_form_loaded_tx_id") != selected_tx_id:
         _load_selected_transaction_into_form(selected_tx, account_options, category_options)
     elif selected_tx is None and st.session_state.get("mov_form_loaded_tx_id") is not None:
-        _reset_transaction_form(account_options)
+        # When deselecting an edited row, clear the form to avoid stale values
+        # keeping the submit button enabled in create mode.
+        _reset_transaction_form_clean(account_options)
 
     section_header(
         "Registrar o ajustar movimiento",
@@ -976,6 +978,7 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         if explicit_empty_selection and selected_id is not None:
             st.session_state["mov_selected_tx_id"] = None
             st.session_state["mov_form_loaded_tx_id"] = None
+            st.session_state["mov_form_force_clean_reset"] = True
             selected_tx = None
         else:
             selected_tx = next((tx for tx in visible_txs if tx.get("id") == selected_id), None)

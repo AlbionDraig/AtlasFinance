@@ -473,6 +473,22 @@ def _inject_btn_style(key: str, variant: str) -> None:
             outline: 2px solid #0ea5e9 !important;
             outline-offset: 2px !important;
         }}
+        .st-key-{key} button:disabled {{
+            background: #cbd5e1 !important;
+            border-color: #cbd5e1 !important;
+            color: #64748b !important;
+            box-shadow: none !important;
+            cursor: not-allowed !important;
+            opacity: 1 !important;
+            transform: none !important;
+        }}
+        .st-key-{key} button:disabled:hover {{
+            background: #cbd5e1 !important;
+            border-color: #cbd5e1 !important;
+            color: #64748b !important;
+            box-shadow: none !important;
+            transform: none !important;
+        }}
         </style>
         """,
         unsafe_allow_html=True,
