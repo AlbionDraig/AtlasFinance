@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import html as _html
 import re
-from datetime import date, time
+from datetime import date, time, timedelta
 from typing import Any, Callable
 
 import streamlit as st
@@ -1222,6 +1222,18 @@ def _inject_sticky_filter_style() -> None:
             box-sizing: border-box !important;
         }
 
+        /* Disabled date fields are auto-calculated by selected period. */
+        .st-key-sticky-period-filter [data-testid="stDateInput"] input:disabled {
+            color: var(--c-text) !important;
+            opacity: 0.82 !important;
+            cursor: not-allowed !important;
+        }
+
+        .st-key-sticky-period-filter [data-testid="stDateInput"] button[disabled] {
+            opacity: 0.55 !important;
+            cursor: not-allowed !important;
+        }
+
         /* Hide validation/instruction nodes that shift date_input height —
            errors are shown as toast in Spanish instead. */
         .st-key-sticky-period-filter [data-testid="InputInstructions"],
@@ -1337,6 +1349,7 @@ def sticky_period_filter(
     max_date: date | None = None,
     default_currency: str = "COP",
     currency_options: list[str] | None = None,
+    context_caption: str | None = None,
 ) -> dict[str, Any]:
     """
     Render a sticky period and currency filter bar.
@@ -1362,6 +1375,8 @@ def sticky_period_filter(
         Default currency ("COP" or "USD")
     currency_options : list[str], optional
         Available currencies (default: ["COP", "USD"])
+    context_caption : str, optional
+        Additional context shown below filter controls
 
     Returns
     -------
@@ -1402,10 +1417,10 @@ def sticky_period_filter(
         absolute_min, absolute_max = absolute_max, absolute_min
 
     # Normalize range to keep widget bounds valid if state arrives inverted.
-    initial_from = min(default_from, default_to)
-    initial_to = max(default_from, default_to)
-    initial_from = max(absolute_min, min(initial_from, absolute_max))
-    initial_to = max(initial_from, min(initial_to, absolute_max))
+    base_from = min(default_from, default_to)
+    base_to = max(default_from, default_to)
+    base_from = max(absolute_min, min(base_from, absolute_max))
+    base_to = max(base_from, min(base_to, absolute_max))
 
     # Inject CSS once
     _inject_sticky_filter_style()
@@ -1425,12 +1440,46 @@ def sticky_period_filter(
 
         is_custom = period_value == "Personalizado"
 
+        # Keep date widgets synced with the currently selected preset.
+        if not is_custom:
+            today_local = date.today()
+            if period_value == "Últimos 30 días":
+                display_from, display_to = today_local - timedelta(days=29), today_local
+            elif period_value == "Últimos 90 días":
+                display_from, display_to = today_local - timedelta(days=89), today_local
+            elif period_value == "Año actual":
+                display_from, display_to = date(today_local.year, 1, 1), date(today_local.year, 12, 31)
+            else:
+                display_from, display_to = base_from, base_to
+
+            from_min = min(display_from, display_to)
+            from_max = max(display_from, display_to)
+            to_min = from_min
+            to_max = from_max
+        else:
+            display_from, display_to = base_from, base_to
+            from_min = absolute_min
+            from_max = display_to
+            to_min = display_from
+            to_max = absolute_max
+
+        from_key = "sticky_period_filter_from"
+        to_key = "sticky_period_filter_to"
+
+        if not is_custom:
+            st.session_state[from_key] = display_from
+            st.session_state[to_key] = display_to
+        else:
+            st.session_state.setdefault(from_key, display_from)
+            st.session_state.setdefault(to_key, display_to)
+
         with f2:
             from_value = st.date_input(
                 "Desde",
-                value=initial_from,
-                min_value=absolute_min,
-                max_value=initial_to,
+                value=display_from,
+                min_value=from_min,
+                max_value=from_max,
+                key=from_key,
                 disabled=not is_custom,
                 help="Fecha inicial. Solo activo en modo Personalizado.",
             )
@@ -1438,9 +1487,10 @@ def sticky_period_filter(
         with f3:
             to_value = st.date_input(
                 "Hasta",
-                value=initial_to,
-                min_value=from_value,
-                max_value=absolute_max,
+                value=display_to,
+                min_value=to_min,
+                max_value=to_max,
+                key=to_key,
                 disabled=not is_custom,
                 help="Fecha final. Solo activo en modo Personalizado.",
             )
@@ -1452,6 +1502,9 @@ def sticky_period_filter(
                 index=currency_options.index(default_currency),
                 help="Moneda para montos, tarjetas y gráficos.",
             )
+
+        if context_caption:
+            st.caption(context_caption)
 
     return {
         "period_value": period_value,

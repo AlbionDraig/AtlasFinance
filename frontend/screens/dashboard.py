@@ -575,6 +575,56 @@ def dashboard_screen() -> None:
         data_max_date,
     )
 
+    # Apply deferred reset before widgets render.
+    if st.session_state.get("db_reset_pending", False):
+        st.session_state["db_currency_draft"] = st.session_state.get("db_currency", "COP")
+        st.session_state["db_period_draft"] = st.session_state.get("db_period", "Año actual")
+        st.session_state["db_from_draft"] = st.session_state.get("db_from", default_from)
+        st.session_state["db_to_draft"] = st.session_state.get("db_to", default_to)
+        st.session_state["db_reset_pending"] = False
+
+    # Keep disabled date fields in sync for non-custom presets.
+    draft_period = st.session_state["db_period_draft"]
+    if draft_period == "Últimos 30 días":
+        draft_from, draft_to = today - timedelta(days=29), today
+    elif draft_period == "Últimos 90 días":
+        draft_from, draft_to = today - timedelta(days=89), today
+    elif draft_period == "Año actual":
+        draft_from, draft_to = date(today.year, 1, 1), date(today.year, 12, 31)
+    else:
+        draft_from, draft_to = st.session_state["db_from_draft"], st.session_state["db_to_draft"]
+
+    if draft_period != "Personalizado":
+        st.session_state["db_from_draft"] = draft_from
+        st.session_state["db_to_draft"] = draft_to
+
+    # Applied period context to show directly under sticky filters.
+    applied_period_preview = st.session_state["db_period"]
+    if applied_period_preview == "Últimos 30 días":
+        cap_from, cap_to = today - timedelta(days=29), today
+    elif applied_period_preview == "Últimos 90 días":
+        cap_from, cap_to = today - timedelta(days=89), today
+    elif applied_period_preview == "Año actual":
+        cap_from, cap_to = date(today.year, 1, 1), date(today.year, 12, 31)
+    else:
+        cap_from, cap_to = st.session_state["db_from"], st.session_state["db_to"]
+
+    if cap_from > cap_to:
+        cap_from, cap_to = cap_to, cap_from
+
+    if applied_period_preview == "Año actual":
+        cap_prev_from = date(cap_from.year - 1, 1, 1)
+        cap_prev_to = date(cap_from.year - 1, 12, 31)
+    else:
+        cap_days = max((cap_to - cap_from).days + 1, 1)
+        cap_prev_to = cap_from - timedelta(days=1)
+        cap_prev_from = cap_prev_to - timedelta(days=cap_days - 1)
+    cap_prev_days = max((cap_prev_to - cap_prev_from).days + 1, 1)
+    filter_context_caption = (
+        "Variaciones vs período anterior equivalente: "
+        f"{cap_prev_from.isoformat()} a {cap_prev_to.isoformat()} ({cap_prev_days} días)"
+    )
+
     # ── Sticky filter bar (period + currency) ──────────────────────────
     filter_result = sticky_period_filter(
         period_options=["Año actual", "Últimos 90 días", "Últimos 30 días", "Personalizado"],
@@ -584,6 +634,7 @@ def dashboard_screen() -> None:
         min_date=data_min_date,
         max_date=data_max_date,
         default_currency=st.session_state["db_currency"],
+        context_caption=filter_context_caption,
     )
     period_value = filter_result["period_value"]
     from_value = filter_result["from_value"]
@@ -628,29 +679,6 @@ def dashboard_screen() -> None:
         st.session_state["db_last_applied"] = datetime.now().strftime("%H:%M:%S")
         st.rerun()
 
-    # Apply deferred reset for widget-bound draft values before widgets render.
-    if st.session_state.get("db_reset_pending", False):
-        st.session_state["db_currency_draft"] = st.session_state.get("db_currency", "COP")
-        st.session_state["db_period_draft"] = st.session_state.get("db_period", "Año actual")
-        st.session_state["db_from_draft"] = st.session_state.get("db_from", default_from)
-        st.session_state["db_to_draft"] = st.session_state.get("db_to", default_to)
-        st.session_state["db_reset_pending"] = False
-
-    # Keep draft dates deterministic for non-custom presets.
-    draft_period = st.session_state["db_period_draft"]
-    if draft_period == "Últimos 30 días":
-        draft_from, draft_to = today - timedelta(days=29), today
-    elif draft_period == "Últimos 90 días":
-        draft_from, draft_to = today - timedelta(days=89), today
-    elif draft_period == "Año actual":
-        draft_from, draft_to = date(today.year, 1, 1), today
-    else:
-        draft_from, draft_to = st.session_state["db_from_draft"], st.session_state["db_to_draft"]
-
-    if draft_period != "Personalizado":
-        st.session_state["db_from_draft"] = draft_from
-        st.session_state["db_to_draft"] = draft_to
-
     # Applied period/date used for backend calls.
     applied_period = st.session_state["db_period"]
     if applied_period == "Últimos 30 días":
@@ -658,7 +686,7 @@ def dashboard_screen() -> None:
     elif applied_period == "Últimos 90 días":
         date_from, date_to = today - timedelta(days=89), today
     elif applied_period == "Año actual":
-        date_from, date_to = date(today.year, 1, 1), today
+        date_from, date_to = date(today.year, 1, 1), date(today.year, 12, 31)
     else:
         date_from, date_to = st.session_state["db_from"], st.session_state["db_to"]
 
@@ -668,8 +696,12 @@ def dashboard_screen() -> None:
         invalid_range_swapped = True
 
     period_days = max((date_to - date_from).days + 1, 1)
-    prev_to = date_from - timedelta(days=1)
-    prev_from = prev_to - timedelta(days=period_days - 1)
+    if applied_period == "Año actual":
+        prev_from = date(date_from.year - 1, 1, 1)
+        prev_to = date(date_from.year - 1, 12, 31)
+    else:
+        prev_to = date_from - timedelta(days=1)
+        prev_from = prev_to - timedelta(days=period_days - 1)
 
     currency = st.session_state["db_currency"]
 
@@ -802,12 +834,7 @@ def dashboard_screen() -> None:
             badge_tooltip=savings_badge_tip,
         )
 
-    st.caption(
-        "Variaciones calculadas contra el período equivalente anterior: "
-        f"{prev_from.isoformat()} a {prev_to.isoformat()} ({period_days} días)."
-    )
-
-    # ── DataFrame prep ────────────────────────────────────────────────────────
+    # ── DataFrame prep ────────────────────────────────────────────────────────────────────
     if transactions:
         df = pd.DataFrame(transactions)
         df["occurred_at"] = pd.to_datetime(df["occurred_at"], utc=True).dt.tz_convert(None)
