@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import html as _html
 import re
 from datetime import date, datetime, time, timedelta
 
 import pandas as pd
 import requests
 import streamlit as st
+import streamlit.components.v1 as st_components
 
 from modules.api_client import api_request, parse_iso_datetime
 from modules.components import (
@@ -122,6 +122,45 @@ def _load_movement_data() -> tuple[list[dict], list[dict], list[dict], list[dict
         categories_response.json(),
         transactions_response.json(),
     )
+
+
+def _bind_live_search_filter(widget_key: str = "mov_table_search") -> None:
+        """Trigger Streamlit change event while typing in search filter."""
+        st_components.html(
+                f"""
+                <script>
+                (function() {{
+                    const query = '.st-key-{widget_key} input';
+                    let attempts = 0;
+                    const timer = setInterval(() => {{
+                        attempts += 1;
+                        const input = window.parent.document.querySelector(query);
+                        if (!input) {{
+                            if (attempts > 30) clearInterval(timer);
+                            return;
+                        }}
+                        if (input.dataset.afLiveSearchBound === '1') {{
+                            clearInterval(timer);
+                            return;
+                        }}
+                        input.dataset.afLiveSearchBound = '1';
+
+                        let debounceId;
+                        input.addEventListener('input', () => {{
+                            clearTimeout(debounceId);
+                            debounceId = setTimeout(() => {{
+                                input.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                            }}, 180);
+                        }});
+
+                        clearInterval(timer);
+                    }}, 120);
+                }})();
+                </script>
+                """,
+                height=0,
+                width=0,
+        )
 
 
 
@@ -820,6 +859,7 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
             key="mov_table_search",
             placeholder="Ej: Café, Gasolina",
         )
+        _bind_live_search_filter("mov_table_search")
     with row1_c2:
         tx_type_filter = select_field("Tipo", ["Todo", "Ingresos", "Gastos"], key="mov_table_type_filter")
     with row1_c3:
@@ -878,25 +918,14 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
     if from_date != default_from or to_date != default_to:
         active_filters.append(f"Fechas: {from_date} a {to_date}")
 
-    aux_col_1, aux_col_2 = st.columns([5, 1])
-    with aux_col_1:
-        if active_filters:
-            chips = "".join(f'<span class="af-mov-chip">{_html.escape(f)}</span>' for f in active_filters)
-            st.markdown(
-                f'<div class="af-mov-chips"><strong>Filtros activos:</strong> {chips}</div>',
-                unsafe_allow_html=True,
-            )
-        else:
-            st.caption("Sin filtros activos. Estás viendo todos los movimientos.")
-    with aux_col_2:
-        btn(
-            "Limpiar filtros",
-            key="mov_table_clear_filters",
-            variant="danger-outline",
-            use_container_width=True,
-            on_click=_reset_movement_filters,
-            disabled=not active_filters,
-        )
+    btn(
+        "Limpiar filtros",
+        key="mov_table_clear_filters",
+        variant="danger-outline",
+        use_container_width=True,
+        on_click=_reset_movement_filters,
+        disabled=not active_filters,
+    )
 
     filtered_txs = transactions
     if tx_type_filter == "Ingresos":
