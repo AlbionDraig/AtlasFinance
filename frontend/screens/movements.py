@@ -439,12 +439,19 @@ def _render_create_transaction_form(
         <style>
         /* Keep only the movement type segmented control left-aligned in its column. */
         .af-create-actions {
-            margin-top: 0.65rem;
-            padding-top: 0.55rem;
+            margin-top: 0.45rem;
+            padding-top: 0.45rem;
             border-top: 1px solid #e2e8f0;
         }
         .af-create-actions .stButton > button {
             box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14) !important;
+        }
+        div[class*="st-key-mov_form_"] {
+            margin-bottom: 0.14rem;
+        }
+        .st-key-mov_form_start_new,
+        .st-key-mov_undo_last_created {
+            margin-top: 0.08rem;
         }
         </style>
         """,
@@ -734,7 +741,7 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
             font-weight: 700;
             color: #1e293b;
             margin-top: 0.08rem;
-            margin-bottom: 0.35rem;
+            margin-bottom: 0.2rem;
         }
         .af-mov-chips {
             font-size: 0.82rem;
@@ -812,6 +819,30 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         }
         .st-key-mov_transactions_table [data-testid="stDataFrame"] tbody tr:last-child td {
             border-bottom: none !important;
+        }
+        .st-key-mov_table_clear_filters [data-testid="stButton"] {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 0.08rem;
+        }
+        .st-key-mov_table_clear_filters [data-testid="stButton"] > button {
+            margin-left: auto !important;
+            min-height: 2rem !important;
+            padding: 0.24rem 0.65rem !important;
+            font-size: 0.78rem !important;
+            line-height: 1.05 !important;
+            border-radius: 8px !important;
+            white-space: nowrap !important;
+        }
+        .st-key-mov_table_search,
+        .st-key-mov_table_type_filter,
+        .st-key-mov_table_currency_filter,
+        .st-key-mov_table_account_filter,
+        .st-key-mov_table_period_filter,
+        .st-key-mov_table_from_date,
+        .st-key-mov_table_to_date,
+        .st-key-mov_table_page_size {
+            margin-bottom: 0.12rem;
         }
         </style>
         """,
@@ -941,14 +972,16 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
     if from_date != default_from or to_date != default_to:
         active_filters.append(f"Fechas: {from_date} a {to_date}")
 
-    btn(
-        "Limpiar filtros",
-        key="mov_table_clear_filters",
-        variant="danger-outline",
-        use_container_width=True,
-        on_click=_reset_movement_filters,
-        disabled=not active_filters,
-    )
+    if active_filters:
+        _, clear_btn_col = st.columns([7, 1])
+        with clear_btn_col:
+            btn(
+                "Limpiar filtros",
+                key="mov_table_clear_filters",
+                variant="neutral",
+                use_container_width=False,
+                on_click=_reset_movement_filters,
+            )
 
     filtered_txs = transactions
     if tx_type_filter == "Ingresos":
