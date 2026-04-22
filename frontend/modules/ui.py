@@ -1169,9 +1169,25 @@ def inject_theme() -> None:
             margin-bottom: 0.4rem !important;
         }
 
+        .af-kpi .kpi-value.positive {
+            color: #0f766e !important;
+        }
+
+        .af-kpi .kpi-value.negative {
+            color: #b91c1c !important;
+        }
+
         .af-kpi .kpi-sub {
             font-size: 0.75rem !important;
             color: var(--c-muted) !important;
+        }
+
+        .af-kpi .kpi-help {
+            font-size: 0.72rem !important;
+            color: var(--c-muted) !important;
+            opacity: 0.92 !important;
+            margin-top: 0.28rem !important;
+            line-height: 1.35 !important;
         }
 
         .af-kpi .kpi-badge {
@@ -1880,8 +1896,14 @@ def render_kpi_card(
     badge: str = "",
     badge_type: str = "flat",
     badge_tooltip: str = "",
+    help_text: str = "",
+    value_tone: str = "default",
 ) -> None:
     """Render a metric card with optional delta badge."""
+    value_tone_safe = "default"
+    if value_tone in {"positive", "negative"}:
+        value_tone_safe = value_tone
+
     badge_html = ""
     if badge:
         tooltip_html = (
@@ -1899,8 +1921,9 @@ def render_kpi_card(
         f"""
         <div class="af-kpi">
             <div class="kpi-label">{html.escape(label)}</div>
-            <div class="kpi-value">{html.escape(value)}</div>
-            <div class="kpi-sub">{html.escape(sub)}&nbsp;{badge_html}</div>
+            <div class="kpi-value {value_tone_safe}">{html.escape(value)}</div>
+            <div class="kpi-sub">{html.escape(sub)}{'&nbsp;' if badge_html else ''}{badge_html}</div>
+            <div class="kpi-help">{html.escape(help_text)}</div>
         </div>
         """,
         unsafe_allow_html=True,

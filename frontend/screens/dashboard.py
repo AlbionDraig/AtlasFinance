@@ -94,10 +94,9 @@ def _delta_badge(current: float, previous: float, *, inverse: bool = False) -> t
     if previous == 0:
         if current == 0:
             return "0.0%", "flat", "Sin variación frente al período anterior."
-        is_good = delta < 0 if inverse else delta > 0
         return (
             "primer período",
-            "up" if is_good else "down",
+            "flat",
             f"Sin datos en el período anterior · actual: {current:,.2f}",
         )
 
@@ -115,8 +114,20 @@ def _delta_badge(current: float, previous: float, *, inverse: bool = False) -> t
     )
 
 
-def _delta_points_badge(current: float, previous: float) -> tuple[str, str, str]:
+def _delta_points_badge(
+    current: float,
+    previous: float,
+    *,
+    has_previous_data: bool = True,
+) -> tuple[str, str, str]:
     """Return badge for percentage-point change (used by savings rate)."""
+    if not has_previous_data:
+        return (
+            "primer período",
+            "flat",
+            "Sin datos en el período anterior, no se puede calcular variación.",
+        )
+
     delta = current - previous
     sign = "+" if delta > 0 else ""
     tone = "flat" if delta == 0 else ("up" if delta > 0 else "down")
@@ -801,11 +812,16 @@ def dashboard_screen() -> None:
     prev_expense = _sum_amount_by_type(previous_transactions, "expense")
     prev_cashflow = prev_income - prev_expense
     prev_savings = (prev_cashflow / prev_income * 100) if prev_income > 0 else 0.0
+    has_previous_period_data = len(previous_transactions) > 0
 
     net_badge, net_badge_type, net_badge_tip = _delta_badge(current_cashflow, prev_cashflow)
     income_badge, income_badge_type, income_badge_tip = _delta_badge(current_income, prev_income)
     expense_badge, expense_badge_type, expense_badge_tip = _delta_badge(current_expense, prev_expense, inverse=True)
-    savings_badge, savings_badge_type, savings_badge_tip = _delta_points_badge(current_savings, prev_savings)
+    savings_badge, savings_badge_type, savings_badge_tip = _delta_points_badge(
+        current_savings,
+        prev_savings,
+        has_previous_data=has_previous_period_data,
+    )
 
     # ── KPI strip ─────────────────────────────────────────────────────────────
     k1, k2, k3, k4 = st.columns(4)
@@ -818,6 +834,10 @@ def dashboard_screen() -> None:
             badge=net_badge,
             badge_type=net_badge_type,
             badge_tooltip=net_badge_tip,
+            help_text="Es el dinero total que tienes hoy en tus cuentas de esta moneda.",
+            value_tone=(
+                "positive" if net_worth_value > 0 else ("negative" if net_worth_value < 0 else "default")
+            ),
         )
     with k2:
         render_kpi_card(
@@ -827,6 +847,7 @@ def dashboard_screen() -> None:
             badge=income_badge,
             badge_type=income_badge_type,
             badge_tooltip=income_badge_tip,
+            help_text="Todo lo que te entro de dinero en el período seleccionado.",
         )
     with k3:
         render_kpi_card(
@@ -836,18 +857,37 @@ def dashboard_screen() -> None:
             badge=expense_badge,
             badge_type=expense_badge_type,
             badge_tooltip=expense_badge_tip,
+            help_text="Todo lo que salio de dinero en el período seleccionado.",
         )
     with k4:
         if current_income == 0:
             savings_display = "Sin datos"
             savings_sub = "sin ingresos en el período"
+            savings_tone = "default"
         elif savings == 0.0:
-            savings_display = "Sin ahorro"
+            savings_display = "0.0%"
             savings_sub = "ingresos = gastos"
+            savings_tone = "default"
         else:
-            rate_quality = "buena" if savings >= 20 else ("ok" if savings >= 5 else "baja")
-            savings_display = f"{savings:.1f}%"
-            savings_sub = f"del ingreso · {rate_quality}"
+            if savings <= -999:
+                savings_display = "<999%"
+            elif savings >= 999:
+                savings_display = ">999%"
+            else:
+                savings_display = f"{abs(savings):,.1f}%"
+
+            if not has_previous_period_data:
+                savings_sub = "del ingreso"
+            else:
+                rate_quality = (
+                    "margen saludable"
+                    if savings >= 20
+                    else ("margen moderado" if savings >= 5 else "margen bajo")
+                )
+                savings_sub = f"del ingreso · {rate_quality}"
+
+            savings_tone = "negative" if savings < 0 else "positive"
+
         render_kpi_card(
             "Tasa de ahorro",
             savings_display,
@@ -855,6 +895,8 @@ def dashboard_screen() -> None:
             badge=savings_badge,
             badge_type=savings_badge_type,
             badge_tooltip=savings_badge_tip,
+            help_text="Que porcentaje de tus ingresos lograste guardar en el período.",
+            value_tone=savings_tone,
         )
 
     # ── DataFrame prep ────────────────────────────────────────────────────────────────────
