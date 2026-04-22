@@ -844,6 +844,20 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         .st-key-mov_table_page_size {
             margin-bottom: 0.12rem;
         }
+        .st-key-mov_filters_block > [data-testid="stVerticalBlock"] {
+            gap: 0.35rem !important;
+        }
+        .st-key-mov_filters_block > [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] {
+            gap: 0.7rem !important;
+            align-items: flex-end !important;
+        }
+        .st-key-mov_filters_block [data-testid="stColumn"] > [data-testid="stVerticalBlock"] {
+            gap: 0.12rem !important;
+        }
+        .st-key-mov_filters_block [data-testid="stWidgetLabel"] {
+            margin-bottom: 0 !important;
+            min-height: 1.15rem !important;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -886,32 +900,33 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         for key, value in filter_defaults.items():
             st.session_state[key] = value
 
-    st.markdown(
-        '<div class="af-mov-filters-title">Filtros</div>',
-        unsafe_allow_html=True,
-    )
-    row1_c1, row1_c2, row1_c3, row1_c4 = st.columns([1.6, 0.9, 0.9, 1.2])
-    with row1_c1:
-        search_query = text_field(
-            "Buscar descripción",
-            key="mov_table_search",
-            placeholder="Ej: Café, Gasolina",
+    with st.container(key="mov_filters_block"):
+        st.markdown(
+            '<div class="af-mov-filters-title">Filtros</div>',
+            unsafe_allow_html=True,
         )
-        _bind_live_search_filter("mov_table_search")
-    with row1_c2:
-        tx_type_filter = select_field("Tipo", ["Todo", "Ingresos", "Gastos"], key="mov_table_type_filter")
-    with row1_c3:
-        currency_filter = select_field("Moneda", ["Todas", "COP", "USD"], key="mov_table_currency_filter")
-    with row1_c4:
-        account_filter = select_field("Cuenta", account_filter_options, key="mov_table_account_filter")
+        row1_c1, row1_c2, row1_c3, row1_c4 = st.columns([1.6, 0.9, 0.9, 1.2])
+        with row1_c1:
+            search_query = text_field(
+                "Buscar descripción",
+                key="mov_table_search",
+                placeholder="Ej: Café, Gasolina",
+            )
+            _bind_live_search_filter("mov_table_search")
+        with row1_c2:
+            tx_type_filter = select_field("Tipo", ["Todo", "Ingresos", "Gastos"], key="mov_table_type_filter")
+        with row1_c3:
+            currency_filter = select_field("Moneda", ["Todas", "COP", "USD"], key="mov_table_currency_filter")
+        with row1_c4:
+            account_filter = select_field("Cuenta", account_filter_options, key="mov_table_account_filter")
 
-    row2_c1, row2_c2, row2_c3, row2_c4 = st.columns([1.2, 0.9, 0.9, 0.9])
-    with row2_c1:
-        period_filter = select_field(
-            "Periodo",
-            ["Todo", "Hoy", "Últimos 7 días", "Últimos 30 días", "Mes actual", "Personalizado"],
-            key="mov_table_period_filter",
-        )
+        row2_c1, row2_c2, row2_c3, row2_c4 = st.columns([1.2, 0.9, 0.9, 0.9])
+        with row2_c1:
+            period_filter = select_field(
+                "Periodo",
+                ["Todo", "Hoy", "Últimos 7 días", "Últimos 30 días", "Mes actual", "Personalizado"],
+                key="mov_table_period_filter",
+            )
 
     today = date.today()
     bounded_today = _clamp_to_bounds(today)
@@ -972,16 +987,16 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
     if from_date != default_from or to_date != default_to:
         active_filters.append(f"Fechas: {from_date} a {to_date}")
 
-    if active_filters:
-        _, clear_btn_col = st.columns([7, 1])
-        with clear_btn_col:
-            btn(
-                "Limpiar filtros",
-                key="mov_table_clear_filters",
-                variant="neutral",
-                use_container_width=False,
-                on_click=_reset_movement_filters,
-            )
+        if active_filters:
+            _, clear_btn_col = st.columns([7, 1])
+            with clear_btn_col:
+                btn(
+                    "Limpiar filtros",
+                    key="mov_table_clear_filters",
+                    variant="neutral",
+                    use_container_width=False,
+                    on_click=_reset_movement_filters,
+                )
 
     filtered_txs = transactions
     if tx_type_filter == "Ingresos":
@@ -1308,6 +1323,29 @@ def _handle_delete_transaction(selected_tx: dict) -> None:
 def movements_screen() -> None:
     """Render CRUD UI for user movements (create, edit, delete)."""
     inject_component_styles()
+    st.markdown(
+        """
+        <style>
+        .st-key-mov_screen_root {
+            margin-top: -1.4rem;
+        }
+        .stVerticalBlock.st-key-mov_screen_root {
+            gap: 0.4rem !important;
+        }
+        .st-key-mov_screen_root .af-section-header {
+            margin-top: 0 !important;
+            margin-bottom: 0.45rem !important;
+        }
+        .stVerticalBlock.st-key-mov_section_stack {
+            gap: 0.55rem !important;
+        }
+        .st-key-mov_section_stack [data-testid="stDivider"] {
+            margin: 0.35rem 0 !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
     movement_data = _load_movement_data()
     if movement_data is None:
@@ -1316,14 +1354,16 @@ def movements_screen() -> None:
     _, accounts, categories, transactions = movement_data
     account_options, category_options = _build_options(accounts, categories)
 
-    if not transactions:
-        render_empty_state(
-            "Aún no tienes movimientos",
-            "Empieza registrando tu primer ingreso o gasto con el formulario de abajo.",
-            icon="📊",
-        )
-        selected_tx = None
-    else:
-        selected_tx = _render_transactions_table(transactions, account_options)
-    st.divider()
-    _render_create_transaction_form(account_options, category_options, transactions, selected_tx=selected_tx)
+    with st.container(key="mov_screen_root"):
+        with st.container(key="mov_section_stack"):
+            if not transactions:
+                render_empty_state(
+                    "Aún no tienes movimientos",
+                    "Empieza registrando tu primer ingreso o gasto con el formulario de abajo.",
+                    icon="📊",
+                )
+                selected_tx = None
+            else:
+                selected_tx = _render_transactions_table(transactions, account_options)
+            st.divider()
+            _render_create_transaction_form(account_options, category_options, transactions, selected_tx=selected_tx)
