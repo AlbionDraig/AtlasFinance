@@ -62,6 +62,21 @@ def _format_card_amount(value: float) -> str:
     return f"{rounded:,.2f}"
 
 
+def _currency_symbol(currency: str) -> str:
+    """Return a compact currency symbol prefix for card amounts."""
+    code = (currency or "").strip().upper()
+    if code == "USD":
+        return "US$"
+    if code == "COP":
+        return "$"
+    return f"{code} " if code else ""
+
+
+def _format_money(value: float, currency: str) -> str:
+    """Format monetary values with symbol and smart decimals for cards."""
+    return f"{_currency_symbol(currency)}{_format_card_amount(value)}"
+
+
 def _filter_transactions_by_currency(rows: list[dict], currency: str) -> list[dict]:
     """Return only transactions matching the selected currency when available."""
     target = (currency or "").strip().upper()
@@ -798,7 +813,7 @@ def dashboard_screen() -> None:
     with k1:
         render_kpi_card(
             "Patrimonio neto",
-            _format_card_amount(net_worth_value),
+            _format_money(net_worth_value, currency),
             currency,
             badge=net_badge,
             badge_type=net_badge_type,
@@ -807,7 +822,7 @@ def dashboard_screen() -> None:
     with k2:
         render_kpi_card(
             "Ingresos",
-            _format_card_amount(current_income),
+            _format_money(current_income, currency),
             currency,
             badge=income_badge,
             badge_type=income_badge_type,
@@ -816,7 +831,7 @@ def dashboard_screen() -> None:
     with k3:
         render_kpi_card(
             "Gastos",
-            _format_card_amount(current_expense),
+            _format_money(current_expense, currency),
             currency,
             badge=expense_badge,
             badge_type=expense_badge_type,
@@ -874,13 +889,13 @@ def dashboard_screen() -> None:
         if not cat_rank.empty:
             top_label = _format_category_label(cat_rank.iloc[0][cat_col], category_lookup)
             top_value = float(cat_rank.iloc[0]["amount"])
-            top_cat_text = f"{top_label} · {top_value:,.0f} {currency}"
+            top_cat_text = f"{top_label} · {_format_money(top_value, currency)}"
 
     i1, i2 = st.columns(2)
     with i1:
         render_info_card(
             "Gasto promedio",
-            f"{avg_expense:,.0f} {currency}",
+            _format_money(avg_expense, currency),
             sub="Promedio de gasto por transacción.",
             tone="expense",
         )
