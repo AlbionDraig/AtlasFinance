@@ -476,7 +476,9 @@ def _chart_fixed_vs_variable(exp_df: pd.DataFrame, category_lookup: dict[int, st
 def dashboard_screen() -> None:
     """Render private financial dashboard with KPI cards and Plotly charts."""
     inject_component_styles()
-    section_header("Panorama financiero", "Vista general de tus finanzas en el período elegido.")
+    _hdr_left, _hdr_right = st.columns([10, 2])
+    with _hdr_left:
+        section_header("Panorama financiero", "Vista general de tus finanzas en el período elegido.")
 
     def _toast(message: str, icon: str = "") -> None:
         if hasattr(st, "toast"):
@@ -533,6 +535,20 @@ def dashboard_screen() -> None:
 
     if st.session_state.pop("db_filters_applied_notice", False):
         _toast("Filtros aplicados y sincronizados.", "✅")
+
+    # ── Quick currency selector (top-right, applies immediately) ─────────────
+    with _hdr_right:
+        currency_value = st.selectbox(
+            "Moneda",
+            ["COP", "USD"],
+            index=0 if st.session_state["db_currency"] == "COP" else 1,
+            help="Selecciona la moneda en la que quieres ver montos, tarjetas y gráficos.",
+        )
+        if currency_value != st.session_state["db_currency"]:
+            st.session_state["db_currency"] = currency_value
+            st.session_state["db_currency_draft"] = currency_value
+            st.session_state["db_last_applied"] = datetime.now().strftime("%H:%M:%S")
+            st.rerun()
 
     # Apply deferred reset for widget-bound draft values before widgets render.
     if st.session_state.get("db_reset_pending", False):
@@ -634,14 +650,14 @@ def dashboard_screen() -> None:
     st.session_state["db_refreshing"] = False
 
     net_worth_value = float(metrics.get("net_worth", 0) or 0)
-    if isinstance(accounts, list) and accounts:
+    if isinstance(accounts, list):
+        # Net worth card should strictly reflect balances in the selected currency.
         currency_accounts = [
             acc for acc in accounts if str(acc.get("currency") or "").strip().upper() == currency
         ]
-        if currency_accounts:
-            net_worth_value = float(
-                sum(float(acc.get("current_balance") or 0) for acc in currency_accounts)
-            )
+        net_worth_value = float(
+            sum(float(acc.get("current_balance") or 0) for acc in currency_accounts)
+        )
 
     current_income = _sum_amount_by_type(transactions, "income")
     current_expense = _sum_amount_by_type(transactions, "expense")
@@ -660,7 +676,7 @@ def dashboard_screen() -> None:
 
     # ── KPI strip ─────────────────────────────────────────────────────────────
     k1, k2, k3, k4 = st.columns(4)
-    savings = metrics.get("savings_rate", 0.0)
+    savings = current_savings
     with k1:
         render_kpi_card(
             "Patrimonio neto",
@@ -673,7 +689,7 @@ def dashboard_screen() -> None:
     with k2:
         render_kpi_card(
             "Ingresos",
-            f"{metrics.get('total_income', 0):,.2f}",
+            f"{current_income:,.2f}",
             currency,
             badge=income_badge,
             badge_type=income_badge_type,
@@ -682,18 +698,27 @@ def dashboard_screen() -> None:
     with k3:
         render_kpi_card(
             "Gastos",
-            f"{metrics.get('total_expenses', 0):,.2f}",
+            f"{current_expense:,.2f}",
             currency,
             badge=expense_badge,
             badge_type=expense_badge_type,
             badge_tooltip=expense_badge_tip,
         )
     with k4:
-        rate_quality = "buena" if savings >= 20 else ("ok" if savings >= 5 else "baja")
+        if current_income == 0:
+            savings_display = "Sin datos"
+            savings_sub = "sin ingresos en el período"
+        elif savings == 0.0:
+            savings_display = "Sin ahorro"
+            savings_sub = "ingresos = gastos"
+        else:
+            rate_quality = "buena" if savings >= 20 else ("ok" if savings >= 5 else "baja")
+            savings_display = f"{savings:.1f}%"
+            savings_sub = f"del ingreso · {rate_quality}"
         render_kpi_card(
             "Tasa de ahorro",
-            f"{savings:.1f}%",
-            f"del ingreso · {rate_quality}",
+            savings_display,
+            savings_sub,
             badge=savings_badge,
             badge_type=savings_badge_type,
             badge_tooltip=savings_badge_tip,
@@ -761,33 +786,26 @@ def dashboard_screen() -> None:
             tone="impact",
         )
 
-    # ── Filters (UI position requested: after cards, before charts) ─────────
-    st.markdown("### Filtros")
+    # ── Filters (period only; currency handled in header) ───────────────────
+    st.markdown("### Filtros de período")
     filter_panel = st.container(border=True)
     with filter_panel:
-        f1, f2, f3, f4 = st.columns([1, 1, 1, 1])
+        f1, f2, f3, _ = st.columns([1.5, 1.5, 1.5, 1.5])
         with f1:
-            st.selectbox(
-                "Moneda",
-                ["COP", "USD"],
-                key="db_currency_draft",
-                help="Selecciona la moneda en la que quieres ver montos, tarjetas y gráficos.",
-            )
-        with f2:
             st.selectbox(
                 "Período",
                 ["Año actual", "Últimos 90 días", "Últimos 30 días", "Personalizado"],
                 key="db_period_draft",
                 help="Define el rango de tiempo para analizar tus finanzas.",
             )
-        with f3:
+        with f2:
             st.date_input(
                 "Desde",
                 key="db_from_draft",
                 disabled=st.session_state["db_period_draft"] != "Personalizado",
                 help="Fecha inicial del análisis. Solo se activa cuando eliges 'Personalizado'.",
             )
-        with f4:
+        with f3:
             st.date_input(
                 "Hasta",
                 key="db_to_draft",
@@ -797,8 +815,7 @@ def dashboard_screen() -> None:
 
         # Compare draft vs applied to indicate pending changes.
         pending_changes = (
-            st.session_state["db_currency_draft"] != st.session_state["db_currency"]
-            or st.session_state["db_period_draft"] != st.session_state["db_period"]
+            st.session_state["db_period_draft"] != st.session_state["db_period"]
             or (
                 st.session_state["db_period_draft"] == "Personalizado"
                 and (
@@ -829,7 +846,6 @@ def dashboard_screen() -> None:
             show_warning("Cambios pendientes: presiona Aplicar para actualizar la vista.")
 
     if apply_clicked:
-        st.session_state["db_currency"] = st.session_state["db_currency_draft"]
         st.session_state["db_period"] = st.session_state["db_period_draft"]
         st.session_state["db_from"] = st.session_state["db_from_draft"]
         st.session_state["db_to"] = st.session_state["db_to_draft"]
@@ -847,7 +863,6 @@ def dashboard_screen() -> None:
         st.rerun()
 
     if reset_clicked:
-        st.session_state["db_currency"] = "COP"
         st.session_state["db_period"] = "Año actual"
         st.session_state["db_from"] = default_from
         st.session_state["db_to"] = default_to
