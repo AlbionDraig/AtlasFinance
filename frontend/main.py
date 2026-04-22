@@ -156,28 +156,32 @@ def app() -> None:
 
     nav_main, nav_more = st.columns([11, 1], gap="small")
     with nav_main:
+        nav_key = "main_nav_primary"
+        desired_primary = current_section if current_section in primary_options else primary_options[0]
+        if st.session_state.get(nav_key) not in primary_options:
+            st.session_state[nav_key] = desired_primary
+
         if hasattr(st, "segmented_control"):
             selected_primary = st.segmented_control(
                 "",
                 options=primary_options,
-                default=current_section if current_section in primary_options else primary_options[0],
+                default=st.session_state[nav_key],
+                key=nav_key,
+                selection_mode="single",
                 label_visibility="collapsed",
             )
         else:
-            primary_index = (
-                primary_options.index(current_section)
-                if current_section in primary_options
-                else 0
-            )
+            primary_index = primary_options.index(st.session_state[nav_key])
             selected_primary = st.radio(
                 "",
                 primary_options,
                 index=primary_index,
                 horizontal=True,
+                key=nav_key,
                 label_visibility="collapsed",
             )
-        if selected_primary:
-            current_section = selected_primary
+
+        current_section = selected_primary or st.session_state.get(nav_key, desired_primary)
 
     with nav_more:
         if overflow_options and hasattr(st, "popover"):
@@ -186,6 +190,7 @@ def app() -> None:
                 for label in overflow_options:
                     if st.button(label, key=f"main_overflow_{section_options[label]}", use_container_width=True):
                         st.session_state["main_section"] = label
+                        st.session_state["main_nav_primary"] = label if label in primary_options else primary_options[0]
                         RERUN()
         elif overflow_options:
             selected_extra = st.selectbox(
@@ -196,6 +201,7 @@ def app() -> None:
             )
             if selected_extra:
                 current_section = selected_extra
+                st.session_state["main_nav_primary"] = selected_extra if selected_extra in primary_options else primary_options[0]
         else:
             st.markdown(
                 '<div class="af-nav-more-disabled"><span>Más</span></div>',
