@@ -1184,6 +1184,54 @@ def _inject_sticky_filter_style() -> None:
             margin-bottom: 0 !important;
         }
 
+        /* === HEIGHT NORMALIZATION ===
+           Force all controls to the same 38px height so the 4 columns
+           always line up regardless of Streamlit's internal DOM changes. */
+
+        /* Uniform label row height */
+        .st-key-sticky-period-filter [data-testid="stWidgetLabel"] {
+            height: 20px !important;
+            min-height: 20px !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+
+        /* Outer control row: same height for selectbox and date_input */
+        .st-key-sticky-period-filter [data-testid="stSelectbox"] > div:first-child,
+        .st-key-sticky-period-filter [data-testid="stDateInput"] > div:first-child {
+            height: 38px !important;
+            min-height: 38px !important;
+            max-height: 38px !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Inner trigger row inside selectbox */
+        .st-key-sticky-period-filter [data-testid="stSelectbox"] > div:first-child > div {
+            height: 38px !important;
+            min-height: 38px !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+
+        /* Actual input element inside date_input */
+        .st-key-sticky-period-filter [data-testid="stDateInput"] input {
+            height: 38px !important;
+            min-height: 38px !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Hide validation/instruction nodes that shift date_input height —
+           errors are shown as toast in Spanish instead. */
+        .st-key-sticky-period-filter [data-testid="InputInstructions"],
+        .st-key-sticky-period-filter [data-testid="stDateInputError"],
+        .st-key-sticky-period-filter [data-testid="stDateInput"] ~ small {
+            display: none !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+
         /* Ensure ancestor chain doesn't create an intermediate scroll context */
         section[data-testid="stMain"] .block-container,
         section[data-testid="stMain"] [data-testid="stVerticalBlock"],
