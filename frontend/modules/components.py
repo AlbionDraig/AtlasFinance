@@ -839,8 +839,6 @@ def number_field(
         label=label,
         key=display_key,
         disabled=disabled,
-        on_change=_sync_number_display,
-        args=(display_key, key, decimals, min_value, max_value, locale_key),
     )
     if help is not None:
         call_kw["help"] = help
