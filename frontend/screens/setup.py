@@ -4,6 +4,13 @@ from __future__ import annotations
 import streamlit as st
 
 from modules.api_client import api_request
+from modules.components import (
+    inject_component_styles,
+    number_field,
+    section_header,
+    select_field,
+    text_field,
+)
 from modules.config import RERUN
 from modules.notifications import show_error, show_success
 from modules.ui import (
@@ -11,7 +18,6 @@ from modules.ui import (
     render_field_with_tooltip,
     render_form_label,
     render_info_card,
-    render_section_header,
     show_form_error,
     validate_text_field,
 )
@@ -111,11 +117,11 @@ def _render_account_form(banks: list[dict]) -> None:
             selected_bank = ""
         else:
             bank_options = _build_friendly_bank_options(banks)
-            account_name = st.text_input("Nombre de la cuenta", key="setup_account_name")
-            account_type = st.selectbox("Tipo", ["savings", "checking"], key="setup_account_type")
-            account_currency = st.selectbox("Moneda", ["COP", "USD"], key="setup_account_currency")
-            balance = st.number_input("Saldo inicial", min_value=0.0, step=10.0, key="setup_account_balance")
-            selected_bank = st.selectbox("Banco", list(bank_options.keys()), key="setup_selected_bank")
+            account_name = text_field("Nombre de la cuenta", key="setup_account_name", placeholder="Ej: Cuenta ahorros personal")
+            account_type = select_field("Tipo", ["savings", "checking"], key="setup_account_type")
+            account_currency = select_field("Moneda", ["COP", "USD"], key="setup_account_currency")
+            balance = number_field("Saldo inicial", min_value=0.0, step=10.0, key="setup_account_balance")
+            selected_bank = select_field("Banco", list(bank_options.keys()), key="setup_selected_bank")
 
         submit = st.form_submit_button("Guardar cuenta", use_container_width=True, disabled=not bool(banks))
 
@@ -174,6 +180,7 @@ def _render_category_form() -> None:
 
 def setup_screen() -> None:
     """Render the setup screen for banks, accounts and categories."""
+    inject_component_styles()
     import requests
 
     try:
@@ -208,11 +215,7 @@ def setup_screen() -> None:
     st.divider()
 
     # ── sub-tabs ─────────────────────────────────────────────────────────────
-    render_section_header(
-        "Configuración",
-        "Datos base",
-        "Gestiona bancos, cuentas bancarias y categorías de gasto.",
-    )
+    section_header("Configuración", "Gestiona bancos, cuentas bancarias y categorías de gasto.")
 
     tab_bank, tab_account, tab_category = st.tabs(["🏦 Banco", "💳 Cuenta", "🏷️ Categoría"])
 

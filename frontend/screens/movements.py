@@ -8,12 +8,19 @@ import requests
 import streamlit as st
 
 from modules.api_client import api_request, parse_iso_datetime
+from modules.components import (
+    btn,
+    date_field,
+    inject_component_styles,
+    number_field,
+    section_header,
+    select_field,
+    text_field,
+    time_field,
+)
 from modules.config import RERUN
 from modules.notifications import show_error, show_success
-from modules.ui import (
-    render_empty_state,
-    render_section_header,
-)
+from modules.ui import render_empty_state
 
 
 def _show_api_result(response: requests.Response, success_message: str, error_message: str) -> None:
@@ -110,103 +117,7 @@ def _load_movement_data() -> tuple[list[dict], list[dict], list[dict], list[dict
     )
 
 
-def _inject_action_button_styles() -> None:
-    """Apply semantic colors for movement actions (save, delete, undo, neutral)."""
-    st.markdown(
-        """
-        <style>
-        .st-key-mov_form_submit button,
-        .st-key-mov_form_submit_top button,
-        .st-key-mov_form_delete_confirm button,
-        .st-key-mov_form_delete_arm button,
-        .st-key-mov_undo_last_deleted button,
-        .st-key-mov_undo_last_created button,
-        .st-key-mov_form_start_new button,
-        .st-key-mov_form_delete_cancel button,
-        .st-key-mov_table_clear_filters button {
-            font-weight: 700 !important;
-            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2) !important;
-        }
 
-        .st-key-mov_form_submit button,
-        .st-key-mov_form_submit_top button {
-            background: #15803d !important;
-            border-color: #15803d !important;
-            color: #ffffff !important;
-        }
-        .st-key-mov_form_submit button:hover,
-        .st-key-mov_form_submit_top button:hover {
-            background: #166534 !important;
-            border-color: #166534 !important;
-            color: #ffffff !important;
-        }
-
-        .st-key-mov_form_delete_confirm button {
-            background: #dc2626 !important;
-            border-color: #dc2626 !important;
-            color: #ffffff !important;
-        }
-        .st-key-mov_form_delete_confirm button:hover {
-            background: #b91c1c !important;
-            border-color: #b91c1c !important;
-            color: #ffffff !important;
-        }
-
-        .st-key-mov_form_delete_arm button {
-            border-color: #b91c1c !important;
-            color: #ffffff !important;
-            background: #ef4444 !important;
-        }
-        .st-key-mov_form_delete_arm button:hover {
-            border-color: #991b1b !important;
-            color: #ffffff !important;
-            background: #dc2626 !important;
-        }
-
-        .st-key-mov_undo_last_deleted button,
-        .st-key-mov_undo_last_created button {
-            background: #f59e0b !important;
-            border-color: #b45309 !important;
-            color: #111827 !important;
-        }
-        .st-key-mov_undo_last_deleted button:hover,
-        .st-key-mov_undo_last_created button:hover {
-            background: #d97706 !important;
-            border-color: #92400e !important;
-            color: #111827 !important;
-        }
-
-        .st-key-mov_form_start_new button,
-        .st-key-mov_form_delete_cancel button,
-        .st-key-mov_table_clear_filters button {
-            border-color: #334155 !important;
-            color: #ffffff !important;
-            background: #475569 !important;
-        }
-        .st-key-mov_form_start_new button:hover,
-        .st-key-mov_form_delete_cancel button:hover,
-        .st-key-mov_table_clear_filters button:hover {
-            border-color: #1e293b !important;
-            color: #ffffff !important;
-            background: #334155 !important;
-        }
-
-        .st-key-mov_form_submit button:focus-visible,
-        .st-key-mov_form_submit_top button:focus-visible,
-        .st-key-mov_form_delete_confirm button:focus-visible,
-        .st-key-mov_form_delete_arm button:focus-visible,
-        .st-key-mov_undo_last_deleted button:focus-visible,
-        .st-key-mov_undo_last_created button:focus-visible,
-        .st-key-mov_form_start_new button:focus-visible,
-        .st-key-mov_form_delete_cancel button:focus-visible,
-        .st-key-mov_table_clear_filters button:focus-visible {
-            outline: 2px solid #0ea5e9 !important;
-            outline-offset: 1px !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
 
 
 def _build_options(accounts: list[dict], categories: list[dict]) -> tuple[dict[str, int], dict[str, int | None]]:
@@ -452,8 +363,7 @@ def _render_create_transaction_form(
     elif selected_tx is None and st.session_state.get("mov_form_loaded_tx_id") is None:
         _reset_transaction_form(account_options)
 
-    render_section_header(
-        "Operación",
+    section_header(
         "Registrar o ajustar movimiento",
         "Cuando eliges un movimiento en la tabla, este formulario se precarga para editarlo. Si no hay selección, crea uno nuevo.",
     )
@@ -549,12 +459,7 @@ def _render_create_transaction_form(
         with action_col:
             st.caption("Modo edición activo. Puedes guardar cambios o salir para crear un movimiento nuevo.")
         with reset_col:
-            if st.button(
-                "Crear nuevo",
-                key="mov_form_start_new",
-                use_container_width=True,
-                type="secondary",
-            ):
+            if btn("Crear nuevo", key="mov_form_start_new", variant="neutral", use_container_width=True):
                 st.session_state["mov_selected_tx_id"] = None
                 st.session_state["mov_form_loaded_tx_id"] = None
                 st.session_state["mov_clear_table_selection_pending"] = True
@@ -574,24 +479,24 @@ def _render_create_transaction_form(
                     f"{amount_text} {last_created.get('currency', '')}"
                 )
             with undo_col:
-                st.button(
+                btn(
                     "Deshacer",
                     key="mov_undo_last_created",
+                    variant="warning",
                     on_click=_undo_last_created_transaction,
-                    type="secondary",
                     use_container_width=True,
                 )
 
     t_col_1, t_col_2 = st.columns(2)
     with t_col_1:
-        description = st.text_input("Descripción", key="mov_form_description")
+        description = text_field("Descripción", key="mov_form_description", placeholder="Ej: Supermercado, Gasolina")
         min_amount = 0.01 if active_mode == "edit" else 0.0
-        amount = st.number_input("Monto", min_value=min_amount, step=10.0, key="mov_form_amount")
-        currency = st.selectbox("Moneda", ["COP", "USD"], key="mov_form_currency")
+        amount = number_field("Monto", min_value=min_amount, step=10.0, key="mov_form_amount")
+        currency = select_field("Moneda", ["COP", "USD"], key="mov_form_currency")
         filtered_account_labels = _account_labels_for_currency(account_options, currency)
         if st.session_state.get("mov_form_account_label") not in filtered_account_labels:
             st.session_state["mov_form_account_label"] = filtered_account_labels[0]
-        selected_account_label = st.selectbox(
+        selected_account_label = select_field(
             "Cuenta",
             filtered_account_labels if account_options else ["No hay cuentas"],
             disabled=not bool(account_options),
@@ -599,17 +504,17 @@ def _render_create_transaction_form(
         )
 
     with t_col_2:
-        transaction_type_ui = st.selectbox("Tipo", TYPE_OPTIONS_UI, key="mov_form_type_ui")
+        transaction_type_ui = select_field("Tipo", TYPE_OPTIONS_UI, key="mov_form_type_ui")
         filtered_category_labels = _category_labels_for_type(category_options, transaction_type_ui)
         if st.session_state.get("mov_form_category_label") not in filtered_category_labels:
             st.session_state["mov_form_category_label"] = "Sin categoría"
-        selected_category_label = st.selectbox(
+        selected_category_label = select_field(
             "Categoría",
             filtered_category_labels,
             key="mov_form_category_label",
         )
-        occurred_date = st.date_input("Fecha", key="mov_form_date")
-        occurred_time = st.time_input("Hora", key="mov_form_time")
+        occurred_date = date_field("Fecha", key="mov_form_date")
+        occurred_time = time_field("Hora", key="mov_form_time")
 
     st.caption("Consejo: la cuenta y la moneda deben coincidir para evitar errores de registro.")
 
@@ -640,11 +545,11 @@ def _render_create_transaction_form(
     if active_mode == "create" and create_has_pending_changes:
         quick_action_cols = st.columns([3, 1])
         with quick_action_cols[1]:
-            submit_transaction_top = st.button(
+            submit_transaction_top = btn(
                 "Guardar ahora",
                 key="mov_form_submit_top",
+                variant="success",
                 use_container_width=True,
-                type="secondary",
                 disabled=st.session_state.get("mov_form_submitting", False),
             )
 
@@ -656,11 +561,11 @@ def _render_create_transaction_form(
             st.session_state[delete_armed_key] = None
 
         with submit_cols[1]:
-            arm_delete = st.button(
+            arm_delete = btn(
                 "Eliminar",
                 key="mov_form_delete_arm",
+                variant="danger-outline",
                 use_container_width=True,
-                type="secondary",
                 disabled=st.session_state.get("mov_form_submitting", False),
             )
             if arm_delete:
@@ -671,19 +576,14 @@ def _render_create_transaction_form(
                 st.warning("Confirma eliminación. Esta acción no se puede deshacer.")
                 confirm_col_a, confirm_col_b = st.columns(2)
                 with confirm_col_a:
-                    delete_transaction_clicked = st.button(
+                    delete_transaction_clicked = btn(
                         "Confirmar",
                         key="mov_form_delete_confirm",
-                        type="primary",
+                        variant="danger",
                         use_container_width=True,
                     )
                 with confirm_col_b:
-                    if st.button(
-                        "Cancelar",
-                        key="mov_form_delete_cancel",
-                        use_container_width=True,
-                        type="secondary",
-                    ):
+                    if btn("Cancelar", key="mov_form_delete_cancel", variant="neutral", use_container_width=True):
                         st.session_state[delete_armed_key] = None
                         RERUN()
 
@@ -693,11 +593,11 @@ def _render_create_transaction_form(
         submit_button_col = submit_cols[1]
 
     with submit_button_col:
-        submit_transaction_bottom = st.button(
+        submit_transaction_bottom = btn(
             "Guardar cambios" if active_mode == "edit" else "Guardar movimiento",
             key="mov_form_submit",
+            variant="success",
             use_container_width=True,
-            type="primary",
             disabled=(not has_pending_changes) or st.session_state.get("mov_form_submitting", False),
         )
     st.markdown("</div>", unsafe_allow_html=True)
@@ -808,7 +708,7 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         unsafe_allow_html=True,
     )
 
-    st.markdown('<div class="af-mov-title">Movimientos</div>', unsafe_allow_html=True)
+    section_header("Movimientos")
 
     tx_dates = [parse_iso_datetime(str(tx.get("occurred_at") or "")).date() for tx in transactions]
     default_from = min(tx_dates) if tx_dates else date.today()
@@ -837,28 +737,16 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         for key, value in filter_defaults.items():
             st.session_state[key] = value
 
-    st.markdown('<div class="af-mov-filters-title">Filtros</div>', unsafe_allow_html=True)
+    st.markdown("**Filtros**")
     top_col_1, top_col_2, top_col_3, top_col_4 = st.columns([1.2, 1.0, 1.1, 0.9])
     with top_col_1:
-        tx_type_filter = st.selectbox(
-            "Tipo",
-            ["Todo", "Ingresos", "Gastos"],
-            key="mov_table_type_filter",
-        )
+        tx_type_filter = select_field("Tipo", ["Todo", "Ingresos", "Gastos"], key="mov_table_type_filter")
     with top_col_2:
-        currency_filter = st.selectbox(
-            "Moneda",
-            ["Todas", "COP", "USD"],
-            key="mov_table_currency_filter",
-        )
+        currency_filter = select_field("Moneda", ["Todas", "COP", "USD"], key="mov_table_currency_filter")
     with top_col_3:
-        account_filter = st.selectbox(
-            "Cuenta",
-            account_filter_options,
-            key="mov_table_account_filter",
-        )
+        account_filter = select_field("Cuenta", account_filter_options, key="mov_table_account_filter")
     with top_col_4:
-        period_filter = st.selectbox(
+        period_filter = select_field(
             "Periodo",
             ["Todo", "Hoy", "Ultimos 7 dias", "Ultimos 30 dias", "Mes actual", "Personalizado"],
             key="mov_table_period_filter",
@@ -884,17 +772,13 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
 
     bottom_col_1, bottom_col_2, bottom_col_3, bottom_col_4 = st.columns([1.2, 0.8, 0.8, 0.7])
     with bottom_col_1:
-        search_query = st.text_input(
-            "Buscar descripcion",
-            key="mov_table_search",
-            placeholder="Ej: Cafe, Gasolina",
-        )
+        search_query = text_field("Buscar descripción", key="mov_table_search", placeholder="Ej: Cafe, Gasolina")
     with bottom_col_2:
-        from_date = st.date_input("Desde", key="mov_table_from_date")
+        from_date = date_field("Desde", key="mov_table_from_date")
     with bottom_col_3:
-        to_date = st.date_input("Hasta", key="mov_table_to_date")
+        to_date = date_field("Hasta", key="mov_table_to_date")
     with bottom_col_4:
-        limit = st.selectbox("Mostrar", [8, 12, 20, 30], key="mov_table_limit")
+        limit = select_field("Mostrar", [8, 12, 20, 30], key="mov_table_limit")
 
     if from_date > to_date:
         st.warning("El rango de fechas es invalido. Ajusta Desde/Hasta.")
@@ -919,13 +803,7 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         if active_filters:
             st.caption("Filtros activos: " + " | ".join(active_filters))
     with aux_col_2:
-        st.button(
-            "Limpiar",
-            key="mov_table_clear_filters",
-            use_container_width=True,
-            type="secondary",
-            on_click=_reset_movement_filters,
-        )
+        btn("Limpiar", key="mov_table_clear_filters", variant="neutral", use_container_width=True, on_click=_reset_movement_filters)
 
     filtered_txs = transactions
     if tx_type_filter == "Ingresos":
@@ -1171,12 +1049,7 @@ def _render_undo_deleted_footer() -> None:
             f"{deleted_amount} {last_deleted.get('currency', '')}"
         )
     with undo_action_col:
-        if st.button(
-            "Deshacer eliminación",
-            key="mov_undo_last_deleted",
-            type="primary",
-            use_container_width=True,
-        ):
+        if btn("Deshacer eliminación", key="mov_undo_last_deleted", variant="warning", use_container_width=True):
             _undo_last_deleted_transaction()
 
 
@@ -1238,7 +1111,7 @@ def _handle_delete_transaction(selected_tx: dict) -> None:
 
 def movements_screen() -> None:
     """Render CRUD UI for user movements (create, edit, delete)."""
-    _inject_action_button_styles()
+    inject_component_styles()
 
     movement_data = _load_movement_data()
     if movement_data is None:

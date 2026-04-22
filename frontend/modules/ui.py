@@ -1073,7 +1073,7 @@ def inject_theme() -> None:
         }
 
         .af-filter-status {
-            min-height: 38px !important;
+            min-height: 42px !important;
             border-radius: 10px !important;
             font-size: 0.78rem !important;
             font-weight: 600 !important;
@@ -1083,6 +1083,7 @@ def inject_theme() -> None:
             line-height: 1.25 !important;
             width: 100% !important;
             box-sizing: border-box !important;
+            margin-top: 0 !important;
         }
 
         .af-filter-status.pending {

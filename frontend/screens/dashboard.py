@@ -8,6 +8,7 @@ import requests
 import streamlit as st
 
 from modules.api_client import api_request
+from modules.components import btn, info_box, inject_component_styles, section_header, show_warning
 from modules.ui import (
     render_info_card,
     render_kpi_card,
@@ -51,6 +52,16 @@ def _format_category_label(raw: object, category_lookup: dict[int, str] | None =
 def _sum_amount_by_type(rows: list[dict], tx_type: str) -> float:
     """Sum amounts for a transaction type in a list of serialized transactions."""
     return float(sum(float(tx.get("amount") or 0) for tx in rows if tx.get("transaction_type") == tx_type))
+
+
+def _filter_transactions_by_currency(rows: list[dict], currency: str) -> list[dict]:
+    """Return only transactions matching the selected currency when available."""
+    target = (currency or "").strip().upper()
+    if not target:
+        return rows
+    if not any("currency" in tx for tx in rows):
+        return rows
+    return [tx for tx in rows if str(tx.get("currency") or "").strip().upper() == target]
 
 
 def _delta_badge(current: float, previous: float, *, inverse: bool = False) -> tuple[str, str, str]:
@@ -464,8 +475,14 @@ def _chart_fixed_vs_variable(exp_df: pd.DataFrame, category_lookup: dict[int, st
 
 def dashboard_screen() -> None:
     """Render private financial dashboard with KPI cards and Plotly charts."""
-    st.markdown("## Panorama financiero")
-    st.caption("Vista general de tus finanzas en el período elegido.")
+    inject_component_styles()
+    section_header("Panorama financiero", "Vista general de tus finanzas en el período elegido.")
+
+    def _toast(message: str, icon: str = "") -> None:
+        if hasattr(st, "toast"):
+            st.toast(message, icon=icon or None)
+        else:
+            st.info(f"{icon} {message}".strip())
 
     # ── Filter state (draft + applied) ──────────────────────────────────────
     today = date.today()
@@ -514,6 +531,9 @@ def dashboard_screen() -> None:
     if "db_secondary_chart_type" not in st.session_state:
         st.session_state["db_secondary_chart_type"] = "Flujo neto mensual (área)"
 
+    if st.session_state.pop("db_filters_applied_notice", False):
+        _toast("Filtros aplicados y sincronizados.", "✅")
+
     # Apply deferred reset for widget-bound draft values before widgets render.
     if st.session_state.get("db_reset_pending", False):
         st.session_state["db_currency_draft"] = st.session_state.get("db_currency", "COP")
@@ -560,10 +580,7 @@ def dashboard_screen() -> None:
     currency = st.session_state["db_currency"]
 
     if st.session_state.get("db_refreshing", False):
-        st.markdown(
-            '<div class="af-filter-status pending">Actualizando tablero con los nuevos filtros...</div>',
-            unsafe_allow_html=True,
-        )
+        _toast("Actualizando tablero con los nuevos filtros...", "⏳")
 
     # ── Data fetch ────────────────────────────────────────────────────────────
     try:
@@ -574,6 +591,7 @@ def dashboard_screen() -> None:
             params={
                 "start_date": f"{date_from.isoformat()}T00:00:00",
                 "end_date": f"{date_to.isoformat()}T23:59:59",
+                "currency": currency,
             },
         )
         prev_tx_resp = api_request(
@@ -582,6 +600,7 @@ def dashboard_screen() -> None:
             params={
                 "start_date": f"{prev_from.isoformat()}T00:00:00",
                 "end_date": f"{prev_to.isoformat()}T23:59:59",
+                "currency": currency,
             },
         )
         metrics_resp.raise_for_status()
@@ -607,8 +626,8 @@ def dashboard_screen() -> None:
         category_lookup = {}
 
     metrics = metrics_resp.json()
-    transactions = tx_resp.json()
-    previous_transactions = prev_tx_resp.json()
+    transactions = _filter_transactions_by_currency(tx_resp.json(), currency)
+    previous_transactions = _filter_transactions_by_currency(prev_tx_resp.json(), currency)
     st.session_state["db_refreshing"] = False
 
     current_income = _sum_amount_by_type(transactions, "income")
@@ -672,22 +691,25 @@ def dashboard_screen() -> None:
         f"{prev_from.isoformat()} a {prev_to.isoformat()} ({period_days} días)."
     )
 
-    if not transactions:
-        return
-
     # ── DataFrame prep ────────────────────────────────────────────────────────
-    df = pd.DataFrame(transactions)
-    df["occurred_at"] = pd.to_datetime(df["occurred_at"], utc=True).dt.tz_convert(None)
-    df["month"] = df["occurred_at"].dt.to_period("M").astype(str)
+    if transactions:
+        df = pd.DataFrame(transactions)
+        df["occurred_at"] = pd.to_datetime(df["occurred_at"], utc=True).dt.tz_convert(None)
+        df["month"] = df["occurred_at"].dt.to_period("M").astype(str)
 
-    monthly = (
-        df.groupby(["month", "transaction_type"], as_index=False)["amount"]
-        .sum()
-        .pivot(index="month", columns="transaction_type", values="amount")
-        .fillna(0)
-    )
-    exp_df = df[df["transaction_type"] == "expense"].copy()
-    income_df = df[df["transaction_type"] == "income"].copy()
+        monthly = (
+            df.groupby(["month", "transaction_type"], as_index=False)["amount"]
+            .sum()
+            .pivot(index="month", columns="transaction_type", values="amount")
+            .fillna(0)
+        )
+        exp_df = df[df["transaction_type"] == "expense"].copy()
+        income_df = df[df["transaction_type"] == "income"].copy()
+    else:
+        df = pd.DataFrame(columns=["occurred_at", "transaction_type", "amount", "category_id", "currency"])
+        monthly = pd.DataFrame(columns=["income", "expense"]) 
+        exp_df = pd.DataFrame(columns=df.columns)
+        income_df = pd.DataFrame(columns=df.columns)
 
     period_income = float(income_df["amount"].sum()) if not income_df.empty else 0.0
     period_expense = float(exp_df["amount"].sum()) if not exp_df.empty else 0.0
@@ -759,9 +781,6 @@ def dashboard_screen() -> None:
                 help="Fecha final del análisis. Solo se activa cuando eliges 'Personalizado'.",
             )
 
-        if st.session_state["db_period_draft"] != "Personalizado":
-            st.caption("Para editar fechas manualmente, cambia Período a Personalizado.")
-
         # Compare draft vs applied to indicate pending changes.
         pending_changes = (
             st.session_state["db_currency_draft"] != st.session_state["db_currency"]
@@ -775,27 +794,25 @@ def dashboard_screen() -> None:
             )
         )
 
-        b1, b2, b3 = st.columns([1, 1, 4])
+        b1, b2, _ = st.columns([1, 1, 4])
         with b1:
-            apply_clicked = st.button(
+            apply_clicked = btn(
                 "Aplicar",
+                key="db_apply_filters",
+                variant="success",
                 use_container_width=True,
-                type="primary",
                 disabled=not pending_changes,
             )
         with b2:
-            reset_clicked = st.button("Restablecer", use_container_width=True, type="secondary")
-        with b3:
-            if pending_changes:
-                st.markdown(
-                    '<div class="af-filter-status pending">Cambios pendientes: presiona Aplicar para actualizar la vista.</div>',
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(
-                    '<div class="af-filter-status clean">Filtros aplicados y sincronizados.</div>',
-                    unsafe_allow_html=True,
-                )
+            reset_clicked = btn(
+                "Restablecer",
+                key="db_reset_filters",
+                variant="neutral",
+                use_container_width=True,
+            )
+
+        if pending_changes:
+            show_warning("Cambios pendientes: presiona Aplicar para actualizar la vista.")
 
     if apply_clicked:
         st.session_state["db_currency"] = st.session_state["db_currency_draft"]
@@ -811,6 +828,7 @@ def dashboard_screen() -> None:
             "secondary_chart_type": st.session_state.get("db_secondary_chart_type", "Flujo neto mensual (área)"),
         }
         st.session_state["db_refreshing"] = True
+        st.session_state["db_filters_applied_notice"] = True
         st.session_state["db_last_applied"] = datetime.now().strftime("%H:%M:%S")
         st.rerun()
 
@@ -829,6 +847,7 @@ def dashboard_screen() -> None:
             "secondary_chart_type": st.session_state.get("db_secondary_chart_type", "Flujo neto mensual (área)"),
         }
         st.session_state["db_refreshing"] = True
+        st.session_state["db_filters_applied_notice"] = True
         st.session_state["db_last_applied"] = datetime.now().strftime("%H:%M:%S")
         st.rerun()
 
@@ -872,6 +891,8 @@ def dashboard_screen() -> None:
             "Ahorro acumulado (línea)": "Muestra cómo evoluciona tu ahorro neto a lo largo del período, acumulando mes a mes ingresos menos gastos.",
         }
 
+        info_box(chart_description[chart_type], variant="info")
+
         if chart_type == "Ingresos vs gastos (barras)":
             st.plotly_chart(
                 _chart_income_expense(monthly),
@@ -894,9 +915,6 @@ def dashboard_screen() -> None:
                 config={"displayModeBar": False},
             )
 
-        with st.expander("¿Qué muestra este gráfico?"):
-            st.write(chart_description[chart_type])
-
         secondary_options = [
             "Flujo neto mensual (área)",
             "Distribución de gasto (donut)",
@@ -918,6 +936,8 @@ def dashboard_screen() -> None:
                 "Distribución de gasto (donut)": "Visualiza el peso relativo de cada categoría de gasto dentro del total del período.",
                 "Gasto fijo vs variable (barras)": "Separa el gasto total entre compromisos recurrentes y gasto más flexible para controlar presupuesto.",
             }
+
+            info_box(secondary_description[secondary_chart_type], variant="info")
 
             if secondary_chart_type == "Flujo neto mensual (área)":
                 st.plotly_chart(
@@ -943,7 +963,5 @@ def dashboard_screen() -> None:
                     )
                 else:
                     st.info("Sin gastos registrados en el período.")
-
-            st.caption(secondary_description[secondary_chart_type])
 
 
