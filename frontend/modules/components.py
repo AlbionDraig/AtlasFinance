@@ -1108,26 +1108,23 @@ def info_box(message: str, variant: str = "info") -> None:
 
 # ── Notifications / Toasts ──────────────────────────────────────────
 
-def show_success(message: str, icon: str = "✓") -> None:
-    """
-    Show a success toast notification.
-
-    Example
-    -------
-    show_success("Movimiento guardado correctamente.")
-    """
-    st.success(f"{icon} {message}")
+def _emit_toast(message: str, icon: str, fallback) -> None:
+    """Emit a toast when available, falling back to inline alert otherwise."""
+    toast_fn = getattr(st, "toast", None)
+    if callable(toast_fn):
+        toast_fn(message, icon=icon)
+        return
+    fallback(f"{icon} {message}")
 
 
-def show_error(message: str, icon: str = "✗") -> None:
-    """
-    Show an error toast notification.
+def show_success(message: str, icon: str = "✅") -> None:
+    """Show a success toast notification (inline fallback)."""
+    _emit_toast(message, icon, st.success)
 
-    Example
-    -------
-    show_error("No se pudo conectar con el servidor.")
-    """
-    st.error(f"{icon} {message}")
+
+def show_error(message: str, icon: str = "⚠️") -> None:
+    """Show an error toast notification (inline fallback)."""
+    _emit_toast(message, icon, st.error)
 
 
 # ── Sticky Period & Currency Filter Bar ────────────────────────────────
@@ -1515,26 +1512,14 @@ def sticky_period_filter(
     }
 
 
-def show_warning(message: str, icon: str = "⚠") -> None:
-    """
-    Show a warning toast notification.
-
-    Example
-    -------
-    show_warning("El saldo no cubre este monto.")
-    """
-    st.warning(f"{icon} {message}")
+def show_warning(message: str, icon: str = "⚠️") -> None:
+    """Show a warning toast notification (inline fallback)."""
+    _emit_toast(message, icon, st.warning)
 
 
-def show_info(message: str, icon: str = "ℹ") -> None:
-    """
-    Show an informational toast notification.
-
-    Example
-    -------
-    show_info("Filtrando por el mes actual.")
-    """
-    st.info(f"{icon} {message}")
+def show_info(message: str, icon: str = "ℹ️") -> None:
+    """Show an informational toast notification (inline fallback)."""
+    _emit_toast(message, icon, st.info)
 
 
 # ── Empty state ──────────────────────────────────────────────────

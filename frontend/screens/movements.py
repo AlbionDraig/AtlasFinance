@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from datetime import date, datetime, time, timedelta
+import html as _html
 import re
+from datetime import date, datetime, time, timedelta
 
 import pandas as pd
 import requests
@@ -19,7 +20,7 @@ from modules.components import (
     time_field,
 )
 from modules.config import RERUN
-from modules.notifications import show_error, show_success
+from modules.notifications import show_error, show_info, show_success, show_warning
 from modules.ui import render_empty_state
 
 
@@ -106,7 +107,7 @@ def _load_movement_data() -> tuple[list[dict], list[dict], list[dict], list[dict
         for response in [banks_response, accounts_response, categories_response, transactions_response]:
             response.raise_for_status()
     except requests.RequestException as exc:
-        st.error(f"No se pudieron cargar los datos base: {exc}")
+        show_error(f"No pudimos cargar tus movimientos. Inténtalo nuevamente. ({exc})")
         return None
 
     return (
@@ -167,11 +168,22 @@ def _form_default_values(account_options: dict[str, int]) -> dict[str, object]:
     }
 
 
+def _sync_amount_display_state() -> None:
+    """Keep number_field display/session keys aligned for mov_form_amount."""
+    amount_value = float(st.session_state.get("mov_form_amount", 0.0) or 0.0)
+    us_formatted = f"{amount_value:,.2f}"
+    st.session_state["mov_form_amount__display"] = (
+        us_formatted.replace(",", "_").replace(".", ",").replace("_", ".")
+    )
+    st.session_state["mov_form_amount__display_locale"] = "es_CO"
+
+
 def _reset_transaction_form(account_options: dict[str, int]) -> None:
     """Reset the shared transaction form to creation mode."""
     defaults = _form_default_values(account_options)
     for key, value in defaults.items():
         st.session_state[key] = value
+    _sync_amount_display_state()
     st.session_state["mov_form_loaded_tx_id"] = None
 
 
@@ -187,6 +199,7 @@ def _reset_transaction_form_clean(account_options: dict[str, int]) -> None:
     st.session_state["mov_form_category_label"] = "Sin categoría"
     st.session_state["mov_form_date"] = date.today()
     st.session_state["mov_form_time"] = time(now.hour, now.minute)
+    _sync_amount_display_state()
     st.session_state["mov_form_loaded_tx_id"] = None
 
 
@@ -202,6 +215,7 @@ def _load_selected_transaction_into_form(
 
     st.session_state["mov_form_description"] = str(selected_tx.get("description") or "")
     st.session_state["mov_form_amount"] = float(selected_tx.get("amount") or 0.0)
+    _sync_amount_display_state()
     st.session_state["mov_form_currency"] = str(selected_tx.get("currency") or "COP")
     st.session_state["mov_form_account_label"] = account_label_lookup.get(
         selected_tx.get("account_id"),
@@ -232,21 +246,21 @@ def _handle_create_transaction(
 ) -> tuple[bool, dict | None]:
     """Validate and create a new transaction."""
     if not account_options:
-        st.error("Debes crear una cuenta antes de registrar movimientos.")
+        show_error("Primero crea una cuenta para registrar movimientos.")
         return False, None
 
     if len(description.strip()) < 2:
-        st.error("La descripción debe tener al menos 2 caracteres.")
+        show_error("Escribe una descripción de al menos 2 caracteres.")
         return False, None
 
     if amount <= 0:
-        st.error("El monto debe ser mayor a 0.")
+        show_error("El monto debe ser mayor que 0.")
         return False, None
 
     account_currency_match = re.search(r"\((COP|USD)\)(?:\s*\(\d+\))?$", selected_account_label)
     account_currency = account_currency_match.group(1) if account_currency_match else None
     if account_currency and account_currency != currency:
-        st.error("La moneda del movimiento debe coincidir con la moneda de la cuenta seleccionada.")
+        show_error("La moneda del movimiento debe ser la misma que la de la cuenta.")
         return False, None
 
     occurred_at = datetime.combine(occurred_date, occurred_time)
@@ -266,13 +280,13 @@ def _handle_create_transaction(
             created_tx = response.json()
         except Exception:
             created_tx = None
-        show_success("Movimiento creado correctamente.")
+        show_success("Movimiento guardado con éxito.")
         return True, created_tx
 
     try:
-        error_detail = response.json().get("detail", "No se pudo crear el movimiento.")
+        error_detail = response.json().get("detail", "No pudimos guardar el movimiento.")
     except Exception:
-        error_detail = "No se pudo crear el movimiento."
+        error_detail = "No pudimos guardar el movimiento."
     show_error(error_detail)
     return False, None
 
@@ -281,7 +295,7 @@ def _undo_last_created_transaction() -> None:
     """Delete the most recently created transaction from UI quick-action."""
     last_created = st.session_state.get("mov_last_created_tx")
     if not last_created or not last_created.get("id"):
-        st.warning("No hay un movimiento reciente para deshacer.")
+        show_warning("No hay un movimiento reciente para deshacer.")
         return
 
     response = api_request("DELETE", f"/transactions/{last_created['id']}")
@@ -291,9 +305,9 @@ def _undo_last_created_transaction() -> None:
         return
 
     try:
-        detail = response.json().get("detail", "No se pudo deshacer el último movimiento.")
+        detail = response.json().get("detail", "No pudimos deshacer el último movimiento.")
     except Exception:
-        detail = "No se pudo deshacer el último movimiento."
+        detail = "No pudimos deshacer el último movimiento."
     show_error(detail)
 
 
@@ -301,7 +315,7 @@ def _undo_last_deleted_transaction() -> None:
     """Recreate the most recently deleted transaction from session snapshot."""
     deleted_tx = st.session_state.get("mov_last_deleted_tx")
     if not deleted_tx:
-        st.warning("No hay eliminación reciente para deshacer.")
+        show_warning("No hay una eliminación reciente para deshacer.")
         return
 
     payload = {
@@ -320,7 +334,7 @@ def _undo_last_deleted_transaction() -> None:
         or not payload["occurred_at"]
         or not payload["account_id"]
     ):
-        st.error("No se pudo deshacer: faltan datos del movimiento eliminado.")
+        show_error("Faltan datos del movimiento eliminado, no pudimos restaurarlo.")
         return
 
     response = api_request("POST", "/transactions/", payload=payload)
@@ -331,9 +345,9 @@ def _undo_last_deleted_transaction() -> None:
         return
 
     try:
-        detail = response.json().get("detail", "No se pudo restaurar el movimiento eliminado.")
+        detail = response.json().get("detail", "No pudimos restaurar el movimiento eliminado.")
     except Exception:
-        detail = "No se pudo restaurar el movimiento eliminado."
+        detail = "No pudimos restaurar el movimiento eliminado."
     show_error(detail)
 
 
@@ -370,7 +384,7 @@ def _render_create_transaction_form(
 
     section_header(
         "Registrar o ajustar movimiento",
-        "Cuando eliges un movimiento en la tabla, este formulario se precarga para editarlo. Si no hay selección, crea uno nuevo.",
+        "Selecciona un movimiento en la tabla para editarlo. Si no hay selección, el formulario crea uno nuevo.",
     )
 
     st.markdown(
@@ -420,19 +434,11 @@ def _render_create_transaction_form(
     st.markdown(
         """
         <style>
-        .stTextInput, .stNumberInput, .stSelectbox, .stDateInput, .stTimeInput {
-            margin-bottom: 0.25rem !important;
-        }
-        .stTextInput label, .stNumberInput label, .stSelectbox label, .stDateInput label, .stTimeInput label {
-            margin-bottom: 0.1rem !important;
-        }
+        /* Keep only the movement type segmented control left-aligned in its column. */
         .af-create-actions {
-            position: sticky;
-            bottom: 0.35rem;
-            z-index: 10;
-            padding-top: 0.35rem;
-            padding-bottom: 0.15rem;
-            background: linear-gradient(to top, rgba(244,246,250,0.96), rgba(244,246,250,0));
+            margin-top: 0.65rem;
+            padding-top: 0.55rem;
+            border-top: 1px solid #e2e8f0;
         }
         .af-create-actions .stButton > button {
             box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14) !important;
@@ -443,6 +449,13 @@ def _render_create_transaction_form(
     )
 
     active_mode = "edit" if selected_tx_id else "create"
+
+    mode_label = "Editando movimiento" if active_mode == "edit" else "Creando movimiento"
+    mode_class = "edit" if active_mode == "edit" else "create"
+    st.markdown(
+        f'<div class="af-mov-mode-badge {mode_class}">{mode_label}</div>',
+        unsafe_allow_html=True,
+    )
 
     if active_mode == "edit":
         try:
@@ -462,7 +475,7 @@ def _render_create_transaction_form(
 
         action_col, reset_col = st.columns([5, 1])
         with action_col:
-            st.caption("Modo edición activo. Puedes guardar cambios o salir para crear un movimiento nuevo.")
+            st.caption("Estás editando este movimiento. Guarda tus cambios o vuelve a crear uno nuevo.")
         with reset_col:
             if btn("Crear nuevo", key="mov_form_start_new", variant="neutral", use_container_width=True):
                 st.session_state["mov_selected_tx_id"] = None
@@ -492,31 +505,17 @@ def _render_create_transaction_form(
                     use_container_width=True,
                 )
 
-    t_col_1, t_col_2 = st.columns(2)
-    with t_col_1:
+    row1_col1, row1_col2 = st.columns(2)
+    with row1_col1:
         description = text_field("Descripción", key="mov_form_description", placeholder="Ej: Supermercado, Gasolina")
+    with row1_col2:
+        transaction_type_ui = select_field("Tipo", TYPE_OPTIONS_UI, key="mov_form_type_ui")
+
+    row2_col1, row2_col2 = st.columns(2)
+    with row2_col1:
         min_amount = 0.01 if active_mode == "edit" else 0.0
         amount = number_field("Monto", min_value=min_amount, step=10.0, key="mov_form_amount")
-        currency = select_field("Moneda", ["COP", "USD"], key="mov_form_currency")
-        filtered_account_labels = _account_labels_for_currency(account_options, currency)
-        has_available_accounts = bool(filtered_account_labels)
-        account_label_options = filtered_account_labels if has_available_accounts else ["No hay cuentas"]
-
-        if has_available_accounts:
-            if st.session_state.get("mov_form_account_label") not in filtered_account_labels:
-                st.session_state["mov_form_account_label"] = filtered_account_labels[0]
-        elif st.session_state.get("mov_form_account_label") != "No hay cuentas":
-            st.session_state["mov_form_account_label"] = "No hay cuentas"
-
-        selected_account_label = select_field(
-            "Cuenta",
-            account_label_options,
-            disabled=not has_available_accounts,
-            key="mov_form_account_label",
-        )
-
-    with t_col_2:
-        transaction_type_ui = select_field("Tipo", TYPE_OPTIONS_UI, key="mov_form_type_ui")
+    with row2_col2:
         filtered_category_labels = _category_labels_for_type(category_options, transaction_type_ui)
         if st.session_state.get("mov_form_category_label") not in filtered_category_labels:
             st.session_state["mov_form_category_label"] = "Sin categoría"
@@ -525,7 +524,32 @@ def _render_create_transaction_form(
             filtered_category_labels,
             key="mov_form_category_label",
         )
+
+    row3_col1, row3_col2 = st.columns(2)
+    with row3_col1:
+        currency = select_field("Moneda", ["COP", "USD"], key="mov_form_currency")
+    with row3_col2:
         occurred_date = date_field("Fecha", key="mov_form_date")
+
+    filtered_account_labels = _account_labels_for_currency(account_options, currency)
+    has_available_accounts = bool(filtered_account_labels)
+    account_label_options = filtered_account_labels if has_available_accounts else ["No hay cuentas"]
+
+    if has_available_accounts:
+        if st.session_state.get("mov_form_account_label") not in filtered_account_labels:
+            st.session_state["mov_form_account_label"] = filtered_account_labels[0]
+    elif st.session_state.get("mov_form_account_label") != "No hay cuentas":
+        st.session_state["mov_form_account_label"] = "No hay cuentas"
+
+    row4_col1, row4_col2 = st.columns(2)
+    with row4_col1:
+        selected_account_label = select_field(
+            "Cuenta",
+            account_label_options,
+            disabled=not has_available_accounts,
+            key="mov_form_account_label",
+        )
+    with row4_col2:
         occurred_time = time_field("Hora", key="mov_form_time")
 
     selected_account_id = account_options.get(selected_account_label)
@@ -549,9 +573,9 @@ def _render_create_transaction_form(
     )
 
     if account_has_transactions:
-        st.caption("Esta cuenta ya tiene movimientos; saldo inicial ya no disponible.")
+        st.caption("Esta cuenta ya tiene movimientos, por lo que el saldo inicial no está disponible.")
 
-    st.caption("Consejo: la cuenta y la moneda deben coincidir para evitar errores de registro.")
+    st.caption("La moneda del movimiento debe ser la misma que la moneda de la cuenta.")
 
     create_has_pending_changes = bool(description.strip()) or float(amount) > 0.0
     edit_has_pending_changes = False
@@ -576,57 +600,88 @@ def _render_create_transaction_form(
 
     has_pending_changes = edit_has_pending_changes if active_mode == "edit" else create_has_pending_changes
 
-    st.markdown('<div class="af-create-actions">', unsafe_allow_html=True)
-    submit_cols = st.columns([1, 1, 1] if active_mode == "edit" else [2, 1])
-    if active_mode == "edit":
-        delete_armed_key = "mov_delete_armed_tx_id"
-        if st.session_state.get(delete_armed_key) != selected_tx_id:
-            st.session_state[delete_armed_key] = None
+    # ── Delete confirmation dialog (modal) ────────────────────────────────
+    if (
+        active_mode == "edit"
+        and selected_tx
+        and st.session_state.get("mov_delete_dialog_tx_id") == selected_tx_id
+        and hasattr(st, "dialog")
+    ):
+        dialog_tx = selected_tx
+        dialog_tx_id = selected_tx_id
 
-        with submit_cols[1]:
-            arm_delete = btn(
-                "Eliminar",
-                key="mov_form_delete_arm",
-                variant="danger",
-                use_container_width=True,
-                disabled=st.session_state.get("mov_form_submitting", False),
+        @st.dialog("¿Eliminar este movimiento?")
+        def _confirm_delete_dialog() -> None:
+            tx_description = str(dialog_tx.get("description") or "Movimiento")
+            tx_amount = float(dialog_tx.get("amount") or 0.0)
+            tx_currency = str(dialog_tx.get("currency") or "")
+            st.write(
+                f"Vas a eliminar **{tx_description}** por **{tx_amount:,.2f} {tx_currency}**."
             )
-            if arm_delete:
-                st.session_state[delete_armed_key] = selected_tx_id
+            st.caption(
+                "Podrás deshacer esta acción brevemente desde el aviso que aparecerá al final de la pantalla."
+            )
+            confirm_col, cancel_col = st.columns(2)
+            with confirm_col:
+                if btn(
+                    "Sí, eliminar",
+                    key="mov_dialog_delete_confirm",
+                    variant="danger",
+                    use_container_width=True,
+                ):
+                    st.session_state["mov_confirm_delete_trigger"] = dialog_tx_id
+                    st.session_state["mov_delete_dialog_tx_id"] = None
+                    RERUN()
+            with cancel_col:
+                if btn(
+                    "Cancelar",
+                    key="mov_dialog_delete_cancel",
+                    variant="neutral",
+                    use_container_width=True,
+                ):
+                    st.session_state["mov_delete_dialog_tx_id"] = None
+                    RERUN()
 
+        _confirm_delete_dialog()
+
+    actions_col, _ = st.columns([2.15, 1.0])
+    with actions_col:
+        st.markdown('<div class="af-create-actions">', unsafe_allow_html=True)
+        submit_cols = st.columns([1, 1, 1] if active_mode == "edit" else [1.2, 1])
+        if active_mode == "edit":
+            delete_dialog_key = "mov_delete_dialog_tx_id"
+
+            with submit_cols[1]:
+                arm_delete = btn(
+                    "Eliminar",
+                    key="mov_form_delete_arm",
+                    variant="danger",
+                    use_container_width=True,
+                    disabled=st.session_state.get("mov_form_submitting", False),
+                )
+                if arm_delete:
+                    st.session_state[delete_dialog_key] = selected_tx_id
+
+            delete_transaction_clicked = (
+                st.session_state.pop("mov_confirm_delete_trigger", None) == selected_tx_id
+            )
+            submit_button_col = submit_cols[2]
+        else:
             delete_transaction_clicked = False
-            if st.session_state.get(delete_armed_key) == selected_tx_id:
-                st.warning("Confirma eliminación. Esta acción no se puede deshacer.")
-                confirm_col_a, confirm_col_b = st.columns(2)
-                with confirm_col_a:
-                    delete_transaction_clicked = btn(
-                        "Confirmar",
-                        key="mov_form_delete_confirm",
-                        variant="danger",
-                        use_container_width=True,
-                    )
-                with confirm_col_b:
-                    if btn("Cancelar", key="mov_form_delete_cancel", variant="neutral", use_container_width=True):
-                        st.session_state[delete_armed_key] = None
-                        RERUN()
+            submit_button_col = submit_cols[1]
 
-        submit_button_col = submit_cols[2]
-    else:
-        delete_transaction_clicked = False
-        submit_button_col = submit_cols[1]
-
-    with submit_button_col:
-        submit_transaction_bottom = btn(
-            "Guardar cambios" if active_mode == "edit" else "Guardar movimiento",
-            key="mov_form_submit",
-            variant="success",
-            use_container_width=True,
-            disabled=(not has_pending_changes) or st.session_state.get("mov_form_submitting", False),
-        )
-    st.markdown("</div>", unsafe_allow_html=True)
+        with submit_button_col:
+            submit_transaction_bottom = btn(
+                "Guardar cambios" if active_mode == "edit" else "Guardar movimiento",
+                key="mov_form_submit",
+                variant="success",
+                use_container_width=True,
+                disabled=(not has_pending_changes) or st.session_state.get("mov_form_submitting", False),
+            )
+        st.markdown("</div>", unsafe_allow_html=True)
 
     if active_mode == "edit" and not edit_has_pending_changes:
-        st.caption("No hay cambios pendientes para guardar.")
+        st.caption("Por ahora no tienes cambios pendientes por guardar.")
 
     if delete_transaction_clicked and selected_tx:
         _handle_delete_transaction(selected_tx)
@@ -674,6 +729,9 @@ def _render_create_transaction_form(
                         "amount": amount,
                         "currency": currency,
                     }
+                    st.session_state["mov_selected_tx_id"] = None
+                    st.session_state["mov_form_loaded_tx_id"] = None
+                    st.session_state["mov_clear_table_selection_pending"] = True
                     st.session_state["mov_form_force_clean_reset"] = True
                     RERUN()
         finally:
@@ -694,14 +752,64 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
             letter-spacing: -0.01em;
         }
         .af-mov-filters-title {
-            font-size: 1.35rem;
+            font-size: 1.12rem;
             font-weight: 700;
             color: #1e293b;
-            margin-top: 0.2rem;
-            margin-bottom: 0.45rem;
+            margin-top: 0.08rem;
+            margin-bottom: 0.35rem;
         }
-        .af-mov-table-gap {
-            height: 0.35rem;
+        .af-mov-chips {
+            font-size: 0.82rem;
+            color: #334155;
+            margin: 0.2rem 0 0.35rem 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .af-mov-chips strong {
+            color: #0f172a;
+            margin-right: 0.15rem;
+        }
+        .af-mov-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.18rem 0.55rem;
+            border-radius: 999px;
+            background: rgba(31, 111, 178, 0.10);
+            color: #16365f;
+            border: 1px solid rgba(31, 111, 178, 0.20);
+            font-weight: 600;
+            font-size: 0.78rem;
+            white-space: nowrap;
+        }
+        .af-mov-page-label {
+            text-align: center;
+            font-size: 0.88rem;
+            color: #334155;
+            padding: 0.45rem 0;
+        }
+        .af-mov-mode-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.22rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+        .af-mov-mode-badge.edit {
+            background: rgba(234, 179, 8, 0.14);
+            color: #854d0e;
+            border: 1px solid rgba(234, 179, 8, 0.38);
+        }
+        .af-mov-mode-badge.create {
+            background: rgba(16, 185, 129, 0.12);
+            color: #065f46;
+            border: 1px solid rgba(16, 185, 129, 0.34);
         }
         .st-key-mov_transactions_table [data-testid="stDataFrame"] {
             border: 1px solid #e2e8f0;
@@ -748,7 +856,8 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         "mov_table_period_filter": "Todo",
         "mov_table_from_date": default_from,
         "mov_table_to_date": default_to,
-        "mov_table_limit": 12,
+        "mov_table_page_size": 12,
+        "mov_table_page": 1,
     }
     for key, value in filter_defaults.items():
         if key not in st.session_state:
@@ -761,18 +870,29 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         for key, value in filter_defaults.items():
             st.session_state[key] = value
 
-    st.markdown("**Filtros**")
-    top_col_1, top_col_2, top_col_3, top_col_4 = st.columns([1.2, 1.0, 1.1, 0.9])
-    with top_col_1:
+    st.markdown(
+        '<div class="af-mov-filters-title">Filtros</div>',
+        unsafe_allow_html=True,
+    )
+    row1_c1, row1_c2, row1_c3, row1_c4 = st.columns([1.6, 0.9, 0.9, 1.2])
+    with row1_c1:
+        search_query = text_field(
+            "Buscar descripción",
+            key="mov_table_search",
+            placeholder="Ej: Café, Gasolina",
+        )
+    with row1_c2:
         tx_type_filter = select_field("Tipo", ["Todo", "Ingresos", "Gastos"], key="mov_table_type_filter")
-    with top_col_2:
+    with row1_c3:
         currency_filter = select_field("Moneda", ["Todas", "COP", "USD"], key="mov_table_currency_filter")
-    with top_col_3:
+    with row1_c4:
         account_filter = select_field("Cuenta", account_filter_options, key="mov_table_account_filter")
-    with top_col_4:
+
+    row2_c1, row2_c2, row2_c3, row2_c4 = st.columns([1.2, 0.9, 0.9, 0.9])
+    with row2_c1:
         period_filter = select_field(
             "Periodo",
-            ["Todo", "Hoy", "Ultimos 7 dias", "Ultimos 30 dias", "Mes actual", "Personalizado"],
+            ["Todo", "Hoy", "Últimos 7 días", "Últimos 30 días", "Mes actual", "Personalizado"],
             key="mov_table_period_filter",
         )
 
@@ -781,53 +901,63 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         if period_filter == "Hoy":
             st.session_state["mov_table_from_date"] = today
             st.session_state["mov_table_to_date"] = today
-        elif period_filter == "Ultimos 7 dias":
+        elif period_filter == "Últimos 7 días":
             st.session_state["mov_table_from_date"] = today - timedelta(days=6)
             st.session_state["mov_table_to_date"] = today
-        elif period_filter == "Ultimos 30 dias":
+        elif period_filter == "Últimos 30 días":
             st.session_state["mov_table_from_date"] = today - timedelta(days=29)
             st.session_state["mov_table_to_date"] = today
         elif period_filter == "Mes actual":
             st.session_state["mov_table_from_date"] = today.replace(day=1)
             st.session_state["mov_table_to_date"] = today
-        else:
+        elif period_filter == "Todo":
             st.session_state["mov_table_from_date"] = default_from
             st.session_state["mov_table_to_date"] = default_to
 
-    bottom_col_1, bottom_col_2, bottom_col_3, bottom_col_4 = st.columns([1.2, 0.8, 0.8, 0.7])
-    with bottom_col_1:
-        search_query = text_field("Buscar descripción", key="mov_table_search", placeholder="Ej: Cafe, Gasolina")
-    with bottom_col_2:
+    with row2_c2:
         from_date = date_field("Desde", key="mov_table_from_date")
-    with bottom_col_3:
+    with row2_c3:
         to_date = date_field("Hasta", key="mov_table_to_date")
-    with bottom_col_4:
-        limit = select_field("Mostrar", [8, 12, 20, 30], key="mov_table_limit")
+    with row2_c4:
+        page_size = select_field("Por página", [8, 12, 20, 30], key="mov_table_page_size")
 
     if from_date > to_date:
-        st.warning("El rango de fechas es invalido. Ajusta Desde/Hasta.")
+        show_warning("El rango de fechas no es válido. Revisa 'Desde' y 'Hasta'.")
         return None
 
-    aux_col_1, aux_col_2 = st.columns([5, 1])
+    active_filters: list[str] = []
+    if tx_type_filter != "Todo":
+        active_filters.append(f"Tipo: {tx_type_filter}")
+    if currency_filter != "Todas":
+        active_filters.append(f"Moneda: {currency_filter}")
+    if account_filter != "Todas":
+        active_filters.append(f"Cuenta: {account_filter}")
+    if period_filter != "Todo":
+        active_filters.append(f"Periodo: {period_filter}")
+    if search_query.strip():
+        active_filters.append(f"Búsqueda: {search_query.strip()}")
+    if from_date != default_from or to_date != default_to:
+        active_filters.append(f"Fechas: {from_date} a {to_date}")
 
+    aux_col_1, aux_col_2 = st.columns([5, 1])
     with aux_col_1:
-        active_filters: list[str] = []
-        if tx_type_filter != "Todo":
-            active_filters.append(f"Tipo: {tx_type_filter}")
-        if currency_filter != "Todas":
-            active_filters.append(f"Moneda: {currency_filter}")
-        if account_filter != "Todas":
-            active_filters.append(f"Cuenta: {account_filter}")
-        if period_filter != "Todo":
-            active_filters.append(f"Periodo: {period_filter}")
-        if search_query.strip():
-            active_filters.append(f"Busqueda: {search_query.strip()}")
-        if from_date != default_from or to_date != default_to:
-            active_filters.append(f"Fechas: {from_date} a {to_date}")
         if active_filters:
-            st.caption("Filtros activos: " + " | ".join(active_filters))
+            chips = "".join(f'<span class="af-mov-chip">{_html.escape(f)}</span>' for f in active_filters)
+            st.markdown(
+                f'<div class="af-mov-chips"><strong>Filtros activos:</strong> {chips}</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.caption("Sin filtros activos. Estás viendo todos los movimientos.")
     with aux_col_2:
-        btn("Limpiar", key="mov_table_clear_filters", variant="neutral", use_container_width=True, on_click=_reset_movement_filters)
+        btn(
+            "Limpiar filtros",
+            key="mov_table_clear_filters",
+            variant="danger-outline",
+            use_container_width=True,
+            on_click=_reset_movement_filters,
+            disabled=not active_filters,
+        )
 
     filtered_txs = transactions
     if tx_type_filter == "Ingresos":
@@ -856,13 +986,37 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         ]
 
     filtered_txs = sorted(filtered_txs, key=lambda t: t.get("occurred_at", ""), reverse=True)
-    visible_txs = filtered_txs[:limit]
 
-    st.markdown('<div class="af-mov-table-gap"></div>', unsafe_allow_html=True)
-    st.caption(f"Mostrando {len(visible_txs)} de {len(filtered_txs)} movimientos filtrados.")
+    # Reset to first page whenever filters or page size change.
+    filter_signature = (
+        tx_type_filter,
+        currency_filter,
+        account_filter,
+        period_filter,
+        from_date.isoformat(),
+        to_date.isoformat(),
+        search_query.strip(),
+        page_size,
+    )
+    if st.session_state.get("mov_table_filter_signature") != filter_signature:
+        st.session_state["mov_table_filter_signature"] = filter_signature
+        st.session_state["mov_table_page"] = 1
+
+    total_items = len(filtered_txs)
+    total_pages = max(1, (total_items + page_size - 1) // page_size) if total_items else 1
+    current_page = int(st.session_state.get("mov_table_page") or 1)
+    if current_page < 1:
+        current_page = 1
+    if current_page > total_pages:
+        current_page = total_pages
+    st.session_state["mov_table_page"] = current_page
+
+    start_index = (current_page - 1) * page_size
+    end_index = start_index + page_size
+    visible_txs = filtered_txs[start_index:end_index]
 
     if not visible_txs:
-        st.warning("No hay movimientos que coincidan con los filtros.")
+        show_info("No hay movimientos que coincidan con los filtros. Ajusta o limpia los filtros para ver más resultados.")
         if st.session_state.get("mov_selected_tx_id") is not None:
             st.session_state["mov_selected_tx_id"] = None
             st.session_state["mov_form_loaded_tx_id"] = None
@@ -878,11 +1032,12 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         tx_type = tx.get("transaction_type", "expense")
         amount_value = float(tx.get("amount") or 0.0)
         account_label_raw = account_label_lookup.get(tx.get("account_id"), "Cuenta")
+        tipo_label = "▼ Gasto" if tx_type == "expense" else "▲ Ingreso"
         table_rows.append(
             {
                 "Fecha": parse_iso_datetime(str(tx.get("occurred_at") or "")).strftime("%d/%m/%Y"),
                 "Descripción": str(tx.get("description") or "Movimiento"),
-                "Tipo": "Gasto" if tx_type == "expense" else "Ingreso",
+                "Tipo": tipo_label,
                 "Monto": f"{amount_value:,.2f}",
                 "Moneda": str(tx.get("currency") or ""),
                 "Cuenta": _compact_account_label(account_label_raw),
@@ -923,7 +1078,8 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
 
     def _style_row_by_type(row: pd.Series) -> list[str]:
         is_odd = int(row.name) % 2 == 1
-        is_expense = row.get("Tipo") == "Gasto"
+        tipo_value = str(row.get("Tipo", ""))
+        is_expense = "Gasto" in tipo_value
         row_bg = "#ffffff" if not is_odd else "#fafcff"
         base_text_color = "#1f2937"
 
@@ -1025,6 +1181,39 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
             f"Seleccionado: {selected_tx.get('description', 'Movimiento')} · {amount_value:,.2f} {selected_tx.get('currency', '')}"
         )
 
+    # ── Pagination bar ──────────────────────────────────────────────
+    st.divider()
+    page_info_col, prev_col, page_label_col, next_col = st.columns([4, 0.9, 1.2, 0.9])
+    with page_info_col:
+        from_item = start_index + 1
+        to_item = min(end_index, total_items)
+        st.caption(f"Mostrando {from_item}–{to_item} de {total_items} movimientos")
+    with prev_col:
+        if btn(
+            "← Anterior",
+            key="mov_table_prev_page",
+            variant="neutral",
+            use_container_width=True,
+            disabled=current_page <= 1,
+        ):
+            st.session_state["mov_table_page"] = max(1, current_page - 1)
+            RERUN()
+    with page_label_col:
+        st.markdown(
+            f'<div class="af-mov-page-label">Página <strong>{current_page}</strong> de {total_pages}</div>',
+            unsafe_allow_html=True,
+        )
+    with next_col:
+        if btn(
+            "Siguiente →",
+            key="mov_table_next_page",
+            variant="neutral",
+            use_container_width=True,
+            disabled=current_page >= total_pages,
+        ):
+            st.session_state["mov_table_page"] = min(total_pages, current_page + 1)
+            RERUN()
+
     return selected_tx
 
 
@@ -1062,7 +1251,7 @@ def _render_undo_deleted_footer() -> None:
     st.markdown(
         (
             '<div class="af-undo-footer">'
-            "<strong>Acción reciente:</strong> Movimiento eliminado. Puedes deshacer esta acción ahora."
+            "<strong>Acción reciente:</strong> Eliminaste un movimiento. Puedes deshacerlo desde aquí."
             "</div>"
         ),
         unsafe_allow_html=True,
@@ -1093,7 +1282,7 @@ def _handle_update_transaction(
 ) -> None:
     """Validate and update the selected transaction."""
     if len(edit_description.strip()) < 2:
-        st.error("La descripción debe tener al menos 2 caracteres.")
+        show_error("Escribe una descripción de al menos 2 caracteres.")
         return
 
     edit_payload = {
@@ -1106,7 +1295,20 @@ def _handle_update_transaction(
         "category_id": category_options[edit_category_label],
     }
     response = api_request("PUT", f"/transactions/{selected_tx['id']}", payload=edit_payload)
-    _show_api_result(response, "Movimiento actualizado.", "No se pudo actualizar el movimiento.")
+    if response.ok:
+        st.session_state["mov_selected_tx_id"] = None
+        st.session_state["mov_form_loaded_tx_id"] = None
+        st.session_state["mov_clear_table_selection_pending"] = True
+        st.session_state["mov_form_force_clean_reset"] = True
+        show_success("Cambios guardados correctamente.")
+        RERUN()
+        return
+
+    try:
+        error_detail = response.json().get("detail", "No pudimos actualizar el movimiento.")
+    except Exception:
+        error_detail = "No pudimos actualizar el movimiento."
+    show_error(error_detail)
 
 
 def _handle_delete_transaction(selected_tx: dict) -> None:
@@ -1126,12 +1328,16 @@ def _handle_delete_transaction(selected_tx: dict) -> None:
         st.session_state["mov_form_loaded_tx_id"] = None
         st.session_state["mov_clear_table_selection_pending"] = True
         st.session_state["mov_form_force_clean_reset"] = True
-        st.session_state["mov_delete_armed_tx_id"] = None
-        st.success("Movimiento eliminado. Puedes usar 'Deshacer eliminación'.")
+        st.session_state["mov_delete_dialog_tx_id"] = None
+        show_success("Movimiento eliminado. Usa 'Deshacer eliminación' si fue sin querer.")
         RERUN()
         return
 
-    st.error(response.json().get("detail", "No se pudo eliminar el movimiento."))
+    try:
+        detail = response.json().get("detail", "No pudimos eliminar el movimiento.")
+    except Exception:
+        detail = "No pudimos eliminar el movimiento."
+    show_error(detail)
 
 
 def movements_screen() -> None:
@@ -1147,15 +1353,12 @@ def movements_screen() -> None:
 
     undo_notice = st.session_state.pop("mov_undo_deleted_notice", None)
     if undo_notice:
-        if hasattr(st, "toast"):
-            st.toast(undo_notice, icon="✅")
-        else:
-            show_success(undo_notice)
+        show_success(undo_notice)
 
     if not transactions:
         render_empty_state(
-            "Sin movimientos registrados",
-            "Todavía no hay transacciones. Usa el formulario inferior para crear la primera.",
+            "Aún no tienes movimientos",
+            "Empieza registrando tu primer ingreso o gasto con el formulario de abajo.",
             icon="📊",
         )
         selected_tx = None

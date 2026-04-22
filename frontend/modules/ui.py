@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import html
 from typing import Callable
@@ -36,7 +36,7 @@ def inject_theme() -> None:
             --font-mono:  'JetBrains Mono', monospace;
         }
 
-        /* ── Animations and Transitions ──────────────────────────────────── */
+        /* -- Animations and Transitions ------------------------------------ */
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -233,7 +233,8 @@ def inject_theme() -> None:
         }
 
         /* Top navigation row: single pill container wrapping tabs + Más. */
-        .stHorizontalBlock:has([data-testid="stButtonGroup"]) {
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]):has([data-testid="stPopoverButton"]),
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) {
             background: var(--c-surface) !important;
             border: none !important;
             border-radius: 999px !important;
@@ -244,8 +245,8 @@ def inject_theme() -> None:
             width: fit-content !important;
         }
 
-        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has([data-testid="stPopoverButton"]),
-        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) {
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]):has([data-testid="stPopoverButton"]),
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) {
             width: fit-content !important;
             margin: 0.14rem auto 0.32rem auto !important;
             padding: 4px !important;
@@ -255,38 +256,38 @@ def inject_theme() -> None:
             gap: 0 !important;
         }
 
-        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has([data-testid="stPopoverButton"]) > [data-testid="stColumn"],
-        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) > [data-testid="stColumn"] {
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]):has([data-testid="stPopoverButton"]) > [data-testid="stColumn"],
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) > [data-testid="stColumn"] {
             flex: 0 0 auto !important;
             width: auto !important;
             min-width: 0 !important;
         }
 
-        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) > [data-testid="stColumn"]:last-child {
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) > [data-testid="stColumn"]:last-child {
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
         }
 
-        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) > [data-testid="stColumn"]:last-child [data-testid="stElementContainer"],
-        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) > [data-testid="stColumn"]:last-child [data-testid="stMarkdown"],
-        .stHorizontalBlock:has([role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) > [data-testid="stColumn"]:last-child [data-testid="stMarkdownContainer"] {
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) > [data-testid="stColumn"]:last-child [data-testid="stElementContainer"],
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) > [data-testid="stColumn"]:last-child [data-testid="stMarkdown"],
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]):has(.af-nav-more-disabled) > [data-testid="stColumn"]:last-child [data-testid="stMarkdownContainer"] {
             margin: 0 !important;
             padding: 0 !important;
         }
 
-        .stHorizontalBlock:has([data-testid="stButtonGroup"]) > [data-testid="stColumn"] {
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) > [data-testid="stColumn"] {
             display: flex !important;
             align-items: center !important;
         }
 
-        .stHorizontalBlock:has([data-testid="stButtonGroup"]) > [data-testid="stColumn"]:last-child [data-testid="stButton"] {
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) > [data-testid="stColumn"]:last-child [data-testid="stButton"] {
             width: 100% !important;
             display: flex !important;
             justify-content: flex-end !important;
         }
 
-        .stHorizontalBlock:has([data-testid="stButtonGroup"]) > [data-testid="stColumn"]:last-child .stButton > button {
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) > [data-testid="stColumn"]:last-child .stButton > button {
             width: auto !important;
             min-width: 190px !important;
             min-height: 40px !important;
@@ -318,7 +319,7 @@ def inject_theme() -> None:
             justify-content: center !important;
         }
 
-        .stHorizontalBlock:has([data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) [data-testid="stPopoverButton"] {
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) [data-testid="stPopoverButton"] {
             min-height: 36px !important;
             border-radius: 999px !important;
             border: none !important;
@@ -337,18 +338,18 @@ def inject_theme() -> None:
             gap: 0.28rem !important;
         }
 
-        .stHorizontalBlock:has([data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) [data-testid="stPopoverButton"]:hover {
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) [data-testid="stPopoverButton"]:hover {
             background: rgba(31, 111, 178, 0.10) !important;
             color: #173a74 !important;
             box-shadow: inset 0 0 0 1px rgba(31, 111, 178, 0.16) !important;
             transform: translateY(-0.5px) scale(1.01) !important;
         }
 
-        .stHorizontalBlock:has([data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) [data-testid="stPopoverButton"] [data-testid="stIconMaterial"] {
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) [data-testid="stPopoverButton"] [data-testid="stIconMaterial"] {
             display: none !important;
         }
 
-        .stHorizontalBlock:has([data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) [data-testid="stPopoverButton"]::after {
+        .stHorizontalBlock:has(> [data-testid="stColumn"] [data-testid="stButtonGroup"] [role="radiogroup"][aria-label="button group"]) [data-testid="stPopoverButton"]::after {
             content: " ›" !important;
             font-size: 0.88rem !important;
             line-height: 1 !important;
@@ -630,7 +631,7 @@ def inject_theme() -> None:
         }
 
         [data-testid="stWidgetLabel"] button::before {
-            content: "ℹ" !important;
+            content: "?" !important;
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
@@ -1538,7 +1539,7 @@ def inject_theme() -> None:
             color: var(--c-muted) !important;
         }
 
-        /* ── Form validation styles ──────────────────────────────────── */
+        /* -- Form validation styles ------------------------------------ */
         .form-field-required {
             color: #DC2626 !important;
         }
@@ -1630,7 +1631,7 @@ def inject_theme() -> None:
             line-height: 1.5 !important;
         }
 
-        /* ── Responsive design ──────────────────────────────────── */
+        /* -- Responsive design ------------------------------------ */
         @media (max-width: 1024px) {
             .block-container {
                 padding-left: 1rem !important;
@@ -2009,7 +2010,7 @@ def render_breadcrumbs(items: list[tuple[str, bool]]) -> None:
 def render_empty_state(
     title: str,
     message: str,
-    icon: str = "📭",
+    icon: str = "??",
     *,
     button_label: str | None = None,
     button_action: Callable[[], None] | None = None,
@@ -2073,7 +2074,7 @@ def render_form_label(label: str, required: bool = False, hint: str = "") -> Non
 def show_form_error(field_name: str, message: str) -> None:
     """Show inline form field error message."""
     st.markdown(
-        f'<div class="form-error-message">❌ {html.escape(field_name)}: {html.escape(message)}</div>',
+        f'<div class="form-error-message">? {html.escape(field_name)}: {html.escape(message)}</div>',
         unsafe_allow_html=True,
     )
 
@@ -2121,7 +2122,7 @@ def show_loading_indicator(message: str = "Procesando...") -> None:
         st.markdown(
             """
             <div style="display: inline-block; animation: spin 1s linear infinite; font-size: 1.2rem;">
-            ⏳
+            ?
             </div>
             """,
             unsafe_allow_html=True,
@@ -2180,4 +2181,5 @@ def render_field_with_tooltip(
     with col2:
         if tooltip:
             render_tooltip_icon(tooltip)
+
 
