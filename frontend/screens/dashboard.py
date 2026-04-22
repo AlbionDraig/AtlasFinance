@@ -8,7 +8,7 @@ import requests
 import streamlit as st
 
 from modules.api_client import api_request
-from modules.components import btn, info_box, inject_component_styles, section_header, show_warning
+from modules.components import btn, info_box, inject_component_styles, section_header, show_warning, sticky_period_filter
 from modules.ui import (
     render_info_card,
     render_kpi_card,
@@ -73,9 +73,9 @@ def _delta_badge(current: float, previous: float, *, inverse: bool = False) -> t
             return "0.0%", "flat", "Sin variación frente al período anterior."
         is_good = delta < 0 if inverse else delta > 0
         return (
-            "nuevo",
+            "primer período",
             "up" if is_good else "down",
-            f"Período anterior: 0 · actual: {current:,.2f}",
+            f"Sin datos en el período anterior · actual: {current:,.2f}",
         )
 
     pct = (delta / previous) * 100
@@ -476,9 +476,8 @@ def _chart_fixed_vs_variable(exp_df: pd.DataFrame, category_lookup: dict[int, st
 def dashboard_screen() -> None:
     """Render private financial dashboard with KPI cards and Plotly charts."""
     inject_component_styles()
-    _hdr_left, _hdr_right = st.columns([10, 2])
-    with _hdr_left:
-        section_header("Panorama financiero", "Vista general de tus finanzas en el período elegido.")
+
+    section_header("Panorama financiero", "Vista general de tus finanzas en el período elegido.")
 
     def _toast(message: str, icon: str = "") -> None:
         if hasattr(st, "toast"):
@@ -536,19 +535,56 @@ def dashboard_screen() -> None:
     if st.session_state.pop("db_filters_applied_notice", False):
         _toast("Filtros aplicados y sincronizados.", "✅")
 
-    # ── Quick currency selector (top-right, applies immediately) ─────────────
-    with _hdr_right:
-        currency_value = st.selectbox(
-            "Moneda",
-            ["COP", "USD"],
-            index=0 if st.session_state["db_currency"] == "COP" else 1,
-            help="Selecciona la moneda en la que quieres ver montos, tarjetas y gráficos.",
+    # ── Sticky filter bar (period + currency) ──────────────────────────
+    filter_result = sticky_period_filter(
+        period_options=["Año actual", "Últimos 90 días", "Últimos 30 días", "Personalizado"],
+        default_period=st.session_state["db_period"],
+        default_from=st.session_state["db_from_draft"],
+        default_to=st.session_state["db_to_draft"],
+        default_currency=st.session_state["db_currency"],
+    )
+    period_value = filter_result["period_value"]
+    from_value = filter_result["from_value"]
+    to_value = filter_result["to_value"]
+    currency_value = filter_result["currency_value"]
+    is_custom = filter_result["is_custom"]
+
+    # Apply currency immediately on change
+    if currency_value != st.session_state["db_currency"]:
+        st.session_state["db_currency"] = currency_value
+        st.session_state["db_currency_draft"] = currency_value
+        st.session_state["db_last_applied"] = datetime.now().strftime("%H:%M:%S")
+        st.rerun()
+
+    should_apply_period = period_value != st.session_state["db_period"]
+    should_apply_custom_dates = (
+        is_custom
+        and (
+            from_value != st.session_state["db_from"]
+            or to_value != st.session_state["db_to"]
         )
-        if currency_value != st.session_state["db_currency"]:
-            st.session_state["db_currency"] = currency_value
-            st.session_state["db_currency_draft"] = currency_value
-            st.session_state["db_last_applied"] = datetime.now().strftime("%H:%M:%S")
-            st.rerun()
+    )
+
+    if should_apply_period or should_apply_custom_dates:
+        st.session_state["db_period"] = period_value
+        st.session_state["db_period_draft"] = period_value
+
+        if is_custom:
+            st.session_state["db_from"] = from_value
+            st.session_state["db_from_draft"] = from_value
+            st.session_state["db_to"] = to_value
+            st.session_state["db_to_draft"] = to_value
+
+        prefs_by_user[user_key] = {
+            "currency": st.session_state["db_currency"],
+            "period": st.session_state["db_period"],
+            "date_from": st.session_state["db_from"],
+            "date_to": st.session_state["db_to"],
+            "chart_type": st.session_state.get("db_chart_type", "Ingresos vs gastos (barras)"),
+            "secondary_chart_type": st.session_state.get("db_secondary_chart_type", "Flujo neto mensual (área)"),
+        }
+        st.session_state["db_last_applied"] = datetime.now().strftime("%H:%M:%S")
+        st.rerun()
 
     # Apply deferred reset for widget-bound draft values before widgets render.
     if st.session_state.get("db_reset_pending", False):
@@ -763,22 +799,15 @@ def dashboard_screen() -> None:
             top_value = float(cat_rank.iloc[0]["amount"])
             top_cat_text = f"{top_label} · {top_value:,.0f} {currency}"
 
-    i1, i2, i3 = st.columns(3)
+    i1, i2 = st.columns(2)
     with i1:
-        render_info_card(
-            "Balance neto",
-            f"{period_balance:,.0f} {currency}",
-            sub="Ingresos menos gastos del período elegido.",
-            tone="balance",
-        )
-    with i2:
         render_info_card(
             "Gasto promedio",
             f"{avg_expense:,.0f} {currency}",
             sub="Promedio de gasto por transacción.",
             tone="expense",
         )
-    with i3:
+    with i2:
         render_info_card(
             "Mayor impacto",
             top_cat_text,
@@ -786,114 +815,8 @@ def dashboard_screen() -> None:
             tone="impact",
         )
 
-    # ── Filters (period only; currency handled in header) ───────────────────
-    st.markdown("### Filtros de período")
-    filter_panel = st.container(border=True)
-    with filter_panel:
-        f1, f2, f3, _ = st.columns([1.5, 1.5, 1.5, 1.5])
-        with f1:
-            st.selectbox(
-                "Período",
-                ["Año actual", "Últimos 90 días", "Últimos 30 días", "Personalizado"],
-                key="db_period_draft",
-                help="Define el rango de tiempo para analizar tus finanzas.",
-            )
-        with f2:
-            st.date_input(
-                "Desde",
-                key="db_from_draft",
-                disabled=st.session_state["db_period_draft"] != "Personalizado",
-                help="Fecha inicial del análisis. Solo se activa cuando eliges 'Personalizado'.",
-            )
-        with f3:
-            st.date_input(
-                "Hasta",
-                key="db_to_draft",
-                disabled=st.session_state["db_period_draft"] != "Personalizado",
-                help="Fecha final del análisis. Solo se activa cuando eliges 'Personalizado'.",
-            )
-
-        # Compare draft vs applied to indicate pending changes.
-        pending_changes = (
-            st.session_state["db_period_draft"] != st.session_state["db_period"]
-            or (
-                st.session_state["db_period_draft"] == "Personalizado"
-                and (
-                    st.session_state["db_from_draft"] != st.session_state["db_from"]
-                    or st.session_state["db_to_draft"] != st.session_state["db_to"]
-                )
-            )
-        )
-
-        b1, b2, _ = st.columns([1, 1, 4])
-        with b1:
-            apply_clicked = btn(
-                "Aplicar",
-                key="db_apply_filters",
-                variant="success",
-                use_container_width=True,
-                disabled=not pending_changes,
-            )
-        with b2:
-            reset_clicked = btn(
-                "Restablecer",
-                key="db_reset_filters",
-                variant="neutral",
-                use_container_width=True,
-            )
-
-        if pending_changes:
-            show_warning("Cambios pendientes: presiona Aplicar para actualizar la vista.")
-
-    if apply_clicked:
-        st.session_state["db_period"] = st.session_state["db_period_draft"]
-        st.session_state["db_from"] = st.session_state["db_from_draft"]
-        st.session_state["db_to"] = st.session_state["db_to_draft"]
-        prefs_by_user[user_key] = {
-            "currency": st.session_state["db_currency"],
-            "period": st.session_state["db_period"],
-            "date_from": st.session_state["db_from"],
-            "date_to": st.session_state["db_to"],
-            "chart_type": st.session_state.get("db_chart_type", "Ingresos vs gastos (barras)"),
-            "secondary_chart_type": st.session_state.get("db_secondary_chart_type", "Flujo neto mensual (área)"),
-        }
-        st.session_state["db_refreshing"] = True
-        st.session_state["db_filters_applied_notice"] = True
-        st.session_state["db_last_applied"] = datetime.now().strftime("%H:%M:%S")
-        st.rerun()
-
-    if reset_clicked:
-        st.session_state["db_period"] = "Año actual"
-        st.session_state["db_from"] = default_from
-        st.session_state["db_to"] = default_to
-        st.session_state["db_reset_pending"] = True
-        prefs_by_user[user_key] = {
-            "currency": st.session_state["db_currency"],
-            "period": st.session_state["db_period"],
-            "date_from": st.session_state["db_from"],
-            "date_to": st.session_state["db_to"],
-            "chart_type": st.session_state.get("db_chart_type", "Ingresos vs gastos (barras)"),
-            "secondary_chart_type": st.session_state.get("db_secondary_chart_type", "Flujo neto mensual (área)"),
-        }
-        st.session_state["db_refreshing"] = True
-        st.session_state["db_filters_applied_notice"] = True
-        st.session_state["db_last_applied"] = datetime.now().strftime("%H:%M:%S")
-        st.rerun()
-
     if invalid_range_swapped:
-        st.warning("Ajustamos el período automáticamente porque la fecha 'Desde' era mayor que 'Hasta'.")
-    days_in_range = (date_to - date_from).days + 1
-    last_applied = st.session_state.get("db_last_applied", "ahora")
-    st.markdown(
-        (
-            '<div class="af-active-meta">'
-            f'<span class="meta-chip">Rango: {date_from.isoformat()} -> {date_to.isoformat()}</span>'
-            f'<span class="meta-chip">Duración: {days_in_range} días</span>'
-            f'<span class="meta-chip">Actualizado: {last_applied}</span>'
-            '</div>'
-        ),
-        unsafe_allow_html=True,
-    )
+        _toast("Rango inválido: la fecha 'Desde' no puede ser mayor que 'Hasta'.", "⚠️")
 
     st.markdown("### Análisis")
     analysis_panel = st.container(border=True)

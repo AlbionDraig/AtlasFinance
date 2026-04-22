@@ -1130,6 +1130,244 @@ def show_error(message: str, icon: str = "✗") -> None:
     st.error(f"{icon} {message}")
 
 
+# ── Sticky Period & Currency Filter Bar ────────────────────────────────
+
+def _inject_sticky_filter_style() -> None:
+    """Inject CSS for sticky filter bar (called once per app rerun)."""
+    st.markdown(
+        """
+        <style>
+        /* Parent wrapper is made sticky via :has() selector */
+        div:has(> .st-key-sticky-period-filter) {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 999 !important;
+            background-color: #f4f4f4 !important;
+            padding: 8px 0 8px !important;
+            border-bottom: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Reset the inner container — parent is now sticky */
+        .st-key-sticky-period-filter {
+            position: static !important;
+            top: auto !important;
+            z-index: auto !important;
+            background: transparent !important;
+            border-bottom: none !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            margin-bottom: 0 !important;
+        }
+
+        /* Align all columns to bottom so button sits level with inputs */
+        .st-key-sticky-period-filter > [data-testid="stHorizontalBlock"] {
+            align-items: flex-end !important;
+            gap: 10px !important;
+        }
+
+        /* Remove extra gap inside each column's vertical block */
+        .st-key-sticky-period-filter [data-testid="stColumn"] > [data-testid="stVerticalBlock"] {
+            gap: 2px !important;
+        }
+
+        .st-key-sticky-period-filter label,
+        .st-key-sticky-period-filter [data-testid="stWidgetLabel"] p {
+            font-size: 0.75rem !important;
+            color: #64748b !important;
+            margin-bottom: 1px !important;
+            font-weight: 500 !important;
+        }
+
+        .st-key-sticky-period-filter [data-testid="stSelectbox"],
+        .st-key-sticky-period-filter [data-testid="stDateInput"] {
+            margin-bottom: 0 !important;
+        }
+
+        /* Ensure ancestor chain doesn't create an intermediate scroll context */
+        section[data-testid="stMain"] .block-container,
+        section[data-testid="stMain"] [data-testid="stVerticalBlock"],
+        section[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"] {
+            overflow: visible !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _inject_date_input_i18n_patch() -> None:
+        """Translate Streamlit date range validation errors to Spanish in-place."""
+        st_components.html(
+                """
+                <script>
+                (function () {
+                    function install(rootDoc) {
+                        const win = rootDoc.defaultView || window;
+                        if (win.__atlasDateI18nInstalled) return;
+                        win.__atlasDateI18nInstalled = true;
+
+                        const rangeErrorRegex = /Error:\s*Date set outside allowed range\.\s*Please select a date between\s*(.+?)\s*and\s*(.+?)\.?$/i;
+
+                        const translateNodeText = (node) => {
+                            if (!node || !node.textContent) return;
+                            const text = node.textContent.trim();
+                            const match = text.match(rangeErrorRegex);
+                            if (!match) return;
+                            const fromDate = match[1];
+                            const toDate = match[2];
+                            node.textContent = `Error: Fecha fuera del rango permitido. Selecciona una fecha entre ${fromDate} y ${toDate}.`;
+                        };
+
+                        const translateAll = () => {
+                            const candidates = rootDoc.querySelectorAll('[data-testid="stAlert"], [data-testid="stException"]');
+                            candidates.forEach((box) => {
+                                translateNodeText(box);
+                                box.querySelectorAll('p, div, span').forEach(translateNodeText);
+                            });
+                        };
+
+                        translateAll();
+
+                        const observer = new MutationObserver(() => translateAll());
+                        observer.observe(rootDoc.body, {
+                            childList: true,
+                            subtree: true,
+                            characterData: true,
+                        });
+                    }
+
+                    try {
+                        install(parent.document);
+                    } catch (err) {
+                        install(document);
+                    }
+                })();
+                </script>
+                """,
+                height=0,
+        )
+
+
+def sticky_period_filter(
+    period_options: list[str] | None = None,
+    default_period: str | None = None,
+    default_from: date | None = None,
+    default_to: date | None = None,
+    default_currency: str = "COP",
+    currency_options: list[str] | None = None,
+) -> dict[str, Any]:
+    """
+    Render a sticky period and currency filter bar.
+
+    This component is sticky (remains visible when scrolling) and spans the full width.
+    It includes: Period selector, From/To dates (for custom mode), Currency selector.
+
+    Parameters
+    ----------
+    period_options : list[str], optional
+        Period presets (default: ["Año actual", "Últimos 90 días", "Últimos 30 días", "Personalizado"])
+    default_period : str, optional
+        Default selected period preset
+    default_from : date, optional
+        Default start date for custom period
+    default_to : date, optional
+        Default end date for custom period
+    default_currency : str
+        Default currency ("COP" or "USD")
+    currency_options : list[str], optional
+        Available currencies (default: ["COP", "USD"])
+
+    Returns
+    -------
+    dict with keys:
+        - period_value (str): Currently selected period
+        - from_value (date): Start date (if custom)
+        - to_value (date): End date (if custom)
+        - currency_value (str): Selected currency
+        - is_custom (bool): Whether "Personalizado" is selected
+
+    Example
+    -------
+    _inject_sticky_filter_style()  # Call once per screen
+    result = sticky_period_filter(
+        default_period="Año actual",
+        default_from=date(2026, 1, 1),
+        default_to=date(2026, 4, 22),
+    )
+    period = result["period_value"]
+    from_date = result["from_value"]
+    to_date = result["to_value"]
+    currency = result["currency_value"]
+    """
+    if period_options is None:
+        period_options = ["Año actual", "Últimos 90 días", "Últimos 30 días", "Personalizado"]
+    if currency_options is None:
+        currency_options = ["COP", "USD"]
+    if default_period is None:
+        default_period = period_options[0]
+    if default_from is None:
+        default_from = date(date.today().year, 1, 1)
+    if default_to is None:
+        default_to = date.today()
+
+    # Normalize range to keep widget bounds valid if state arrives inverted.
+    initial_from = min(default_from, default_to)
+    initial_to = max(default_from, default_to)
+
+    # Inject CSS once
+    _inject_sticky_filter_style()
+    _inject_date_input_i18n_patch()
+
+    with st.container(key="sticky-period-filter"):
+        # 4-column layout: period, from_date, to_date, currency
+        f1, f2, f3, f_cur = st.columns([3.2, 1.6, 1.6, 1.2])
+
+        with f1:
+            period_value = st.selectbox(
+                "Período",
+                period_options,
+                index=period_options.index(default_period),
+                help="Define el rango de tiempo para analizar tus finanzas.",
+            )
+
+        is_custom = period_value == "Personalizado"
+
+        with f2:
+            from_value = st.date_input(
+                "Desde",
+                value=initial_from,
+                max_value=initial_to,
+                disabled=not is_custom,
+                help="Fecha inicial. Solo activo en modo Personalizado.",
+            )
+
+        with f3:
+            to_value = st.date_input(
+                "Hasta",
+                value=initial_to,
+                min_value=from_value,
+                disabled=not is_custom,
+                help="Fecha final. Solo activo en modo Personalizado.",
+            )
+
+        with f_cur:
+            currency_value = st.selectbox(
+                "Moneda",
+                currency_options,
+                index=currency_options.index(default_currency),
+                help="Moneda para montos, tarjetas y gráficos.",
+            )
+
+    return {
+        "period_value": period_value,
+        "from_value": from_value,
+        "to_value": to_value,
+        "currency_value": currency_value,
+        "is_custom": is_custom,
+    }
+
+
 def show_warning(message: str, icon: str = "⚠") -> None:
     """
     Show a warning toast notification.
