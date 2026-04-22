@@ -215,6 +215,16 @@ def app() -> None:
     st.session_state["main_section"] = current_section
 
     current_key = section_options.get(current_section, section_options[default_label])
+
+    # Clear Movimientos form when returning from another section.
+    previous_key = st.session_state.get("main_section_key_prev")
+    if previous_key != current_key and current_key == "movements":
+        st.session_state["mov_selected_tx_id"] = None
+        st.session_state["mov_form_loaded_tx_id"] = None
+        st.session_state["mov_clear_table_selection_pending"] = True
+        st.session_state["mov_form_force_clean_reset"] = True
+    st.session_state["main_section_key_prev"] = current_key
+
     section_renderers[current_key]()
 
 
