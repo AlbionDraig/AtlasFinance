@@ -541,18 +541,6 @@ def _render_create_transaction_form(
 
     has_pending_changes = edit_has_pending_changes if active_mode == "edit" else create_has_pending_changes
 
-    submit_transaction_top = False
-    if active_mode == "create" and create_has_pending_changes:
-        quick_action_cols = st.columns([3, 1])
-        with quick_action_cols[1]:
-            submit_transaction_top = btn(
-                "Guardar ahora",
-                key="mov_form_submit_top",
-                variant="success",
-                use_container_width=True,
-                disabled=st.session_state.get("mov_form_submitting", False),
-            )
-
     st.markdown('<div class="af-create-actions">', unsafe_allow_html=True)
     submit_cols = st.columns([1, 1, 1] if active_mode == "edit" else [2, 1])
     if active_mode == "edit":
@@ -564,7 +552,7 @@ def _render_create_transaction_form(
             arm_delete = btn(
                 "Eliminar",
                 key="mov_form_delete_arm",
-                variant="danger-outline",
+                variant="danger",
                 use_container_width=True,
                 disabled=st.session_state.get("mov_form_submitting", False),
             )
@@ -608,7 +596,7 @@ def _render_create_transaction_form(
     if delete_transaction_clicked and selected_tx:
         _handle_delete_transaction(selected_tx)
 
-    if submit_transaction_top or submit_transaction_bottom:
+    if submit_transaction_bottom:
         st.session_state["mov_form_submitting"] = True
         try:
             if active_mode == "edit" and selected_tx:
