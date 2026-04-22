@@ -535,12 +535,54 @@ def dashboard_screen() -> None:
     if st.session_state.pop("db_filters_applied_notice", False):
         _toast("Filtros aplicados y sincronizados.", "✅")
 
+    # Date bounds should follow real transaction history for current currency.
+    data_min_date = default_from
+    data_max_date = default_to
+    try:
+        bounds_resp = api_request(
+            "GET",
+            "/transactions/",
+            params={"currency": st.session_state["db_currency"]},
+        )
+        bounds_resp.raise_for_status()
+        all_tx_for_currency = _filter_transactions_by_currency(
+            bounds_resp.json(),
+            st.session_state["db_currency"],
+        )
+        if all_tx_for_currency:
+            occurred = pd.to_datetime(
+                [tx.get("occurred_at") for tx in all_tx_for_currency],
+                errors="coerce",
+                utc=True,
+            )
+            occurred = occurred.dropna()
+            if len(occurred) > 0:
+                data_min_date = occurred.min().date()
+                data_max_date = occurred.max().date()
+    except requests.RequestException:
+        # Keep fallback bounds when API is temporarily unavailable.
+        pass
+
+    if data_min_date > data_max_date:
+        data_min_date, data_max_date = data_max_date, data_min_date
+
+    st.session_state["db_from_draft"] = min(
+        max(st.session_state["db_from_draft"], data_min_date),
+        data_max_date,
+    )
+    st.session_state["db_to_draft"] = min(
+        max(st.session_state["db_to_draft"], data_min_date),
+        data_max_date,
+    )
+
     # ── Sticky filter bar (period + currency) ──────────────────────────
     filter_result = sticky_period_filter(
         period_options=["Año actual", "Últimos 90 días", "Últimos 30 días", "Personalizado"],
         default_period=st.session_state["db_period"],
         default_from=st.session_state["db_from_draft"],
         default_to=st.session_state["db_to_draft"],
+        min_date=data_min_date,
+        max_date=data_max_date,
         default_currency=st.session_state["db_currency"],
     )
     period_value = filter_result["period_value"]

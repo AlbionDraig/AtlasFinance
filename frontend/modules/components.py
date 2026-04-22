@@ -1285,6 +1285,8 @@ def sticky_period_filter(
     default_period: str | None = None,
     default_from: date | None = None,
     default_to: date | None = None,
+    min_date: date | None = None,
+    max_date: date | None = None,
     default_currency: str = "COP",
     currency_options: list[str] | None = None,
 ) -> dict[str, Any]:
@@ -1304,6 +1306,10 @@ def sticky_period_filter(
         Default start date for custom period
     default_to : date, optional
         Default end date for custom period
+    min_date : date, optional
+        Minimum selectable date in custom mode
+    max_date : date, optional
+        Maximum selectable date in custom mode
     default_currency : str
         Default currency ("COP" or "USD")
     currency_options : list[str], optional
@@ -1342,9 +1348,16 @@ def sticky_period_filter(
     if default_to is None:
         default_to = date.today()
 
+    absolute_min = min_date or date(1900, 1, 1)
+    absolute_max = max_date or date.today()
+    if absolute_min > absolute_max:
+        absolute_min, absolute_max = absolute_max, absolute_min
+
     # Normalize range to keep widget bounds valid if state arrives inverted.
     initial_from = min(default_from, default_to)
     initial_to = max(default_from, default_to)
+    initial_from = max(absolute_min, min(initial_from, absolute_max))
+    initial_to = max(initial_from, min(initial_to, absolute_max))
 
     # Inject CSS once
     _inject_sticky_filter_style()
@@ -1368,6 +1381,7 @@ def sticky_period_filter(
             from_value = st.date_input(
                 "Desde",
                 value=initial_from,
+                min_value=absolute_min,
                 max_value=initial_to,
                 disabled=not is_custom,
                 help="Fecha inicial. Solo activo en modo Personalizado.",
@@ -1378,6 +1392,7 @@ def sticky_period_filter(
                 "Hasta",
                 value=initial_to,
                 min_value=from_value,
+                max_value=absolute_max,
                 disabled=not is_custom,
                 help="Fecha final. Solo activo en modo Personalizado.",
             )
