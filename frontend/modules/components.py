@@ -661,6 +661,8 @@ def _bind_number_input_behavior(
     *,
     decimal_sep: str,
     thousand_sep: str,
+    select_zero_on_focus: bool,
+    preserve_caret_position: bool,
 ) -> None:
     """Bind numeric-only typing, dynamic grouping, and select-all-on-focus behavior."""
     st_components.html(
@@ -672,6 +674,8 @@ def _bind_number_input_behavior(
           const decimalSep = {decimal_sep!r};
                     const altDecimalSep = decimalSep === ',' ? '.' : ',';
           const thousandSep = {thousand_sep!r};
+          const selectZeroOnFocus = {str(select_zero_on_focus).lower()};
+          const preserveCaretPosition = {str(preserve_caret_position).lower()};
 
                     function groupThousands(intPart) {{
                         if (!intPart) return '';
@@ -727,8 +731,17 @@ def _bind_number_input_behavior(
               return;
             }}
             input.dataset.afSelectBound = '1';
-            input.addEventListener('focus', () => input.select());
-            input.addEventListener('mouseup', (e) => e.preventDefault());
+
+                        input.addEventListener('focus', () => {{
+                            if (!selectZeroOnFocus) return;
+                            const zeroFormatted = decimals > 0
+                                ? '0' + decimalSep + '0'.repeat(decimals)
+                                : '0';
+                            const value = String(input.value || '').trim();
+                            if (value === zeroFormatted || value === '0') {{
+                                setTimeout(() => input.select(), 0);
+                            }}
+                        }});
 
                         input.addEventListener('keydown', (e) => {{
                             const allowedKeys = new Set([
@@ -773,9 +786,40 @@ def _bind_number_input_behavior(
                         }});
 
                         input.addEventListener('input', () => {{
-                            const formatted = sanitizeAndFormat(input.value);
-                            if (input.value !== formatted) {{
+                            if (!preserveCaretPosition) {{
+                                const formatted = sanitizeAndFormat(input.value);
+                                if (input.value !== formatted) {{
+                                    input.value = formatted;
+                                }}
+                                return;
+                            }}
+
+                            const rawValue = String(input.value || '');
+                            const cursorStart = input.selectionStart ?? rawValue.length;
+                            const leftPart = rawValue.slice(0, cursorStart);
+                            const digitsBeforeCursor = (leftPart.match(/\d/g) || []).length;
+
+                            const formatted = sanitizeAndFormat(rawValue);
+                            if (rawValue !== formatted) {{
                                 input.value = formatted;
+
+                                let newCursor = formatted.length;
+                                if (digitsBeforeCursor <= 0) {{
+                                    newCursor = 0;
+                                }} else {{
+                                    let seenDigits = 0;
+                                    for (let i = 0; i < formatted.length; i += 1) {{
+                                        if (/\d/.test(formatted[i])) {{
+                                            seenDigits += 1;
+                                        }}
+                                        if (seenDigits >= digitsBeforeCursor) {{
+                                            newCursor = i + 1;
+                                            break;
+                                        }}
+                                    }}
+                                }}
+
+                                input.setSelectionRange(newCursor, newCursor);
                             }}
                         }});
             clearInterval(timer);
@@ -830,6 +874,9 @@ def number_field(
     locale: str = "es_CO",
     help: str | None = None,
     disabled: bool = False,
+    live_formatting: bool = True,
+    select_zero_on_focus: bool = True,
+    preserve_caret_position: bool = True,
 ) -> float:
     """Render a styled numeric input with locale-aware separators and clean editing UX."""
     locale_key = _normalize_numeric_locale(locale)
@@ -872,12 +919,15 @@ def number_field(
     if help is not None:
         call_kw["help"] = help
     st.text_input(**call_kw)
-    _bind_number_input_behavior(
-        display_key,
-        decimals,
-        decimal_sep=decimal_sep,
-        thousand_sep=thousand_sep,
-    )
+    if live_formatting:
+        _bind_number_input_behavior(
+            display_key,
+            decimals,
+            decimal_sep=decimal_sep,
+            thousand_sep=thousand_sep,
+            select_zero_on_focus=select_zero_on_focus,
+            preserve_caret_position=preserve_caret_position,
+        )
 
     parsed_live = _parse_number_text(
         str(st.session_state.get(display_key, "")),
