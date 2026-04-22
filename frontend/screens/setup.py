@@ -1,12 +1,13 @@
 """Setup screen — manage banks, accounts and categories."""
 from __future__ import annotations
 
+from typing import Callable
+
 import streamlit as st
 
 from modules.api_client import api_request
 from modules.components import (
     inject_component_styles,
-    number_field,
     section_header,
     select_field,
     text_field,
@@ -25,8 +26,15 @@ from modules.ui import (
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
-def _show_api_result(response, success_message: str, error_message: str) -> None:
+def _show_api_result(
+    response,
+    success_message: str,
+    error_message: str,
+    on_success: Callable[[], None] | None = None,
+) -> None:
     if response.ok:
+        if on_success is not None:
+            on_success()
         show_success(success_message)
         RERUN()
         return
@@ -97,8 +105,9 @@ def _render_bank_form() -> None:
             "name": bank_name.strip(),
             "country_code": country_code.strip().upper() or "CO",
         }),
-        "✓ Banco creado exitosamente.",
+        "Banco creado exitosamente.",
         "No se pudo crear el banco.",
+        on_success=lambda: st.session_state.__setitem__("setup_reset_bank_form_pending", True),
     )
 
 
@@ -120,7 +129,12 @@ def _render_account_form(banks: list[dict]) -> None:
             account_name = text_field("Nombre de la cuenta", key="setup_account_name", placeholder="Ej: Cuenta ahorros personal")
             account_type = select_field("Tipo", ["savings", "checking"], key="setup_account_type")
             account_currency = select_field("Moneda", ["COP", "USD"], key="setup_account_currency")
-            balance = number_field("Saldo inicial", min_value=0.0, step=10.0, key="setup_account_balance")
+            balance = st.number_input(
+                "Saldo inicial",
+                min_value=0.0,
+                step=10.0,
+                key="setup_account_balance",
+            )
             selected_bank = select_field("Banco", list(bank_options.keys()), key="setup_selected_bank")
 
         submit = st.form_submit_button("Guardar cuenta", use_container_width=True, disabled=not bool(banks))
@@ -141,6 +155,7 @@ def _render_account_form(banks: list[dict]) -> None:
         }),
         "Cuenta creada.",
         "No se pudo crear la cuenta.",
+        on_success=lambda: st.session_state.__setitem__("setup_reset_account_form_pending", True),
     )
 
 
@@ -171,8 +186,9 @@ def _render_category_form() -> None:
 
     _show_api_result(
         api_request("POST", "/categories/", payload={"name": category_name.strip()}),
-        "✓ Categoría creada exitosamente.",
+        "Categoría creada exitosamente.",
         "No se pudo crear la categoría.",
+        on_success=lambda: st.session_state.__setitem__("setup_reset_category_form_pending", True),
     )
 
 
@@ -196,6 +212,22 @@ def setup_screen() -> None:
     banks: list[dict] = banks_r.json()
     accounts: list[dict] = accounts_r.json()
     categories: list[dict] = categories_r.json()
+
+    # Apply deferred resets before widgets are instantiated.
+    if st.session_state.pop("setup_reset_bank_form_pending", False):
+        st.session_state["setup_bank_name"] = ""
+        st.session_state["setup_country_code"] = "CO"
+
+    if st.session_state.pop("setup_reset_account_form_pending", False):
+        st.session_state["setup_account_name"] = ""
+        st.session_state["setup_account_type"] = "savings"
+        st.session_state["setup_account_currency"] = "COP"
+        st.session_state["setup_account_balance"] = 0.0
+        bank_options = _build_friendly_bank_options(banks)
+        st.session_state["setup_selected_bank"] = next(iter(bank_options.keys()), "")
+
+    if st.session_state.pop("setup_reset_category_form_pending", False):
+        st.session_state["setup_category_name"] = ""
 
     # ── summary cards ────────────────────────────────────────────────────────
     col1, col2, col3 = st.columns(3)

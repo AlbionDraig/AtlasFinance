@@ -360,7 +360,7 @@ def _render_create_transaction_form(
         st.session_state["mov_form_force_clean_reset"] = False
     elif selected_tx_id and st.session_state.get("mov_form_loaded_tx_id") != selected_tx_id:
         _load_selected_transaction_into_form(selected_tx, account_options, category_options)
-    elif selected_tx is None and st.session_state.get("mov_form_loaded_tx_id") is None:
+    elif selected_tx is None and st.session_state.get("mov_form_loaded_tx_id") is not None:
         _reset_transaction_form(account_options)
 
     section_header(
@@ -463,7 +463,7 @@ def _render_create_transaction_form(
                 st.session_state["mov_selected_tx_id"] = None
                 st.session_state["mov_form_loaded_tx_id"] = None
                 st.session_state["mov_clear_table_selection_pending"] = True
-                _reset_transaction_form(account_options)
+                st.session_state["mov_form_force_clean_reset"] = True
                 RERUN()
     else:
         last_created = st.session_state.get("mov_last_created_tx")
@@ -650,7 +650,7 @@ def _render_create_transaction_form(
                         "amount": amount,
                         "currency": currency,
                     }
-                    _reset_transaction_form(account_options)
+                    st.session_state["mov_form_force_clean_reset"] = True
                     RERUN()
         finally:
             st.session_state["mov_form_submitting"] = False

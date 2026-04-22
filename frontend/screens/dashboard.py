@@ -585,6 +585,7 @@ def dashboard_screen() -> None:
     # ── Data fetch ────────────────────────────────────────────────────────────
     try:
         metrics_resp = api_request("GET", "/metrics/dashboard", params={"currency": currency})
+        accounts_resp = api_request("GET", "/accounts/")
         tx_resp = api_request(
             "GET",
             "/transactions/",
@@ -604,6 +605,7 @@ def dashboard_screen() -> None:
             },
         )
         metrics_resp.raise_for_status()
+        accounts_resp.raise_for_status()
         tx_resp.raise_for_status()
         prev_tx_resp.raise_for_status()
     except requests.RequestException as exc:
@@ -626,9 +628,20 @@ def dashboard_screen() -> None:
         category_lookup = {}
 
     metrics = metrics_resp.json()
+    accounts = accounts_resp.json()
     transactions = _filter_transactions_by_currency(tx_resp.json(), currency)
     previous_transactions = _filter_transactions_by_currency(prev_tx_resp.json(), currency)
     st.session_state["db_refreshing"] = False
+
+    net_worth_value = float(metrics.get("net_worth", 0) or 0)
+    if isinstance(accounts, list) and accounts:
+        currency_accounts = [
+            acc for acc in accounts if str(acc.get("currency") or "").strip().upper() == currency
+        ]
+        if currency_accounts:
+            net_worth_value = float(
+                sum(float(acc.get("current_balance") or 0) for acc in currency_accounts)
+            )
 
     current_income = _sum_amount_by_type(transactions, "income")
     current_expense = _sum_amount_by_type(transactions, "expense")
@@ -651,7 +664,7 @@ def dashboard_screen() -> None:
     with k1:
         render_kpi_card(
             "Patrimonio neto",
-            f"{metrics.get('net_worth', 0):,.2f}",
+            f"{net_worth_value:,.2f}",
             currency,
             badge=net_badge,
             badge_type=net_badge_type,
@@ -720,9 +733,10 @@ def dashboard_screen() -> None:
     if not exp_df.empty:
         cat_col = "category_name" if "category_name" in exp_df.columns else "category_id"
         cat_rank = exp_df.groupby(cat_col, as_index=False)["amount"].sum().sort_values("amount", ascending=False)
-        top_label = _format_category_label(cat_rank.iloc[0][cat_col], category_lookup)
-        top_value = float(cat_rank.iloc[0]["amount"])
-        top_cat_text = f"{top_label} · {top_value:,.0f} {currency}"
+        if not cat_rank.empty:
+            top_label = _format_category_label(cat_rank.iloc[0][cat_col], category_lookup)
+            top_value = float(cat_rank.iloc[0]["amount"])
+            top_cat_text = f"{top_label} · {top_value:,.0f} {currency}"
 
     i1, i2, i3 = st.columns(3)
     with i1:
