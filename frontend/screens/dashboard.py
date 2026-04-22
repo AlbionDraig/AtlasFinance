@@ -54,6 +54,14 @@ def _sum_amount_by_type(rows: list[dict], tx_type: str) -> float:
     return float(sum(float(tx.get("amount") or 0) for tx in rows if tx.get("transaction_type") == tx_type))
 
 
+def _format_card_amount(value: float) -> str:
+    """Format KPI amounts without decimals when the value is effectively an integer."""
+    rounded = round(float(value), 2)
+    if rounded.is_integer():
+        return f"{int(rounded):,}"
+    return f"{rounded:,.2f}"
+
+
 def _filter_transactions_by_currency(rows: list[dict], currency: str) -> list[dict]:
     """Return only transactions matching the selected currency when available."""
     target = (currency or "").strip().upper()
@@ -790,7 +798,7 @@ def dashboard_screen() -> None:
     with k1:
         render_kpi_card(
             "Patrimonio neto",
-            f"{net_worth_value:,.2f}",
+            _format_card_amount(net_worth_value),
             currency,
             badge=net_badge,
             badge_type=net_badge_type,
@@ -799,7 +807,7 @@ def dashboard_screen() -> None:
     with k2:
         render_kpi_card(
             "Ingresos",
-            f"{current_income:,.2f}",
+            _format_card_amount(current_income),
             currency,
             badge=income_badge,
             badge_type=income_badge_type,
@@ -808,7 +816,7 @@ def dashboard_screen() -> None:
     with k3:
         render_kpi_card(
             "Gastos",
-            f"{current_expense:,.2f}",
+            _format_card_amount(current_expense),
             currency,
             badge=expense_badge,
             badge_type=expense_badge_type,
