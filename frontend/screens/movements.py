@@ -228,6 +228,7 @@ def _handle_create_transaction(
     selected_category_label: str,
     account_options: dict[str, int],
     category_options: dict[str, int | None],
+    is_initial_balance: bool,
 ) -> tuple[bool, dict | None]:
     """Validate and create a new transaction."""
     if not account_options:
@@ -257,6 +258,7 @@ def _handle_create_transaction(
         "occurred_at": occurred_at.isoformat(),
         "account_id": account_options[selected_account_label],
         "category_id": category_options[selected_category_label],
+        "is_initial_balance": is_initial_balance,
     }
     response = api_request("POST", "/transactions/", payload=payload)
     if response.ok:
@@ -338,6 +340,7 @@ def _undo_last_deleted_transaction() -> None:
 def _render_create_transaction_form(
     account_options: dict[str, int],
     category_options: dict[str, int | None],
+    transactions: list[dict],
     selected_tx: dict | None = None,
 ) -> None:
     """Render a unified form that edits the selected transaction or creates a new one."""
@@ -518,6 +521,29 @@ def _render_create_transaction_form(
         occurred_date = date_field("Fecha", key="mov_form_date")
         occurred_time = time_field("Hora", key="mov_form_time")
 
+    selected_account_id = account_options.get(selected_account_label)
+    account_has_transactions = bool(
+        selected_account_id
+        and any(int(tx.get("account_id") or 0) == int(selected_account_id) for tx in transactions)
+    )
+
+    if "mov_form_is_initial_balance" not in st.session_state:
+        st.session_state["mov_form_is_initial_balance"] = False
+    if account_has_transactions:
+        st.session_state["mov_form_is_initial_balance"] = False
+
+    is_initial_balance = bool(
+        st.checkbox(
+            "Registrar como saldo inicial (solo una vez por cuenta)",
+            key="mov_form_is_initial_balance",
+            disabled=account_has_transactions,
+            help="Usa esta opción solo para el primer movimiento de una cuenta nueva.",
+        )
+    )
+
+    if account_has_transactions:
+        st.caption("Esta cuenta ya tiene movimientos; saldo inicial ya no disponible.")
+
     st.caption("Consejo: la cuenta y la moneda deben coincidir para evitar errores de registro.")
 
     create_has_pending_changes = bool(description.strip()) or float(amount) > 0.0
@@ -627,6 +653,7 @@ def _render_create_transaction_form(
                     selected_category_label,
                     account_options,
                     category_options,
+                    is_initial_balance,
                 )
 
                 if success:
@@ -1128,5 +1155,5 @@ def movements_screen() -> None:
     else:
         selected_tx = _render_transactions_table(transactions, account_options)
     st.divider()
-    _render_create_transaction_form(account_options, category_options, selected_tx=selected_tx)
+    _render_create_transaction_form(account_options, category_options, transactions, selected_tx=selected_tx)
     _render_undo_deleted_footer()

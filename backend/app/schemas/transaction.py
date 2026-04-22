@@ -16,6 +16,7 @@ class TransactionCreate(BaseModel):
     account_id: int
     category_id: int | None = None
     pocket_id: int | None = None
+    is_initial_balance: bool = False
 
 
 class TransactionRead(BaseModel):

@@ -56,7 +56,8 @@ def create_account(db: Session, user_id: int, payload: AccountCreate) -> Account
         name=payload.name,
         account_type=payload.account_type,
         currency=payload.currency,
-        current_balance=payload.current_balance,
+        # New accounts always start at zero; opening balance is a movement.
+        current_balance=Decimal("0"),
         bank_id=payload.bank_id,
     )
     db.add(account)
@@ -142,6 +143,15 @@ def _validate_transaction_payload(db: Session, user_id: int, payload: Transactio
 def register_transaction(db: Session, user_id: int, payload: TransactionCreate) -> Transaction:
     """Create a transaction and update the account running balance."""
     account = _validate_transaction_payload(db, user_id, payload)
+
+    if payload.is_initial_balance:
+        existing_tx = db.scalar(
+            select(Transaction.id)
+            .where(Transaction.user_id == user_id, Transaction.account_id == payload.account_id)
+            .limit(1)
+        )
+        if existing_tx is not None:
+            raise ValueError("El saldo inicial solo se puede registrar una vez por cuenta.")
 
     txn = Transaction(
         description=payload.description,

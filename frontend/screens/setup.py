@@ -8,7 +8,6 @@ import streamlit as st
 from modules.api_client import api_request
 from modules.components import (
     inject_component_styles,
-    number_field,
     section_header,
     select_field,
     text_field,
@@ -109,20 +108,12 @@ def _render_account_form(banks: list[dict]) -> None:
             account_name = ""
             account_type = "savings"
             account_currency = "COP"
-            balance = 0.0
             selected_bank = ""
         else:
             bank_options = _build_friendly_bank_options(banks)
             account_name = text_field("Nombre de la cuenta", key="setup_account_name", placeholder="Ej: Cuenta ahorros personal")
             account_type = select_field("Tipo", ["savings", "checking"], key="setup_account_type")
             account_currency = select_field("Moneda", ["COP", "USD"], key="setup_account_currency")
-            balance = number_field(
-                "Saldo inicial",
-                key="setup_account_balance",
-                min_value=0.0,
-                step=10.0,
-                format="%.2f",
-            )
             selected_bank = select_field("Banco", list(bank_options.keys()), key="setup_selected_bank")
 
         submit = st.form_submit_button("Guardar cuenta", use_container_width=True, disabled=not bool(banks))
@@ -138,7 +129,6 @@ def _render_account_form(banks: list[dict]) -> None:
             "name": account_name.strip(),
             "account_type": account_type,
             "currency": account_currency,
-            "current_balance": balance,
             "bank_id": bank_options[selected_bank],
         }),
         "Cuenta creada.",
