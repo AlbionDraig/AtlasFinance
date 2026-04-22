@@ -1142,7 +1142,7 @@ def _inject_sticky_filter_style() -> None:
             position: sticky !important;
             top: 0 !important;
             z-index: 999 !important;
-            background-color: #f4f4f4 !important;
+            background-color: var(--c-bg) !important;
             padding: 8px 0 8px !important;
             border-bottom: none !important;
             box-shadow: none !important;
@@ -1174,9 +1174,9 @@ def _inject_sticky_filter_style() -> None:
         .st-key-sticky-period-filter label,
         .st-key-sticky-period-filter [data-testid="stWidgetLabel"] p {
             font-size: 0.75rem !important;
-            color: #64748b !important;
+            color: var(--c-muted) !important;
             margin-bottom: 1px !important;
-            font-weight: 500 !important;
+            font-weight: 600 !important;
         }
 
         .st-key-sticky-period-filter [data-testid="stSelectbox"],

@@ -20,7 +20,7 @@ def inject_theme() -> None:
             --c-surfaceL: rgba(255,255,255,0.6);
             --c-border:   rgba(17, 36, 67, 0.10);
             --c-text:     #0f172a;
-            --c-muted:    #475569;
+            --c-muted:    #64748b;
             --c-accent:   #1f6fb2;
             --c-accent2:  #16a3b8;
             --c-up:       #0f9d7a;

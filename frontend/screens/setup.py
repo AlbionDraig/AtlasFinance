@@ -8,6 +8,7 @@ import streamlit as st
 from modules.api_client import api_request
 from modules.components import (
     inject_component_styles,
+    number_field,
     section_header,
     select_field,
     text_field,
@@ -16,8 +17,6 @@ from modules.config import RERUN
 from modules.notifications import show_error, show_success
 from modules.ui import (
     render_empty_state,
-    render_field_with_tooltip,
-    render_form_label,
     render_info_card,
     show_form_error,
     validate_text_field,
@@ -62,30 +61,18 @@ def _build_friendly_bank_options(banks: list[dict]) -> dict[str, int]:
 
 def _render_bank_form() -> None:
     with st.form("setup_create_bank_form"):
-        render_field_with_tooltip(
-            "Nombre del banco",
-            "Nombre de tu institución financiera",
-            required=True,
-            hint="Ej: Bancolombia, BBVA, Scotiabank, Nequi",
-        )
-        bank_name = st.text_input(
+        bank_name = text_field(
             "Nombre del banco",
             key="setup_bank_name",
             placeholder="Ingresa el nombre del banco",
-            label_visibility="collapsed",
+            help="Ej: Bancolombia, BBVA, Scotiabank, Nequi",
         )
-        render_field_with_tooltip(
+        country_code = text_field(
             "País (código)",
-            "Código de país en ISO 3166-1 alpha-2",
-            required=True,
-            hint="Código de 2 letras. Ej: CO (Colombia), US (USA), AR (Argentina)",
-        )
-        country_code = st.text_input(
-            "País (código)",
-            value="CO",
-            max_chars=3,
             key="setup_country_code",
-            label_visibility="collapsed",
+            placeholder="Ej: CO, US, AR",
+            max_chars=3,
+            help="Código de 2 letras ISO 3166-1 alpha-2. Ej: CO (Colombia), US (USA), AR (Argentina)",
         )
         submit = st.form_submit_button("✓ Guardar banco", use_container_width=True)
 
@@ -129,11 +116,12 @@ def _render_account_form(banks: list[dict]) -> None:
             account_name = text_field("Nombre de la cuenta", key="setup_account_name", placeholder="Ej: Cuenta ahorros personal")
             account_type = select_field("Tipo", ["savings", "checking"], key="setup_account_type")
             account_currency = select_field("Moneda", ["COP", "USD"], key="setup_account_currency")
-            balance = st.number_input(
+            balance = number_field(
                 "Saldo inicial",
+                key="setup_account_balance",
                 min_value=0.0,
                 step=10.0,
-                key="setup_account_balance",
+                format="%.2f",
             )
             selected_bank = select_field("Banco", list(bank_options.keys()), key="setup_selected_bank")
 
@@ -163,16 +151,11 @@ def _render_account_form(banks: list[dict]) -> None:
 
 def _render_category_form() -> None:
     with st.form("setup_create_category_form"):
-        render_form_label(
-            "Nombre de categoría",
-            required=True,
-            hint="Ej: Alimentación, Transporte, Entretenimiento",
-        )
-        category_name = st.text_input(
+        category_name = text_field(
             "Nombre de categoría",
             key="setup_category_name",
             placeholder="Ingresa el nombre de la categoría",
-            label_visibility="collapsed",
+            help="Ej: Alimentación, Transporte, Entretenimiento",
         )
         submit = st.form_submit_button("✓ Guardar categoría", use_container_width=True)
 
@@ -212,6 +195,9 @@ def setup_screen() -> None:
     banks: list[dict] = banks_r.json()
     accounts: list[dict] = accounts_r.json()
     categories: list[dict] = categories_r.json()
+
+    # Seed defaults for first render (before any deferred reset is applied).
+    st.session_state.setdefault("setup_country_code", "CO")
 
     # Apply deferred resets before widgets are instantiated.
     if st.session_state.pop("setup_reset_bank_form_pending", False):

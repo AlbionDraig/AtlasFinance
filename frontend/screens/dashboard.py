@@ -8,7 +8,7 @@ import requests
 import streamlit as st
 
 from modules.api_client import api_request
-from modules.components import btn, info_box, inject_component_styles, section_header, show_warning, sticky_period_filter
+from modules.components import btn, info_box, inject_component_styles, section_header, select_field, show_warning, sticky_period_filter
 from modules.ui import (
     render_info_card,
     render_kpi_card,
@@ -871,7 +871,7 @@ def dashboard_screen() -> None:
         if st.session_state.get("db_chart_type") not in primary_chart_options:
             st.session_state["db_chart_type"] = "Ingresos vs gastos (barras)"
 
-        chart_type = st.selectbox(
+        chart_type = select_field(
             "Gráfico principal",
             primary_chart_options,
             key="db_chart_type",
@@ -918,7 +918,7 @@ def dashboard_screen() -> None:
             st.session_state["db_secondary_chart_type"] = "Flujo neto mensual (área)"
 
         with st.expander("Ver más análisis"):
-            secondary_chart_type = st.selectbox(
+            secondary_chart_type = select_field(
                 "Gráfico secundario",
                 secondary_options,
                 key="db_secondary_chart_type",
