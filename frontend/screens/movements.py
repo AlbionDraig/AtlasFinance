@@ -841,6 +841,13 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         if key not in st.session_state:
             st.session_state[key] = value
 
+    def _clamp_to_bounds(value: date) -> date:
+        return min(max(value, default_from), default_to)
+
+    # Keep persisted filter dates always valid for the current data window.
+    st.session_state["mov_table_from_date"] = _clamp_to_bounds(st.session_state["mov_table_from_date"])
+    st.session_state["mov_table_to_date"] = _clamp_to_bounds(st.session_state["mov_table_to_date"])
+
     if st.session_state.get("mov_table_account_filter") not in account_filter_options:
         st.session_state["mov_table_account_filter"] = "Todas"
 
@@ -876,33 +883,49 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         )
 
     today = date.today()
-    if period_filter != "Personalizado":
+    bounded_today = _clamp_to_bounds(today)
+    is_custom_period = period_filter == "Personalizado"
+    if not is_custom_period:
         if period_filter == "Hoy":
-            st.session_state["mov_table_from_date"] = today
-            st.session_state["mov_table_to_date"] = today
+            st.session_state["mov_table_from_date"] = bounded_today
+            st.session_state["mov_table_to_date"] = bounded_today
         elif period_filter == "Últimos 7 días":
-            st.session_state["mov_table_from_date"] = today - timedelta(days=6)
-            st.session_state["mov_table_to_date"] = today
+            st.session_state["mov_table_from_date"] = _clamp_to_bounds(bounded_today - timedelta(days=6))
+            st.session_state["mov_table_to_date"] = bounded_today
         elif period_filter == "Últimos 30 días":
-            st.session_state["mov_table_from_date"] = today - timedelta(days=29)
-            st.session_state["mov_table_to_date"] = today
+            st.session_state["mov_table_from_date"] = _clamp_to_bounds(bounded_today - timedelta(days=29))
+            st.session_state["mov_table_to_date"] = bounded_today
         elif period_filter == "Mes actual":
-            st.session_state["mov_table_from_date"] = today.replace(day=1)
-            st.session_state["mov_table_to_date"] = today
+            st.session_state["mov_table_from_date"] = _clamp_to_bounds(bounded_today.replace(day=1))
+            st.session_state["mov_table_to_date"] = bounded_today
         elif period_filter == "Todo":
             st.session_state["mov_table_from_date"] = default_from
             st.session_state["mov_table_to_date"] = default_to
 
     with row2_c2:
-        from_date = date_field("Desde", key="mov_table_from_date")
+        from_date = date_field(
+            "Desde",
+            key="mov_table_from_date",
+            min_value=default_from,
+            max_value=default_to,
+            disabled=not is_custom_period,
+        )
     with row2_c3:
-        to_date = date_field("Hasta", key="mov_table_to_date")
+        to_date = date_field(
+            "Hasta",
+            key="mov_table_to_date",
+            min_value=default_from,
+            max_value=default_to,
+            disabled=not is_custom_period,
+        )
     with row2_c4:
         page_size = select_field("Por página", [8, 12, 20, 30], key="mov_table_page_size")
 
-    if from_date > to_date:
-        show_warning("El rango de fechas no es válido. Revisa 'Desde' y 'Hasta'.")
-        return None
+    if is_custom_period and from_date > to_date:
+        from_date, to_date = to_date, from_date
+        st.session_state["mov_table_from_date"] = from_date
+        st.session_state["mov_table_to_date"] = to_date
+        show_warning("Rango inválido detectado: se ajustaron automáticamente las fechas.")
 
     active_filters: list[str] = []
     if tx_type_filter != "Todo":
