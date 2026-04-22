@@ -102,8 +102,7 @@ def inject_component_styles() -> None:
         <style>
         /* ── Text / Number / Date / Time inputs ──────────────────────── */
         [data-testid="stTextInput"] input,
-        [data-testid="stNumberInput"] input,
-        [data-baseweb="input"] input {
+        [data-testid="stNumberInput"] input {
             border-radius: 8px !important;
             border: 1px solid #dde3ec !important;
             background: #ffffff !important;
@@ -113,8 +112,7 @@ def inject_component_styles() -> None:
             transition: border-color 0.18s ease, box-shadow 0.18s ease !important;
         }
         [data-testid="stTextInput"] input:focus,
-        [data-testid="stNumberInput"] input:focus,
-        [data-baseweb="input"] input:focus {
+        [data-testid="stNumberInput"] input:focus {
             border-color: #1f6fb2 !important;
             box-shadow: 0 0 0 3px rgba(31, 111, 178, 0.15) !important;
             outline: none !important;
@@ -164,19 +162,34 @@ def inject_component_styles() -> None:
         }
 
         /* ── Date / Time inputs ───────────────────────────────────────── */
-        [data-testid="stDateInput"] input,
-        [data-testid="stTimeInput"] input {
+        [data-testid="stDateInput"] [data-baseweb="input"],
+        [data-testid="stTimeInput"] [data-baseweb="input"] {
             border-radius: 8px !important;
             border: 1px solid #dde3ec !important;
             background: #ffffff !important;
+            overflow: hidden !important;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease !important;
+        }
+        [data-testid="stDateInput"] [data-baseweb="input"] input,
+        [data-testid="stTimeInput"] [data-baseweb="input"] input {
+            border: none !important;
+            background: transparent !important;
             color: #0f172a !important;
             font-size: 0.9rem !important;
             padding: 0.44rem 0.75rem !important;
+            box-shadow: none !important;
         }
-        [data-testid="stDateInput"] input:focus,
-        [data-testid="stTimeInput"] input:focus {
+        [data-testid="stDateInput"] [data-baseweb="input"]:focus-within,
+        [data-testid="stTimeInput"] [data-baseweb="input"]:focus-within {
             border-color: #1f6fb2 !important;
             box-shadow: 0 0 0 3px rgba(31, 111, 178, 0.15) !important;
+        }
+        [data-testid="stDateInput"] [data-baseweb="input"] button,
+        [data-testid="stTimeInput"] [data-baseweb="input"] button {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: #64748b !important;
         }
 
         /* ── Input labels ─────────────────────────────────────────────── */
