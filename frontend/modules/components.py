@@ -1207,29 +1207,60 @@ def _inject_date_input_i18n_patch() -> None:
                         if (win.__atlasDateI18nInstalled) return;
                         win.__atlasDateI18nInstalled = true;
 
-                        const rangeErrorRegex = /Error:\s*Date set outside allowed range\.\s*Please select a date between\s*(.+?)\s*and\s*(.+?)\.?$/i;
+                        const rangeRegex = /(?:Error:\s*)?Date set outside allowed range\.\s*Please select a date between\s*([^\s]+)\s*and\s*([^\.]+)\.?/i;
 
-                        const translateNodeText = (node) => {
-                            if (!node || !node.textContent) return;
-                            const text = node.textContent.trim();
-                            const match = text.match(rangeErrorRegex);
-                            if (!match) return;
-                            const fromDate = match[1];
-                            const toDate = match[2];
-                            node.textContent = `Error: Fecha fuera del rango permitido. Selecciona una fecha entre ${fromDate} y ${toDate}.`;
-                        };
-
-                        const translateAll = () => {
-                            const candidates = rootDoc.querySelectorAll('[data-testid="stAlert"], [data-testid="stException"]');
-                            candidates.forEach((box) => {
-                                translateNodeText(box);
-                                box.querySelectorAll('p, div, span').forEach(translateNodeText);
+                        function translateText(text) {
+                            if (!text || text.indexOf('Date set outside allowed range') === -1) {
+                                return text;
+                            }
+                            return text.replace(rangeRegex, (_m, fromDate, toDate) => {
+                                return `Fecha fuera del rango permitido. Selecciona una fecha entre ${fromDate.trim()} y ${toDate.trim()}.`;
                             });
-                        };
+                        }
+
+                        function translateNode(node) {
+                            if (!node || !node.nodeValue) return;
+                            const translated = translateText(node.nodeValue);
+                            if (translated !== node.nodeValue) {
+                                node.nodeValue = translated;
+                            }
+                        }
+
+                        function translateAll() {
+                            if (!rootDoc.body) return;
+                            const walker = rootDoc.createTreeWalker(rootDoc.body, NodeFilter.SHOW_TEXT);
+                            let current = walker.nextNode();
+                            while (current) {
+                                translateNode(current);
+                                current = walker.nextNode();
+                            }
+                        }
 
                         translateAll();
 
-                        const observer = new MutationObserver(() => translateAll());
+                        const observer = new MutationObserver((mutations) => {
+                            for (const mutation of mutations) {
+                                if (mutation.type === 'characterData') {
+                                    translateNode(mutation.target);
+                                    continue;
+                                }
+                                mutation.addedNodes.forEach((added) => {
+                                    if (added.nodeType === Node.TEXT_NODE) {
+                                        translateNode(added);
+                                        return;
+                                    }
+                                    if (added.nodeType === Node.ELEMENT_NODE) {
+                                        const subWalker = rootDoc.createTreeWalker(added, NodeFilter.SHOW_TEXT);
+                                        let sub = subWalker.nextNode();
+                                        while (sub) {
+                                            translateNode(sub);
+                                            sub = subWalker.nextNode();
+                                        }
+                                    }
+                                });
+                            }
+                        });
+
                         observer.observe(rootDoc.body, {
                             childList: true,
                             subtree: true,
@@ -1239,7 +1270,7 @@ def _inject_date_input_i18n_patch() -> None:
 
                     try {
                         install(parent.document);
-                    } catch (err) {
+                    } catch (_err) {
                         install(document);
                     }
                 })();
