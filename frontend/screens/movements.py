@@ -844,10 +844,10 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         .st-key-mov_table_page_size {
             margin-bottom: 0.12rem;
         }
-        .st-key-mov_filters_block > [data-testid="stVerticalBlock"] {
-            gap: 0.35rem !important;
+        .stVerticalBlock.st-key-mov_filters_block {
+            gap: 0.2rem !important;
         }
-        .st-key-mov_filters_block > [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] {
+        .stVerticalBlock.st-key-mov_filters_block > [data-testid="stHorizontalBlock"] {
             gap: 0.7rem !important;
             align-items: flex-end !important;
         }
@@ -857,6 +857,14 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         .st-key-mov_filters_block [data-testid="stWidgetLabel"] {
             margin-bottom: 0 !important;
             min-height: 1.15rem !important;
+        }
+        .stVerticalBlock.st-key-mov_filters_actions {
+            gap: 0 !important;
+            margin-top: -0.8rem !important;
+        }
+        .stVerticalBlock.st-key-mov_filters_actions > [data-testid="stHorizontalBlock"] {
+            gap: 0 !important;
+            align-items: center !important;
         }
         </style>
         """,
@@ -987,7 +995,8 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
     if from_date != default_from or to_date != default_to:
         active_filters.append(f"Fechas: {from_date} a {to_date}")
 
-        if active_filters:
+    if active_filters:
+        with st.container(key="mov_filters_actions"):
             _, clear_btn_col = st.columns([7, 1])
             with clear_btn_col:
                 btn(
