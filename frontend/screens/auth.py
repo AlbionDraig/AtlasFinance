@@ -22,16 +22,31 @@ def _extract_error_detail(response: requests.Response | None, default_detail: st
         return default_detail
 
 
+def _show_toast(message: str, icon: str = "ℹ️") -> None:
+    """Display auth feedback consistently through toast notifications."""
+    st.toast(message, icon=icon)
+
+
+def _show_error_notice(message: str) -> None:
+    """Display an error notification as toast."""
+    _show_toast(message, icon="⚠️")
+
+
+def _show_success_notice(message: str) -> None:
+    """Display a success notification as toast."""
+    _show_toast(message, icon="✅")
+
+
 def _handle_login_submit(email: str, password: str) -> None:
     """Process login submit and persist the returned JWT in session state."""
     if not email.strip():
-        st.error("Ingresa tu email para iniciar sesión.")
+        _show_error_notice("Ingresa tu email para iniciar sesión.")
         return
     if not password:
-        st.error("Ingresa tu password para iniciar sesión.")
+        _show_error_notice("Ingresa tu contraseña para iniciar sesión.")
         return
     if "@" not in email:
-        st.error("El email no tiene un formato válido.")
+        _show_error_notice("El email no tiene un formato válido.")
         return
 
     response: requests.Response | None = None
@@ -56,31 +71,31 @@ def _handle_login_submit(email: str, password: str) -> None:
         persist_jwt_token(jwt_token)
 
         if not st.session_state["jwt_token"]:
-            st.error("La API no devolvio access_token.")
+            _show_error_notice("No pudimos iniciar sesión. Inténtalo nuevamente.")
             return
 
-        st.success("Sesion iniciada correctamente.")
+        st.session_state["auth_login_toast"] = "Inicio de sesión exitoso. Bienvenido a Atlas Finance."
         RERUN()
     except requests.HTTPError:
-        detail = _extract_error_detail(response, "Credenciales invalidas.")
-        st.error(f"Error de login: {detail}")
-    except requests.RequestException as exc:
-        st.error(f"No se pudo conectar a la API: {exc}")
+        detail = _extract_error_detail(response, "No pudimos iniciar sesión con esos datos.")
+        _show_error_notice(detail)
+    except requests.RequestException:
+        _show_error_notice("No pudimos conectarnos en este momento. Revisa tu conexión e inténtalo de nuevo.")
 
 
 def _handle_register_submit(full_name: str, email: str, password: str) -> None:
     """Process user registration submit and show API feedback."""
     if not full_name.strip():
-        st.error("Ingresa tu nombre completo.")
+        _show_error_notice("Ingresa tu nombre completo.")
         return
     if not email.strip():
-        st.error("Ingresa un email de registro.")
+        _show_error_notice("Ingresa un email de registro.")
         return
     if "@" not in email:
-        st.error("El email de registro no tiene un formato válido.")
+        _show_error_notice("El email de registro no tiene un formato válido.")
         return
     if len(password) < 8:
-        st.error("La password debe tener mínimo 8 caracteres.")
+        _show_error_notice("La contraseña debe tener al menos 8 caracteres.")
         return
 
     response: requests.Response | None = None
@@ -96,12 +111,14 @@ def _handle_register_submit(full_name: str, email: str, password: str) -> None:
             auth=False,
         )
         response.raise_for_status()
-        st.success("Cuenta creada. Ahora inicia sesion en la pestana Login.")
+        st.session_state["auth_redirect_to_login"] = True
+        st.session_state["auth_toast"] = "Cuenta creada con éxito. Ahora puedes iniciar sesión."
+        RERUN()
     except requests.HTTPError:
-        detail = _extract_error_detail(response, "No se pudo crear la cuenta.")
-        st.error(f"Error de registro: {detail}")
-    except requests.RequestException as exc:
-        st.error(f"No se pudo conectar a la API: {exc}")
+        detail = _extract_error_detail(response, "No pudimos crear tu cuenta.")
+        _show_error_notice(detail)
+    except requests.RequestException:
+        _show_error_notice("No pudimos conectarnos en este momento. Revisa tu conexión e inténtalo de nuevo.")
 
 
 def _render_auth_form_shell(title: str, copy: str) -> None:
@@ -293,24 +310,24 @@ def _render_register_tab() -> None:
         key="register_confirm_password",
     )
     passwords_match = bool(confirm_password) and confirm_password == password
-    if confirm_password and not passwords_match:
-        st.caption("Las passwords no coinciden.")
 
-    can_submit = (
-        bool(full_name.strip())
-        and bool(email.strip())
-        and all(ok for ok, _ in checks)
-        and passwords_match
-    )
     register_submit = st.button(
         "Crear cuenta",
         key="register_submit_button",
         use_container_width=True,
         type="primary",
-        disabled=not can_submit,
     )
 
     if register_submit:
+        if not full_name.strip() or not email.strip():
+            _show_error_notice("Completa tu nombre y tu email para crear la cuenta.")
+            return
+        if not all(ok for ok, _ in checks):
+            _show_error_notice("Tu contraseña aún no cumple todos los requisitos.")
+            return
+        if not passwords_match:
+            _show_error_notice("Las contraseñas no coinciden. Escríbelas igual en ambos campos.")
+            return
         _handle_register_submit(full_name, email, password)
 
 
@@ -347,9 +364,16 @@ def _render_auth_side_panel(active_view: str) -> None:
 
 def login_screen() -> None:
     """Render public authentication screen with login and registration tabs."""
+    if st.session_state.pop("auth_redirect_to_login", False):
+        st.session_state["auth_active_view"] = "Iniciar sesión"
+
     auth_notice = st.session_state.pop("auth_notice", None)
     if auth_notice:
-        st.warning(auth_notice)
+        _show_toast(str(auth_notice), icon="⚠️")
+
+    auth_toast = st.session_state.pop("auth_toast", None)
+    if auth_toast:
+        _show_success_notice(str(auth_toast))
 
     render_hero(
         "Atlas Finance",
@@ -359,18 +383,35 @@ def login_screen() -> None:
         narrow=True,
     )
 
-    tab_login, tab_register = st.tabs(["Iniciar sesión", "Registro"])
+    auth_views = ["Iniciar sesión", "Registro"]
+    if st.session_state.get("auth_active_view") not in auth_views:
+        st.session_state["auth_active_view"] = "Iniciar sesión"
 
-    with tab_login:
-        form_col, info_col = st.columns([2, 1], gap="large")
-        with form_col:
-            _render_login_tab()
-        with info_col:
-            _render_auth_side_panel("Iniciar sesión")
+    nav_label = ""
 
-    with tab_register:
-        form_col, info_col = st.columns([2, 1], gap="large")
-        with form_col:
+    if hasattr(st, "segmented_control"):
+        selected_view = st.segmented_control(
+            nav_label,
+            auth_views,
+            key="auth_active_view",
+            label_visibility="collapsed",
+        )
+    else:
+        selected_view = st.radio(
+            nav_label,
+            auth_views,
+            key="auth_active_view",
+            horizontal=True,
+            label_visibility="collapsed",
+        )
+
+    active_view = selected_view or st.session_state.get("auth_active_view", "Iniciar sesión")
+
+    form_col, info_col = st.columns([2, 1], gap="large")
+    with form_col:
+        if active_view == "Registro":
             _render_register_tab()
-        with info_col:
-            _render_auth_side_panel("Registro")
+        else:
+            _render_login_tab()
+    with info_col:
+        _render_auth_side_panel(active_view)
