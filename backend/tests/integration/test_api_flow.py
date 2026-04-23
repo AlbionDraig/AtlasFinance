@@ -151,3 +151,17 @@ def test_ingestion_upload(client):
 
     assert upload_resp.status_code == 200
     assert upload_resp.json()["imported_rows"] == 1
+
+
+def test_logout_revokes_access_token(client):
+    headers = _auth_headers(client)
+
+    me_before = client.get("/api/v1/auth/me", headers=headers)
+    assert me_before.status_code == 200
+
+    logout_resp = client.post("/api/v1/auth/logout", headers=headers)
+    assert logout_resp.status_code == 204
+
+    # A copied token must no longer grant access after logout.
+    me_after = client.get("/api/v1/auth/me", headers=headers)
+    assert me_after.status_code == 401

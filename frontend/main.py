@@ -48,6 +48,19 @@ def _ensure_user_profile_loaded() -> None:
         return
 
 
+def _logout() -> None:
+    """Revoke token on backend and clear local auth state."""
+    try:
+        api_request("POST", "/auth/logout")
+    except requests.RequestException:
+        # Continue local cleanup even if logout request cannot reach backend.
+        pass
+
+    st.session_state["jwt_token"] = ""
+    persist_jwt_token("")
+    RERUN()
+
+
 def _render_profile_menu(initials: str, full_name: str, email: str) -> None:
     """Render top-right user menu with account actions."""
     if hasattr(st, "popover"):
@@ -63,15 +76,11 @@ def _render_profile_menu(initials: str, full_name: str, email: str) -> None:
                 use_container_width=True,
             )
             if st.button("Cerrar sesión", key="profile_logout", use_container_width=True):
-                st.session_state["jwt_token"] = ""
-                persist_jwt_token("")
-                RERUN()
+                _logout()
         return
 
     if st.button(f"{initials} · Cerrar sesión", type="secondary", use_container_width=True):
-        st.session_state["jwt_token"] = ""
-        persist_jwt_token("")
-        RERUN()
+        _logout()
 
 
 def app() -> None:
