@@ -5,6 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.api.error_handlers import (
+    raise_bad_request_from_value_error,
+    raise_domain_value_error,
+    raise_not_found_from_value_error,
+)
 from app.db.base import get_db
 from app.models.user import User
 from app.schemas.transaction import TransactionCreate, TransactionRead
@@ -28,7 +33,7 @@ def create_transaction_endpoint(
     try:
         return register_transaction(db, current_user.id, payload)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise_bad_request_from_value_error(exc)
 
 
 @router.get("/")
@@ -54,10 +59,7 @@ def update_transaction_endpoint(
     try:
         return update_transaction(db, current_user.id, transaction_id, payload)
     except ValueError as exc:
-        detail = str(exc)
-        if detail == "Transaction not found":
-            raise HTTPException(status_code=404, detail=detail) from exc
-        raise HTTPException(status_code=400, detail=detail) from exc
+        raise_domain_value_error(exc, not_found_messages={"Transaction not found"})
 
 
 @router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT, responses={404: {"description": "Not Found"}})
@@ -70,4 +72,4 @@ def delete_transaction_endpoint(
     try:
         delete_transaction(db, current_user.id, transaction_id)
     except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise_not_found_from_value_error(exc)

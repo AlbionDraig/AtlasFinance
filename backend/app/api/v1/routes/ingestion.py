@@ -1,8 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.orm import Session
 
+from app.api.error_handlers import raise_bad_request_from_value_error
 from app.api.deps import get_current_user
 from app.db.base import get_db
 from app.models.user import User
@@ -32,4 +33,4 @@ def upload_transactions(
             content=content,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise_bad_request_from_value_error(exc)

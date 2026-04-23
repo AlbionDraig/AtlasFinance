@@ -6,6 +6,7 @@ from jose import ExpiredSignatureError, JWTError, jwt
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_token_from_bearer_or_cookie
+from app.api.error_handlers import raise_bad_request_from_value_error
 from app.core.config import get_settings
 from app.core.security import create_access_token
 from app.db.base import get_db
@@ -25,7 +26,7 @@ def register(payload: UserCreate, db: Annotated[Session, Depends(get_db)]) -> Us
     try:
         user = create_user(db, payload)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise_bad_request_from_value_error(exc)
     return user
 
 
@@ -70,7 +71,7 @@ def refresh_token(response: Response, db: Annotated[Session, Depends(get_db)],
         raise HTTPException(status_code=401, detail="Invalid refresh token") from exc
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, responses={401: {"description": "Unauthorized"}})
 def logout(
     response: Response,
     db: Annotated[Session, Depends(get_db)],

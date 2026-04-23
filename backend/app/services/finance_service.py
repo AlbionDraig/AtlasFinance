@@ -30,14 +30,26 @@ def _get_user(db: Session, user_id: int) -> User:
     return user
 
 
+def _persist_and_refresh(db: Session, instance: Bank | Account | Pocket | Category | Transaction):
+    """Persist a new instance and return it refreshed from the DB."""
+    db.add(instance)
+    db.commit()
+    db.refresh(instance)
+    return instance
+
+
+def _commit_and_refresh(db: Session, instance: Transaction) -> Transaction:
+    """Commit pending changes and refresh a transaction instance."""
+    db.commit()
+    db.refresh(instance)
+    return instance
+
+
 def create_bank(db: Session, user_id: int, payload: BankCreate) -> Bank:
     """Create a bank owned by the authenticated user."""
     _get_user(db, user_id)
     bank = Bank(name=payload.name, country_code=payload.country_code.upper(), user_id=user_id)
-    db.add(bank)
-    db.commit()
-    db.refresh(bank)
-    return bank
+    return _persist_and_refresh(db, bank)
 
 
 def list_banks(db: Session, user_id: int) -> list[Bank]:
@@ -60,10 +72,7 @@ def create_account(db: Session, user_id: int, payload: AccountCreate) -> Account
         current_balance=Decimal("0"),
         bank_id=payload.bank_id,
     )
-    db.add(account)
-    db.commit()
-    db.refresh(account)
-    return account
+    return _persist_and_refresh(db, account)
 
 
 def list_accounts(db: Session, user_id: int) -> list[Account]:
@@ -84,19 +93,13 @@ def create_pocket(db: Session, user_id: int, payload: PocketCreate) -> Pocket:
         currency=payload.currency,
         account_id=payload.account_id,
     )
-    db.add(pocket)
-    db.commit()
-    db.refresh(pocket)
-    return pocket
+    return _persist_and_refresh(db, pocket)
 
 
 def create_category(db: Session, user_id: int, payload: CategoryCreate) -> Category:
     """Create a custom category for the authenticated user."""
     category = Category(name=payload.name, user_id=user_id)
-    db.add(category)
-    db.commit()
-    db.refresh(category)
-    return category
+    return _persist_and_refresh(db, category)
 
 
 def list_categories(db: Session, user_id: int) -> list[Category]:
@@ -168,9 +171,7 @@ def register_transaction(db: Session, user_id: int, payload: TransactionCreate) 
 
     _apply_transaction_effect(account, payload.transaction_type, payload.amount)
 
-    db.commit()
-    db.refresh(txn)
-    return txn
+    return _commit_and_refresh(db, txn)
 
 
 def update_transaction(db: Session, user_id: int, transaction_id: int, payload: TransactionCreate) -> Transaction:
@@ -195,9 +196,7 @@ def update_transaction(db: Session, user_id: int, transaction_id: int, payload: 
 
     _apply_transaction_effect(new_account, payload.transaction_type, payload.amount)
 
-    db.commit()
-    db.refresh(txn)
-    return txn
+    return _commit_and_refresh(db, txn)
 
 
 def delete_transaction(db: Session, user_id: int, transaction_id: int) -> None:
