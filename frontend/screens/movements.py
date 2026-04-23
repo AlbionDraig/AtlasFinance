@@ -662,7 +662,6 @@ def _render_create_transaction_form(
                 key="mov_form_submit",
                 variant="success",
                 use_container_width=True,
-                disabled=(not has_pending_changes) or st.session_state.get("mov_form_submitting", False),
             )
 
 
@@ -672,6 +671,30 @@ def _render_create_transaction_form(
         _handle_delete_transaction(selected_tx)
 
     if submit_transaction_bottom:
+        if st.session_state.get("mov_form_submitting", False):
+            st.toast("Estamos procesando tu solicitud.", icon="⏳")
+            return
+
+        if active_mode == "edit" and not has_pending_changes:
+            st.toast("No hay cambios para guardar.", icon="ℹ️")
+            return
+
+        if not account_options or selected_account_label == "No hay cuentas":
+            st.toast("Primero crea o selecciona una cuenta para guardar.", icon="⚠️")
+            return
+
+        if len(description.strip()) < 2:
+            st.toast("La descripción debe tener al menos 2 caracteres.", icon="⚠️")
+            return
+
+        if amount <= 0:
+            st.toast("El monto debe ser mayor que 0.", icon="⚠️")
+            return
+
+        if occurred_date > date.today():
+            st.toast("La fecha no puede ser mayor al día actual.", icon="⚠️")
+            return
+
         st.session_state["mov_form_submitting"] = True
         try:
             if active_mode == "edit" and selected_tx:
