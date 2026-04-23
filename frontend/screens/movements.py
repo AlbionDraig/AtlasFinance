@@ -539,9 +539,8 @@ def _render_create_transaction_form(
     currency = derived_currency or str(st.session_state.get("mov_form_currency") or "COP")
     st.session_state["mov_form_currency"] = currency
 
-    row4_col1, _ = st.columns(2)
-    with row4_col1:
-        occurred_time = time_field("Hora", key="mov_form_time")
+    now = datetime.now()
+    occurred_time = time(now.hour, now.minute)
 
     create_has_pending_changes = bool(description.strip()) or float(amount) > 0.0
     edit_has_pending_changes = False
@@ -550,7 +549,6 @@ def _render_create_transaction_form(
         current_account_id = account_options.get(selected_account_label)
         current_category_id = category_options.get(selected_category_label)
         selected_date = parse_iso_datetime(selected_tx["occurred_at"]).date()
-        selected_time = parse_iso_datetime(selected_tx["occurred_at"]).time().replace(second=0, microsecond=0)
         edit_has_pending_changes = any(
             [
                 description.strip() != str(selected_tx.get("description") or ""),
@@ -558,7 +556,6 @@ def _render_create_transaction_form(
                 currency != str(selected_tx.get("currency") or ""),
                 current_type_api != str(selected_tx.get("transaction_type") or ""),
                 occurred_date != selected_date,
-                occurred_time.replace(second=0, microsecond=0) != selected_time,
                 current_account_id != selected_tx.get("account_id"),
                 current_category_id != selected_tx.get("category_id"),
             ]
