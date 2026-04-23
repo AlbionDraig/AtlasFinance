@@ -923,29 +923,55 @@ def dashboard_screen() -> None:
     period_expense = float(exp_df["amount"].sum()) if not exp_df.empty else 0.0
     period_balance = period_income - period_expense
     avg_expense = float(exp_df["amount"].mean()) if not exp_df.empty else 0.0
+    transaction_count = len(df.index)
 
-    top_cat_text = "Sin gastos"
+    balance_tone = "balance" if period_balance >= 0 else "expense"
+    if period_balance > 0:
+        balance_sub = "Terminaste el período con saldo positivo."
+    elif period_balance < 0:
+        balance_sub = "Terminaste el período gastando más de lo que ingresó."
+    else:
+        balance_sub = "Ingresos y gastos quedaron equilibrados."
+
+    top_cat_value = "Sin gastos"
+    top_cat_sub = "No hay egresos suficientes para identificar una categoría dominante."
     if not exp_df.empty:
         cat_col = "category_name" if "category_name" in exp_df.columns else "category_id"
         cat_rank = exp_df.groupby(cat_col, as_index=False)["amount"].sum().sort_values("amount", ascending=False)
         if not cat_rank.empty:
             top_label = _format_category_label(cat_rank.iloc[0][cat_col], category_lookup)
             top_value = float(cat_rank.iloc[0]["amount"])
-            top_cat_text = f"{top_label} · {_format_money(top_value, currency)}"
+            top_share = (top_value / period_expense * 100) if period_expense > 0 else 0.0
+            top_cat_value = top_label
+            top_cat_sub = f"{top_share:.1f}% del gasto · {_format_money(top_value, currency)}"
 
-    i1, i2 = st.columns(2)
+    i1, i2, i3, i4 = st.columns(4)
     with i1:
+        render_info_card(
+            "Balance del período",
+            _format_money(period_balance, currency),
+            sub=balance_sub,
+            tone=balance_tone,
+        )
+    with i2:
+        render_info_card(
+            "Movimientos",
+            f"{transaction_count:,}",
+            sub="Transacciones registradas en el período filtrado.",
+            tone="impact",
+        )
+    with i3:
         render_info_card(
             "Gasto promedio",
             _format_money(avg_expense, currency),
             sub="Promedio de gasto por transacción.",
             tone="expense",
         )
-    with i2:
+    with i4:
         render_info_card(
             "Mayor impacto",
-            top_cat_text,
-            sub="Categoría con mayor peso en el período.",
+            top_cat_value,
+            sub=top_cat_sub,
             tone="impact",
         )
 
