@@ -848,6 +848,8 @@ def dashboard_screen() -> None:
             badge_type=income_badge_type,
             badge_tooltip=income_badge_tip,
             help_text="Todo lo que te entro de dinero en el período seleccionado.",
+            value_tone="positive",
+            sub_tone="positive",
         )
     with k3:
         render_kpi_card(
@@ -858,6 +860,8 @@ def dashboard_screen() -> None:
             badge_type=expense_badge_type,
             badge_tooltip=expense_badge_tip,
             help_text="Todo lo que salio de dinero en el período seleccionado.",
+            value_tone="negative",
+            sub_tone="negative",
         )
     with k4:
         if current_income == 0:
@@ -897,6 +901,7 @@ def dashboard_screen() -> None:
             badge_tooltip=savings_badge_tip,
             help_text="Que porcentaje de tus ingresos lograste guardar en el período.",
             value_tone=savings_tone,
+            sub_tone=savings_tone,
         )
 
     # ── DataFrame prep ────────────────────────────────────────────────────────────────────
@@ -925,7 +930,13 @@ def dashboard_screen() -> None:
     avg_expense = float(exp_df["amount"].mean()) if not exp_df.empty else 0.0
     transaction_count = len(df.index)
 
-    balance_tone = "balance" if period_balance >= 0 else "expense"
+    if period_balance > 0:
+        balance_tone = "positive"
+    elif period_balance < 0:
+        balance_tone = "negative"
+    else:
+        balance_tone = "balance"
+
     if period_balance > 0:
         balance_sub = "Terminaste el período con saldo positivo."
     elif period_balance < 0:

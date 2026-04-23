@@ -1045,8 +1045,24 @@ def inject_theme() -> None:
             border-left-color: rgba(99,102,241,0.5) !important;
         }
 
+        .af-info-card.tone-positive {
+            border-left-color: rgba(16,185,129,0.5) !important;
+        }
+
+        .af-info-card.tone-positive .info-value {
+            color: #0f766e !important;
+        }
+
         .af-info-card.tone-expense {
             border-left-color: rgba(245,158,11,0.55) !important;
+        }
+
+        .af-info-card.tone-negative {
+            border-left-color: rgba(239,68,68,0.45) !important;
+        }
+
+        .af-info-card.tone-negative .info-value {
+            color: #b91c1c !important;
         }
 
         .af-info-card.tone-impact {
@@ -1181,6 +1197,14 @@ def inject_theme() -> None:
         .af-kpi .kpi-sub {
             font-size: 0.75rem !important;
             color: var(--c-muted) !important;
+        }
+
+        .af-kpi .kpi-sub.positive {
+            color: #0f766e !important;
+        }
+
+        .af-kpi .kpi-sub.negative {
+            color: #b91c1c !important;
         }
 
         .af-kpi .kpi-help {
@@ -1875,7 +1899,7 @@ def render_section_header(eyebrow: str, title: str, copy: str) -> None:
 
 def render_info_card(title: str, value: str, *, sub: str = "", tone: str = "balance") -> None:
     """Render an insight card with value-first hierarchy and semantic accent."""
-    tone_safe = html.escape(tone if tone in {"balance", "expense", "impact"} else "balance")
+    tone_safe = html.escape(tone if tone in {"balance", "expense", "impact", "positive", "negative"} else "balance")
     sub_html = f'<div class="info-sub">{html.escape(sub)}</div>' if sub else ""
     st.markdown(
         f"""
@@ -1899,11 +1923,16 @@ def render_kpi_card(
     badge_tooltip: str = "",
     help_text: str = "",
     value_tone: str = "default",
+    sub_tone: str = "default",
 ) -> None:
     """Render a metric card with optional delta badge."""
     value_tone_safe = "default"
     if value_tone in {"positive", "negative"}:
         value_tone_safe = value_tone
+
+    sub_tone_safe = "default"
+    if sub_tone in {"positive", "negative"}:
+        sub_tone_safe = sub_tone
 
     badge_html = ""
     if badge:
@@ -1923,7 +1952,7 @@ def render_kpi_card(
         <div class="af-kpi">
             <div class="kpi-label">{html.escape(label)}</div>
             <div class="kpi-value {value_tone_safe}">{html.escape(value)}</div>
-            <div class="kpi-sub">{html.escape(sub)}{'&nbsp;' if badge_html else ''}{badge_html}</div>
+            <div class="kpi-sub {sub_tone_safe}">{html.escape(sub)}{'&nbsp;' if badge_html else ''}{badge_html}</div>
             <div class="kpi-help">{html.escape(help_text)}</div>
         </div>
         """,
