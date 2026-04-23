@@ -526,6 +526,65 @@ def _chart_fixed_vs_variable(exp_df: pd.DataFrame, category_lookup: dict[int, st
     return fig
 
 
+def _chart_expense_category_trend(exp_df: pd.DataFrame, category_lookup: dict[int, str] | None = None) -> go.Figure:
+    """Stacked bars: monthly expense split across the most relevant categories."""
+    if exp_df.empty or "month" not in exp_df.columns:
+        return go.Figure(layout=_base_layout())
+
+    cat_col = "category_name" if "category_name" in exp_df.columns else "category_id"
+    tmp = exp_df.copy()
+    tmp["resolved_category"] = tmp[cat_col].map(lambda value: _format_category_label(value, category_lookup))
+
+    top_categories = (
+        tmp.groupby("resolved_category", as_index=False)["amount"]
+        .sum()
+        .sort_values("amount", ascending=False)
+        .head(5)["resolved_category"]
+        .tolist()
+    )
+    if not top_categories:
+        return go.Figure(layout=_base_layout())
+
+    tmp["resolved_category"] = tmp["resolved_category"].where(
+        tmp["resolved_category"].isin(top_categories),
+        "Otras",
+    )
+    monthly_category = (
+        tmp.groupby(["month", "resolved_category"], as_index=False)["amount"]
+        .sum()
+        .pivot(index="month", columns="resolved_category", values="amount")
+        .fillna(0)
+    )
+
+    preferred_order = top_categories + (["Otras"] if "Otras" in monthly_category.columns else [])
+    ordered_categories = [name for name in preferred_order if name in monthly_category.columns]
+    palette = ["#6366f1", "#8b5cf6", "#10b981", "#f59e0b", "#ec4899", "#64748b"]
+
+    fig = go.Figure(
+        layout=_base_layout(
+            xaxis=_axis(),
+            yaxis={
+                **_axis(),
+                "tickformat": "~s",
+                "separatethousands": True,
+            },
+            barmode="stack",
+            margin=dict(l=10, r=8, t=8, b=8),
+        )
+    )
+    for index, category_name in enumerate(ordered_categories):
+        fig.add_trace(
+            go.Bar(
+                x=monthly_category.index.tolist(),
+                y=monthly_category[category_name],
+                name=category_name,
+                marker_color=palette[index % len(palette)],
+                hovertemplate="<b>%{x}</b><br>" + category_name + ": %{y:,.2f}<extra></extra>",
+            )
+        )
+    return fig
+
+
 # ── Main screen ───────────────────────────────────────────────────────────────
 
 
@@ -1116,6 +1175,7 @@ def dashboard_screen() -> None:
             "Flujo neto mensual (área)",
             "Distribución de gasto (donut)",
             "Gasto fijo vs variable (barras)",
+            "Gasto por categoría por mes (apilado)",
         ]
         if st.session_state.get("db_secondary_chart_type") not in secondary_options:
             st.session_state["db_secondary_chart_type"] = "Flujo neto mensual (área)"
@@ -1132,6 +1192,7 @@ def dashboard_screen() -> None:
             "Flujo neto mensual (área)": "Muestra el resultado final por mes (ingresos menos gastos) para detectar meses en positivo y negativo.",
             "Distribución de gasto (donut)": "Visualiza el peso relativo de cada categoría de gasto dentro del total del período.",
             "Gasto fijo vs variable (barras)": "Separa el gasto total entre compromisos recurrentes y gasto más flexible para controlar presupuesto.",
+            "Gasto por categoría por mes (apilado)": "Descompone el gasto mensual por categorías para entender qué rubros explican cada pico de egresos.",
         }
 
         info_box(secondary_description[secondary_chart_type], variant="info")
@@ -1155,6 +1216,15 @@ def dashboard_screen() -> None:
             if not exp_df.empty:
                 st.plotly_chart(
                     _chart_fixed_vs_variable(exp_df, category_lookup),
+                    width="stretch",
+                    config={"displayModeBar": False},
+                )
+            else:
+                st.info("Sin gastos registrados en el período.")
+        elif secondary_chart_type == "Gasto por categoría por mes (apilado)":
+            if not exp_df.empty:
+                st.plotly_chart(
+                    _chart_expense_category_trend(exp_df, category_lookup),
                     width="stretch",
                     config={"displayModeBar": False},
                 )
