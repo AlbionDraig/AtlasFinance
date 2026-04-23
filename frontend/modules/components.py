@@ -369,9 +369,98 @@ def inject_component_styles() -> None:
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07) !important;
             animation: af-slide-in 0.25s ease !important;
         }
+        [data-testid="stToast"] {
+            position: relative !important;
+            overflow: hidden !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(31, 111, 178, 0.28) !important;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.22) !important;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+            backdrop-filter: blur(6px) !important;
+            animation: af-toast-pop 0.24s ease-out !important;
+        }
+        [data-testid="stToastContainer"] {
+            top: auto !important;
+            right: 1rem !important;
+            bottom: 1rem !important;
+            left: auto !important;
+        }
+        [data-testid="stToast"] [data-testid="stMarkdownContainer"] p {
+            color: #0f172a !important;
+            font-weight: 600 !important;
+        }
+        [data-testid="stToast"]::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-radius: 12px 0 0 12px;
+            background: linear-gradient(180deg, #1f6fb2 0%, #15803d 100%);
+        }
+        [data-testid="stToast"]::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 3px;
+            background: linear-gradient(90deg, rgba(31, 111, 178, 0.95), rgba(21, 128, 61, 0.95));
+            transform-origin: left center;
+            animation: af-toast-progress 4.7s linear forwards;
+        }
+        [data-testid="stToast"][data-af-toast-kind="success"] {
+            border-color: rgba(22, 163, 74, 0.38) !important;
+            background: linear-gradient(180deg, #ffffff 0%, #f3fff7 100%) !important;
+        }
+        [data-testid="stToast"][data-af-toast-kind="success"]::before,
+        [data-testid="stToast"][data-af-toast-kind="success"]::after {
+            background: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
+        }
+        [data-testid="stToast"][data-af-toast-kind="error"] {
+            border-color: rgba(220, 38, 38, 0.38) !important;
+            background: linear-gradient(180deg, #ffffff 0%, #fff4f4 100%) !important;
+        }
+        [data-testid="stToast"][data-af-toast-kind="error"]::before,
+        [data-testid="stToast"][data-af-toast-kind="error"]::after {
+            background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
+        }
+        [data-testid="stToast"][data-af-toast-kind="warning"] {
+            border-color: rgba(217, 119, 6, 0.38) !important;
+            background: linear-gradient(180deg, #ffffff 0%, #fff8ee 100%) !important;
+        }
+        [data-testid="stToast"][data-af-toast-kind="warning"]::before,
+        [data-testid="stToast"][data-af-toast-kind="warning"]::after {
+            background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+        }
+        [data-testid="stToast"][data-af-toast-kind="info"] {
+            border-color: rgba(37, 99, 235, 0.35) !important;
+            background: linear-gradient(180deg, #ffffff 0%, #f2f8ff 100%) !important;
+        }
+        [data-testid="stToast"][data-af-toast-kind="info"]::before,
+        [data-testid="stToast"][data-af-toast-kind="info"]::after {
+            background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+        }
+        [data-testid="stToast"][data-af-toast-kind="loading"] {
+            border-color: rgba(14, 116, 144, 0.38) !important;
+            background: linear-gradient(180deg, #ffffff 0%, #f1fdff 100%) !important;
+        }
+        [data-testid="stToast"][data-af-toast-kind="loading"]::before,
+        [data-testid="stToast"][data-af-toast-kind="loading"]::after {
+            background: linear-gradient(180deg, #0891b2 0%, #0e7490 100%);
+        }
         @keyframes af-slide-in {
             from { opacity: 0; transform: translateY(8px); }
             to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes af-toast-pop {
+            from { opacity: 0; transform: translateY(10px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes af-toast-progress {
+            from { transform: scaleX(1); opacity: 1; }
+            to   { transform: scaleX(0); opacity: 0.7; }
         }
 
         /* ── Empty state ────────────────────────────────────────── */
@@ -474,6 +563,50 @@ def inject_component_styles() -> None:
         </style>
         """,
         unsafe_allow_html=True,
+    )
+    _inject_toast_type_patch()
+
+
+def _inject_toast_type_patch() -> None:
+    """Classify toasts by icon and set data attributes for global variant styling."""
+    st_components.html(
+        """
+        <script>
+        (function () {
+            const rootDoc = window.parent.document;
+            const win = rootDoc.defaultView || window;
+            if (win.__atlasToastTypePatchInstalled) return;
+            win.__atlasToastTypePatchInstalled = true;
+
+            function detectKind(text) {
+                const t = String(text || '');
+                if (t.includes('✅') || t.includes('✔')) return 'success';
+                if (t.includes('⚠') || t.includes('❌') || t.includes('⛔')) return 'error';
+                if (t.includes('⏳') || t.includes('⌛')) return 'loading';
+                if (t.includes('ℹ') || t.includes('🔔')) return 'info';
+                return 'warning';
+            }
+
+            function classifyToast(toast) {
+                if (!toast) return;
+                const fullText = (toast.textContent || '').trim();
+                const kind = detectKind(fullText);
+                toast.setAttribute('data-af-toast-kind', kind);
+            }
+
+            function classifyAll() {
+                const toasts = rootDoc.querySelectorAll('[data-testid="stToast"]');
+                toasts.forEach(classifyToast);
+            }
+
+            const observer = new MutationObserver(classifyAll);
+            observer.observe(rootDoc.body, { childList: true, subtree: true });
+            classifyAll();
+        })();
+        </script>
+        """,
+        height=0,
+        width=0,
     )
 
 
