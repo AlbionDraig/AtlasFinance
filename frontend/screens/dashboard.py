@@ -77,6 +77,28 @@ def _format_money(value: float, currency: str) -> str:
     return f"{_currency_symbol(currency)}{_format_card_amount(value)}"
 
 
+def _format_month_label(month_key: str) -> str:
+    """Format a YYYY-MM period key into a compact Spanish month label."""
+    months = [
+        "ene", "feb", "mar", "abr", "may", "jun",
+        "jul", "ago", "sep", "oct", "nov", "dic",
+    ]
+    try:
+        period = pd.Period(month_key, freq="M")
+    except ValueError:
+        return month_key
+    return f"{months[period.month - 1]} {period.year}"
+
+
+def _tone_from_number(value: float, *, zero_tone: str = "default") -> str:
+    """Map a numeric value to a semantic UI tone for reusable KPI styling."""
+    if value > 0:
+        return "positive"
+    if value < 0:
+        return "negative"
+    return zero_tone
+
+
 def _filter_transactions_by_currency(rows: list[dict], currency: str) -> list[dict]:
     """Return only transactions matching the selected currency when available."""
     target = (currency or "").strip().upper()
@@ -835,9 +857,7 @@ def dashboard_screen() -> None:
             badge_type=net_badge_type,
             badge_tooltip=net_badge_tip,
             help_text="Es el dinero total que tienes hoy en tus cuentas de esta moneda.",
-            value_tone=(
-                "positive" if net_worth_value > 0 else ("negative" if net_worth_value < 0 else "default")
-            ),
+            value_tone=_tone_from_number(net_worth_value),
         )
     with k2:
         render_kpi_card(
@@ -890,7 +910,7 @@ def dashboard_screen() -> None:
                 )
                 savings_sub = f"del ingreso · {rate_quality}"
 
-            savings_tone = "negative" if savings < 0 else "positive"
+            savings_tone = _tone_from_number(savings)
 
         render_kpi_card(
             "Tasa de ahorro",
@@ -929,13 +949,9 @@ def dashboard_screen() -> None:
     period_balance = period_income - period_expense
     avg_expense = float(exp_df["amount"].mean()) if not exp_df.empty else 0.0
     transaction_count = len(df.index)
+    monthly_expense_avg = float(monthly["expense"].mean()) if "expense" in monthly.columns and not monthly.empty else 0.0
 
-    if period_balance > 0:
-        balance_tone = "positive"
-    elif period_balance < 0:
-        balance_tone = "negative"
-    else:
-        balance_tone = "balance"
+    balance_tone = _tone_from_number(period_balance, zero_tone="balance")
 
     if period_balance > 0:
         balance_sub = "Terminaste el período con saldo positivo."
@@ -946,6 +962,10 @@ def dashboard_screen() -> None:
 
     top_cat_value = "Sin gastos"
     top_cat_sub = "No hay egresos suficientes para identificar una categoría dominante."
+    biggest_expense_value = "Sin gastos"
+    biggest_expense_sub = "No hay egresos registrados en el período filtrado."
+    highest_spend_month_value = "Sin gastos"
+    highest_spend_month_sub = "No hay meses con gasto registrado en el período."
     if not exp_df.empty:
         cat_col = "category_name" if "category_name" in exp_df.columns else "category_id"
         cat_rank = exp_df.groupby(cat_col, as_index=False)["amount"].sum().sort_values("amount", ascending=False)
@@ -956,7 +976,34 @@ def dashboard_screen() -> None:
             top_cat_value = top_label
             top_cat_sub = f"{top_share:.1f}% del gasto · {_format_money(top_value, currency)}"
 
-    i1, i2, i3, i4 = st.columns(4)
+        biggest_expense = exp_df.loc[exp_df["amount"].idxmax()]
+        biggest_expense_value = _format_money(float(biggest_expense["amount"]), currency)
+        biggest_expense_sub = str(biggest_expense.get("description") or "Movimiento sin descripción")
+
+    if "expense" in monthly.columns and not monthly.empty:
+        expense_by_month = monthly[monthly["expense"] > 0]["expense"]
+        if not expense_by_month.empty:
+            highest_month = str(expense_by_month.idxmax())
+            highest_spend_month_value = _format_month_label(highest_month)
+            highest_spend_month_sub = f"Gasto total: {_format_money(float(expense_by_month.max()), currency)}"
+
+    cash_coverage_value = "Sin referencia"
+    cash_coverage_sub = "Necesitas gasto mensual para estimar cobertura."
+    cash_coverage_tone = "impact"
+    if monthly_expense_avg > 0 and net_worth_value > 0:
+        cash_coverage_months = net_worth_value / monthly_expense_avg
+        cash_coverage_value = f"{cash_coverage_months:.1f} meses"
+        cash_coverage_sub = f"Al ritmo promedio de {_format_money(monthly_expense_avg, currency)} por mes."
+        if cash_coverage_months >= 6:
+            cash_coverage_tone = "positive"
+        elif cash_coverage_months < 1:
+            cash_coverage_tone = "negative"
+    elif net_worth_value <= 0:
+        cash_coverage_value = _format_money(net_worth_value, currency)
+        cash_coverage_sub = "Sin saldo positivo suficiente para cubrir gasto futuro."
+        cash_coverage_tone = "negative"
+
+    i1, i2, i3 = st.columns(3)
     with i1:
         render_info_card(
             "Balance del período",
@@ -978,11 +1025,36 @@ def dashboard_screen() -> None:
             sub="Promedio de gasto por transacción.",
             tone="expense",
         )
-    with i4:
+
+    j1, j2, j3 = st.columns(3)
+    with j1:
         render_info_card(
             "Mayor impacto",
             top_cat_value,
             sub=top_cat_sub,
+            tone="impact",
+        )
+    with j2:
+        render_info_card(
+            "Mayor gasto individual",
+            biggest_expense_value,
+            sub=biggest_expense_sub,
+            tone="expense",
+        )
+    with j3:
+        render_info_card(
+            "Cobertura de efectivo",
+            cash_coverage_value,
+            sub=cash_coverage_sub,
+            tone=cash_coverage_tone,
+        )
+
+    k1 = st.columns(1)[0]
+    with k1:
+        render_info_card(
+            "Mes más costoso",
+            highest_spend_month_value,
+            sub=highest_spend_month_sub,
             tone="impact",
         )
 
