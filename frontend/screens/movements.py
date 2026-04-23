@@ -400,6 +400,12 @@ def _render_create_transaction_form(
             background: rgba(31, 111, 178, 0.12) !important;
             box-shadow: inset 3px 0 0 #1f6fb2 !important;
         }
+        [data-testid="stDataFrame"] [role="row"]:has([role="gridcell"][aria-selected="true"]) [role="gridcell"] {
+            background: rgba(31, 111, 178, 0.12) !important;
+        }
+        [data-testid="stDataFrame"] [role="row"]:has([role="gridcell"][aria-selected="true"]) [role="gridcell"]:first-child {
+            box-shadow: inset 3px 0 0 #1f6fb2 !important;
+        }
         [data-testid="stDataFrame"] [role="columnheader"] {
             background: linear-gradient(180deg, rgba(15, 23, 42, 0.06), rgba(15, 23, 42, 0.02)) !important;
             font-weight: 700 !important;
@@ -913,6 +919,12 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
             padding-top: 0.62rem !important;
             padding-bottom: 0.62rem !important;
         }
+        .st-key-mov_transactions_table [data-testid="stDataFrame"] [role="row"]:has([role="gridcell"][aria-selected="true"]) [role="gridcell"] {
+            background: rgba(31, 111, 178, 0.12) !important;
+        }
+        .st-key-mov_transactions_table [data-testid="stDataFrame"] [role="row"]:has([role="gridcell"][aria-selected="true"]) [role="gridcell"]:first-child {
+            box-shadow: inset 3px 0 0 #1f6fb2 !important;
+        }
         .st-key-mov_transactions_table [data-testid="stDataFrame"] tbody tr:last-child td {
             border-bottom: none !important;
         }
@@ -1244,6 +1256,45 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         st.session_state["mov_clear_table_selection_pending"] = False
         force_empty_selection = True
 
+    def _extract_row_index_from_cell(cell_ref: object) -> int | None:
+        """Normalize Streamlit single-cell selection payload to row index."""
+        if isinstance(cell_ref, dict):
+            row_value = cell_ref.get("row")
+            return row_value if isinstance(row_value, int) else None
+
+        row_attr = getattr(cell_ref, "row", None)
+        if isinstance(row_attr, int):
+            return row_attr
+
+        if isinstance(cell_ref, (list, tuple)) and cell_ref:
+            first_value = cell_ref[0]
+            if isinstance(first_value, int):
+                return first_value
+
+        return None
+
+    def _selected_row_from_widget_state(widget_state_obj: object) -> tuple[int | None, bool]:
+        """Return (row_index, explicit_empty_selection) from dataframe widget state."""
+        if not isinstance(widget_state_obj, dict):
+            return None, False
+
+        selection_dict = widget_state_obj.get("selection", {}) or {}
+        if not isinstance(selection_dict, dict):
+            return None, False
+
+        widget_rows = selection_dict.get("rows", []) or []
+        if widget_rows:
+            first_row = widget_rows[0]
+            if isinstance(first_row, int):
+                return first_row, False
+
+        widget_cells = selection_dict.get("cells", []) or []
+        if widget_cells:
+            return _extract_row_index_from_cell(widget_cells[0]), False
+
+        # Selection object exists but it carries no rows/cells.
+        return None, True
+
     def _style_row_by_type(row: pd.Series) -> list[str]:
         is_odd = int(row.name) % 2 == 1
         tipo_value = str(row.get("Tipo", ""))
@@ -1284,12 +1335,12 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         .set_properties(subset=["Tipo", "Moneda"], **{"text-align": "center"})
     )
 
-    selection_event = st.dataframe(
+    st.dataframe(
         styled_df,
         hide_index=True,
         use_container_width=True,
         on_select="rerun",
-        selection_mode="single-row",
+        selection_mode="single-cell",
         key="mov_transactions_table",
         column_config={
             "Fecha": st.column_config.TextColumn("Fecha", width="small"),
@@ -1302,28 +1353,23 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
     )
 
     selected_id = st.session_state.get("mov_selected_tx_id")
+
     selected_rows: list[int] = []
     explicit_empty_selection = False
-    if selection_event is not None:
-        selection_data = getattr(selection_event, "selection", None)
-        selected_rows = list(getattr(selection_data, "rows", []) or [])
-        explicit_empty_selection = selection_data is not None and len(selected_rows) == 0
 
     if force_empty_selection:
         selected_rows = []
         explicit_empty_selection = True
+    else:
+        # Use widget state consistently to avoid timing mismatch with event payload.
+        widget_state_after_render = st.session_state.get("mov_transactions_table")
+        selected_row_index, explicit_empty_selection = _selected_row_from_widget_state(widget_state_after_render)
+        if isinstance(selected_row_index, int):
+            selected_rows = [selected_row_index]
 
     if not selected_rows:
-        # Fallback to widget state in case the event object does not carry rows on this rerun.
-        widget_state = st.session_state.get("mov_transactions_table")
-        selection_dict: dict = {}
-        if isinstance(widget_state, dict):
-            selection_dict = widget_state.get("selection", {}) or {}
-        widget_rows = selection_dict.get("rows", []) if isinstance(selection_dict, dict) else []
-        if widget_rows:
-            selected_rows = list(widget_rows)
-        elif isinstance(widget_state, dict) and "selection" in widget_state:
-            explicit_empty_selection = True
+        # Keep previous persisted selection only when there was no explicit deselection.
+        pass
 
     selected_tx = None
     if selected_rows:
