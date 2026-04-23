@@ -953,8 +953,8 @@ def dashboard_screen() -> None:
         _toast("Rango inválido: la fecha 'Desde' no puede ser mayor que 'Hasta'.", "⚠️")
 
     st.markdown("### Análisis")
-    analysis_panel = st.container(border=True)
-    with analysis_panel:
+    primary_panel = st.container(border=True)
+    with primary_panel:
         primary_chart_options = [
             "Ingresos vs gastos (barras)",
             "Top categorías (barras)",
@@ -1001,6 +1001,8 @@ def dashboard_screen() -> None:
                 config={"displayModeBar": False},
             )
 
+    secondary_panel = st.container(border=True)
+    with secondary_panel:
         secondary_options = [
             "Flujo neto mensual (área)",
             "Distribución de gasto (donut)",
@@ -1009,45 +1011,45 @@ def dashboard_screen() -> None:
         if st.session_state.get("db_secondary_chart_type") not in secondary_options:
             st.session_state["db_secondary_chart_type"] = "Flujo neto mensual (área)"
 
-        with st.expander("Ver más análisis"):
-            secondary_chart_type = select_field(
-                "Gráfico secundario",
-                secondary_options,
-                key="db_secondary_chart_type",
+        secondary_chart_type = select_field(
+            "Gráfico secundario",
+            secondary_options,
+            key="db_secondary_chart_type",
+            help="Complementa el análisis principal con una segunda visualización visible al mismo tiempo.",
+        )
+        prefs_by_user.setdefault(user_key, {})["secondary_chart_type"] = secondary_chart_type
+
+        secondary_description = {
+            "Flujo neto mensual (área)": "Muestra el resultado final por mes (ingresos menos gastos) para detectar meses en positivo y negativo.",
+            "Distribución de gasto (donut)": "Visualiza el peso relativo de cada categoría de gasto dentro del total del período.",
+            "Gasto fijo vs variable (barras)": "Separa el gasto total entre compromisos recurrentes y gasto más flexible para controlar presupuesto.",
+        }
+
+        info_box(secondary_description[secondary_chart_type], variant="info")
+
+        if secondary_chart_type == "Flujo neto mensual (área)":
+            st.plotly_chart(
+                _chart_cashflow(monthly),
+                width="stretch",
+                config={"displayModeBar": False},
             )
-            prefs_by_user.setdefault(user_key, {})["secondary_chart_type"] = secondary_chart_type
-
-            secondary_description = {
-                "Flujo neto mensual (área)": "Muestra el resultado final por mes (ingresos menos gastos) para detectar meses en positivo y negativo.",
-                "Distribución de gasto (donut)": "Visualiza el peso relativo de cada categoría de gasto dentro del total del período.",
-                "Gasto fijo vs variable (barras)": "Separa el gasto total entre compromisos recurrentes y gasto más flexible para controlar presupuesto.",
-            }
-
-            info_box(secondary_description[secondary_chart_type], variant="info")
-
-            if secondary_chart_type == "Flujo neto mensual (área)":
+        elif secondary_chart_type == "Distribución de gasto (donut)":
+            if not exp_df.empty:
                 st.plotly_chart(
-                    _chart_cashflow(monthly),
+                    _chart_donut(exp_df, category_lookup),
                     width="stretch",
                     config={"displayModeBar": False},
                 )
-            elif secondary_chart_type == "Distribución de gasto (donut)":
-                if not exp_df.empty:
-                    st.plotly_chart(
-                        _chart_donut(exp_df, category_lookup),
-                        width="stretch",
-                        config={"displayModeBar": False},
-                    )
-                else:
-                    st.info("Sin gastos registrados en el período.")
-            elif secondary_chart_type == "Gasto fijo vs variable (barras)":
-                if not exp_df.empty:
-                    st.plotly_chart(
-                        _chart_fixed_vs_variable(exp_df, category_lookup),
-                        width="stretch",
-                        config={"displayModeBar": False},
-                    )
-                else:
-                    st.info("Sin gastos registrados en el período.")
+            else:
+                st.info("Sin gastos registrados en el período.")
+        elif secondary_chart_type == "Gasto fijo vs variable (barras)":
+            if not exp_df.empty:
+                st.plotly_chart(
+                    _chart_fixed_vs_variable(exp_df, category_lookup),
+                    width="stretch",
+                    config={"displayModeBar": False},
+                )
+            else:
+                st.info("Sin gastos registrados en el período.")
 
 
