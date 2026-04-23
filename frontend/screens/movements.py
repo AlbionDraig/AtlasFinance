@@ -339,26 +339,6 @@ def _handle_create_transaction(
     return False, None
 
 
-def _undo_last_created_transaction() -> None:
-    """Delete the most recently created transaction from UI quick-action."""
-    last_created = st.session_state.get("mov_last_created_tx")
-    if not last_created or not last_created.get("id"):
-        show_warning("No hay un movimiento reciente para deshacer.")
-        return
-
-    response = api_request("DELETE", f"/transactions/{last_created['id']}")
-    if response.status_code == 204:
-        st.session_state.pop("mov_last_created_tx", None)
-        show_success("Se deshizo el último movimiento guardado.")
-        return
-
-    try:
-        detail = response.json().get("detail", "No pudimos deshacer el último movimiento.")
-    except Exception:
-        detail = "No pudimos deshacer el último movimiento."
-    show_error(detail)
-
-
 def _render_create_transaction_form(
     account_options: dict[str, int],
     category_options: dict[str, int | None],
@@ -496,8 +476,7 @@ def _render_create_transaction_form(
         div[class*="st-key-mov_form_"] {
             margin-bottom: 0.14rem;
         }
-        .st-key-mov_form_start_new,
-        .st-key-mov_undo_last_created {
+        .st-key-mov_form_start_new {
             margin-top: 0.08rem;
         }
         </style>
@@ -512,20 +491,10 @@ def _render_create_transaction_form(
                 amount_text = f"{float(last_created.get('amount', 0)):,.2f}"
             except (TypeError, ValueError):
                 amount_text = str(last_created.get("amount", "0"))
-            last_col, undo_col = st.columns([5, 1])
-            with last_col:
-                st.caption(
-                    f"Último guardado: {last_created.get('description', 'Movimiento')} · "
-                    f"{amount_text} {last_created.get('currency', '')}"
-                )
-            with undo_col:
-                btn(
-                    "Deshacer",
-                    key="mov_undo_last_created",
-                    variant="warning",
-                    on_click=_undo_last_created_transaction,
-                    use_container_width=True,
-                )
+            st.caption(
+                f"Último guardado: {last_created.get('description', 'Movimiento')} · "
+                f"{amount_text} {last_created.get('currency', '')}"
+            )
 
     with st.container(key="mov_form_fields"):
         row1_col1, row1_col2 = st.columns(2)
