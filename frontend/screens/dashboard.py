@@ -196,6 +196,19 @@ def _base_layout(
     )
 
 
+def _render_plotly_chart(fig: go.Figure, *, slot_key: str) -> None:
+    """Render a Plotly chart with a slot-specific identity to avoid Streamlit ID collisions."""
+    chart = go.Figure(fig)
+    meta = chart.layout.meta if isinstance(chart.layout.meta, dict) else {}
+    chart.update_layout(meta={**meta, "streamlit_slot_key": slot_key})
+    st.plotly_chart(
+        chart,
+        key=slot_key,
+        width="stretch",
+        config={"displayModeBar": False},
+    )
+
+
 def _axis(title: str = "") -> dict:
     return dict(
         title=title,
@@ -535,10 +548,22 @@ def _chart_expense_category_trend(exp_df: pd.DataFrame, category_lookup: dict[in
     tmp = exp_df.copy()
     tmp["resolved_category"] = tmp[cat_col].map(lambda value: _format_category_label(value, category_lookup))
 
-    top_categories = (
+    recent_month = str(tmp["month"].max())
+    recent_totals = (
+        tmp[tmp["month"] == recent_month]
+        .groupby("resolved_category", as_index=False)["amount"]
+        .sum()
+        .rename(columns={"amount": "recent_amount"})
+    )
+    total_totals = (
         tmp.groupby("resolved_category", as_index=False)["amount"]
         .sum()
-        .sort_values("amount", ascending=False)
+        .rename(columns={"amount": "total_amount"})
+    )
+    ranked_categories = total_totals.merge(recent_totals, on="resolved_category", how="left").fillna({"recent_amount": 0})
+
+    top_categories = (
+        ranked_categories.sort_values(["recent_amount", "total_amount"], ascending=False)
         .head(5)["resolved_category"]
         .tolist()
     )
@@ -583,6 +608,31 @@ def _chart_expense_category_trend(exp_df: pd.DataFrame, category_lookup: dict[in
             )
         )
     return fig
+
+
+def _expense_category_trend_insight(exp_df: pd.DataFrame, category_lookup: dict[int, str] | None = None) -> str:
+    """Summarize the latest month dominant expense category for the stacked chart."""
+    if exp_df.empty or "month" not in exp_df.columns:
+        return "Sin suficiente detalle para explicar la composición del gasto mensual."
+
+    cat_col = "category_name" if "category_name" in exp_df.columns else "category_id"
+    tmp = exp_df.copy()
+    tmp["resolved_category"] = tmp[cat_col].map(lambda value: _format_category_label(value, category_lookup))
+    recent_month = str(tmp["month"].max())
+    recent_totals = (
+        tmp[tmp["month"] == recent_month]
+        .groupby("resolved_category", as_index=False)["amount"]
+        .sum()
+        .sort_values("amount", ascending=False)
+    )
+    if recent_totals.empty:
+        return "Sin suficiente detalle para explicar la composición del gasto mensual."
+
+    top_row = recent_totals.iloc[0]
+    top_amount = float(top_row["amount"])
+    total_amount = float(recent_totals["amount"].sum())
+    share = (top_amount / total_amount * 100) if total_amount > 0 else 0.0
+    return f"En {_format_month_label(recent_month)}, {top_row['resolved_category']} explicó {share:.1f}% del gasto del mes."
 
 
 # ── Main screen ───────────────────────────────────────────────────────────────
@@ -1127,6 +1177,7 @@ def dashboard_screen() -> None:
             "Ingresos vs gastos (barras)",
             "Top categorías (barras)",
             "Ahorro acumulado (línea)",
+            "Gasto por categoría por mes (apilado)",
         ]
         if st.session_state.get("db_chart_type") not in primary_chart_options:
             st.session_state["db_chart_type"] = "Ingresos vs gastos (barras)"
@@ -1143,31 +1194,39 @@ def dashboard_screen() -> None:
             "Ingresos vs gastos (barras)": "Compara, mes a mes, cuánto dinero entró y cuánto salió. Te ayuda a ver rápidamente en qué meses gastaste más de lo que ingresaste.",
             "Top categorías (barras)": "Ordena las categorías donde más dinero gastaste. Sirve para identificar en qué temas se concentra la mayor parte de tus egresos.",
             "Ahorro acumulado (línea)": "Muestra cómo evoluciona tu ahorro neto a lo largo del período, acumulando mes a mes ingresos menos gastos.",
+            "Gasto por categoría por mes (apilado)": "Descompone el gasto de cada mes por categorías para explicar qué rubros empujan los picos de egresos.",
         }
 
         info_box(chart_description[chart_type], variant="info")
+        if chart_type == "Gasto por categoría por mes (apilado)":
+            st.caption(_expense_category_trend_insight(exp_df, category_lookup))
 
         if chart_type == "Ingresos vs gastos (barras)":
-            st.plotly_chart(
+            _render_plotly_chart(
                 _chart_income_expense(monthly),
-                width="stretch",
-                config={"displayModeBar": False},
+                slot_key="db_chart_primary_income_expense",
             )
         elif chart_type == "Top categorías (barras)":
             if not exp_df.empty:
-                st.plotly_chart(
+                _render_plotly_chart(
                     _chart_categories(exp_df, category_lookup),
-                    width="stretch",
-                    config={"displayModeBar": False},
+                    slot_key="db_chart_primary_categories",
                 )
             else:
                 st.info("Sin gastos registrados en el período.")
         elif chart_type == "Ahorro acumulado (línea)":
-            st.plotly_chart(
+            _render_plotly_chart(
                 _chart_cumulative_savings(monthly),
-                width="stretch",
-                config={"displayModeBar": False},
+                slot_key="db_chart_primary_cumulative_savings",
             )
+        elif chart_type == "Gasto por categoría por mes (apilado)":
+            if not exp_df.empty:
+                _render_plotly_chart(
+                    _chart_expense_category_trend(exp_df, category_lookup),
+                    slot_key="db_chart_primary_expense_category_trend",
+                )
+            else:
+                st.info("Sin gastos registrados en el período.")
 
     secondary_panel = st.container(border=True)
     with secondary_panel:
@@ -1177,6 +1236,10 @@ def dashboard_screen() -> None:
             "Gasto fijo vs variable (barras)",
             "Gasto por categoría por mes (apilado)",
         ]
+        if chart_type == "Gasto por categoría por mes (apilado)":
+            secondary_options = [
+                option for option in secondary_options if option != "Gasto por categoría por mes (apilado)"
+            ]
         if st.session_state.get("db_secondary_chart_type") not in secondary_options:
             st.session_state["db_secondary_chart_type"] = "Flujo neto mensual (área)"
 
@@ -1196,37 +1259,35 @@ def dashboard_screen() -> None:
         }
 
         info_box(secondary_description[secondary_chart_type], variant="info")
+        if secondary_chart_type == "Gasto por categoría por mes (apilado)":
+            st.caption(_expense_category_trend_insight(exp_df, category_lookup))
 
         if secondary_chart_type == "Flujo neto mensual (área)":
-            st.plotly_chart(
+            _render_plotly_chart(
                 _chart_cashflow(monthly),
-                width="stretch",
-                config={"displayModeBar": False},
+                slot_key="db_chart_secondary_cashflow",
             )
         elif secondary_chart_type == "Distribución de gasto (donut)":
             if not exp_df.empty:
-                st.plotly_chart(
+                _render_plotly_chart(
                     _chart_donut(exp_df, category_lookup),
-                    width="stretch",
-                    config={"displayModeBar": False},
+                    slot_key="db_chart_secondary_donut",
                 )
             else:
                 st.info("Sin gastos registrados en el período.")
         elif secondary_chart_type == "Gasto fijo vs variable (barras)":
             if not exp_df.empty:
-                st.plotly_chart(
+                _render_plotly_chart(
                     _chart_fixed_vs_variable(exp_df, category_lookup),
-                    width="stretch",
-                    config={"displayModeBar": False},
+                    slot_key="db_chart_secondary_fixed_variable",
                 )
             else:
                 st.info("Sin gastos registrados en el período.")
         elif secondary_chart_type == "Gasto por categoría por mes (apilado)":
             if not exp_df.empty:
-                st.plotly_chart(
+                _render_plotly_chart(
                     _chart_expense_category_trend(exp_df, category_lookup),
-                    width="stretch",
-                    config={"displayModeBar": False},
+                    slot_key="db_chart_secondary_expense_category_trend",
                 )
             else:
                 st.info("Sin gastos registrados en el período.")
