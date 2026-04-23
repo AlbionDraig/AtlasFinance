@@ -255,6 +255,7 @@ def _load_selected_transaction_into_form(
 ) -> None:
     """Seed shared form fields from the selected transaction before rendering widgets."""
     selected_dt = parse_iso_datetime(selected_tx["occurred_at"])
+    today = date.today()
     account_label_lookup = {value: key for key, value in account_options.items()}
     category_label_lookup = {value: key for key, value in category_options.items()}
 
@@ -271,7 +272,7 @@ def _load_selected_transaction_into_form(
         selected_tx.get("category_id"),
         "Sin categoría",
     )
-    st.session_state["mov_form_date"] = selected_dt.date()
+    st.session_state["mov_form_date"] = min(selected_dt.date(), today)
     st.session_state["mov_form_time"] = selected_dt.time().replace(second=0, microsecond=0)
     st.session_state["mov_form_loaded_tx_id"] = selected_tx["id"]
 
@@ -289,6 +290,10 @@ def _handle_create_transaction(
     category_options: dict[str, int | None],
 ) -> tuple[bool, dict | None]:
     """Validate and create a new transaction."""
+    if occurred_date > date.today():
+        show_error("La fecha no puede ser mayor al día actual.")
+        return False, None
+
     if not account_options:
         show_error("Primero crea una cuenta para registrar movimientos.")
         return False, None
@@ -582,6 +587,7 @@ def _render_create_transaction_form(
             occurred_date = date_field(
                 "Fecha",
                 key="mov_form_date",
+                max_value=date.today(),
                 help="Día en que ocurrió el movimiento.",
             )
 
@@ -1397,6 +1403,10 @@ def _handle_update_transaction(
     category_options: dict[str, int | None],
 ) -> None:
     """Validate and update the selected transaction."""
+    if edit_date > date.today():
+        show_error("La fecha no puede ser mayor al día actual.")
+        return
+
     if len(edit_description.strip()) < 2:
         show_error("Escribe una descripción de al menos 2 caracteres.")
         return
