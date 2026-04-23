@@ -446,12 +446,19 @@ def _render_create_transaction_form(
         """
         <style>
         /* Keep only the movement type segmented control left-aligned in its column. */
-        .af-create-actions {
-            margin-top: 0.45rem;
-            padding-top: 0.45rem;
-            border-top: 1px solid #e2e8f0;
+        .st-key-mov_form_actions {
+            margin-top: -0.1rem !important;
+            padding-top: 0 !important;
         }
-        .af-create-actions .stButton > button {
+        .stVerticalBlock.st-key-mov_form_actions {
+            gap: 0 !important;
+            margin-top: -0.1rem !important;
+            padding-top: 0 !important;
+        }
+        .st-key-mov_form_actions .stButton {
+            margin-top: 0 !important;
+        }
+        .st-key-mov_form_actions .stButton > button {
             box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14) !important;
         }
         .stVerticalBlock.st-key-mov_form_actions [data-testid="stHorizontalBlock"] {
@@ -460,6 +467,26 @@ def _render_create_transaction_form(
         .stVerticalBlock.st-key-mov_form_actions [data-testid="stColumn"] {
             flex: 0 1 200px !important;
             min-width: 120px !important;
+        }
+        .stVerticalBlock.st-key-mov_form_fields {
+            gap: 0.28rem !important;
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
+        }
+        /* Zero gap inside form columns so the height=0 script iframes
+           don't add extra space between the widget and the iframe gap */
+        .stVerticalBlock.st-key-mov_form_fields [data-testid="stColumn"] > [data-testid="stVerticalBlock"] {
+            gap: 0 !important;
+        }
+        /* Also collapse the element-container wrapper of the iframe itself */
+        .stVerticalBlock.st-key-mov_form_fields [data-testid="stCustomComponentV1"],
+        .stVerticalBlock.st-key-mov_form_fields div:has(> [data-testid="stCustomComponentV1"]) {
+            height: 0 !important;
+            min-height: 0 !important;
+            max-height: 0 !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         div[class*="st-key-mov_form_"] {
             margin-bottom: 0.14rem;
@@ -495,45 +522,46 @@ def _render_create_transaction_form(
                     use_container_width=True,
                 )
 
-    row1_col1, row1_col2 = st.columns(2)
-    with row1_col1:
-        description = text_field("Descripción", key="mov_form_description", placeholder="Ej: Supermercado, Gasolina")
-    with row1_col2:
-        transaction_type_ui = select_field("Tipo", TYPE_OPTIONS_UI, key="mov_form_type_ui")
+    with st.container(key="mov_form_fields"):
+        row1_col1, row1_col2 = st.columns(2)
+        with row1_col1:
+            description = text_field("Descripción", key="mov_form_description", placeholder="Ej: Supermercado, Gasolina")
+        with row1_col2:
+            transaction_type_ui = select_field("Tipo", TYPE_OPTIONS_UI, key="mov_form_type_ui")
 
-    row2_col1, row2_col2 = st.columns(2)
-    with row2_col1:
-        min_amount = 0.01 if active_mode == "edit" else 0.0
-        amount = number_field("Monto", min_value=min_amount, step=10.0, key="mov_form_amount")
-    with row2_col2:
-        filtered_category_labels = _category_labels_for_type(category_options, transaction_type_ui)
-        if st.session_state.get("mov_form_category_label") not in filtered_category_labels:
-            st.session_state["mov_form_category_label"] = "Sin categoría"
-        selected_category_label = select_field(
-            "Categoría",
-            filtered_category_labels,
-            key="mov_form_category_label",
-        )
+        row2_col1, row2_col2 = st.columns(2)
+        with row2_col1:
+            min_amount = 0.01 if active_mode == "edit" else 0.0
+            amount = number_field("Monto", min_value=min_amount, step=10.0, key="mov_form_amount")
+        with row2_col2:
+            filtered_category_labels = _category_labels_for_type(category_options, transaction_type_ui)
+            if st.session_state.get("mov_form_category_label") not in filtered_category_labels:
+                st.session_state["mov_form_category_label"] = "Sin categoría"
+            selected_category_label = select_field(
+                "Categoría",
+                filtered_category_labels,
+                key="mov_form_category_label",
+            )
 
-    account_label_options = list(account_options.keys()) if account_options else ["No hay cuentas"]
-    has_available_accounts = bool(account_options)
+        account_label_options = list(account_options.keys()) if account_options else ["No hay cuentas"]
+        has_available_accounts = bool(account_options)
 
-    if has_available_accounts:
-        if st.session_state.get("mov_form_account_label") not in account_label_options:
-            st.session_state["mov_form_account_label"] = account_label_options[0]
-    elif st.session_state.get("mov_form_account_label") != "No hay cuentas":
-        st.session_state["mov_form_account_label"] = "No hay cuentas"
+        if has_available_accounts:
+            if st.session_state.get("mov_form_account_label") not in account_label_options:
+                st.session_state["mov_form_account_label"] = account_label_options[0]
+        elif st.session_state.get("mov_form_account_label") != "No hay cuentas":
+            st.session_state["mov_form_account_label"] = "No hay cuentas"
 
-    row3_col1, row3_col2 = st.columns(2)
-    with row3_col1:
-        selected_account_label = select_field(
-            "Cuenta",
-            account_label_options,
-            disabled=not has_available_accounts,
-            key="mov_form_account_label",
-        )
-    with row3_col2:
-        occurred_date = date_field("Fecha", key="mov_form_date")
+        row3_col1, row3_col2 = st.columns(2)
+        with row3_col1:
+            selected_account_label = select_field(
+                "Cuenta",
+                account_label_options,
+                disabled=not has_available_accounts,
+                key="mov_form_account_label",
+            )
+        with row3_col2:
+            occurred_date = date_field("Fecha", key="mov_form_date")
 
     derived_currency = _currency_from_account_label(selected_account_label)
     currency = derived_currency or str(st.session_state.get("mov_form_currency") or "COP")
@@ -607,7 +635,6 @@ def _render_create_transaction_form(
 
         _confirm_delete_dialog()
 
-    st.markdown('<div class="af-create-actions">', unsafe_allow_html=True)
     with st.container(key="mov_form_actions"):
         submit_cols = st.columns([1, 1, 1, 1] if active_mode == "edit" else [1, 2, 1])
         if active_mode == "edit":
@@ -640,7 +667,7 @@ def _render_create_transaction_form(
                 use_container_width=True,
                 disabled=(not has_pending_changes) or st.session_state.get("mov_form_submitting", False),
             )
-    st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 

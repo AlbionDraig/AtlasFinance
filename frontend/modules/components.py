@@ -100,6 +100,17 @@ def inject_component_styles() -> None:
     st.markdown(
         """
         <style>
+        /* ── Suppress script-only iframe wrappers (height=0 components) ── */
+        [data-testid="stCustomComponentV1"] {
+            min-height: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            display: block !important;
+            line-height: 0 !important;
+        }
         /* ── Text / Number / Date / Time inputs ──────────────────────── */
         [data-testid="stTextInput"] input,
         [data-testid="stNumberInput"] input {
@@ -186,6 +197,11 @@ def inject_component_styles() -> None:
             border: none !important;
             box-shadow: none !important;
             color: #64748b !important;
+        }
+        /* Hide format instruction that adds extra height to date fields */
+        [data-testid="stDateInputInstructions"],
+        [data-testid="stDateInput"] small {
+            display: none !important;
         }
 
         /* ── Time input (renders as select in Streamlit) ──────────────── */
