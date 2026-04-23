@@ -103,6 +103,7 @@ def app() -> None:
         ("⚙️ Configuración", "setup", setup_screen),
     ]
     section_options = {label: key for label, key, _ in sections}
+    key_to_label = {key: label for label, key, _ in sections}
     section_renderers = {key: renderer for _, key, renderer in sections}
     options = [label for label, _, _ in sections]
     default_label = options[0]
@@ -120,6 +121,11 @@ def app() -> None:
         previous = st.session_state["main_section"]
         migrated = legacy_to_label.get(previous, previous)
         st.session_state["main_section"] = migrated if migrated in section_options else default_label
+
+    # Keep active section stable across browser refreshes via URL query param.
+    query_section = str(st.query_params.get("section", "")).strip().lower()
+    if query_section in key_to_label:
+        st.session_state["main_section"] = key_to_label[query_section]
 
     full_name = st.session_state.get("user_full_name", "")
     email = st.session_state.get("user_email", "")
@@ -215,6 +221,10 @@ def app() -> None:
     st.session_state["main_section"] = current_section
 
     current_key = section_options.get(current_section, section_options[default_label])
+
+    # Persist selected tab in URL so refresh/load keeps the same section.
+    if str(st.query_params.get("section", "")).strip().lower() != current_key:
+        st.query_params["section"] = current_key
 
     # Clear Movimientos form when returning from another section.
     previous_key = st.session_state.get("main_section_key_prev")
