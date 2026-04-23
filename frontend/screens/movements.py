@@ -772,7 +772,7 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
             text-align: center;
             font-size: 0.82rem;
             color: #334155;
-            padding: 0.22rem 0 0 0;
+            padding: 0.08rem 0 0 0;
             line-height: 1;
             margin: 0;
         }
@@ -807,7 +807,7 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         .stVerticalBlock.st-key-mov_pagination_right [data-testid="stHorizontalBlock"] {
             justify-content: flex-end !important;
             align-items: center !important;
-            gap: 0.45rem !important;
+            gap: 0.2rem !important;
             flex-wrap: nowrap !important;
         }
         .stVerticalBlock.st-key-mov_pagination_right [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
@@ -829,10 +829,11 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
             text-align: left !important;
         }
         .st-key-mov_pagination_row .stButton button {
-            padding: 0 0.85rem !important;
-            height: 2.05rem !important;
-            min-height: 2.05rem !important;
-            line-height: 1.4 !important;
+            padding: 0 0.35rem !important;
+            height: 2rem !important;
+            min-height: 2rem !important;
+            min-width: 2rem !important;
+            line-height: 1 !important;
             font-size: 0.82rem !important;
             white-space: nowrap !important;
         }
@@ -1310,10 +1311,15 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
                 st.caption(f"Mostrando {from_item}–{to_item} de {total_items} movimientos")
             with right_group_col:
                 with st.container(key="mov_pagination_right"):
-                    prev_col, page_label_col, next_col = st.columns([1, 0.95, 1])
+                    page_label_col, prev_col, next_col = st.columns([1.18, 0.48, 0.48])
+                    with page_label_col:
+                        st.markdown(
+                            f'<div class="af-mov-page-label">Página <strong>{current_page}</strong> de {total_pages}</div>',
+                            unsafe_allow_html=True,
+                        )
                     with prev_col:
                         if btn(
-                            "← Anterior",
+                            "←",
                             key="mov_table_prev_page",
                             variant="neutral",
                             use_container_width=False,
@@ -1321,14 +1327,9 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
                         ):
                             st.session_state["mov_table_page"] = max(1, current_page - 1)
                             RERUN()
-                    with page_label_col:
-                        st.markdown(
-                            f'<div class="af-mov-page-label">Página <strong>{current_page}</strong> de {total_pages}</div>',
-                            unsafe_allow_html=True,
-                        )
                     with next_col:
                         if btn(
-                            "Siguiente →",
+                            "→",
                             key="mov_table_next_page",
                             variant="neutral",
                             use_container_width=False,
