@@ -8,6 +8,7 @@ import streamlit.components.v1 as components
 
 from modules.api_client import api_request
 from modules.config import RERUN, persist_jwt_token
+from modules.notifications import show_warning
 from modules.ui import render_hero
 
 
@@ -374,7 +375,7 @@ def login_screen() -> None:
     """Render public authentication screen with login and registration tabs."""
     auth_notice = st.session_state.pop("auth_notice", None)
     if auth_notice:
-        st.warning(auth_notice)
+        show_warning(auth_notice)
 
     render_hero(
         "Atlas Finance",
