@@ -770,9 +770,80 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
         }
         .af-mov-page-label {
             text-align: center;
-            font-size: 0.88rem;
+            font-size: 0.82rem;
             color: #334155;
-            padding: 0.45rem 0;
+            padding: 0.22rem 0 0 0;
+            line-height: 1;
+            margin: 0;
+        }
+        .stVerticalBlock.st-key-mov_pagination_bar {
+            gap: 0 !important;
+        }
+        .stVerticalBlock.st-key-mov_pagination_row {
+            gap: 0 !important;
+        }
+        .stVerticalBlock.st-key-mov_pagination_row [data-testid="stHorizontalBlock"] {
+            justify-content: space-between !important;
+            align-items: center !important;
+            gap: 0.8rem !important;
+            flex-wrap: nowrap !important;
+        }
+        .stVerticalBlock.st-key-mov_pagination_row [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+            min-width: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+        .stVerticalBlock.st-key-mov_pagination_row [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:first-child {
+            flex: 1 1 auto !important;
+            width: auto !important;
+        }
+        .stVerticalBlock.st-key-mov_pagination_row [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child {
+            flex: 0 0 auto !important;
+            width: auto !important;
+        }
+        .stVerticalBlock.st-key-mov_pagination_right {
+            gap: 0 !important;
+        }
+        .stVerticalBlock.st-key-mov_pagination_right [data-testid="stHorizontalBlock"] {
+            justify-content: flex-end !important;
+            align-items: center !important;
+            gap: 0.45rem !important;
+            flex-wrap: nowrap !important;
+        }
+        .stVerticalBlock.st-key-mov_pagination_right [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+            flex: 0 0 auto !important;
+            width: auto !important;
+            min-width: 0 !important;
+        }
+        .st-key-mov_pagination_row [data-testid="stColumn"] > [data-testid="stVerticalBlock"] {
+            gap: 0 !important;
+        }
+        .st-key-mov_pagination_row [data-testid="stCaptionContainer"] {
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 1 !important;
+        }
+        .st-key-mov_pagination_row [data-testid="stCaptionContainer"] p {
+            margin: 0 !important;
+            line-height: 1 !important;
+            text-align: left !important;
+        }
+        .st-key-mov_pagination_row .stButton button {
+            padding: 0 0.85rem !important;
+            height: 2.05rem !important;
+            min-height: 2.05rem !important;
+            line-height: 1.4 !important;
+            font-size: 0.82rem !important;
+            white-space: nowrap !important;
+        }
+        .st-key-mov_pagination_row .stButton {
+            margin-top: 0 !important;
+        }
+        .st-key-mov_pagination_right .stButton {
+            margin-top: 0 !important;
+        }
+        .stVerticalBlock.st-key-mov_pagination_bar {
+            margin-top: 0.2rem !important;
         }
         .af-mov-mode-badge {
             display: inline-flex;
@@ -1229,38 +1300,42 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
             f"Seleccionado: {selected_tx.get('description', 'Movimiento')} · {amount_value:,.2f} {selected_tx.get('currency', '')}"
         )
 
-    # ── Pagination bar ──────────────────────────────────────────────
-    st.divider()
-    page_info_col, prev_col, page_label_col, next_col = st.columns([4, 0.9, 1.2, 0.9])
-    with page_info_col:
+    # ── Pagination bar (inline with table) ─────────────────────────
+    with st.container(key="mov_pagination_bar"):
         from_item = start_index + 1
         to_item = min(end_index, total_items)
-        st.caption(f"Mostrando {from_item}–{to_item} de {total_items} movimientos")
-    with prev_col:
-        if btn(
-            "← Anterior",
-            key="mov_table_prev_page",
-            variant="neutral",
-            use_container_width=True,
-            disabled=current_page <= 1,
-        ):
-            st.session_state["mov_table_page"] = max(1, current_page - 1)
-            RERUN()
-    with page_label_col:
-        st.markdown(
-            f'<div class="af-mov-page-label">Página <strong>{current_page}</strong> de {total_pages}</div>',
-            unsafe_allow_html=True,
-        )
-    with next_col:
-        if btn(
-            "Siguiente →",
-            key="mov_table_next_page",
-            variant="neutral",
-            use_container_width=True,
-            disabled=current_page >= total_pages,
-        ):
-            st.session_state["mov_table_page"] = min(total_pages, current_page + 1)
-            RERUN()
+        with st.container(key="mov_pagination_row"):
+            page_info_col, right_group_col = st.columns([1.8, 1.2])
+            with page_info_col:
+                st.caption(f"Mostrando {from_item}–{to_item} de {total_items} movimientos")
+            with right_group_col:
+                with st.container(key="mov_pagination_right"):
+                    prev_col, page_label_col, next_col = st.columns([1, 0.95, 1])
+                    with prev_col:
+                        if btn(
+                            "← Anterior",
+                            key="mov_table_prev_page",
+                            variant="neutral",
+                            use_container_width=False,
+                            disabled=current_page <= 1,
+                        ):
+                            st.session_state["mov_table_page"] = max(1, current_page - 1)
+                            RERUN()
+                    with page_label_col:
+                        st.markdown(
+                            f'<div class="af-mov-page-label">Página <strong>{current_page}</strong> de {total_pages}</div>',
+                            unsafe_allow_html=True,
+                        )
+                    with next_col:
+                        if btn(
+                            "Siguiente →",
+                            key="mov_table_next_page",
+                            variant="neutral",
+                            use_container_width=False,
+                            disabled=current_page >= total_pages,
+                        ):
+                            st.session_state["mov_table_page"] = min(total_pages, current_page + 1)
+                            RERUN()
 
     return selected_tx
 
