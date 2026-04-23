@@ -1112,6 +1112,48 @@ def dashboard_screen() -> None:
         cash_coverage_sub = "Sin saldo positivo suficiente para cubrir gasto futuro."
         cash_coverage_tone = "negative"
 
+    expense_variation_value = "Sin referencia"
+    expense_variation_sub = "No hay período anterior comparable para medir variación."
+    expense_variation_tone = "impact"
+    if prev_expense > 0:
+        expense_delta_pct = ((current_expense - prev_expense) / prev_expense) * 100
+        sign = "+" if expense_delta_pct > 0 else ""
+        expense_variation_value = f"{sign}{expense_delta_pct:.1f}%"
+        expense_variation_sub = (
+            f"Anterior: {_format_money(prev_expense, currency)} · "
+            f"Actual: {_format_money(current_expense, currency)}"
+        )
+        expense_variation_tone = "negative" if expense_delta_pct > 0 else ("positive" if expense_delta_pct < 0 else "impact")
+    elif current_expense > 0:
+        expense_variation_value = "primer período"
+        expense_variation_sub = f"Gasto actual: {_format_money(current_expense, currency)}"
+
+    fixed_share_value = "Sin gastos"
+    fixed_share_sub = "No hay egresos para separar gasto fijo y variable."
+    fixed_share_tone = "impact"
+    if not exp_df.empty and period_expense > 0:
+        cat_col = "category_name" if "category_name" in exp_df.columns else "category_id"
+        fixed_total = float(
+            exp_df.assign(
+                resolved_category=exp_df[cat_col].map(
+                    lambda value: _format_category_label(value, category_lookup)
+                )
+            )
+            .assign(bucket=lambda frame: frame["resolved_category"].map(_classify_fixed_variable))
+            .loc[lambda frame: frame["bucket"] == "Gasto fijo", "amount"]
+            .sum()
+        )
+        fixed_share = (fixed_total / period_expense) * 100
+        fixed_share_value = f"{fixed_share:.1f}%"
+        fixed_share_sub = (
+            f"Fijo: {_format_money(fixed_total, currency)} · "
+            f"Variable: {_format_money(period_expense - fixed_total, currency)}"
+        )
+        if fixed_share >= 60:
+            fixed_share_tone = "negative"
+        elif fixed_share <= 35:
+            fixed_share_tone = "positive"
+
     i1, i2, i3 = st.columns(3)
     with i1:
         render_info_card(
@@ -1158,13 +1200,27 @@ def dashboard_screen() -> None:
             tone=cash_coverage_tone,
         )
 
-    k1 = st.columns(1)[0]
+    k1, k2, k3 = st.columns(3)
     with k1:
         render_info_card(
             "Mes más costoso",
             highest_spend_month_value,
             sub=highest_spend_month_sub,
             tone="impact",
+        )
+    with k2:
+        render_info_card(
+            "Variación del gasto",
+            expense_variation_value,
+            sub=expense_variation_sub,
+            tone=expense_variation_tone,
+        )
+    with k3:
+        render_info_card(
+            "Participación de gasto fijo",
+            fixed_share_value,
+            sub=fixed_share_sub,
+            tone=fixed_share_tone,
         )
 
     if invalid_range_swapped:
