@@ -1,6 +1,8 @@
 # Atlas Finance
 
 [![CI](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/ci.yml/badge.svg)](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/ci.yml)
+[![Security](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/security.yml/badge.svg)](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/security.yml)
+[![Code Smell](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/code-quality.yml/badge.svg)](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/code-quality.yml)
 [![Coverage](https://codecov.io/gh/AlbionDraig/AtlasFinance/graph/badge.svg?branch=main)](https://codecov.io/gh/AlbionDraig/AtlasFinance)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -243,6 +245,9 @@ Desde la raiz del proyecto:
 ```bash
 python -m pip install -r backend/requirements.txt
 python -m ruff check backend/app backend/tests
+python -m pylint backend/app --disable=missing-module-docstring,missing-class-docstring,missing-function-docstring,too-few-public-methods --fail-under=8.0
+python -m bandit -q -r backend/app -ll
+python -m pip_audit -r backend/requirements.txt
 python -m pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-report=xml:backend/coverage.xml --cov-fail-under=85
 python -m compileall backend/app
 ```
