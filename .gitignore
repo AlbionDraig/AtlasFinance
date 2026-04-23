@@ -3,9 +3,12 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 .venv/
 .env
 .vscode/
 *.db
 *.sqlite3
+*/coverage.xml
+backend/coverage.xml
