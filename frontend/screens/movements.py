@@ -563,8 +563,6 @@ def _render_create_transaction_form(
     with row4_col1:
         occurred_time = time_field("Hora", key="mov_form_time")
 
-    st.caption("La moneda se define automáticamente con la cuenta seleccionada.")
-
     create_has_pending_changes = bool(description.strip()) or float(amount) > 0.0
     edit_has_pending_changes = False
     if active_mode == "edit" and selected_tx:

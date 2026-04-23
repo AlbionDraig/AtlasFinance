@@ -161,17 +161,15 @@ def inject_component_styles() -> None:
             background: #ffffff !important;
         }
 
-        /* ── Date / Time inputs ───────────────────────────────────────── */
-        [data-testid="stDateInput"] [data-baseweb="input"],
-        [data-testid="stTimeInput"] [data-baseweb="input"] {
+        /* ── Date input ───────────────────────────────────────────────── */
+        [data-testid="stDateInput"] [data-baseweb="input"] {
             border-radius: 8px !important;
             border: 1px solid #dde3ec !important;
             background: #ffffff !important;
             overflow: hidden !important;
             transition: border-color 0.18s ease, box-shadow 0.18s ease !important;
         }
-        [data-testid="stDateInput"] [data-baseweb="input"] input,
-        [data-testid="stTimeInput"] [data-baseweb="input"] input {
+        [data-testid="stDateInput"] [data-baseweb="input"] input {
             border: none !important;
             background: transparent !important;
             color: #0f172a !important;
@@ -179,17 +177,38 @@ def inject_component_styles() -> None:
             padding: 0.44rem 0.75rem !important;
             box-shadow: none !important;
         }
-        [data-testid="stDateInput"] [data-baseweb="input"]:focus-within,
-        [data-testid="stTimeInput"] [data-baseweb="input"]:focus-within {
+        [data-testid="stDateInput"] [data-baseweb="input"]:focus-within {
             border-color: #1f6fb2 !important;
             box-shadow: 0 0 0 3px rgba(31, 111, 178, 0.15) !important;
         }
-        [data-testid="stDateInput"] [data-baseweb="input"] button,
-        [data-testid="stTimeInput"] [data-baseweb="input"] button {
+        [data-testid="stDateInput"] [data-baseweb="input"] button {
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
             color: #64748b !important;
+        }
+
+        /* ── Time input (renders as select in Streamlit) ──────────────── */
+        [data-testid="stTimeInput"] [data-baseweb="select"] > div:first-child {
+            border-radius: 8px !important;
+            border: 1px solid #dde3ec !important;
+            background: #ffffff !important;
+            min-height: 2.4rem !important;
+            transition: border-color 0.18s ease !important;
+        }
+        [data-testid="stTimeInput"] [data-baseweb="select"]:focus-within > div:first-child {
+            border-color: #1f6fb2 !important;
+            box-shadow: 0 0 0 3px rgba(31, 111, 178, 0.15) !important;
+        }
+        [data-testid="stTimeInput"] [data-baseweb="select"] span {
+            color: #0f172a !important;
+            font-size: 0.9rem !important;
+        }
+        [data-testid="stTimeInput"] [data-baseweb="select"] [data-baseweb="input"],
+        [data-testid="stTimeInput"] [data-baseweb="select"] input {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
         }
 
         /* ── Input labels ─────────────────────────────────────────────── */
