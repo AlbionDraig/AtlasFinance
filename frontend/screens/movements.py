@@ -525,14 +525,30 @@ def _render_create_transaction_form(
     with st.container(key="mov_form_fields"):
         row1_col1, row1_col2 = st.columns(2)
         with row1_col1:
-            description = text_field("Descripción", key="mov_form_description", placeholder="Ej: Supermercado, Gasolina")
+            description = text_field(
+                "Descripción",
+                key="mov_form_description",
+                placeholder="Ej: Supermercado, Gasolina",
+                help="Describe brevemente el movimiento para identificarlo luego.",
+            )
         with row1_col2:
-            transaction_type_ui = select_field("Tipo", TYPE_OPTIONS_UI, key="mov_form_type_ui")
+            transaction_type_ui = select_field(
+                "Tipo",
+                TYPE_OPTIONS_UI,
+                key="mov_form_type_ui",
+                help="Define si el movimiento es un gasto o un ingreso.",
+            )
 
         row2_col1, row2_col2 = st.columns(2)
         with row2_col1:
             min_amount = 0.01 if active_mode == "edit" else 0.0
-            amount = number_field("Monto", min_value=min_amount, step=10.0, key="mov_form_amount")
+            amount = number_field(
+                "Monto",
+                min_value=min_amount,
+                step=10.0,
+                key="mov_form_amount",
+                help="Valor del movimiento. Usa números positivos.",
+            )
         with row2_col2:
             filtered_category_labels = _category_labels_for_type(category_options, transaction_type_ui)
             if st.session_state.get("mov_form_category_label") not in filtered_category_labels:
@@ -541,6 +557,7 @@ def _render_create_transaction_form(
                 "Categoría",
                 filtered_category_labels,
                 key="mov_form_category_label",
+                help="Clasifica el movimiento para mejorar reportes y filtros.",
             )
 
         account_label_options = list(account_options.keys()) if account_options else ["No hay cuentas"]
@@ -559,9 +576,14 @@ def _render_create_transaction_form(
                 account_label_options,
                 disabled=not has_available_accounts,
                 key="mov_form_account_label",
+                help="Cuenta donde se registra el movimiento y de donde se toma la moneda.",
             )
         with row3_col2:
-            occurred_date = date_field("Fecha", key="mov_form_date")
+            occurred_date = date_field(
+                "Fecha",
+                key="mov_form_date",
+                help="Día en que ocurrió el movimiento.",
+            )
 
     derived_currency = _currency_from_account_label(selected_account_label)
     currency = derived_currency or str(st.session_state.get("mov_form_currency") or "COP")
@@ -993,14 +1015,30 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
                 "Buscar descripción",
                 key="mov_table_search",
                 placeholder="Ej: Café, Gasolina",
+                help="Busca movimientos por texto dentro de la descripción.",
             )
             _bind_live_search_filter("mov_table_search")
         with row1_c2:
-            tx_type_filter = select_field("Tipo", ["Todo", "Ingresos", "Gastos"], key="mov_table_type_filter")
+            tx_type_filter = select_field(
+                "Tipo",
+                ["Todo", "Ingresos", "Gastos"],
+                key="mov_table_type_filter",
+                help="Filtra por tipo de movimiento.",
+            )
         with row1_c3:
-            currency_filter = select_field("Moneda", ["Todas", "COP", "USD"], key="mov_table_currency_filter")
+            currency_filter = select_field(
+                "Moneda",
+                ["Todas", "COP", "USD"],
+                key="mov_table_currency_filter",
+                help="Filtra por moneda del movimiento.",
+            )
         with row1_c4:
-            account_filter = select_field("Cuenta", account_filter_options, key="mov_table_account_filter")
+            account_filter = select_field(
+                "Cuenta",
+                account_filter_options,
+                key="mov_table_account_filter",
+                help="Muestra solo movimientos de la cuenta seleccionada.",
+            )
 
         row2_c1, row2_c2, row2_c3, row2_c4 = st.columns([1.2, 0.9, 0.9, 0.9])
         with row2_c1:
@@ -1008,6 +1046,7 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
                 "Periodo",
                 ["Todo", "Hoy", "Últimos 7 días", "Últimos 30 días", "Mes actual", "Personalizado"],
                 key="mov_table_period_filter",
+                help="Aplica un rango de fechas rápido para filtrar la tabla.",
             )
 
     today = date.today()
@@ -1037,6 +1076,7 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
             min_value=default_from,
             max_value=default_to,
             disabled=not is_custom_period,
+            help="Fecha inicial del filtro (solo en periodo Personalizado).",
         )
     with row2_c3:
         to_date = date_field(
@@ -1045,9 +1085,15 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
             min_value=default_from,
             max_value=default_to,
             disabled=not is_custom_period,
+            help="Fecha final del filtro (solo en periodo Personalizado).",
         )
     with row2_c4:
-        page_size = select_field("Por página", [8, 12, 20, 30], key="mov_table_page_size")
+        page_size = select_field(
+            "Por página",
+            [8, 12, 20, 30],
+            key="mov_table_page_size",
+            help="Cantidad de movimientos que se muestran en cada página.",
+        )
 
     if is_custom_period and from_date > to_date:
         from_date, to_date = to_date, from_date
@@ -1370,7 +1416,7 @@ def _handle_update_transaction(
         st.session_state["mov_form_loaded_tx_id"] = None
         st.session_state["mov_clear_table_selection_pending"] = True
         st.session_state["mov_form_force_clean_reset"] = True
-        show_success("Cambios guardados correctamente.")
+        st.session_state["mov_update_toast"] = "Cambios guardados correctamente."
         RERUN()
         return
 
@@ -1404,6 +1450,9 @@ def _handle_delete_transaction(selected_tx: dict) -> None:
 def movements_screen() -> None:
     """Render CRUD UI for user movements (create, edit, delete)."""
     inject_component_styles()
+    update_toast = st.session_state.pop("mov_update_toast", None)
+    if update_toast:
+        st.toast(str(update_toast), icon="✅")
     st.markdown(
         """
         <style>
