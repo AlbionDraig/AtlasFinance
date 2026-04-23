@@ -657,6 +657,23 @@ def dashboard_screen() -> None:
 
     user_key = (st.session_state.get("user_email") or "anon").strip().lower() or "anon"
     prefs_by_user = st.session_state.setdefault("db_preferences_by_user", {})
+    kpi_card_options = [
+        "Patrimonio neto",
+        "Ingresos",
+        "Gastos",
+        "Tasa de ahorro",
+    ]
+    insight_card_options = [
+        "Balance del período",
+        "Movimientos",
+        "Gasto promedio",
+        "Mayor impacto",
+        "Mayor gasto individual",
+        "Cobertura de efectivo",
+        "Mes más costoso",
+        "Variación del gasto",
+        "Participación de gasto fijo",
+    ]
 
     # Switch dashboard preferences when the authenticated user changes.
     if st.session_state.get("db_prefs_user") != user_key:
@@ -671,6 +688,14 @@ def dashboard_screen() -> None:
         st.session_state["db_to_draft"] = st.session_state["db_to"]
         st.session_state["db_chart_type"] = user_prefs.get("chart_type", "Ingresos vs gastos (barras)")
         st.session_state["db_secondary_chart_type"] = user_prefs.get("secondary_chart_type", "Flujo neto mensual (área)")
+        saved_visible_kpis = user_prefs.get("visible_kpis", kpi_card_options)
+        saved_visible_insights = user_prefs.get("visible_insights", insight_card_options)
+        st.session_state["db_visible_kpis"] = [
+            label for label in saved_visible_kpis if label in kpi_card_options
+        ] or kpi_card_options.copy()
+        st.session_state["db_visible_insights"] = [
+            label for label in saved_visible_insights if label in insight_card_options
+        ] or insight_card_options.copy()
         st.session_state["db_prefs_user"] = user_key
 
     # Applied values drive API queries and cards/charts.
@@ -696,6 +721,10 @@ def dashboard_screen() -> None:
         st.session_state["db_chart_type"] = "Ingresos vs gastos (barras)"
     if "db_secondary_chart_type" not in st.session_state:
         st.session_state["db_secondary_chart_type"] = "Flujo neto mensual (área)"
+    if "db_visible_kpis" not in st.session_state:
+        st.session_state["db_visible_kpis"] = kpi_card_options.copy()
+    if "db_visible_insights" not in st.session_state:
+        st.session_state["db_visible_insights"] = insight_card_options.copy()
 
     if st.session_state.pop("db_filters_applied_notice", False):
         _toast("Filtros aplicados y sincronizados.", "✅")
@@ -840,6 +869,8 @@ def dashboard_screen() -> None:
             "date_to": st.session_state["db_to"],
             "chart_type": st.session_state.get("db_chart_type", "Ingresos vs gastos (barras)"),
             "secondary_chart_type": st.session_state.get("db_secondary_chart_type", "Flujo neto mensual (área)"),
+            "visible_kpis": st.session_state.get("db_visible_kpis", kpi_card_options),
+            "visible_insights": st.session_state.get("db_visible_insights", insight_card_options),
         }
         st.session_state["db_last_applied"] = datetime.now().strftime("%H:%M:%S")
         st.rerun()
@@ -954,84 +985,117 @@ def dashboard_screen() -> None:
         has_previous_data=has_previous_period_data,
     )
 
-    # ── KPI strip ─────────────────────────────────────────────────────────────
-    k1, k2, k3, k4 = st.columns(4)
+    with st.expander("Personalizar tarjetas", expanded=False):
+        st.multiselect(
+            "Tarjetas KPI visibles",
+            options=kpi_card_options,
+            default=st.session_state.get("db_visible_kpis", kpi_card_options),
+            key="db_visible_kpis",
+            help="Selecciona cuáles KPI quieres ver en la parte superior.",
+        )
+        st.multiselect(
+            "Tarjetas de insights visibles",
+            options=insight_card_options,
+            default=st.session_state.get("db_visible_insights", insight_card_options),
+            key="db_visible_insights",
+            help="Selecciona cuáles tarjetas de análisis quieres mostrar.",
+        )
+
+    prefs_by_user.setdefault(user_key, {})["visible_kpis"] = st.session_state.get(
+        "db_visible_kpis", kpi_card_options
+    )
+    prefs_by_user.setdefault(user_key, {})["visible_insights"] = st.session_state.get(
+        "db_visible_insights", insight_card_options
+    )
+
     savings = current_savings
-    with k1:
-        render_kpi_card(
-            "Patrimonio neto",
-            _format_money(net_worth_value, currency),
-            currency,
-            badge=net_badge,
-            badge_type=net_badge_type,
-            badge_tooltip=net_badge_tip,
-            help_text="Es el dinero total que tienes hoy en tus cuentas de esta moneda.",
-            value_tone=_tone_from_number(net_worth_value),
-        )
-    with k2:
-        render_kpi_card(
-            "Ingresos",
-            _format_money(current_income, currency),
-            currency,
-            badge=income_badge,
-            badge_type=income_badge_type,
-            badge_tooltip=income_badge_tip,
-            help_text="Todo lo que te entro de dinero en el período seleccionado.",
-            value_tone="positive",
-            sub_tone="positive",
-        )
-    with k3:
-        render_kpi_card(
-            "Gastos",
-            _format_money(current_expense, currency),
-            currency,
-            badge=expense_badge,
-            badge_type=expense_badge_type,
-            badge_tooltip=expense_badge_tip,
-            help_text="Todo lo que salio de dinero en el período seleccionado.",
-            value_tone="negative",
-            sub_tone="negative",
-        )
-    with k4:
-        if current_income == 0:
-            savings_display = "Sin datos"
-            savings_sub = "sin ingresos en el período"
-            savings_tone = "default"
-        elif savings == 0.0:
-            savings_display = "0.0%"
-            savings_sub = "ingresos = gastos"
-            savings_tone = "default"
+    if current_income == 0:
+        savings_display = "Sin datos"
+        savings_sub = "sin ingresos en el período"
+        savings_tone = "default"
+    elif savings == 0.0:
+        savings_display = "0.0%"
+        savings_sub = "ingresos = gastos"
+        savings_tone = "default"
+    else:
+        if savings <= -999:
+            savings_display = "<999%"
+        elif savings >= 999:
+            savings_display = ">999%"
         else:
-            if savings <= -999:
-                savings_display = "<999%"
-            elif savings >= 999:
-                savings_display = ">999%"
-            else:
-                savings_display = f"{abs(savings):,.1f}%"
+            savings_display = f"{abs(savings):,.1f}%"
 
-            if not has_previous_period_data:
-                savings_sub = "del ingreso"
-            else:
-                rate_quality = (
-                    "margen saludable"
-                    if savings >= 20
-                    else ("margen moderado" if savings >= 5 else "margen bajo")
-                )
-                savings_sub = f"del ingreso · {rate_quality}"
+        if not has_previous_period_data:
+            savings_sub = "del ingreso"
+        else:
+            rate_quality = (
+                "margen saludable"
+                if savings >= 20
+                else ("margen moderado" if savings >= 5 else "margen bajo")
+            )
+            savings_sub = f"del ingreso · {rate_quality}"
 
-            savings_tone = _tone_from_number(savings)
+        savings_tone = _tone_from_number(savings)
 
-        render_kpi_card(
-            "Tasa de ahorro",
-            savings_display,
-            savings_sub,
-            badge=savings_badge,
-            badge_type=savings_badge_type,
-            badge_tooltip=savings_badge_tip,
-            help_text="Que porcentaje de tus ingresos lograste guardar en el período.",
-            value_tone=savings_tone,
-            sub_tone=savings_tone,
-        )
+    # ── KPI strip ─────────────────────────────────────────────────────────────
+    def _render_kpi(label: str) -> None:
+        if label == "Patrimonio neto":
+            render_kpi_card(
+                "Patrimonio neto",
+                _format_money(net_worth_value, currency),
+                currency,
+                badge=net_badge,
+                badge_type=net_badge_type,
+                badge_tooltip=net_badge_tip,
+                help_text="Es el dinero total que tienes hoy en tus cuentas de esta moneda.",
+                value_tone=_tone_from_number(net_worth_value),
+            )
+        elif label == "Ingresos":
+            render_kpi_card(
+                "Ingresos",
+                _format_money(current_income, currency),
+                currency,
+                badge=income_badge,
+                badge_type=income_badge_type,
+                badge_tooltip=income_badge_tip,
+                help_text="Todo lo que te entro de dinero en el período seleccionado.",
+                value_tone="positive",
+                sub_tone="positive",
+            )
+        elif label == "Gastos":
+            render_kpi_card(
+                "Gastos",
+                _format_money(current_expense, currency),
+                currency,
+                badge=expense_badge,
+                badge_type=expense_badge_type,
+                badge_tooltip=expense_badge_tip,
+                help_text="Todo lo que salio de dinero en el período seleccionado.",
+                value_tone="negative",
+                sub_tone="negative",
+            )
+        elif label == "Tasa de ahorro":
+            render_kpi_card(
+                "Tasa de ahorro",
+                savings_display,
+                savings_sub,
+                badge=savings_badge,
+                badge_type=savings_badge_type,
+                badge_tooltip=savings_badge_tip,
+                help_text="Que porcentaje de tus ingresos lograste guardar en el período.",
+                value_tone=savings_tone,
+                sub_tone=savings_tone,
+            )
+
+    visible_kpis = [
+        label for label in kpi_card_options if label in st.session_state.get("db_visible_kpis", [])
+    ]
+    if visible_kpis:
+        for column, label in zip(st.columns(len(visible_kpis)), visible_kpis):
+            with column:
+                _render_kpi(label)
+    else:
+        st.info("No hay tarjetas KPI visibles. Actívalas en 'Personalizar tarjetas'.")
 
     # ── DataFrame prep ────────────────────────────────────────────────────────────────────
     if transactions:
@@ -1154,74 +1218,89 @@ def dashboard_screen() -> None:
         elif fixed_share <= 35:
             fixed_share_tone = "positive"
 
-    i1, i2, i3 = st.columns(3)
-    with i1:
-        render_info_card(
-            "Balance del período",
-            _format_money(period_balance, currency),
-            sub=balance_sub,
-            tone=balance_tone,
-        )
-    with i2:
-        render_info_card(
-            "Movimientos",
-            f"{transaction_count:,}",
-            sub="Transacciones registradas en el período filtrado.",
-            tone="impact",
-        )
-    with i3:
-        render_info_card(
-            "Gasto promedio",
-            _format_money(avg_expense, currency),
-            sub="Promedio de gasto por transacción.",
-            tone="expense",
-        )
+    def _render_insight(label: str) -> None:
+        if label == "Balance del período":
+            render_info_card(
+                "Balance del período",
+                _format_money(period_balance, currency),
+                sub=balance_sub,
+                tone=balance_tone,
+            )
+        elif label == "Movimientos":
+            render_info_card(
+                "Movimientos",
+                f"{transaction_count:,}",
+                sub="Transacciones registradas en el período filtrado.",
+                tone="impact",
+            )
+        elif label == "Gasto promedio":
+            render_info_card(
+                "Gasto promedio",
+                _format_money(avg_expense, currency),
+                sub="Promedio de gasto por transacción.",
+                tone="expense",
+            )
+        elif label == "Mayor impacto":
+            render_info_card(
+                "Mayor impacto",
+                top_cat_value,
+                sub=top_cat_sub,
+                tone="impact",
+            )
+        elif label == "Mayor gasto individual":
+            render_info_card(
+                "Mayor gasto individual",
+                biggest_expense_value,
+                sub=biggest_expense_sub,
+                tone="expense",
+            )
+        elif label == "Cobertura de efectivo":
+            render_info_card(
+                "Cobertura de efectivo",
+                cash_coverage_value,
+                sub=cash_coverage_sub,
+                tone=cash_coverage_tone,
+            )
+        elif label == "Mes más costoso":
+            render_info_card(
+                "Mes más costoso",
+                highest_spend_month_value,
+                sub=highest_spend_month_sub,
+                tone="impact",
+            )
+        elif label == "Variación del gasto":
+            render_info_card(
+                "Variación del gasto",
+                expense_variation_value,
+                sub=expense_variation_sub,
+                tone=expense_variation_tone,
+            )
+        elif label == "Participación de gasto fijo":
+            render_info_card(
+                "Participación de gasto fijo",
+                fixed_share_value,
+                sub=fixed_share_sub,
+                tone=fixed_share_tone,
+            )
 
-    j1, j2, j3 = st.columns(3)
-    with j1:
-        render_info_card(
-            "Mayor impacto",
-            top_cat_value,
-            sub=top_cat_sub,
-            tone="impact",
-        )
-    with j2:
-        render_info_card(
-            "Mayor gasto individual",
-            biggest_expense_value,
-            sub=biggest_expense_sub,
-            tone="expense",
-        )
-    with j3:
-        render_info_card(
-            "Cobertura de efectivo",
-            cash_coverage_value,
-            sub=cash_coverage_sub,
-            tone=cash_coverage_tone,
-        )
-
-    k1, k2, k3 = st.columns(3)
-    with k1:
-        render_info_card(
-            "Mes más costoso",
-            highest_spend_month_value,
-            sub=highest_spend_month_sub,
-            tone="impact",
-        )
-    with k2:
-        render_info_card(
-            "Variación del gasto",
-            expense_variation_value,
-            sub=expense_variation_sub,
-            tone=expense_variation_tone,
-        )
-    with k3:
-        render_info_card(
-            "Participación de gasto fijo",
-            fixed_share_value,
-            sub=fixed_share_sub,
-            tone=fixed_share_tone,
-        )
+    visible_insights = [
+        label for label in insight_card_options if label in st.session_state.get("db_visible_insights", [])
+    ]
+    if visible_insights:
+        insight_rows = [
+            ["Balance del período", "Movimientos", "Gasto promedio"],
+            ["Mayor impacto", "Mayor gasto individual", "Cobertura de efectivo"],
+            ["Mes más costoso", "Variación del gasto", "Participación de gasto fijo"],
+        ]
+        for row in insight_rows:
+            row_visible = [label for label in row if label in visible_insights]
+            if not row_visible:
+                continue
+            for column, label in zip(st.columns(len(row_visible)), row_visible):
+                with column:
+                    _render_insight(label)
+    else:
+        st.info("No hay tarjetas de insights visibles. Actívalas en 'Personalizar tarjetas'.")
 
     if invalid_range_swapped:
         _toast("Rango inválido: la fecha 'Desde' no puede ser mayor que 'Hasta'.", "⚠️")
