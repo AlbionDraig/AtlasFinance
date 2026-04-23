@@ -68,7 +68,7 @@ def _currency_symbol(currency: str) -> str:
     if code == "USD":
         return "US$"
     if code == "COP":
-        return "$"
+        return "COP$"
     return f"{code} " if code else ""
 
 
@@ -1043,7 +1043,7 @@ def dashboard_screen() -> None:
             render_kpi_card(
                 "Patrimonio neto",
                 _format_money(net_worth_value, currency),
-                currency,
+                "saldo actual",
                 badge=net_badge,
                 badge_type=net_badge_type,
                 badge_tooltip=net_badge_tip,
@@ -1054,7 +1054,7 @@ def dashboard_screen() -> None:
             render_kpi_card(
                 "Ingresos",
                 _format_money(current_income, currency),
-                currency,
+                "total del período",
                 badge=income_badge,
                 badge_type=income_badge_type,
                 badge_tooltip=income_badge_tip,
@@ -1066,7 +1066,7 @@ def dashboard_screen() -> None:
             render_kpi_card(
                 "Gastos",
                 _format_money(current_expense, currency),
-                currency,
+                "total del período",
                 badge=expense_badge,
                 badge_type=expense_badge_type,
                 badge_tooltip=expense_badge_tip,
