@@ -1,5 +1,14 @@
 from app.db.base import Base, engine
-from app.models import account, bank, category, investment, pocket, revoked_token, transaction, user  # noqa: F401
+from app.models import (  # noqa: F401
+    account,
+    bank,
+    category,
+    investment,
+    pocket,
+    revoked_token,
+    transaction,
+    user,
+)
 
 
 def init_db() -> None:
