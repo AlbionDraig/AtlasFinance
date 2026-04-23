@@ -269,7 +269,7 @@ def inject_component_styles() -> None:
         /* ── Section header ───────────────────────────────────────────── */
         .af-section-header {
             margin-top: 0.15rem;
-            margin-bottom: 0.8rem;
+            margin-bottom: 0.35rem;
         }
         .af-section-header .af-section-title {
             font-size: 1.9rem;
@@ -1358,9 +1358,28 @@ def _inject_sticky_filter_style() -> None:
             top: 0 !important;
             z-index: 999 !important;
             background-color: var(--c-bg) !important;
-            padding: 8px 0 8px !important;
+            padding: 0 0 8px !important;
+            margin-top: -18px !important;
             border-bottom: none !important;
             box-shadow: none !important;
+        }
+
+        /* Keep hidden html bridge blocks from adding vertical gaps. */
+        div:has(> .st-key-date-i18n-bridge) {
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            min-height: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+
+        .st-key-date-i18n-bridge {
+            margin: 0 !important;
+            padding: 0 !important;
+            min-height: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
         }
 
         /* Reset the inner container — parent is now sticky */
@@ -1473,86 +1492,87 @@ def _inject_sticky_filter_style() -> None:
 
 def _inject_date_input_i18n_patch() -> None:
         """Translate Streamlit date range validation errors to Spanish in-place."""
-        st_components.html(
-                """
-                <script>
-                (function () {
-                    function install(rootDoc) {
-                        const win = rootDoc.defaultView || window;
-                        if (win.__atlasDateI18nInstalled) return;
-                        win.__atlasDateI18nInstalled = true;
+        with st.container(key="date-i18n-bridge"):
+            st_components.html(
+                    """
+                    <script>
+                    (function () {
+                        function install(rootDoc) {
+                            const win = rootDoc.defaultView || window;
+                            if (win.__atlasDateI18nInstalled) return;
+                            win.__atlasDateI18nInstalled = true;
 
-                        const rangeRegex = /(?:Error:\s*)?Date set outside allowed range\.\s*Please select a date between\s*([^\s]+)\s*and\s*([^\.]+)\.?/i;
+                            const rangeRegex = /(?:Error:\s*)?Date set outside allowed range\.\s*Please select a date between\s*([^\s]+)\s*and\s*([^\.]+)\.?/i;
 
-                        function translateText(text) {
-                            if (!text || text.indexOf('Date set outside allowed range') === -1) {
-                                return text;
+                            function translateText(text) {
+                                if (!text || text.indexOf('Date set outside allowed range') === -1) {
+                                    return text;
+                                }
+                                return text.replace(rangeRegex, (_m, fromDate, toDate) => {
+                                    return `Fecha fuera del rango permitido. Selecciona una fecha entre ${fromDate.trim()} y ${toDate.trim()}.`;
+                                });
                             }
-                            return text.replace(rangeRegex, (_m, fromDate, toDate) => {
-                                return `Fecha fuera del rango permitido. Selecciona una fecha entre ${fromDate.trim()} y ${toDate.trim()}.`;
+
+                            function translateNode(node) {
+                                if (!node || !node.nodeValue) return;
+                                const translated = translateText(node.nodeValue);
+                                if (translated !== node.nodeValue) {
+                                    node.nodeValue = translated;
+                                }
+                            }
+
+                            function translateAll() {
+                                if (!rootDoc.body) return;
+                                const walker = rootDoc.createTreeWalker(rootDoc.body, NodeFilter.SHOW_TEXT);
+                                let current = walker.nextNode();
+                                while (current) {
+                                    translateNode(current);
+                                    current = walker.nextNode();
+                                }
+                            }
+
+                            translateAll();
+
+                            const observer = new MutationObserver((mutations) => {
+                                for (const mutation of mutations) {
+                                    if (mutation.type === 'characterData') {
+                                        translateNode(mutation.target);
+                                        continue;
+                                    }
+                                    mutation.addedNodes.forEach((added) => {
+                                        if (added.nodeType === Node.TEXT_NODE) {
+                                            translateNode(added);
+                                            return;
+                                        }
+                                        if (added.nodeType === Node.ELEMENT_NODE) {
+                                            const subWalker = rootDoc.createTreeWalker(added, NodeFilter.SHOW_TEXT);
+                                            let sub = subWalker.nextNode();
+                                            while (sub) {
+                                                translateNode(sub);
+                                                sub = subWalker.nextNode();
+                                            }
+                                        }
+                                    });
+                                }
+                            });
+
+                            observer.observe(rootDoc.body, {
+                                childList: true,
+                                subtree: true,
+                                characterData: true,
                             });
                         }
 
-                        function translateNode(node) {
-                            if (!node || !node.nodeValue) return;
-                            const translated = translateText(node.nodeValue);
-                            if (translated !== node.nodeValue) {
-                                node.nodeValue = translated;
-                            }
+                        try {
+                            install(parent.document);
+                        } catch (_err) {
+                            install(document);
                         }
-
-                        function translateAll() {
-                            if (!rootDoc.body) return;
-                            const walker = rootDoc.createTreeWalker(rootDoc.body, NodeFilter.SHOW_TEXT);
-                            let current = walker.nextNode();
-                            while (current) {
-                                translateNode(current);
-                                current = walker.nextNode();
-                            }
-                        }
-
-                        translateAll();
-
-                        const observer = new MutationObserver((mutations) => {
-                            for (const mutation of mutations) {
-                                if (mutation.type === 'characterData') {
-                                    translateNode(mutation.target);
-                                    continue;
-                                }
-                                mutation.addedNodes.forEach((added) => {
-                                    if (added.nodeType === Node.TEXT_NODE) {
-                                        translateNode(added);
-                                        return;
-                                    }
-                                    if (added.nodeType === Node.ELEMENT_NODE) {
-                                        const subWalker = rootDoc.createTreeWalker(added, NodeFilter.SHOW_TEXT);
-                                        let sub = subWalker.nextNode();
-                                        while (sub) {
-                                            translateNode(sub);
-                                            sub = subWalker.nextNode();
-                                        }
-                                    }
-                                });
-                            }
-                        });
-
-                        observer.observe(rootDoc.body, {
-                            childList: true,
-                            subtree: true,
-                            characterData: true,
-                        });
-                    }
-
-                    try {
-                        install(parent.document);
-                    } catch (_err) {
-                        install(document);
-                    }
-                })();
-                </script>
-                """,
-                height=0,
-        )
+                    })();
+                    </script>
+                    """,
+                    height=0,
+            )
 
 
 def sticky_period_filter(
