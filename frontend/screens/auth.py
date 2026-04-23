@@ -306,21 +306,16 @@ def _render_register_tab() -> None:
         passwords_match = bool(confirm_password) and confirm_password == password
         if confirm_password and not passwords_match:
             st.caption("Las passwords no coinciden.")
-
-        can_submit = (
-            bool(full_name.strip())
-            and bool(email.strip())
-            and all(ok for ok, _ in checks)
-            and passwords_match
-        )
         register_submit = st.form_submit_button(
             "Crear cuenta",
             use_container_width=True,
             type="primary",
-            disabled=not can_submit,
         )
 
     if register_submit:
+        if not passwords_match:
+            st.error("Las passwords no coinciden.")
+            return
         _handle_register_submit(full_name, email, password)
 
 
@@ -357,14 +352,20 @@ def _render_auth_side_panel(active_view: str) -> None:
 
 def _auth_view_from_query(default_view: str) -> str:
     """Return auth view selected from URL query when present and valid."""
-    query_value = str(st.query_params.get("auth", "")).strip().lower()
+    raw_query_value = st.query_params.get("auth", "")
+    if isinstance(raw_query_value, list):
+        raw_query_value = raw_query_value[0] if raw_query_value else ""
+    query_value = str(raw_query_value).strip().lower()
     return QUERY_TO_AUTH_VIEW.get(query_value, default_view)
 
 
 def _sync_auth_query_param(active_view: str) -> None:
     """Persist current auth view in URL for shareable direct links."""
     desired_query = AUTH_VIEW_TO_QUERY.get(active_view, "login")
-    current_query = str(st.query_params.get("auth", "")).strip().lower()
+    raw_current_query = st.query_params.get("auth", "")
+    if isinstance(raw_current_query, list):
+        raw_current_query = raw_current_query[0] if raw_current_query else ""
+    current_query = str(raw_current_query).strip().lower()
     if current_query != desired_query:
         st.query_params["auth"] = desired_query
 
@@ -385,21 +386,17 @@ def login_screen() -> None:
 
     auth_views = ["Iniciar sesión", "Registro"]
     if st.session_state.get("auth_active_view") not in auth_views:
-        st.session_state["auth_active_view"] = "Iniciar sesión"
-
-    query_view = _auth_view_from_query(st.session_state["auth_active_view"])
-    if query_view in auth_views and query_view != st.session_state.get("auth_active_view"):
-        st.session_state["auth_active_view"] = query_view
+        st.session_state["auth_active_view"] = _auth_view_from_query("Iniciar sesión")
 
     if hasattr(st, "segmented_control"):
-        selected_view = st.segmented_control(
+        st.segmented_control(
             "",
             auth_views,
             key="auth_active_view",
             label_visibility="collapsed",
         )
     else:
-        selected_view = st.radio(
+        st.radio(
             "",
             auth_views,
             key="auth_active_view",
@@ -407,7 +404,7 @@ def login_screen() -> None:
             label_visibility="collapsed",
         )
 
-    active_view = selected_view or st.session_state.get("auth_active_view", "Iniciar sesión")
+    active_view = st.session_state.get("auth_active_view", "Iniciar sesión")
     _sync_auth_query_param(active_view)
 
     form_col, info_col = st.columns([2, 1], gap="large")
