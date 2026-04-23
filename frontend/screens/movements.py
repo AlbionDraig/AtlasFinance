@@ -740,6 +740,7 @@ def _render_create_transaction_form(
                     st.session_state["mov_form_loaded_tx_id"] = None
                     st.session_state["mov_clear_table_selection_pending"] = True
                     st.session_state["mov_form_force_clean_reset"] = True
+                    st.session_state["mov_create_toast"] = "Movimiento guardado con éxito."
                     RERUN()
         finally:
             st.session_state["mov_form_submitting"] = False
@@ -1438,7 +1439,7 @@ def _handle_delete_transaction(selected_tx: dict) -> None:
         st.session_state["mov_clear_table_selection_pending"] = True
         st.session_state["mov_form_force_clean_reset"] = True
         st.session_state["mov_delete_dialog_tx_id"] = None
-        show_success("Movimiento eliminado con éxito.")
+        st.session_state["mov_delete_toast"] = "Movimiento eliminado con éxito."
         RERUN()
         return
 
@@ -1452,9 +1453,15 @@ def _handle_delete_transaction(selected_tx: dict) -> None:
 def movements_screen() -> None:
     """Render CRUD UI for user movements (create, edit, delete)."""
     inject_component_styles()
+    create_toast = st.session_state.pop("mov_create_toast", None)
     update_toast = st.session_state.pop("mov_update_toast", None)
+    delete_toast = st.session_state.pop("mov_delete_toast", None)
+    if create_toast:
+        st.toast(str(create_toast), icon="✅")
     if update_toast:
         st.toast(str(update_toast), icon="✅")
+    if delete_toast:
+        st.toast(str(delete_toast), icon="✅")
     st.markdown(
         """
         <style>
