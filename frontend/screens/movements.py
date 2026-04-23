@@ -647,6 +647,7 @@ def _render_create_transaction_form(
                 )
                 if arm_delete:
                     st.session_state[delete_dialog_key] = selected_tx_id
+                    RERUN()
 
             delete_transaction_clicked = (
                 st.session_state.pop("mov_confirm_delete_trigger", None) == selected_tx_id
