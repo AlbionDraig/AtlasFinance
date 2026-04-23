@@ -1005,6 +1005,7 @@ def inject_theme() -> None:
             display: flex !important;
             flex-direction: column !important;
             justify-content: flex-start !important;
+            position: relative !important;
             margin-top: 0.35rem !important;
             border-left-width: 4px !important;
             border-left-style: solid !important;
@@ -1147,6 +1148,77 @@ def inject_theme() -> None:
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
+            position: relative !important;
+        }
+
+        .af-card-help {
+            position: absolute !important;
+            top: 0.6rem !important;
+            right: 0.6rem !important;
+            z-index: 5 !important;
+            line-height: 1 !important;
+        }
+
+        .af-card-help-btn {
+            width: 19px !important;
+            height: 19px !important;
+            border-radius: 999px !important;
+            border: 1px solid rgba(31, 111, 178, 0.28) !important;
+            background: rgba(31, 111, 178, 0.08) !important;
+            color: #1f6fb2 !important;
+            font-size: 0.72rem !important;
+            font-weight: 700 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: help !important;
+            user-select: none !important;
+            transition: transform 0.12s ease, background 0.14s ease, border-color 0.14s ease !important;
+        }
+
+        .af-card-help:hover .af-card-help-btn {
+            background: rgba(31, 111, 178, 0.14) !important;
+            border-color: rgba(31, 111, 178, 0.45) !important;
+            transform: translateY(-1px) !important;
+        }
+
+        .af-card-help-tip {
+            position: absolute !important;
+            right: 0 !important;
+            top: calc(100% + 8px) !important;
+            min-width: 200px !important;
+            max-width: 280px !important;
+            background: #111827 !important;
+            color: #f9fafb !important;
+            border-radius: 8px !important;
+            padding: 0.45rem 0.58rem !important;
+            font-size: 0.72rem !important;
+            line-height: 1.3 !important;
+            text-align: left !important;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.28) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            pointer-events: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            transform: translateY(4px) !important;
+            transition: opacity 0.18s ease, transform 0.18s ease !important;
+            white-space: normal !important;
+        }
+
+        .af-card-help-tip::before {
+            content: "" !important;
+            position: absolute !important;
+            top: -6px !important;
+            right: 6px !important;
+            border-width: 0 6px 6px 6px !important;
+            border-style: solid !important;
+            border-color: transparent transparent #111827 transparent !important;
+        }
+
+        .af-card-help:hover .af-card-help-tip {
+            opacity: 1 !important;
+            visibility: visible !important;
+            transform: translateY(0) !important;
         }
 
         @media (min-width: 1025px) {
@@ -1897,13 +1969,42 @@ def render_section_header(eyebrow: str, title: str, copy: str) -> None:
     )
 
 
-def render_info_card(title: str, value: str, *, sub: str = "", tone: str = "balance") -> None:
+def _default_card_help(title: str) -> str:
+    """Return a generic tooltip message for cards when no explicit copy is provided."""
+    normalized = " ".join((title or "").strip().split()).lower()
+    if normalized:
+        return f"Muestra {normalized} para el período y moneda seleccionados."
+    return "Muestra este indicador para el período y moneda seleccionados."
+
+
+def _render_card_help_icon(tooltip: str) -> str:
+    """Return reusable help icon HTML anchored to the card top-right corner."""
+    safe_tooltip = html.escape(tooltip)
+    return (
+        '<div class="af-card-help">'
+        '<span class="af-card-help-btn" aria-hidden="true">?</span>'
+        f'<span class="af-card-help-tip" role="tooltip">{safe_tooltip}</span>'
+        '</div>'
+    )
+
+
+def render_info_card(
+    title: str,
+    value: str,
+    *,
+    sub: str = "",
+    tone: str = "balance",
+    help_tooltip: str = "",
+) -> None:
     """Render an insight card with value-first hierarchy and semantic accent."""
     tone_safe = html.escape(tone if tone in {"balance", "expense", "impact", "positive", "negative"} else "balance")
     sub_html = f'<div class="info-sub">{html.escape(sub)}</div>' if sub else ""
+    tooltip_text = (help_tooltip or "").strip() or _default_card_help(title)
+    help_html = _render_card_help_icon(tooltip_text)
     st.markdown(
         f"""
         <div class="af-card af-info-card tone-{tone_safe}">
+            {help_html}
             <div class="info-label">{html.escape(title)}</div>
             <div class="info-value">{html.escape(value)}</div>
             {sub_html}
@@ -1922,6 +2023,7 @@ def render_kpi_card(
     badge_type: str = "flat",
     badge_tooltip: str = "",
     help_text: str = "",
+    help_tooltip: str = "",
     value_tone: str = "default",
     sub_tone: str = "default",
 ) -> None:
@@ -1947,13 +2049,17 @@ def render_kpi_card(
             f'{tooltip_html}'
             f'</span>'
         )
+
+    tooltip_text = (help_tooltip or "").strip() or (help_text or "").strip() or _default_card_help(label)
+    help_html = _render_card_help_icon(tooltip_text)
+
     st.markdown(
         f"""
         <div class="af-kpi">
+            {help_html}
             <div class="kpi-label">{html.escape(label)}</div>
             <div class="kpi-value {value_tone_safe}">{html.escape(value)}</div>
             <div class="kpi-sub {sub_tone_safe}">{html.escape(sub)}{'&nbsp;' if badge_html else ''}{badge_html}</div>
-            <div class="kpi-help">{html.escape(help_text)}</div>
         </div>
         """,
         unsafe_allow_html=True,
