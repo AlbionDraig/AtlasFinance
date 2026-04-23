@@ -559,7 +559,9 @@ def _render_create_transaction_form(
     currency = derived_currency or str(st.session_state.get("mov_form_currency") or "COP")
     st.session_state["mov_form_currency"] = currency
 
-    occurred_time = time_field("Hora", key="mov_form_time")
+    row4_col1, _ = st.columns(2)
+    with row4_col1:
+        occurred_time = time_field("Hora", key="mov_form_time")
 
     st.caption("La moneda se define automáticamente con la cuenta seleccionada.")
 
