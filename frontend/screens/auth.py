@@ -11,6 +11,18 @@ from modules.config import RERUN, persist_jwt_token
 from modules.ui import render_hero
 
 
+AUTH_VIEW_TO_QUERY = {
+    "Iniciar sesión": "login",
+    "Registro": "registro",
+}
+QUERY_TO_AUTH_VIEW = {
+    "login": "Iniciar sesión",
+    "registro": "Registro",
+    "register": "Registro",
+    "signup": "Registro",
+}
+
+
 def _extract_error_detail(response: requests.Response | None, default_detail: str) -> str:
     """Return API error detail when available, otherwise a safe fallback."""
     if response is None:
@@ -22,31 +34,16 @@ def _extract_error_detail(response: requests.Response | None, default_detail: st
         return default_detail
 
 
-def _show_toast(message: str, icon: str = "ℹ️") -> None:
-    """Display auth feedback consistently through toast notifications."""
-    st.toast(message, icon=icon)
-
-
-def _show_error_notice(message: str) -> None:
-    """Display an error notification as toast."""
-    _show_toast(message, icon="⚠️")
-
-
-def _show_success_notice(message: str) -> None:
-    """Display a success notification as toast."""
-    _show_toast(message, icon="✅")
-
-
 def _handle_login_submit(email: str, password: str) -> None:
     """Process login submit and persist the returned JWT in session state."""
     if not email.strip():
-        _show_error_notice("Ingresa tu email para iniciar sesión.")
+        st.error("Ingresa tu email para iniciar sesión.")
         return
     if not password:
-        _show_error_notice("Ingresa tu contraseña para iniciar sesión.")
+        st.error("Ingresa tu password para iniciar sesión.")
         return
     if "@" not in email:
-        _show_error_notice("El email no tiene un formato válido.")
+        st.error("El email no tiene un formato válido.")
         return
 
     response: requests.Response | None = None
@@ -71,31 +68,29 @@ def _handle_login_submit(email: str, password: str) -> None:
         persist_jwt_token(jwt_token)
 
         if not st.session_state["jwt_token"]:
-            _show_error_notice("No pudimos iniciar sesión. Inténtalo nuevamente.")
+            st.error("La API no devolvio access_token.")
             return
-
-        st.session_state["auth_login_toast"] = "Inicio de sesión exitoso. Bienvenido a Atlas Finance."
         RERUN()
     except requests.HTTPError:
-        detail = _extract_error_detail(response, "No pudimos iniciar sesión con esos datos.")
-        _show_error_notice(detail)
-    except requests.RequestException:
-        _show_error_notice("No pudimos conectarnos en este momento. Revisa tu conexión e inténtalo de nuevo.")
+        detail = _extract_error_detail(response, "Credenciales invalidas.")
+        st.error(f"Error de login: {detail}")
+    except requests.RequestException as exc:
+        st.error(f"No se pudo conectar a la API: {exc}")
 
 
 def _handle_register_submit(full_name: str, email: str, password: str) -> None:
     """Process user registration submit and show API feedback."""
     if not full_name.strip():
-        _show_error_notice("Ingresa tu nombre completo.")
+        st.error("Ingresa tu nombre completo.")
         return
     if not email.strip():
-        _show_error_notice("Ingresa un email de registro.")
+        st.error("Ingresa un email de registro.")
         return
     if "@" not in email:
-        _show_error_notice("El email de registro no tiene un formato válido.")
+        st.error("El email de registro no tiene un formato válido.")
         return
     if len(password) < 8:
-        _show_error_notice("La contraseña debe tener al menos 8 caracteres.")
+        st.error("La password debe tener mínimo 8 caracteres.")
         return
 
     response: requests.Response | None = None
@@ -111,14 +106,12 @@ def _handle_register_submit(full_name: str, email: str, password: str) -> None:
             auth=False,
         )
         response.raise_for_status()
-        st.session_state["auth_redirect_to_login"] = True
-        st.session_state["auth_toast"] = "Cuenta creada con éxito. Ahora puedes iniciar sesión."
-        RERUN()
+        st.success("Cuenta creada. Ahora inicia sesion en la pestana Login.")
     except requests.HTTPError:
-        detail = _extract_error_detail(response, "No pudimos crear tu cuenta.")
-        _show_error_notice(detail)
-    except requests.RequestException:
-        _show_error_notice("No pudimos conectarnos en este momento. Revisa tu conexión e inténtalo de nuevo.")
+        detail = _extract_error_detail(response, "No se pudo crear la cuenta.")
+        st.error(f"Error de registro: {detail}")
+    except requests.RequestException as exc:
+        st.error(f"No se pudo conectar a la API: {exc}")
 
 
 def _render_auth_form_shell(title: str, copy: str) -> None:
@@ -141,19 +134,19 @@ def _render_login_tab() -> None:
         "Acceso a tu cuenta",
         "Accede con tu cuenta para continuar al dashboard.",
     )
-    email = st.text_input("Email", placeholder="tu_correo@ejemplo.com", key="login_email")
-    password = st.text_input(
-        "Password",
-        type="password",
-        placeholder="Tu clave",
-        key="login_password",
-    )
-    login_submit = st.button(
-        "Iniciar sesion",
-        key="login_submit_button",
-        use_container_width=True,
-        type="primary",
-    )
+    with st.form("auth_login_form"):
+        email = st.text_input("Email", placeholder="tu_correo@ejemplo.com", key="login_email")
+        password = st.text_input(
+            "Password",
+            type="password",
+            placeholder="Tu clave",
+            key="login_password",
+        )
+        login_submit = st.form_submit_button(
+            "Iniciar sesion",
+            use_container_width=True,
+            type="primary",
+        )
 
     if login_submit:
         _handle_login_submit(email, password)
@@ -268,66 +261,66 @@ def _render_register_tab() -> None:
         "Crea tu cuenta",
         "Empieza a registrar movimientos y sigue tu panorama financiero desde el primer acceso.",
     )
-    full_name = st.text_input("Nombre completo", placeholder="Tu nombre", key="register_full_name")
-    email = st.text_input("Email de registro", placeholder="tu_correo@ejemplo.com", key="register_email")
-    password = st.text_input(
-        "Password (minimo 8 caracteres)",
-        type="password",
-        key="register_password",
-        placeholder="Minimo 8 caracteres",
-    )
+    with st.form("auth_register_form"):
+        full_name = st.text_input("Nombre completo", placeholder="Tu nombre", key="register_full_name")
+        email = st.text_input("Email de registro", placeholder="tu_correo@ejemplo.com", key="register_email")
+        password = st.text_input(
+            "Password (minimo 8 caracteres)",
+            type="password",
+            key="register_password",
+            placeholder="Minimo 8 caracteres",
+        )
 
-    strength_label, strength_score, strength_tone = _password_strength(password)
-    st.markdown(
-        (
-            '<div class="af-pw-strength">'
-            f'<div class="af-pw-strength-row"><span>Fortaleza</span><span id="af-pw-strength-label" class="{strength_tone}">{strength_label}</span></div>'
-            f'<div class="af-pw-strength-track"><div id="af-pw-strength-fill" class="af-pw-strength-fill {strength_tone}" style="width: {strength_score}%;"></div></div>'
-            "</div>"
-        ),
-        unsafe_allow_html=True,
-    )
+        strength_label, strength_score, strength_tone = _password_strength(password)
+        st.markdown(
+            (
+                '<div class="af-pw-strength">'
+                f'<div class="af-pw-strength-row"><span>Fortaleza</span><span id="af-pw-strength-label" class="{strength_tone}">{strength_label}</span></div>'
+                f'<div class="af-pw-strength-track"><div id="af-pw-strength-fill" class="af-pw-strength-fill {strength_tone}" style="width: {strength_score}%;"></div></div>'
+                "</div>"
+            ),
+            unsafe_allow_html=True,
+        )
 
-    checks = [
-        (len(password) >= 8, "Mínimo 8 caracteres"),
-        (bool(re.search(r"[A-Z]", password)), "Al menos una mayúscula"),
-        (bool(re.search(r"\d", password)), "Al menos un número"),
-        (bool(re.search(r"[^A-Za-z0-9]", password)), "Al menos un símbolo"),
-    ]
-    checklist_html = (
-        f'<li id="af-rule-len" class="{"ok" if checks[0][0] else "pending"}">{"✓" if checks[0][0] else "•"} {checks[0][1]}</li>'
-        f'<li id="af-rule-upper" class="{"ok" if checks[1][0] else "pending"}">{"✓" if checks[1][0] else "•"} {checks[1][1]}</li>'
-        f'<li id="af-rule-digit" class="{"ok" if checks[2][0] else "pending"}">{"✓" if checks[2][0] else "•"} {checks[2][1]}</li>'
-        f'<li id="af-rule-symbol" class="{"ok" if checks[3][0] else "pending"}">{"✓" if checks[3][0] else "•"} {checks[3][1]}</li>'
-    )
-    st.markdown(f'<ul class="af-pw-checklist">{checklist_html}</ul>', unsafe_allow_html=True)
-    _render_password_live_bridge()
+        checks = [
+            (len(password) >= 8, "Mínimo 8 caracteres"),
+            (bool(re.search(r"[A-Z]", password)), "Al menos una mayúscula"),
+            (bool(re.search(r"\d", password)), "Al menos un número"),
+            (bool(re.search(r"[^A-Za-z0-9]", password)), "Al menos un símbolo"),
+        ]
+        checklist_html = (
+            f'<li id="af-rule-len" class="{"ok" if checks[0][0] else "pending"}">{"✓" if checks[0][0] else "•"} {checks[0][1]}</li>'
+            f'<li id="af-rule-upper" class="{"ok" if checks[1][0] else "pending"}">{"✓" if checks[1][0] else "•"} {checks[1][1]}</li>'
+            f'<li id="af-rule-digit" class="{"ok" if checks[2][0] else "pending"}">{"✓" if checks[2][0] else "•"} {checks[2][1]}</li>'
+            f'<li id="af-rule-symbol" class="{"ok" if checks[3][0] else "pending"}">{"✓" if checks[3][0] else "•"} {checks[3][1]}</li>'
+        )
+        st.markdown(f'<ul class="af-pw-checklist">{checklist_html}</ul>', unsafe_allow_html=True)
+        _render_password_live_bridge()
 
-    confirm_password = st.text_input(
-        "Confirmar password",
-        type="password",
-        placeholder="Repite tu password",
-        key="register_confirm_password",
-    )
-    passwords_match = bool(confirm_password) and confirm_password == password
+        confirm_password = st.text_input(
+            "Confirmar password",
+            type="password",
+            placeholder="Repite tu password",
+            key="register_confirm_password",
+        )
+        passwords_match = bool(confirm_password) and confirm_password == password
+        if confirm_password and not passwords_match:
+            st.caption("Las passwords no coinciden.")
 
-    register_submit = st.button(
-        "Crear cuenta",
-        key="register_submit_button",
-        use_container_width=True,
-        type="primary",
-    )
+        can_submit = (
+            bool(full_name.strip())
+            and bool(email.strip())
+            and all(ok for ok, _ in checks)
+            and passwords_match
+        )
+        register_submit = st.form_submit_button(
+            "Crear cuenta",
+            use_container_width=True,
+            type="primary",
+            disabled=not can_submit,
+        )
 
     if register_submit:
-        if not full_name.strip() or not email.strip():
-            _show_error_notice("Completa tu nombre y tu email para crear la cuenta.")
-            return
-        if not all(ok for ok, _ in checks):
-            _show_error_notice("Tu contraseña aún no cumple todos los requisitos.")
-            return
-        if not passwords_match:
-            _show_error_notice("Las contraseñas no coinciden. Escríbelas igual en ambos campos.")
-            return
         _handle_register_submit(full_name, email, password)
 
 
@@ -362,18 +355,25 @@ def _render_auth_side_panel(active_view: str) -> None:
     )
 
 
+def _auth_view_from_query(default_view: str) -> str:
+    """Return auth view selected from URL query when present and valid."""
+    query_value = str(st.query_params.get("auth", "")).strip().lower()
+    return QUERY_TO_AUTH_VIEW.get(query_value, default_view)
+
+
+def _sync_auth_query_param(active_view: str) -> None:
+    """Persist current auth view in URL for shareable direct links."""
+    desired_query = AUTH_VIEW_TO_QUERY.get(active_view, "login")
+    current_query = str(st.query_params.get("auth", "")).strip().lower()
+    if current_query != desired_query:
+        st.query_params["auth"] = desired_query
+
+
 def login_screen() -> None:
     """Render public authentication screen with login and registration tabs."""
-    if st.session_state.pop("auth_redirect_to_login", False):
-        st.session_state["auth_active_view"] = "Iniciar sesión"
-
     auth_notice = st.session_state.pop("auth_notice", None)
     if auth_notice:
-        _show_toast(str(auth_notice), icon="⚠️")
-
-    auth_toast = st.session_state.pop("auth_toast", None)
-    if auth_toast:
-        _show_success_notice(str(auth_toast))
+        st.warning(auth_notice)
 
     render_hero(
         "Atlas Finance",
@@ -387,18 +387,20 @@ def login_screen() -> None:
     if st.session_state.get("auth_active_view") not in auth_views:
         st.session_state["auth_active_view"] = "Iniciar sesión"
 
-    nav_label = ""
+    query_view = _auth_view_from_query(st.session_state["auth_active_view"])
+    if query_view in auth_views and query_view != st.session_state.get("auth_active_view"):
+        st.session_state["auth_active_view"] = query_view
 
     if hasattr(st, "segmented_control"):
         selected_view = st.segmented_control(
-            nav_label,
+            "",
             auth_views,
             key="auth_active_view",
             label_visibility="collapsed",
         )
     else:
         selected_view = st.radio(
-            nav_label,
+            "",
             auth_views,
             key="auth_active_view",
             horizontal=True,
@@ -406,6 +408,7 @@ def login_screen() -> None:
         )
 
     active_view = selected_view or st.session_state.get("auth_active_view", "Iniciar sesión")
+    _sync_auth_query_param(active_view)
 
     form_col, info_col = st.columns([2, 1], gap="large")
     with form_col:

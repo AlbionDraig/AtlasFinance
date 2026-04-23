@@ -86,7 +86,17 @@ def app() -> None:
     inject_component_styles()
     sync_auth_cookie()
 
+    valid_section_keys = {"dashboard", "movements", "setup"}
+    query_section = str(st.query_params.get("section", "")).strip().lower()
+    query_auth = str(st.query_params.get("auth", "")).strip().lower()
+
     if not st.session_state["jwt_token"]:
+        if query_section in valid_section_keys:
+            st.session_state["pending_post_login_section"] = query_section
+            try:
+                del st.query_params["section"]
+            except Exception:
+                pass
         login_screen()
         st.stop()
 
@@ -122,10 +132,26 @@ def app() -> None:
         migrated = legacy_to_label.get(previous, previous)
         st.session_state["main_section"] = migrated if migrated in section_options else default_label
 
-    # Keep active section stable across browser refreshes via URL query param.
-    query_section = str(st.query_params.get("section", "")).strip().lower()
-    if query_section in key_to_label:
-        st.session_state["main_section"] = key_to_label[query_section]
+    pending_section = str(st.session_state.pop("pending_post_login_section", "")).strip().lower()
+    target_section = pending_section if pending_section in key_to_label else query_section
+    if target_section not in key_to_label:
+        current_session_label = st.session_state.get("main_section", default_label)
+        target_section = section_options.get(current_session_label, section_options[default_label])
+
+    route_changed = False
+    if query_auth:
+        try:
+            del st.query_params["auth"]
+            route_changed = True
+        except Exception:
+            pass
+    if query_section != target_section:
+        st.query_params["section"] = target_section
+        route_changed = True
+
+    st.session_state["main_section"] = key_to_label[target_section]
+    if route_changed:
+        RERUN()
 
     full_name = st.session_state.get("user_full_name", "")
     email = st.session_state.get("user_email", "")
