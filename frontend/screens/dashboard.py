@@ -666,7 +666,7 @@ def dashboard_screen() -> None:
     insight_card_options = [
         "Balance del período",
         "Movimientos",
-        "Gasto promedio",
+        "Relación gastos/ingresos",
         "Mayor impacto",
         "Mayor gasto individual",
         "Cobertura de efectivo",
@@ -1121,7 +1121,29 @@ def dashboard_screen() -> None:
     period_expense = float(exp_df["amount"].sum()) if not exp_df.empty else 0.0
     period_balance = period_income - period_expense
     avg_expense = float(exp_df["amount"].mean()) if not exp_df.empty else 0.0
+    expense_count = len(exp_df.index)
     transaction_count = len(df.index)
+
+    if period_income > 0:
+        expense_ratio = (period_expense / period_income) * 100
+        expense_ratio_value = f"{expense_ratio:.1f}%"
+        if expense_ratio <= 70:
+            expense_ratio_tone = "positive"
+            expense_ratio_quality = "saludable"
+        elif expense_ratio <= 90:
+            expense_ratio_tone = "impact"
+            expense_ratio_quality = "moderado"
+        else:
+            expense_ratio_tone = "negative"
+            expense_ratio_quality = "alto"
+        expense_ratio_sub = (
+            f"{_format_money(period_expense, currency)} gastados "
+            f"de {_format_money(period_income, currency)} · nivel {expense_ratio_quality}"
+        )
+    else:
+        expense_ratio_value = "Sin datos"
+        expense_ratio_sub = "No hay ingresos registrados en el período."
+        expense_ratio_tone = "impact"
     monthly_expense_avg = float(monthly["expense"].mean()) if "expense" in monthly.columns and not monthly.empty else 0.0
 
     balance_tone = _tone_from_number(period_balance, zero_tone="balance")
@@ -1233,12 +1255,12 @@ def dashboard_screen() -> None:
                 sub="Transacciones registradas en el período filtrado.",
                 tone="impact",
             )
-        elif label == "Gasto promedio":
+        elif label == "Relación gastos/ingresos":
             render_info_card(
-                "Gasto promedio",
-                _format_money(avg_expense, currency),
-                sub="Promedio de gasto por transacción.",
-                tone="expense",
+                "Relación gastos/ingresos",
+                expense_ratio_value,
+                sub=expense_ratio_sub,
+                tone=expense_ratio_tone,
             )
         elif label == "Mayor impacto":
             render_info_card(
@@ -1288,7 +1310,7 @@ def dashboard_screen() -> None:
     ]
     if visible_insights:
         insight_rows = [
-            ["Balance del período", "Movimientos", "Gasto promedio"],
+            ["Balance del período", "Movimientos", "Relación gastos/ingresos"],
             ["Mayor impacto", "Mayor gasto individual", "Cobertura de efectivo"],
             ["Mes más costoso", "Variación del gasto", "Participación de gasto fijo"],
         ]
@@ -1306,30 +1328,42 @@ def dashboard_screen() -> None:
         _toast("Rango inválido: la fecha 'Desde' no puede ser mayor que 'Hasta'.", "⚠️")
 
     st.markdown("### Análisis")
-    primary_panel = st.container(border=True)
-    with primary_panel:
-        primary_chart_options = [
+    analysis_panel = st.container(border=True)
+    with analysis_panel:
+        chart_options = [
             "Ingresos vs gastos (barras)",
+            "Flujo neto mensual (área)",
             "Top categorías (barras)",
+            "Distribución de gasto (donut)",
             "Ahorro acumulado (línea)",
+            "Gasto fijo vs variable (barras)",
             "Gasto por categoría por mes (apilado)",
         ]
-        if st.session_state.get("db_chart_type") not in primary_chart_options:
-            st.session_state["db_chart_type"] = "Ingresos vs gastos (barras)"
+
+        selected_chart = st.session_state.get("db_chart_type")
+        if selected_chart not in chart_options:
+            legacy_secondary = st.session_state.get("db_secondary_chart_type")
+            if legacy_secondary in chart_options:
+                st.session_state["db_chart_type"] = legacy_secondary
+            else:
+                st.session_state["db_chart_type"] = "Ingresos vs gastos (barras)"
 
         chart_type = select_field(
-            "Gráfico principal",
-            primary_chart_options,
+            "Gráfico",
+            chart_options,
             key="db_chart_type",
-            help="Elige cómo quieres visualizar la información financiera en esta sección.",
+            help="Elige la visualización que quieres ver en esta sección.",
         )
         prefs_by_user.setdefault(user_key, {})["chart_type"] = chart_type
 
         chart_description = {
             "Ingresos vs gastos (barras)": "Compara, mes a mes, cuánto dinero entró y cuánto salió. Te ayuda a ver rápidamente en qué meses gastaste más de lo que ingresaste.",
+            "Flujo neto mensual (área)": "Muestra el resultado final por mes (ingresos menos gastos) para detectar meses en positivo y negativo.",
             "Top categorías (barras)": "Ordena las categorías donde más dinero gastaste. Sirve para identificar en qué temas se concentra la mayor parte de tus egresos.",
+            "Distribución de gasto (donut)": "Visualiza el peso relativo de cada categoría de gasto dentro del total del período.",
             "Ahorro acumulado (línea)": "Muestra cómo evoluciona tu ahorro neto a lo largo del período, acumulando mes a mes ingresos menos gastos.",
-            "Gasto por categoría por mes (apilado)": "Descompone el gasto de cada mes por categorías para explicar qué rubros empujan los picos de egresos.",
+            "Gasto fijo vs variable (barras)": "Separa el gasto total entre compromisos recurrentes y gasto más flexible para controlar presupuesto.",
+            "Gasto por categoría por mes (apilado)": "Descompone el gasto mensual por categorías para entender qué rubros explican cada pico de egresos.",
         }
 
         info_box(chart_description[chart_type], variant="info")
@@ -1339,90 +1373,47 @@ def dashboard_screen() -> None:
         if chart_type == "Ingresos vs gastos (barras)":
             _render_plotly_chart(
                 _chart_income_expense(monthly),
-                slot_key="db_chart_primary_income_expense",
+                slot_key="db_chart_income_expense",
+            )
+        elif chart_type == "Flujo neto mensual (área)":
+            _render_plotly_chart(
+                _chart_cashflow(monthly),
+                slot_key="db_chart_cashflow",
             )
         elif chart_type == "Top categorías (barras)":
             if not exp_df.empty:
                 _render_plotly_chart(
                     _chart_categories(exp_df, category_lookup),
-                    slot_key="db_chart_primary_categories",
+                    slot_key="db_chart_categories",
+                )
+            else:
+                st.info("Sin gastos registrados en el período.")
+        elif chart_type == "Distribución de gasto (donut)":
+            if not exp_df.empty:
+                _render_plotly_chart(
+                    _chart_donut(exp_df, category_lookup),
+                    slot_key="db_chart_donut",
                 )
             else:
                 st.info("Sin gastos registrados en el período.")
         elif chart_type == "Ahorro acumulado (línea)":
             _render_plotly_chart(
                 _chart_cumulative_savings(monthly),
-                slot_key="db_chart_primary_cumulative_savings",
+                slot_key="db_chart_cumulative_savings",
             )
+        elif chart_type == "Gasto fijo vs variable (barras)":
+            if not exp_df.empty:
+                _render_plotly_chart(
+                    _chart_fixed_vs_variable(exp_df, category_lookup),
+                    slot_key="db_chart_fixed_variable",
+                )
+            else:
+                st.info("Sin gastos registrados en el período.")
         elif chart_type == "Gasto por categoría por mes (apilado)":
             if not exp_df.empty:
                 _render_plotly_chart(
                     _chart_expense_category_trend(exp_df, category_lookup),
-                    slot_key="db_chart_primary_expense_category_trend",
-                )
-            else:
-                st.info("Sin gastos registrados en el período.")
-
-    secondary_panel = st.container(border=True)
-    with secondary_panel:
-        secondary_options = [
-            "Flujo neto mensual (área)",
-            "Distribución de gasto (donut)",
-            "Gasto fijo vs variable (barras)",
-            "Gasto por categoría por mes (apilado)",
-        ]
-        if chart_type == "Gasto por categoría por mes (apilado)":
-            secondary_options = [
-                option for option in secondary_options if option != "Gasto por categoría por mes (apilado)"
-            ]
-        if st.session_state.get("db_secondary_chart_type") not in secondary_options:
-            st.session_state["db_secondary_chart_type"] = "Flujo neto mensual (área)"
-
-        secondary_chart_type = select_field(
-            "Gráfico secundario",
-            secondary_options,
-            key="db_secondary_chart_type",
-            help="Complementa el análisis principal con una segunda visualización visible al mismo tiempo.",
-        )
-        prefs_by_user.setdefault(user_key, {})["secondary_chart_type"] = secondary_chart_type
-
-        secondary_description = {
-            "Flujo neto mensual (área)": "Muestra el resultado final por mes (ingresos menos gastos) para detectar meses en positivo y negativo.",
-            "Distribución de gasto (donut)": "Visualiza el peso relativo de cada categoría de gasto dentro del total del período.",
-            "Gasto fijo vs variable (barras)": "Separa el gasto total entre compromisos recurrentes y gasto más flexible para controlar presupuesto.",
-            "Gasto por categoría por mes (apilado)": "Descompone el gasto mensual por categorías para entender qué rubros explican cada pico de egresos.",
-        }
-
-        info_box(secondary_description[secondary_chart_type], variant="info")
-        if secondary_chart_type == "Gasto por categoría por mes (apilado)":
-            st.caption(_expense_category_trend_insight(exp_df, category_lookup))
-
-        if secondary_chart_type == "Flujo neto mensual (área)":
-            _render_plotly_chart(
-                _chart_cashflow(monthly),
-                slot_key="db_chart_secondary_cashflow",
-            )
-        elif secondary_chart_type == "Distribución de gasto (donut)":
-            if not exp_df.empty:
-                _render_plotly_chart(
-                    _chart_donut(exp_df, category_lookup),
-                    slot_key="db_chart_secondary_donut",
-                )
-            else:
-                st.info("Sin gastos registrados en el período.")
-        elif secondary_chart_type == "Gasto fijo vs variable (barras)":
-            if not exp_df.empty:
-                _render_plotly_chart(
-                    _chart_fixed_vs_variable(exp_df, category_lookup),
-                    slot_key="db_chart_secondary_fixed_variable",
-                )
-            else:
-                st.info("Sin gastos registrados en el período.")
-        elif secondary_chart_type == "Gasto por categoría por mes (apilado)":
-            if not exp_df.empty:
-                _render_plotly_chart(
-                    _chart_expense_category_trend(exp_df, category_lookup),
-                    slot_key="db_chart_secondary_expense_category_trend",
+                    slot_key="db_chart_expense_category_trend",
                 )
             else:
                 st.info("Sin gastos registrados en el período.")
