@@ -385,10 +385,18 @@ def _render_create_transaction_form(
         # keeping the submit button enabled in create mode.
         _reset_transaction_form_clean(account_options)
 
-    section_header(
-        "Registrar o ajustar movimiento",
-        "Selecciona un movimiento en la tabla para editarlo. Si no hay selección, el formulario crea uno nuevo.",
-    )
+    active_mode = "edit" if selected_tx_id else "create"
+
+    if active_mode == "edit":
+        section_header(
+            "Editar movimiento",
+            "Modifica los datos del movimiento seleccionado y guarda los cambios.",
+        )
+    else:
+        section_header(
+            "Registrar movimiento",
+            "Completa los campos para registrar un nuevo ingreso o gasto.",
+        )
 
     st.markdown(
         """
@@ -446,6 +454,13 @@ def _render_create_transaction_form(
         .af-create-actions .stButton > button {
             box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14) !important;
         }
+        .stVerticalBlock.st-key-mov_form_actions [data-testid="stHorizontalBlock"] {
+            justify-content: center !important;
+        }
+        .stVerticalBlock.st-key-mov_form_actions [data-testid="stColumn"] {
+            flex: 0 1 200px !important;
+            min-width: 120px !important;
+        }
         div[class*="st-key-mov_form_"] {
             margin-bottom: 0.14rem;
         }
@@ -458,42 +473,7 @@ def _render_create_transaction_form(
         unsafe_allow_html=True,
     )
 
-    active_mode = "edit" if selected_tx_id else "create"
-
-    mode_label = "Editando movimiento" if active_mode == "edit" else "Creando movimiento"
-    mode_class = "edit" if active_mode == "edit" else "create"
-    st.markdown(
-        f'<div class="af-mov-mode-badge {mode_class}">{mode_label}</div>',
-        unsafe_allow_html=True,
-    )
-
-    if active_mode == "edit":
-        try:
-            selected_amount = f"{float(selected_tx.get('amount', 0)):,.2f}"
-        except (TypeError, ValueError):
-            selected_amount = str(selected_tx.get("amount", "0"))
-
-        st.markdown(
-            (
-                '<div class="af-selected-summary">'
-                f"<strong>Seleccionado:</strong> {selected_tx.get('description', 'Movimiento')}"
-                f" · {selected_amount} {selected_tx.get('currency', '')}"
-                "</div>"
-            ),
-            unsafe_allow_html=True,
-        )
-
-        action_col, reset_col = st.columns([5, 1])
-        with action_col:
-            st.caption("Estás editando este movimiento. Guarda tus cambios o vuelve a crear uno nuevo.")
-        with reset_col:
-            if btn("Crear nuevo", key="mov_form_start_new", variant="neutral", use_container_width=True):
-                st.session_state["mov_selected_tx_id"] = None
-                st.session_state["mov_form_loaded_tx_id"] = None
-                st.session_state["mov_clear_table_selection_pending"] = True
-                st.session_state["mov_form_force_clean_reset"] = True
-                RERUN()
-    else:
+    if active_mode != "edit":
         last_created = st.session_state.get("mov_last_created_tx")
         if last_created:
             try:
@@ -630,10 +610,9 @@ def _render_create_transaction_form(
 
         _confirm_delete_dialog()
 
-    actions_col, _ = st.columns([2.15, 1.0])
-    with actions_col:
-        st.markdown('<div class="af-create-actions">', unsafe_allow_html=True)
-        submit_cols = st.columns([1, 1, 1] if active_mode == "edit" else [1.2, 1])
+    st.markdown('<div class="af-create-actions">', unsafe_allow_html=True)
+    with st.container(key="mov_form_actions"):
+        submit_cols = st.columns([1, 1, 1, 1] if active_mode == "edit" else [1, 2, 1])
         if active_mode == "edit":
             delete_dialog_key = "mov_delete_dialog_tx_id"
 
@@ -664,10 +643,9 @@ def _render_create_transaction_form(
                 use_container_width=True,
                 disabled=(not has_pending_changes) or st.session_state.get("mov_form_submitting", False),
             )
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    if active_mode == "edit" and not edit_has_pending_changes:
-        st.caption("Por ahora no tienes cambios pendientes por guardar.")
+
 
     if delete_transaction_clicked and selected_tx:
         _handle_delete_transaction(selected_tx)
@@ -1294,12 +1272,6 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
             selected_tx = next((tx for tx in visible_txs if tx.get("id") == selected_id), None)
             if selected_tx is None and selected_id is not None and selected_id not in {tx.get("id") for tx in filtered_txs}:
                 st.session_state["mov_selected_tx_id"] = None
-
-    if selected_tx:
-        amount_value = float(selected_tx.get("amount") or 0.0)
-        st.caption(
-            f"Seleccionado: {selected_tx.get('description', 'Movimiento')} · {amount_value:,.2f} {selected_tx.get('currency', '')}"
-        )
 
     # ── Pagination bar (inline with table) ─────────────────────────
     with st.container(key="mov_pagination_bar"):
