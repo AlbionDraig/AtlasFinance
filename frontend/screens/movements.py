@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 from datetime import date, datetime, time, timedelta
 
-import pandas as pd
 import requests
 import streamlit as st
 import streamlit.components.v1 as st_components
@@ -161,6 +160,119 @@ def _bind_live_search_filter(widget_key: str = "mov_table_search") -> None:
                 height=0,
                 width=0,
         )
+
+
+def _inject_movements_grid_color_patch() -> None:
+    """Apply semantic badges/colors to Tipo/Monto cells in Streamlit Glide grid."""
+    st_components.html(
+        """
+        <script>
+        (function () {
+            try {
+                const rootDoc = window.parent.document;
+                const win = rootDoc.defaultView || window;
+
+                const ensureStyles = function () {
+                    if (rootDoc.getElementById('af-mov-grid-semantic-style')) return;
+                    const style = rootDoc.createElement('style');
+                    style.id = 'af-mov-grid-semantic-style';
+                    style.textContent = `
+                        .af-mov-grid-type-badge {
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            border-radius: 999px;
+                            padding: 0.12rem 0.5rem;
+                            font-weight: 700;
+                            font-size: 0.76rem;
+                            line-height: 1.15;
+                            letter-spacing: 0.005em;
+                        }
+                        .af-mov-grid-type-badge.expense {
+                            color: #9f1239;
+                            background: rgba(244, 63, 94, 0.12);
+                            border: 1px solid rgba(244, 63, 94, 0.28);
+                        }
+                        .af-mov-grid-type-badge.income {
+                            color: #065f46;
+                            background: rgba(16, 185, 129, 0.12);
+                            border: 1px solid rgba(16, 185, 129, 0.3);
+                        }
+                        .af-mov-grid-amount.expense {
+                            color: #9f1239;
+                            font-weight: 700;
+                        }
+                        .af-mov-grid-amount.income {
+                            color: #0f766e;
+                            font-weight: 700;
+                        }
+                    `;
+                    rootDoc.head.appendChild(style);
+                };
+
+                const applyColors = function () {
+                    ensureStyles();
+                    const tipoCells = rootDoc.querySelectorAll('td[id^="glide-cell-2-"]');
+                    tipoCells.forEach((tipoCell) => {
+                        const cellId = tipoCell.id || '';
+                        const rowId = cellId.split('-').pop();
+                        if (!rowId) return;
+
+                        const montoCell = rootDoc.querySelector(`#glide-cell-3-${rowId}`);
+                        const tipoText = (tipoCell.textContent || '').trim().toLowerCase();
+
+                        const isExpense = tipoText.includes('gasto');
+                        const isIncome = tipoText.includes('ingreso');
+
+                        tipoCell.style.setProperty('font-weight', '600', 'important');
+                        tipoCell.style.setProperty('color', '#1f2937', 'important');
+                        tipoCell.style.setProperty('text-align', 'center', 'important');
+
+                        if (isExpense || isIncome) {
+                            const badgeClass = isExpense ? 'expense' : 'income';
+                            const badgeText = isExpense ? 'Gasto' : 'Ingreso';
+                            tipoCell.innerHTML = `<span class="af-mov-grid-type-badge ${badgeClass}">${badgeText}</span>`;
+                        }
+
+                        if (montoCell) {
+                            montoCell.style.setProperty('text-align', 'right', 'important');
+                            montoCell.style.setProperty('font-variant-numeric', 'tabular-nums', 'important');
+
+                            const rawAmountText = (montoCell.textContent || '').trim();
+                            const normalizedAmount = rawAmountText.replace(/^[-+]\s*/, '');
+
+                            if (isExpense || isIncome) {
+                                const amountClass = isExpense ? 'expense' : 'income';
+                                const sign = isExpense ? '-' : '+';
+                                montoCell.innerHTML = `<span class="af-mov-grid-amount ${amountClass}">${sign} ${normalizedAmount}</span>`;
+                            } else {
+                                montoCell.style.setProperty('color', '#1f2937', 'important');
+                                montoCell.style.setProperty('font-weight', '600', 'important');
+                            }
+                        }
+                    });
+                };
+
+                win.__atlasApplyMovementsGridColors = applyColors;
+
+                if (!win.__atlasMovementsGridColorObserver) {
+                    const observer = new MutationObserver(() => win.__atlasApplyMovementsGridColors?.());
+                    observer.observe(rootDoc.body, { childList: true, subtree: true, characterData: true });
+                    win.__atlasMovementsGridColorObserver = observer;
+                }
+
+                win.__atlasApplyMovementsGridColors?.();
+                win.requestAnimationFrame(() => win.__atlasApplyMovementsGridColors?.());
+                setTimeout(() => win.__atlasApplyMovementsGridColors?.(), 120);
+            } catch (_err) {
+                // Fail-safe: coloring is cosmetic only.
+            }
+        })();
+        </script>
+        """,
+        height=0,
+        width=0,
+    )
 
 
 
@@ -342,8 +454,9 @@ def _handle_create_transaction(
 def _render_create_transaction_form(
     account_options: dict[str, int],
     category_options: dict[str, int | None],
-    transactions: list[dict],
     selected_tx: dict | None = None,
+    *,
+    render_in_dialog: bool = False,
 ) -> None:
     """Render a unified form that edits the selected transaction or creates a new one."""
     if "mov_form_submitting" not in st.session_state:
@@ -594,71 +707,26 @@ def _render_create_transaction_form(
 
     has_pending_changes = edit_has_pending_changes if active_mode == "edit" else create_has_pending_changes
 
-    # ── Delete confirmation dialog (modal) ────────────────────────────────
-    if (
-        active_mode == "edit"
-        and selected_tx
-        and st.session_state.get("mov_delete_dialog_tx_id") == selected_tx_id
-        and hasattr(st, "dialog")
-    ):
-        dialog_tx = selected_tx
-        dialog_tx_id = selected_tx_id
-
-        @st.dialog("¿Eliminar este movimiento?")
-        def _confirm_delete_dialog() -> None:
-            tx_description = str(dialog_tx.get("description") or "Movimiento")
-            tx_amount = float(dialog_tx.get("amount") or 0.0)
-            tx_currency = str(dialog_tx.get("currency") or "")
-            st.write(
-                f"Vas a eliminar **{tx_description}** por **{tx_amount:,.2f} {tx_currency}**."
-            )
-            st.caption(
-                "Podrás deshacer esta acción brevemente desde el aviso que aparecerá al final de la pantalla."
-            )
-            confirm_col, cancel_col = st.columns(2)
-            with confirm_col:
-                if btn(
-                    "Sí, eliminar",
-                    key="mov_dialog_delete_confirm",
-                    variant="danger",
-                    use_container_width=True,
-                ):
-                    st.session_state["mov_confirm_delete_trigger"] = dialog_tx_id
-                    st.session_state["mov_delete_dialog_tx_id"] = None
-                    RERUN()
-            with cancel_col:
-                if btn(
-                    "Cancelar",
-                    key="mov_dialog_delete_cancel",
-                    variant="neutral",
-                    use_container_width=True,
-                ):
-                    st.session_state["mov_delete_dialog_tx_id"] = None
-                    RERUN()
-
-        _confirm_delete_dialog()
-
     with st.container(key="mov_form_actions"):
-        submit_cols = st.columns([1, 1, 1, 1] if active_mode == "edit" else [1, 2, 1])
         if active_mode == "edit":
-            delete_dialog_key = "mov_delete_dialog_tx_id"
+            submit_layout = [1, 1, 1] if render_in_dialog else [1, 1, 1, 1]
+        else:
+            submit_layout = [1, 2, 1]
+        submit_cols = st.columns(submit_layout)
+        if active_mode == "edit":
+            if render_in_dialog:
+                with submit_cols[0]:
+                    if btn(
+                        "Cerrar",
+                        key="mov_form_close_dialog",
+                        variant="neutral",
+                        use_container_width=True,
+                    ):
+                        st.session_state["mov_edit_dialog_tx_id"] = None
+                        RERUN()
 
-            with submit_cols[1]:
-                arm_delete = btn(
-                    "Eliminar",
-                    key="mov_form_delete_arm",
-                    variant="danger",
-                    use_container_width=True,
-                    disabled=st.session_state.get("mov_form_submitting", False),
-                )
-                if arm_delete:
-                    st.session_state[delete_dialog_key] = selected_tx_id
-                    RERUN()
-
-            delete_transaction_clicked = (
-                st.session_state.pop("mov_confirm_delete_trigger", None) == selected_tx_id
-            )
-            submit_button_col = submit_cols[2]
+            delete_transaction_clicked = False
+            submit_button_col = submit_cols[1] if render_in_dialog else submit_cols[2]
         else:
             delete_transaction_clicked = False
             submit_button_col = submit_cols[1]
@@ -898,35 +966,204 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
             color: #065f46;
             border: 1px solid rgba(16, 185, 129, 0.34);
         }
-        .st-key-mov_transactions_table [data-testid="stDataFrame"] {
+        .stVerticalBlock.st-key-mov_transactions_table {
+            gap: 0.38rem !important;
             border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            overflow: hidden;
+            border-radius: 18px;
+            padding: 0.5rem;
+            background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
             box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
         }
-        .st-key-mov_transactions_table [data-testid="stDataFrame"] thead tr th {
-            background: #f8fafc !important;
-            color: #334155 !important;
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_header"] {
+            background: linear-gradient(180deg, #fbfdff 0%, #f5f8fc 100%);
+            border: 1px solid #dde6f0;
+            border-radius: 13px;
+            padding: 0.08rem 0.75rem;
+            min-height: 2.55rem;
+        }
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] {
+            border: 1px solid #edf2f7;
+            border-radius: 12px;
+            padding: 0.08rem 0.75rem;
+            background: #ffffff;
+            transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+            min-height: 3.1rem;
+        }
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"]:hover {
+            border-color: rgba(31, 111, 178, 0.28);
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.045);
+            transform: translateY(-1px);
+        }
+        .af-mov-head-cell {
+            font-size: 0.74rem;
+            font-weight: 800;
+            letter-spacing: 0.045em;
+            text-transform: uppercase;
+            color: #526277;
+            padding: 0.32rem 0;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 2.15rem;
+        }
+        .af-mov-cell {
+            font-size: 0.9rem;
+            color: #0f172a;
+            padding: 0.4rem 0;
+            line-height: 1.16;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 2.3rem;
+        }
+        .af-mov-cell.date {
+            white-space: nowrap;
+        }
+        .af-mov-cell.muted {
+            color: #475569;
+        }
+        .af-mov-cell.type {
+            display: flex;
+            justify-content: center;
+        }
+        .af-mov-cell.amount {
+            font-variant-numeric: tabular-nums;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+        }
+        .af-mov-cell.amount.expense {
+            color: #b42318;
+        }
+        .af-mov-cell.amount.income {
+            color: #047857;
+        }
+        .af-mov-type-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 0.22rem 0.68rem;
+            font-size: 0.77rem;
+            font-weight: 800;
+            line-height: 1;
+            white-space: nowrap;
+            border: 1px solid transparent;
+        }
+        .af-mov-type-pill.expense {
+            color: #b42318;
+            background: rgba(217, 45, 32, 0.10);
+            border-color: rgba(217, 45, 32, 0.18);
+        }
+        .af-mov-type-pill.income {
+            color: #027a48;
+            background: rgba(18, 183, 106, 0.11);
+            border-color: rgba(18, 183, 106, 0.20);
+        }
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_header"] [data-testid="stHorizontalBlock"] {
+            align-items: center !important;
+            gap: 0.62rem !important;
+        }
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] [data-testid="stHorizontalBlock"] {
+            align-items: center !important;
+            gap: 0.62rem !important;
+        }
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_header"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"],
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+            min-width: 0 !important;
+            display: flex !important;
+            align-items: stretch !important;
+            justify-content: center !important;
+        }
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_header"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] > [data-testid="stVerticalBlock"],
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] > [data-testid="stVerticalBlock"] {
+            width: 100% !important;
+            height: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            gap: 0 !important;
+        }
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_header"] [data-testid="stVerticalBlock"] > [data-testid="stMarkdownContainer"],
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] [data-testid="stVerticalBlock"] > [data-testid="stMarkdownContainer"] {
+            width: 100% !important;
+            height: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+        }
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_header"] [data-testid="stMarkdownContainer"] p,
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] [data-testid="stMarkdownContainer"] p {
+            width: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            text-align: center !important;
+        }
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_header"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(3),
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(3),
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_header"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(4),
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(4),
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_header"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(7),
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(7),
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_header"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(8),
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(8) {
+            text-align: center !important;
+        }
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_header"] p,
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] p {
+            margin: 0 !important;
+            text-align: center !important;
+        }
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] .stButton {
+            margin-top: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            height: 100% !important;
+        }
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(7) > [data-testid="stVerticalBlock"],
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(8) > [data-testid="stVerticalBlock"] {
+            min-height: 2.5rem !important;
+        }
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(7) [data-testid="stButton"],
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(8) [data-testid="stButton"] {
+            width: 100% !important;
+            height: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        .st-key-mov_transactions_table .stButton button {
+            min-height: 1.92rem !important;
+            border-radius: 10px !important;
+            padding: 0.24rem 0.72rem !important;
+            font-size: 0.84rem !important;
             font-weight: 700 !important;
-            border-bottom: 1px solid #e2e8f0 !important;
-            letter-spacing: 0.008em;
-            font-size: 0.8rem !important;
-            padding-top: 0.68rem !important;
-            padding-bottom: 0.68rem !important;
+            line-height: 1.05 !important;
+            white-space: nowrap !important;
+            width: 6.5rem !important;
+            max-width: 100% !important;
+            box-shadow: 0 3px 8px rgba(15, 23, 42, 0.07) !important;
+            margin: 0 !important;
         }
-        .st-key-mov_transactions_table [data-testid="stDataFrame"] tbody tr td {
-            border-bottom: 1px solid #edf2f7 !important;
-            padding-top: 0.62rem !important;
-            padding-bottom: 0.62rem !important;
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] .stButton button[kind="secondary"] {
+            background: #55647d !important;
+            border-color: #55647d !important;
         }
-        .st-key-mov_transactions_table [data-testid="stDataFrame"] [role="row"]:has([role="gridcell"][aria-selected="true"]) [role="gridcell"] {
-            background: rgba(31, 111, 178, 0.12) !important;
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] .stButton button[kind="secondary"]:hover {
+            background: #46546b !important;
+            border-color: #46546b !important;
         }
-        .st-key-mov_transactions_table [data-testid="stDataFrame"] [role="row"]:has([role="gridcell"][aria-selected="true"]) [role="gridcell"]:first-child {
-            box-shadow: inset 3px 0 0 #1f6fb2 !important;
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] .stButton button[kind="primary"] {
+            background: #ef4444 !important;
+            border-color: #ef4444 !important;
         }
-        .st-key-mov_transactions_table [data-testid="stDataFrame"] tbody tr:last-child td {
-            border-bottom: none !important;
+        .st-key-mov_transactions_table [class*="st-key-mov_tx_row_"] .stButton button[kind="primary"]:hover {
+            background: #dc2626 !important;
+            border-color: #dc2626 !important;
         }
         .st-key-mov_table_clear_filters [data-testid="stButton"] {
             display: flex;
@@ -1202,192 +1439,92 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
             st.session_state["mov_form_loaded_tx_id"] = None
         return None
 
-    table_rows: list[dict[str, object]] = []
-
     def _compact_account_label(raw_label: str) -> str:
         # Avoid repeating currency in account when currency is already shown in its own column.
         return re.sub(r"\s+\((COP|USD)\)", "", raw_label).strip()
 
-    for tx in visible_txs:
-        tx_type = tx.get("transaction_type", "expense")
-        amount_value = float(tx.get("amount") or 0.0)
-        account_label_raw = account_label_lookup.get(tx.get("account_id"), "Cuenta")
-        tipo_label = "▼ Gasto" if tx_type == "expense" else "▲ Ingreso"
-        table_rows.append(
-            {
-                "Fecha": parse_iso_datetime(str(tx.get("occurred_at") or "")).strftime("%d/%m/%Y"),
-                "Descripción": str(tx.get("description") or "Movimiento"),
-                "Tipo": tipo_label,
-                "Monto": f"{amount_value:,.2f}",
-                "Moneda": str(tx.get("currency") or ""),
-                "Cuenta": _compact_account_label(account_label_raw),
-            }
-        )
-
-    def _auto_text_width(values: list[str]) -> str:
-        max_len = max((len(v) for v in values), default=0)
-        if max_len <= 10:
-            return "small"
-        if max_len <= 24:
-            return "medium"
-        return "large"
-
-    table_df = pd.DataFrame(table_rows)
-
-    desc_width = _auto_text_width([str(v) for v in table_df.get("Descripción", [])])
-    tipo_width = _auto_text_width([str(v) for v in table_df.get("Tipo", [])])
-    monto_width = _auto_text_width([str(v) for v in table_df.get("Monto", [])])
-    moneda_width = _auto_text_width([str(v) for v in table_df.get("Moneda", [])])
-    cuenta_width = _auto_text_width([str(v) for v in table_df.get("Cuenta", [])])
-
-    force_empty_selection = False
-    if st.session_state.get("mov_clear_table_selection_pending", False):
-        widget_state = st.session_state.get("mov_transactions_table")
-        if isinstance(widget_state, dict):
-            # Streamlit widget state is read-only for nested mutation: assign a full new dict.
-            selection_dict = widget_state.get("selection")
-            if not isinstance(selection_dict, dict):
-                selection_dict = {}
-            new_widget_state = dict(widget_state)
-            new_selection = dict(selection_dict)
-            new_selection["rows"] = []
-            new_widget_state["selection"] = new_selection
-            st.session_state["mov_transactions_table"] = new_widget_state
-        st.session_state["mov_clear_table_selection_pending"] = False
-        force_empty_selection = True
-
-    def _extract_row_index_from_cell(cell_ref: object) -> int | None:
-        """Normalize Streamlit single-cell selection payload to row index."""
-        if isinstance(cell_ref, dict):
-            row_value = cell_ref.get("row")
-            return row_value if isinstance(row_value, int) else None
-
-        row_attr = getattr(cell_ref, "row", None)
-        if isinstance(row_attr, int):
-            return row_attr
-
-        if isinstance(cell_ref, (list, tuple)) and cell_ref:
-            first_value = cell_ref[0]
-            if isinstance(first_value, int):
-                return first_value
-
-        return None
-
-    def _selected_row_from_widget_state(widget_state_obj: object) -> tuple[int | None, bool]:
-        """Return (row_index, explicit_empty_selection) from dataframe widget state."""
-        if not isinstance(widget_state_obj, dict):
-            return None, False
-
-        selection_dict = widget_state_obj.get("selection", {}) or {}
-        if not isinstance(selection_dict, dict):
-            return None, False
-
-        widget_rows = selection_dict.get("rows", []) or []
-        if widget_rows:
-            first_row = widget_rows[0]
-            if isinstance(first_row, int):
-                return first_row, False
-
-        widget_cells = selection_dict.get("cells", []) or []
-        if widget_cells:
-            return _extract_row_index_from_cell(widget_cells[0]), False
-
-        # Selection object exists but it carries no rows/cells.
-        return None, True
-
-    def _style_row_by_type(row: pd.Series) -> list[str]:
-        is_odd = int(row.name) % 2 == 1
-        tipo_value = str(row.get("Tipo", ""))
-        is_expense = "Gasto" in tipo_value
-        row_bg = "#ffffff" if not is_odd else "#fafcff"
-        base_text_color = "#1f2937"
-
-        cell_styles: list[str] = []
-        for col_name in row.index:
-            style = f"color: {base_text_color}; background-color: {row_bg};"
-
-            if col_name == "Tipo":
-                if is_expense:
-                    style += " color: #be123c; font-weight: 700;"
-                else:
-                    style += " color: #047857; font-weight: 700;"
-
-            if col_name == "Monto":
-                monto_color = "#be123c" if is_expense else "#0f766e"
-                style += (
-                    f" font-weight: 700; text-align: right; font-variant-numeric: tabular-nums;"
-                    f" color: {monto_color};"
-                )
-            elif col_name == "Moneda":
-                style += " color: #475569; font-weight: 600; text-align: center;"
-            elif col_name == "Fecha":
-                style += " color: #334155; font-weight: 600;"
-            elif col_name == "Cuenta":
-                style += " color: #475569;"
-            elif col_name == "Descripción":
-                style += " font-weight: 600;"
-
-            cell_styles.append(style)
-        return cell_styles
-
-    styled_df = (
-        table_df.style.apply(_style_row_by_type, axis=1)
-        .set_properties(subset=["Tipo", "Moneda"], **{"text-align": "center"})
-    )
-
-    st.dataframe(
-        styled_df,
-        hide_index=True,
-        use_container_width=True,
-        on_select="rerun",
-        selection_mode="single-cell",
-        key="mov_transactions_table",
-        column_config={
-            "Fecha": st.column_config.TextColumn("Fecha", width="small"),
-            "Descripción": st.column_config.TextColumn("Descripción", width=desc_width),
-            "Tipo": st.column_config.TextColumn("Tipo", width=tipo_width),
-            "Monto": st.column_config.TextColumn("Monto", width=monto_width),
-            "Moneda": st.column_config.TextColumn("Moneda", width=moneda_width),
-            "Cuenta": st.column_config.TextColumn("Cuenta", width=cuenta_width),
-        },
-    )
+    if st.session_state.pop("mov_clear_table_selection_pending", False):
+        st.session_state["mov_selected_tx_id"] = None
 
     selected_id = st.session_state.get("mov_selected_tx_id")
+    selected_tx = next((tx for tx in visible_txs if tx.get("id") == selected_id), None)
+    if selected_tx is None and selected_id is not None and selected_id not in {tx.get("id") for tx in filtered_txs}:
+        st.session_state["mov_selected_tx_id"] = None
 
-    selected_rows: list[int] = []
-    explicit_empty_selection = False
+    with st.container(key="mov_transactions_table"):
+        header_cols = st.columns([1.2, 2.28, 0.94, 0.92, 0.68, 1.06, 0.88, 0.94])
+        header_labels = ["Fecha", "Descripción", "Tipo", "Monto", "Moneda", "Cuenta", "Editar", "Eliminar"]
+        with st.container(key="mov_tx_header"):
+            for col, label in zip(header_cols, header_labels):
+                with col:
+                    st.markdown(f'<div class="af-mov-head-cell">{label}</div>', unsafe_allow_html=True)
 
-    if force_empty_selection:
-        selected_rows = []
-        explicit_empty_selection = True
-    else:
-        # Use widget state consistently to avoid timing mismatch with event payload.
-        widget_state_after_render = st.session_state.get("mov_transactions_table")
-        selected_row_index, explicit_empty_selection = _selected_row_from_widget_state(widget_state_after_render)
-        if isinstance(selected_row_index, int):
-            selected_rows = [selected_row_index]
+        for tx in visible_txs:
+            tx_id = int(tx.get("id"))
+            tx_type = str(tx.get("transaction_type") or "expense")
+            amount_value = float(tx.get("amount") or 0.0)
+            currency_value = str(tx.get("currency") or "")
+            account_label_raw = account_label_lookup.get(tx.get("account_id"), "Cuenta")
+            is_expense = tx_type == "expense"
+            tipo_label = "Gasto" if is_expense else "Ingreso"
+            type_class = "expense" if is_expense else "income"
+            amount_prefix = "-" if is_expense else "+"
+            amount_label = f"{amount_prefix} {amount_value:,.2f}"
 
-    if not selected_rows:
-        # Keep previous persisted selection only when there was no explicit deselection.
-        pass
-
-    selected_tx = None
-    if selected_rows:
-        selected_index = selected_rows[0]
-        if 0 <= selected_index < len(visible_txs):
-            selected_tx = visible_txs[selected_index]
-            st.session_state["mov_selected_tx_id"] = selected_tx["id"]
-    else:
-        # If the user explicitly deseleced the current row, clear edit mode and return to create mode.
-        if explicit_empty_selection and selected_id is not None:
-            st.session_state["mov_selected_tx_id"] = None
-            st.session_state["mov_form_loaded_tx_id"] = None
-            st.session_state["mov_form_force_clean_reset"] = True
-            selected_tx = None
-        else:
-            selected_tx = next((tx for tx in visible_txs if tx.get("id") == selected_id), None)
-            if selected_tx is None and selected_id is not None and selected_id not in {tx.get("id") for tx in filtered_txs}:
-                st.session_state["mov_selected_tx_id"] = None
+            with st.container(key=f"mov_tx_row_{tx_id}"):
+                row_cols = st.columns([1.2, 2.28, 0.94, 0.92, 0.68, 1.06, 0.88, 0.94])
+                with row_cols[0]:
+                    st.markdown(
+                        f'<div class="af-mov-cell date muted">{parse_iso_datetime(str(tx.get("occurred_at") or "")).strftime("%d/%m/%Y")}</div>',
+                        unsafe_allow_html=True,
+                    )
+                with row_cols[1]:
+                    st.markdown(
+                        f'<div class="af-mov-cell">{str(tx.get("description") or "Movimiento")}</div>',
+                        unsafe_allow_html=True,
+                    )
+                with row_cols[2]:
+                    st.markdown(
+                        f'<div class="af-mov-cell type"><span class="af-mov-type-pill {type_class}">{tipo_label}</span></div>',
+                        unsafe_allow_html=True,
+                    )
+                with row_cols[3]:
+                    st.markdown(
+                        f'<div class="af-mov-cell amount {type_class}">{amount_label}</div>',
+                        unsafe_allow_html=True,
+                    )
+                with row_cols[4]:
+                    st.markdown(
+                        f'<div class="af-mov-cell muted">{currency_value}</div>',
+                        unsafe_allow_html=True,
+                    )
+                with row_cols[5]:
+                    st.markdown(
+                        f'<div class="af-mov-cell muted">{_compact_account_label(account_label_raw)}</div>',
+                        unsafe_allow_html=True,
+                    )
+                with row_cols[6]:
+                    if btn(
+                        "Editar",
+                        key=f"mov_row_edit_{tx_id}",
+                        variant="neutral",
+                        use_container_width=True,
+                    ):
+                        st.session_state["mov_selected_tx_id"] = tx_id
+                        st.session_state["mov_delete_dialog_tx_id"] = None
+                        st.session_state["mov_edit_dialog_tx_id"] = tx_id
+                        RERUN()
+                with row_cols[7]:
+                    if btn(
+                        "Eliminar",
+                        key=f"mov_row_delete_{tx_id}",
+                        variant="danger",
+                        use_container_width=True,
+                    ):
+                        st.session_state["mov_selected_tx_id"] = tx_id
+                        st.session_state["mov_edit_dialog_tx_id"] = None
+                        st.session_state["mov_delete_dialog_tx_id"] = tx_id
+                        RERUN()
 
     # ── Pagination bar (inline with table) ─────────────────────────
     with st.container(key="mov_pagination_bar"):
@@ -1429,6 +1566,79 @@ def _render_transactions_table(transactions: list[dict], account_options: dict[s
     return selected_tx
 
 
+def _render_delete_transaction_dialog(selected_tx: dict | None) -> None:
+    """Render delete confirmation dialog for the selected movement when armed."""
+    if not selected_tx or not hasattr(st, "dialog"):
+        return
+
+    selected_tx_id = selected_tx.get("id")
+    if st.session_state.get("mov_delete_dialog_tx_id") != selected_tx_id:
+        return
+
+    dialog_tx = selected_tx
+    dialog_tx_id = selected_tx_id
+
+    @st.dialog("¿Eliminar este movimiento?")
+    def _confirm_delete_dialog() -> None:
+        tx_description = str(dialog_tx.get("description") or "Movimiento")
+        tx_amount = float(dialog_tx.get("amount") or 0.0)
+        tx_currency = str(dialog_tx.get("currency") or "")
+        st.write(
+            f"Vas a eliminar **{tx_description}** por **{tx_amount:,.2f} {tx_currency}**."
+        )
+        st.caption(
+            "Podrás deshacer esta acción brevemente desde el aviso que aparecerá al final de la pantalla."
+        )
+        confirm_col, cancel_col = st.columns(2)
+        with confirm_col:
+            if btn(
+                "Sí, eliminar",
+                key="mov_dialog_delete_confirm",
+                variant="danger",
+                use_container_width=True,
+            ):
+                st.session_state["mov_confirm_delete_trigger"] = dialog_tx_id
+                st.session_state["mov_delete_dialog_tx_id"] = None
+                RERUN()
+        with cancel_col:
+            if btn(
+                "Cancelar",
+                key="mov_dialog_delete_cancel",
+                variant="neutral",
+                use_container_width=True,
+            ):
+                st.session_state["mov_delete_dialog_tx_id"] = None
+                RERUN()
+
+    _confirm_delete_dialog()
+
+
+def _render_edit_transaction_dialog(
+    account_options: dict[str, int],
+    category_options: dict[str, int | None],
+    selected_tx: dict | None,
+) -> None:
+    """Render the floating edit dialog for the selected transaction."""
+    if not selected_tx or not hasattr(st, "dialog"):
+        return
+
+    if st.session_state.get("mov_edit_dialog_tx_id") != selected_tx.get("id"):
+        return
+
+    dialog_tx = selected_tx
+
+    @st.dialog("Editar movimiento")
+    def _edit_transaction_dialog() -> None:
+        _render_create_transaction_form(
+            account_options,
+            category_options,
+            selected_tx=dialog_tx,
+            render_in_dialog=True,
+        )
+
+    _edit_transaction_dialog()
+
+
 def _handle_update_transaction(
     selected_tx: dict,
     edit_description: str,
@@ -1462,6 +1672,8 @@ def _handle_update_transaction(
     }
     response = api_request("PUT", f"/transactions/{selected_tx['id']}", payload=edit_payload)
     if response.ok:
+        st.session_state["mov_edit_dialog_tx_id"] = None
+        st.session_state["mov_delete_dialog_tx_id"] = None
         st.session_state["mov_selected_tx_id"] = None
         st.session_state["mov_form_loaded_tx_id"] = None
         st.session_state["mov_clear_table_selection_pending"] = True
@@ -1481,6 +1693,7 @@ def _handle_delete_transaction(selected_tx: dict) -> None:
     """Delete the selected transaction and show feedback."""
     response = api_request("DELETE", f"/transactions/{selected_tx['id']}")
     if response.status_code == 204:
+        st.session_state["mov_edit_dialog_tx_id"] = None
         st.session_state["mov_selected_tx_id"] = None
         st.session_state["mov_form_loaded_tx_id"] = None
         st.session_state["mov_clear_table_selection_pending"] = True
@@ -1540,6 +1753,10 @@ def movements_screen() -> None:
     _, accounts, categories, transactions = movement_data
     account_options, category_options = _build_options(accounts, categories)
 
+    # Ensure only one dialog intent is active at a time.
+    if st.session_state.get("mov_edit_dialog_tx_id") is not None:
+        st.session_state["mov_delete_dialog_tx_id"] = None
+
     with st.container(key="mov_screen_root"):
         with st.container(key="mov_section_stack"):
             if not transactions:
@@ -1551,5 +1768,10 @@ def movements_screen() -> None:
                 selected_tx = None
             else:
                 selected_tx = _render_transactions_table(transactions, account_options)
+            if st.session_state.get("mov_delete_dialog_tx_id") is not None:
+                _render_delete_transaction_dialog(selected_tx)
+            elif st.session_state.get("mov_edit_dialog_tx_id") is not None:
+                _render_edit_transaction_dialog(account_options, category_options, selected_tx)
             st.divider()
-            _render_create_transaction_form(account_options, category_options, transactions, selected_tx=selected_tx)
+            if st.session_state.get("mov_edit_dialog_tx_id") is None:
+                _render_create_transaction_form(account_options, category_options)
