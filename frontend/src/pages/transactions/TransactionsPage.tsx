@@ -5,7 +5,6 @@ import { categoriesApi, type Category } from '@/api/categories'
 import { transactionsApi } from '@/api/transactions'
 import type { Account, Transaction } from '@/types'
 import TransactionEditModal from './components/TransactionEditModal'
-import TransactionFormCard from './components/TransactionFormCard'
 import TransactionsFiltersCard from './components/TransactionsFiltersCard'
 import TransactionsHistoryCard from './components/TransactionsHistoryCard'
 import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
@@ -167,6 +166,7 @@ export default function TransactionsPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => {
     async function loadData() {
@@ -274,6 +274,7 @@ export default function TransactionsPage() {
   function resetForm(nextAccounts = accounts) {
     setEditingId(null)
     setFormError(null)
+    setModalOpen(false)
     setForm(buildDefaultForm(nextAccounts))
   }
 
@@ -282,6 +283,7 @@ export default function TransactionsPage() {
     setEditingId(transaction.id)
     setSuccessMessage(null)
     setFormError(null)
+    setModalOpen(true)
     setForm({
       description: transaction.description,
       amount: String(transaction.amount),
@@ -391,10 +393,17 @@ export default function TransactionsPage() {
             <h1 className="app-title text-2xl">Movimientos</h1>
             <p className="app-subtitle mt-1">Registra, filtra y administra tus ingresos y gastos desde una sola vista.</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-tone-neutral px-3 py-1 text-xs font-medium">{filteredTransactions.length} movimientos</span>
             <span className="rounded-full bg-tone-positive px-3 py-1 text-xs font-medium">Ingresos {formatCurrency(incomeTotal, filters.currency === 'USD' ? 'USD' : 'COP')}</span>
             <span className="rounded-full bg-tone-negative px-3 py-1 text-xs font-medium">Gastos {formatCurrency(expenseTotal, filters.currency === 'USD' ? 'USD' : 'COP')}</span>
+            <button
+              type="button"
+              className="app-btn-primary px-4 py-1.5 text-sm"
+              onClick={() => { resetForm(); setModalOpen(true) }}
+            >
+              + Registrar movimiento
+            </button>
           </div>
         </div>
 
@@ -405,7 +414,7 @@ export default function TransactionsPage() {
           </p>
         )}
 
-        {editingId != null && (
+        {modalOpen && (
           <TransactionEditModal
             form={form}
             setForm={setForm}
@@ -422,20 +431,6 @@ export default function TransactionsPage() {
         )}
 
         <div className="grid gap-4">
-          <TransactionFormCard
-            form={form}
-            setForm={setForm}
-            accounts={accounts}
-            categoryOptions={categoryOptions}
-            accountCurrency={accountCurrency}
-            editingId={null}
-            saving={saving}
-            formError={editingId == null ? formError : null}
-            maxDate={toDateInputValue(new Date())}
-            onSubmit={handleSubmit}
-            onReset={() => resetForm()}
-          />
-
           <div className="order-1 space-y-4">
             <TransactionsFiltersCard
               filters={filters}
