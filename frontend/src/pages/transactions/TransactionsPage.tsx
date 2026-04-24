@@ -397,13 +397,6 @@ export default function TransactionsPage() {
             <Badge variant="neutral">{filteredTransactions.length} movimientos</Badge>
             <Badge variant="positive">Ingresos {formatCurrency(incomeTotal, filters.currency === 'USD' ? 'USD' : 'COP')}</Badge>
             <Badge variant="negative">Gastos {formatCurrency(expenseTotal, filters.currency === 'USD' ? 'USD' : 'COP')}</Badge>
-            <button
-              type="button"
-              className="app-btn-primary px-4 py-1.5 text-sm"
-              onClick={() => { resetForm(); setModalOpen(true) }}
-            >
-              + Registrar movimiento
-            </button>
           </div>
         </div>
 
@@ -459,6 +452,7 @@ export default function TransactionsPage() {
               onNextPage={() => setPage((current) => Math.min(totalPages, current + 1))}
               pageSize={filters.pageSize}
               onPageSizeChange={(size) => setFilters((current) => ({ ...current, pageSize: size }))}
+              onCreateMovement={() => { resetForm(); setModalOpen(true) }}
               onEdit={handleEdit}
               onDelete={(transactionId) => {
                 void handleDelete(transactionId)
