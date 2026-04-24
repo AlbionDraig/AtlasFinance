@@ -328,7 +328,7 @@ export default function TransactionsPage() {
       category_id: form.categoryId === 'none' ? null : Number(form.categoryId),
       pocket_id: null,
       currency: selectedAccount.currency,
-      transaction_type: form.transactionType,
+      transaction_type: form.transactionType.toLowerCase() as Transaction['transaction_type'],
       occurred_at: occurredAt,
     } satisfies Omit<Transaction, 'id'>
 
