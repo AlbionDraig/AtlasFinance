@@ -613,7 +613,7 @@ export default function DashboardPage() {
                 className="w-72"
               />
             </div>
-            <p className="text-neutral-400 text-xs leading-snug w-full">{CHART_HELP[chartType]}</p>
+            <p className="text-neutral-700 text-sm leading-relaxed w-full">{CHART_HELP[chartType]}</p>
           </div>
 
           {/* Charts */}
