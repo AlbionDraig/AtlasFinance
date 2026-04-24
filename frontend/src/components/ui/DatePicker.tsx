@@ -93,7 +93,7 @@ export default function DatePicker({ label, value, onChange, min, max, className
 
   return (
     <div ref={rootRef} className={`relative isolate flex flex-col gap-1 [transform:translateZ(0)] [backface-visibility:hidden] ${className}`}>
-      <label className="app-label">{label}</label>
+      <label className={`app-label ${disabled ? 'text-neutral-400' : ''}`}>{label}</label>
 
       <button
         type="button"
@@ -102,7 +102,7 @@ export default function DatePicker({ label, value, onChange, min, max, className
           setOpen(prev => !prev)
         }}
         disabled={disabled}
-        className={`app-control w-36 text-left text-xs [transform:translateZ(0)] [backface-visibility:hidden] ${disabled ? 'cursor-not-allowed opacity-70' : ''}`}
+        className={`app-control w-36 text-left text-xs [transform:translateZ(0)] [backface-visibility:hidden] ${disabled ? 'cursor-not-allowed bg-neutral-50 border-neutral-100 text-neutral-700' : ''}`}
       >
         <span className="inline-flex w-full items-center gap-2 whitespace-nowrap">
           <svg className="h-3.5 w-3.5 app-subtitle" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -112,6 +112,12 @@ export default function DatePicker({ label, value, onChange, min, max, className
             <line x1="3" y1="10" x2="21" y2="10" />
           </svg>
           <span className="truncate">{display}</span>
+          {disabled && (
+            <svg className="h-3 w-3 text-neutral-400 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="11" width="18" height="10" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0110 0v4" />
+            </svg>
+          )}
         </span>
       </button>
 
