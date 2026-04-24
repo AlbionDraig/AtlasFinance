@@ -4,6 +4,7 @@ import { accountsApi } from '@/api/accounts'
 import { categoriesApi, type Category } from '@/api/categories'
 import { transactionsApi } from '@/api/transactions'
 import type { Account, Transaction } from '@/types'
+import TransactionEditModal from './components/TransactionEditModal'
 import TransactionFormCard from './components/TransactionFormCard'
 import TransactionsFiltersCard from './components/TransactionsFiltersCard'
 import TransactionsHistoryCard from './components/TransactionsHistoryCard'
@@ -404,8 +405,8 @@ export default function TransactionsPage() {
           </p>
         )}
 
-        <div className="grid gap-4">
-          <TransactionFormCard
+        {editingId != null && (
+          <TransactionEditModal
             form={form}
             setForm={setForm}
             accounts={accounts}
@@ -414,6 +415,22 @@ export default function TransactionsPage() {
             editingId={editingId}
             saving={saving}
             formError={formError}
+            maxDate={toDateInputValue(new Date())}
+            onSubmit={handleSubmit}
+            onClose={() => resetForm()}
+          />
+        )}
+
+        <div className="grid gap-4">
+          <TransactionFormCard
+            form={form}
+            setForm={setForm}
+            accounts={accounts}
+            categoryOptions={categoryOptions}
+            accountCurrency={accountCurrency}
+            editingId={null}
+            saving={saving}
+            formError={editingId == null ? formError : null}
             maxDate={toDateInputValue(new Date())}
             onSubmit={handleSubmit}
             onReset={() => resetForm()}
