@@ -12,3 +12,15 @@ htmlcov/
 *.sqlite3
 */coverage.xml
 backend/coverage.xml
+# Frontend old (Python legacy)
+frontend_old/
+
+# React / Vite / Tailwind
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+.vite-cache/
+*.tsbuildinfo
+tailwind.config.js.bak
