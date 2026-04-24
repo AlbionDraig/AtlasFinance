@@ -198,13 +198,13 @@ export default function TransactionsHistoryCard({
 
                     {/* Acciones */}
                     <td className="border-b border-r border-neutral-100 px-5 py-3.5 align-middle">
-                      <div className="flex items-center justify-end gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="flex items-center justify-end gap-1.5">
                         {/* Editar */}
                         <button
                           type="button"
                           title="Editar"
                           onClick={() => onEdit(transaction)}
-                          className="flex h-7 w-7 items-center justify-center rounded-md border border-neutral-100 bg-white text-neutral-400 transition-colors hover:border-brand hover:bg-brand-light hover:text-brand-text"
+                          className="flex h-7 w-7 items-center justify-center rounded-md border border-neutral-100 bg-neutral-50 text-neutral-700 transition-colors hover:border-brand hover:bg-brand-light hover:text-brand-text"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -216,7 +216,7 @@ export default function TransactionsHistoryCard({
                           title="Eliminar"
                           onClick={() => onDelete(transaction.id)}
                           disabled={deletingId === transaction.id}
-                          className="flex h-7 w-7 items-center justify-center rounded-md border border-brand-light bg-brand-light text-brand-text transition-colors hover:bg-brand hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex h-7 w-7 items-center justify-center rounded-md border border-neutral-100 bg-neutral-50 text-neutral-700 transition-colors hover:border-brand hover:bg-brand hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {deletingId === transaction.id ? (
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
