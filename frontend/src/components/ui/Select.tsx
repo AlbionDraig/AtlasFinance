@@ -11,9 +11,10 @@ interface SelectProps {
   options: SelectOption[]
   className?: string
   disabled?: boolean
+  visibleItems?: number
 }
 
-export default function Select({ value, onChange, options, className = '', disabled = false }: SelectProps) {
+export default function Select({ value, onChange, options, className = '', disabled = false, visibleItems }: SelectProps) {
   const [open, setOpen] = useState(false)
   const [openUpward, setOpenUpward] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -65,7 +66,8 @@ export default function Select({ value, onChange, options, className = '', disab
       {/* Dropdown */}
       {open && !isDisabled && (
         <ul
-          className={['app-menu absolute right-0 w-full z-[130] max-h-52 overflow-y-auto py-1 text-xs', openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'].join(' ')}
+          className={['app-menu absolute right-0 w-full z-[130] overflow-y-auto py-1 text-xs', openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'].join(' ')}
+          style={visibleItems ? { maxHeight: `${visibleItems * 36 + 8}px` } : { maxHeight: '208px' }}
         >
           {options.map(opt => (
             <li key={opt.value}>

@@ -1,6 +1,6 @@
+import Select from '@/components/ui/Select'
 import type { Category } from '@/api/categories'
 import type { Account, Transaction } from '@/types'
-import Select from '@/components/ui/Select'
 
 interface TransactionsHistoryCardProps {
   filteredTransactions: Transaction[]
@@ -132,10 +132,14 @@ export default function TransactionsHistoryCard({
             value={String(pageSize)}
             onChange={(value) => onPageSizeChange(Number(value))}
             options={[
+              { value: '5', label: '5' },
+              { value: '10', label: '10' },
+              { value: '15', label: '15' },
               { value: '25', label: '25' },
               { value: '50', label: '50' },
               { value: '100', label: '100' },
             ]}
+            visibleItems={3}
             className="w-20"
           />
         </div>
