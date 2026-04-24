@@ -55,7 +55,7 @@ export default function Select({ value, onChange, options, className = '', disab
       {/* Dropdown */}
       {open && !isDisabled && (
         <ul
-          className="app-menu absolute right-0 mt-1.5 w-full z-[130] overflow-hidden py-1 text-xs"
+          className="app-menu absolute right-0 mt-1.5 w-full z-[130] max-h-52 overflow-y-auto py-1 text-xs"
         >
           {options.map(opt => (
             <li key={opt.value}>
