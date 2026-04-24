@@ -1,4 +1,5 @@
 import type { Dispatch, FormEvent, SetStateAction } from 'react'
+import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
 import Select from '@/components/ui/Select'
 import type { Account } from '@/types'
@@ -76,14 +77,11 @@ export default function TransactionFormCard({
 
         <div className="space-y-1">
           <label className="app-label">Monto</label>
-          <input
-            type="number"
-            min="0.01"
-            step="0.01"
+          <AmountInput
             value={form.amount}
-            onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))}
-            className="app-control w-full"
-            placeholder="0.00"
+            onChange={(raw) => setForm((current) => ({ ...current, amount: raw }))}
+            currency={accountCurrency}
+            className="w-full"
           />
         </div>
       </div>
