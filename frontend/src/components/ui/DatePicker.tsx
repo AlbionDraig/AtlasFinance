@@ -92,15 +92,15 @@ export default function DatePicker({ label, value, onChange, min, max, className
 
   return (
     <div ref={rootRef} className={`relative isolate flex flex-col gap-1 [transform:translateZ(0)] [backface-visibility:hidden] ${className}`}>
-      <label className="text-xs text-slate-400">{label}</label>
+      <label className="app-label">{label}</label>
 
       <button
         type="button"
         onClick={() => setOpen(prev => !prev)}
-        className="h-10 w-36 rounded-lg border border-slate-700 bg-slate-900 px-3 text-left text-xs text-slate-200 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-[background-color] [transform:translateZ(0)] [backface-visibility:hidden]"
+        className="app-control w-36 text-left text-xs [transform:translateZ(0)] [backface-visibility:hidden]"
       >
         <span className="inline-flex w-full items-center gap-2 whitespace-nowrap">
-          <svg className="h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg className="h-3.5 w-3.5 app-subtitle" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
             <line x1="16" y1="2" x2="16" y2="6" />
             <line x1="8" y1="2" x2="8" y2="6" />
@@ -111,21 +111,21 @@ export default function DatePicker({ label, value, onChange, min, max, className
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border border-slate-700 bg-slate-900 p-3 shadow-2xl">
+        <div className="app-menu absolute left-0 top-full z-50 mt-2 w-72 p-3">
           <div className="mb-2 flex items-center justify-between">
             <button
               type="button"
               onClick={prevMonth}
-              className="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-300 hover:bg-slate-700"
+              className="rounded-md border border-[var(--af-border)] bg-[var(--af-surface-alt)] px-2 py-1 text-xs app-subtitle hover:bg-[var(--af-bg-soft)]"
               aria-label="Mes anterior"
             >
               {'<'}
             </button>
-            <p className="text-sm font-semibold capitalize text-slate-200">{monthLabel}</p>
+            <p className="text-sm font-semibold capitalize text-[var(--af-text)]">{monthLabel}</p>
             <button
               type="button"
               onClick={nextMonth}
-              className="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-300 hover:bg-slate-700"
+              className="rounded-md border border-[var(--af-border)] bg-[var(--af-surface-alt)] px-2 py-1 text-xs app-subtitle hover:bg-[var(--af-bg-soft)]"
               aria-label="Mes siguiente"
             >
               {'>'}
@@ -134,7 +134,7 @@ export default function DatePicker({ label, value, onChange, min, max, className
 
           <div className="grid grid-cols-7 gap-1">
             {WEEK_DAYS.map(day => (
-              <div key={day} className="pb-1 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              <div key={day} className="pb-1 text-center text-[10px] font-semibold uppercase tracking-wider app-subtitle">
                 {day}
               </div>
             ))}
@@ -155,9 +155,9 @@ export default function DatePicker({ label, value, onChange, min, max, className
                   }}
                   className={[
                     'h-8 rounded-md text-xs transition-colors',
-                    selected ? 'bg-indigo-600 text-white' : '',
-                    !selected && inCurrentMonth ? 'text-slate-200 hover:bg-slate-800' : '',
-                    !selected && !inCurrentMonth ? 'text-slate-500 hover:bg-slate-800/70' : '',
+                    selected ? 'bg-[var(--af-accent)] text-white' : '',
+                    !selected && inCurrentMonth ? 'text-[var(--af-text)] hover:bg-[var(--af-surface-alt)]' : '',
+                    !selected && !inCurrentMonth ? 'text-[var(--af-text-soft)] hover:bg-[var(--af-surface-alt)]' : '',
                     disabled ? 'cursor-not-allowed opacity-40 hover:bg-transparent' : '',
                   ].join(' ')}
                 >

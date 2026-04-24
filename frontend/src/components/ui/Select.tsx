@@ -33,15 +33,11 @@ export default function Select({ value, onChange, options, className = '' }: Sel
       <button
         type="button"
         onClick={() => setOpen(prev => !prev)}
-        className="flex h-10 items-center justify-between gap-2 w-full px-3 text-xs rounded-lg
-          border border-slate-700 bg-slate-900 text-slate-200
-          hover:bg-slate-800
-          focus:outline-none focus:ring-2 focus:ring-indigo-500/50
-          transition-[background-color] cursor-pointer [transform:translateZ(0)] [backface-visibility:hidden]"
+        className="app-control flex items-center justify-between gap-2 text-xs cursor-pointer [transform:translateZ(0)] [backface-visibility:hidden]"
       >
         <span className="truncate whitespace-nowrap">{selected.label}</span>
         <svg
-          className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          className={`w-3.5 h-3.5 app-subtitle transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
           viewBox="0 0 20 20" fill="currentColor"
         >
           <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
@@ -51,9 +47,7 @@ export default function Select({ value, onChange, options, className = '' }: Sel
       {/* Dropdown */}
       {open && (
         <ul
-          className="absolute right-0 mt-1.5 w-full z-[130] overflow-hidden rounded-lg
-            border border-slate-700 bg-slate-900 shadow-xl
-            py-1 text-xs text-slate-200"
+          className="app-menu absolute right-0 mt-1.5 w-full z-[130] overflow-hidden py-1 text-xs"
         >
           {options.map(opt => (
             <li key={opt.value}>
@@ -62,8 +56,8 @@ export default function Select({ value, onChange, options, className = '' }: Sel
                 onClick={() => { onChange(opt.value); setOpen(false) }}
                 className={`w-full text-left px-3 py-2 transition-colors cursor-pointer
                   ${opt.value === value
-                    ? 'bg-indigo-600/30 text-indigo-300'
-                    : 'hover:bg-slate-800 text-slate-200'
+                    ? 'bg-tone-neutral text-[var(--af-accent)]'
+                    : 'hover:bg-[var(--af-surface-alt)] text-[var(--af-text)]'
                   }`}
               >
                 {opt.label}

@@ -9,6 +9,7 @@ import { accountsApi } from '@/api/accounts'
 import { transactionsApi } from '@/api/transactions'
 import { categoriesApi, type Category } from '@/api/categories'
 import Select from '@/components/ui/Select'
+import DatePicker from '@/components/ui/DatePicker'
 import type { Transaction, Account } from '@/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -20,6 +21,11 @@ const MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov
 
 function toISODate(d: Date): string {
   return d.toISOString().split('T')[0]
+}
+function clampISO(value: string, min: string, max: string): string {
+  if (value < min) return min
+  if (value > max) return max
+  return value
 }
 function fmtMonthLabel(yyyyMM: string): string {
   const [y, m] = yyyyMM.split('-')
@@ -58,8 +64,16 @@ function fmtShort(v: number): string {
   if (abs >= 1_000) return `${(v / 1_000).toFixed(0)}K`
   return String(Math.round(v))
 }
+function txType(tx: Transaction): 'INCOME' | 'EXPENSE' {
+  return String(tx.transaction_type ?? '').toUpperCase() === 'INCOME' ? 'INCOME' : 'EXPENSE'
+}
+function filterTxByCurrency(rows: Transaction[], currency: string): Transaction[] {
+  const code = String(currency ?? '').toUpperCase()
+  if (!code) return rows
+  return rows.filter(tx => String(tx.currency ?? '').toUpperCase() === code)
+}
 function sumByType(txs: Transaction[], type: 'INCOME' | 'EXPENSE'): number {
-  return txs.filter(t => t.transaction_type === type).reduce((s, t) => s + Number(t.amount), 0)
+  return txs.filter(t => txType(t) === type).reduce((s, t) => s + Number(t.amount), 0)
 }
 function deltaBadge(curr: number, prev: number, inverse = false): { text: string; tone: Tone } {
   if (prev === 0) return { text: curr === 0 ? '0%' : 'primer período', tone: 'flat' }
@@ -96,7 +110,7 @@ function buildMonthly(txs: Transaction[]): MonthlyRow[] {
     const key = tx.occurred_at.slice(0, 7)
     if (!map.has(key)) map.set(key, { income: 0, expense: 0 })
     const r = map.get(key)!
-    if (tx.transaction_type === 'INCOME') r.income += Number(tx.amount)
+    if (txType(tx) === 'INCOME') r.income += Number(tx.amount)
     else r.expense += Number(tx.amount)
   }
   const rows = Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => ({
@@ -113,7 +127,7 @@ function buildMonthly(txs: Transaction[]): MonthlyRow[] {
 type CatRow = { name: string; value: number; bucket: string }
 function buildCategoryRows(txs: Transaction[], lookup: Map<number, string>): CatRow[] {
   const map = new Map<string, number>()
-  for (const tx of txs.filter(t => t.transaction_type === 'EXPENSE')) {
+  for (const tx of txs.filter(t => txType(t) === 'EXPENSE')) {
     const name = resolveCatName(tx.category_id, lookup)
     map.set(name, (map.get(name) ?? 0) + Number(tx.amount))
   }
@@ -123,7 +137,7 @@ function buildCategoryRows(txs: Transaction[], lookup: Map<number, string>): Cat
 }
 type StackedRow = { month: string; [cat: string]: number | string }
 function buildStacked(txs: Transaction[], lookup: Map<number, string>): { rows: StackedRow[]; cats: string[] } {
-  const expTxs = txs.filter(t => t.transaction_type === 'EXPENSE')
+  const expTxs = txs.filter(t => txType(t) === 'EXPENSE')
   const monthCatMap = new Map<string, Map<string, number>>()
   const catTotals = new Map<string, number>()
   for (const tx of expTxs) {
@@ -152,27 +166,30 @@ function buildStacked(txs: Transaction[], lookup: Map<number, string>): { rows: 
 // ─── Recharts tooltip style ────────────────────────────────────────────────────
 const fmtTT = (v: unknown) => fmtShort(Number(v ?? 0))
 const fmtTTPair = (v: unknown): [string, string] => [fmtShort(Number(v ?? 0)), '']
-const TTStyle = { contentStyle: { background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.5rem', color: '#e2e8f0', fontSize: 12 } }
+const CHART_TICK = 'var(--af-text-muted)'
+const CHART_GRID = 'var(--af-border)'
+const CHART_LEGEND = 'var(--af-text-muted)'
+const TTStyle = { contentStyle: { background: 'var(--af-surface)', border: '1px solid var(--af-border)', borderRadius: '0.5rem', color: 'var(--af-text)', fontSize: 12, boxShadow: 'var(--af-shadow-md)' } }
 
 // ─── Small sub-components ─────────────────────────────────────────────────────
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">{children}</h2>
+  return <h2 className="app-section-title mb-3">{children}</h2>
 }
 
 interface BadgeProps { text: string; tone: Tone }
 function Badge({ text, tone }: BadgeProps) {
-  const cls = { positive: 'bg-emerald-500/15 text-emerald-400', negative: 'bg-rose-500/15 text-rose-400', flat: 'bg-white/10 text-slate-400', neutral: 'bg-white/10 text-slate-400' }[tone]
+  const cls = { positive: 'bg-tone-positive tone-positive', negative: 'bg-tone-negative tone-negative', flat: 'bg-tone-neutral app-subtitle', neutral: 'bg-tone-neutral app-subtitle' }[tone]
   return <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cls}`}>{text}</span>
 }
 
 interface KpiCardProps { label: string; value: string; sub?: string; badge?: BadgeProps; accentClass?: string }
-function KpiCard({ label, value, sub, badge, accentClass = 'border-l-white/10' }: KpiCardProps) {
+function KpiCard({ label, value, sub, badge, accentClass = 'border-l-[var(--af-border)]' }: KpiCardProps) {
   return (
-    <div className={`card-glass p-5 border-l-4 ${accentClass}`}>
-      <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-2xl font-bold text-white leading-none">{value}</p>
+    <div className={`app-card p-5 border-l-4 ${accentClass}`}>
+      <p className="app-label uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-2xl font-bold text-[var(--af-text)] leading-none">{value}</p>
       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-        {sub && <p className="text-xs text-slate-500">{sub}</p>}
+        {sub && <p className="app-subtitle text-xs">{sub}</p>}
         {badge && <Badge {...badge} />}
       </div>
     </div>
@@ -181,12 +198,12 @@ function KpiCard({ label, value, sub, badge, accentClass = 'border-l-white/10' }
 
 interface InsightCardProps { label: string; value: string; sub?: string; tone?: Tone }
 function InsightCard({ label, value, sub, tone = 'neutral' }: InsightCardProps) {
-  const valCls = { positive: 'text-emerald-400', negative: 'text-rose-400', flat: 'text-slate-300', neutral: 'text-slate-200' }[tone]
+  const valCls = { positive: 'tone-positive', negative: 'tone-negative', flat: 'text-[var(--af-text-muted)]', neutral: 'text-[var(--af-text)]' }[tone]
   return (
-    <div className="card-glass p-4">
-      <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">{label}</p>
+    <div className="app-card p-4">
+      <p className="app-label uppercase tracking-wider mb-1">{label}</p>
       <p className={`text-lg font-bold leading-none truncate ${valCls}`}>{value}</p>
-      {sub && <p className="text-xs text-slate-500 mt-1 leading-snug">{sub}</p>}
+      {sub && <p className="app-subtitle text-xs mt-1 leading-snug">{sub}</p>}
     </div>
   )
 }
@@ -203,17 +220,6 @@ const CHART_OPTIONS = [
 ] as const
 type ChartType = typeof CHART_OPTIONS[number]
 
-// ─── Date picker input ────────────────────────────────────────────────────────
-function DateInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs text-slate-400">{label}</label>
-      <input type="date" value={value} onChange={e => onChange(e.target.value)}
-        className="input-dark w-36 text-xs px-2 py-1.5" />
-    </div>
-  )
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const today = new Date()
@@ -224,6 +230,7 @@ export default function DashboardPage() {
   const [currency, setCurrency] = useState('COP')
   const [customFrom, setCustomFrom] = useState(yearStart)
   const [customTo, setCustomTo] = useState(todayStr)
+  const [dataBounds, setDataBounds] = useState({ min: yearStart, max: todayStr })
   const [chartType, setChartType] = useState<ChartType>('Ingresos vs gastos')
 
   const [accounts, setAccounts] = useState<Account[]>([])
@@ -236,6 +243,42 @@ export default function DashboardPage() {
   // Compute date ranges
   const { dateFrom, dateTo } = useMemo(() => computeDates(period, customFrom, customTo), [period, customFrom, customTo])
   const { prevFrom, prevTo } = useMemo(() => computePrevDates(period, dateFrom, dateTo), [period, dateFrom, dateTo])
+
+  // Fetch allowed custom-date bounds from real data for selected currency
+  useEffect(() => {
+    transactionsApi.list()
+      .then(resp => {
+        const rows = resp.data.filter(tx => String(tx.currency ?? '').toUpperCase() === currency)
+        if (rows.length === 0) {
+          setDataBounds({ min: yearStart, max: todayStr })
+          return
+        }
+
+        const dates = rows
+          .map(tx => tx.occurred_at.slice(0, 10))
+          .sort((a, b) => a.localeCompare(b))
+
+        setDataBounds({ min: dates[0], max: dates[dates.length - 1] })
+      })
+      .catch(() => {
+        setDataBounds({ min: yearStart, max: todayStr })
+      })
+  }, [currency, yearStart, todayStr])
+
+  // Clamp custom period to valid bounds and preserve from <= to
+  useEffect(() => {
+    const clampedFrom = clampISO(customFrom, dataBounds.min, dataBounds.max)
+    const clampedTo = clampISO(customTo, dataBounds.min, dataBounds.max)
+
+    if (clampedFrom > clampedTo) {
+      setCustomFrom(dataBounds.min)
+      setCustomTo(dataBounds.max)
+      return
+    }
+
+    if (clampedFrom !== customFrom) setCustomFrom(clampedFrom)
+    if (clampedTo !== customTo) setCustomTo(clampedTo)
+  }, [customFrom, customTo, dataBounds])
 
   // Fetch data
   useEffect(() => {
@@ -253,9 +296,11 @@ export default function DashboardPage() {
       categoriesApi.list(),
     ])
       .then(([, a, t, pt, c]) => {
+        const currentTxs = filterTxByCurrency(t.data, currency)
+        const previousTxs = filterTxByCurrency(pt.data, currency)
         setAccounts(a.data)
-        setTxs(t.data)
-        setPrevTxs(pt.data)
+        setTxs(currentTxs)
+        setPrevTxs(previousTxs)
         const lookup = new Map<number, string>(c.data.map((cat: Category) => [cat.id, cat.name]))
         setCatLookup(lookup)
       })
@@ -280,7 +325,7 @@ export default function DashboardPage() {
 
   const monthly = useMemo(() => buildMonthly(txs), [txs])
   const catRows = useMemo(() => buildCategoryRows(txs, catLookup), [txs, catLookup])
-  const expTxs = useMemo(() => txs.filter(t => t.transaction_type === 'EXPENSE'), [txs])
+  const expTxs = useMemo(() => txs.filter(t => txType(t) === 'EXPENSE'), [txs])
   const { rows: stackedRows, cats: stackedCats } = useMemo(() => buildStacked(txs, catLookup), [txs, catLookup])
 
   // Insight calcs
@@ -311,43 +356,50 @@ export default function DashboardPage() {
   const cashflowBadge = deltaBadge(cashflow, prevCashflow)
   const savingsBadge = deltaPointsBadge(savingsRate, prevSavings, hasPrev)
 
-  const recentTxs = useMemo(
-    () => [...txs].sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime()).slice(0, 8),
-    [txs],
-  )
-
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[var(--af-accent)] border-t-transparent rounded-full animate-spin" />
     </div>
   )
   if (error) return <div className="alert-error max-w-md mx-auto mt-8">{error}</div>
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="app-shell space-y-6 max-w-7xl rounded-2xl p-4 md:p-6">
 
       {/* Header + filters */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="app-panel relative z-40 overflow-visible flex flex-wrap items-start justify-between gap-4 px-3 py-3">
         <div>
-          <h1 className="text-xl font-bold text-white">Panorama financiero</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Vista general de tus finanzas en el período elegido</p>
+          <h1 className="app-title text-xl">Panorama financiero</h1>
+          <p className="app-subtitle text-sm mt-0.5">Vista general de tus finanzas en el período elegido</p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400">Período</label>
+            <label className="app-label">Período</label>
             <Select value={period} onChange={v => setPeriod(v as Period)}
               options={['Año actual','Últimos 90 días','Últimos 30 días','Personalizado'].map(v => ({ value: v, label: v }))}
               className="w-44" />
           </div>
           {period === 'Personalizado' && (
             <>
-              <DateInput label="Desde" value={customFrom} onChange={setCustomFrom} />
-              <DateInput label="Hasta" value={customTo} onChange={setCustomTo} />
+              <DatePicker
+                label="Desde"
+                value={customFrom}
+                onChange={setCustomFrom}
+                min={dataBounds.min}
+                max={customTo < dataBounds.max ? customTo : dataBounds.max}
+              />
+              <DatePicker
+                label="Hasta"
+                value={customTo}
+                onChange={setCustomTo}
+                min={customFrom > dataBounds.min ? customFrom : dataBounds.min}
+                max={dataBounds.max}
+              />
             </>
           )}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400">Moneda</label>
+            <label className="app-label">Moneda</label>
             <Select value={currency} onChange={setCurrency}
               options={[{ value: 'COP', label: 'COP' }, { value: 'USD', label: 'USD' }]}
               className="w-24" />
@@ -359,14 +411,14 @@ export default function DashboardPage() {
       <section>
         <SectionTitle>Indicadores clave</SectionTitle>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KpiCard label="Patrimonio neto" value={fmt(netWorth, currency)} accentClass={toneFn(netWorth) === 'positive' ? 'border-l-indigo-500' : 'border-l-rose-500'} sub="saldo actual" badge={cashflowBadge} />
-          <KpiCard label="Ingresos" value={fmt(income, currency)} accentClass="border-l-emerald-500" sub="total del período" badge={incomeBadge} />
-          <KpiCard label="Gastos" value={fmt(expense, currency)} accentClass="border-l-rose-500" sub="total del período" badge={expenseBadge} />
+          <KpiCard label="Patrimonio neto" value={fmt(netWorth, currency)} accentClass={toneFn(netWorth) === 'positive' ? 'border-l-[var(--af-accent)]' : 'border-l-[var(--af-negative)]'} sub="saldo actual" badge={cashflowBadge} />
+          <KpiCard label="Ingresos" value={fmt(income, currency)} accentClass="border-l-[var(--af-positive)]" sub="total del período" badge={incomeBadge} />
+          <KpiCard label="Gastos" value={fmt(expense, currency)} accentClass="border-l-[var(--af-negative)]" sub="total del período" badge={expenseBadge} />
           <KpiCard
             label="Tasa de ahorro"
             value={income === 0 ? 'Sin datos' : `${Math.abs(savingsRate) >= 999 ? (savingsRate > 0 ? '>999' : '<-999') : savingsRate.toFixed(1)}%`}
             sub={income > 0 ? (savingsRate >= 20 ? 'margen saludable' : savingsRate >= 5 ? 'margen moderado' : 'margen bajo') : 'sin ingresos'}
-            accentClass={savingsRate > 0 ? 'border-l-emerald-500' : 'border-l-rose-500'}
+            accentClass={savingsRate > 0 ? 'border-l-[var(--af-positive)]' : 'border-l-[var(--af-negative)]'}
             badge={savingsBadge}
           />
         </div>
@@ -411,12 +463,12 @@ export default function DashboardPage() {
       {/* Analysis section */}
       <section>
         <SectionTitle>Análisis gráfico</SectionTitle>
-        <div className="card-glass p-5 space-y-5">
+        <div className="app-panel p-5 space-y-5">
           {/* Chart type tabs */}
           <div className="flex flex-wrap gap-2">
             {CHART_OPTIONS.map(opt => (
               <button key={opt} type="button" onClick={() => setChartType(opt)}
-                className={`text-xs px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${chartType === opt ? 'bg-indigo-600/30 border-indigo-500/50 text-indigo-300' : 'border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200'}`}>
+                className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer transition-[background-color,color] ${chartType === opt ? 'bg-tone-neutral border-[var(--af-border-strong)] text-[var(--af-accent)]' : 'border-[var(--af-border)] bg-[var(--af-surface)] app-subtitle hover:bg-[var(--af-surface-alt)] hover:text-[var(--af-text)]'}`}>
                 {opt}
               </button>
             ))}
@@ -427,16 +479,16 @@ export default function DashboardPage() {
             monthly.length > 0
               ? <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={monthly} barGap={4} barCategoryGap="25%">
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="month" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={fmtShort} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip {...TTStyle} formatter={fmtTT} />
-                    <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+                    <XAxis dataKey="month" tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={fmtShort} tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip {...TTStyle} formatter={fmtTT} cursor={false} />
+                    <Legend wrapperStyle={{ fontSize: 12, color: CHART_LEGEND }} />
                     <Bar dataKey="income" name="Ingresos" fill="#10b981" radius={[4,4,0,0]} />
                     <Bar dataKey="expense" name="Gastos" fill="#f43f5e" radius={[4,4,0,0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              : <p className="text-slate-500 text-sm">Sin datos para el período.</p>
+              : <p className="app-subtitle text-sm">Sin datos para el período.</p>
           )}
 
           {chartType === 'Flujo neto mensual' && (
@@ -453,30 +505,30 @@ export default function DashboardPage() {
                         <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="month" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={fmtShort} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip {...TTStyle} formatter={fmtTT} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+                    <XAxis dataKey="month" tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={fmtShort} tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip {...TTStyle} formatter={fmtTT} cursor={false} />
                     <Area type="monotone" dataKey="cashflow" name="Flujo neto" stroke="#6366f1" fill="url(#posGrad)" strokeWidth={2.5} dot={{ r: 3, fill: '#6366f1' }} />
                   </AreaChart>
                 </ResponsiveContainer>
-              : <p className="text-slate-500 text-sm">Sin datos para el período.</p>
+              : <p className="app-subtitle text-sm">Sin datos para el período.</p>
           )}
 
           {chartType === 'Top categorías' && (
             catRows.length > 0
               ? <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={[...catRows].reverse()} layout="vertical" barCategoryGap="20%">
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                    <XAxis type="number" tickFormatter={fmtShort} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis type="category" dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} width={110} />
-                    <Tooltip {...TTStyle} formatter={fmtTT} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} horizontal={false} />
+                    <XAxis type="number" tickFormatter={fmtShort} tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis type="category" dataKey="name" tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} width={110} />
+                    <Tooltip {...TTStyle} formatter={fmtTT} cursor={false} />
                     <Bar dataKey="value" name="Gasto" radius={[0,4,4,0]}>
                       {[...catRows].reverse().map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-              : <p className="text-slate-500 text-sm">Sin gastos registrados en el período.</p>
+              : <p className="app-subtitle text-sm">Sin gastos registrados en el período.</p>
           )}
 
           {chartType === 'Distribución de gasto' && (
@@ -486,11 +538,11 @@ export default function DashboardPage() {
                     <Pie data={catRows} cx="50%" cy="50%" innerRadius={75} outerRadius={105} dataKey="value" paddingAngle={2} label={false}>
                       {catRows.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
                     </Pie>
-                    <Tooltip {...TTStyle} formatter={fmtTTPair} />
-                    <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ fontSize: 11, color: '#94a3b8' }} formatter={(v: string) => v.length > 14 ? v.slice(0,14)+'…' : v} />
+                    <Tooltip {...TTStyle} formatter={fmtTTPair} cursor={false} />
+                    <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ fontSize: 11, color: CHART_LEGEND }} formatter={(v: string) => v.length > 14 ? v.slice(0,14)+'…' : v} />
                   </PieChart>
                 </ResponsiveContainer>
-              : <p className="text-slate-500 text-sm">Sin gastos registrados en el período.</p>
+              : <p className="app-subtitle text-sm">Sin gastos registrados en el período.</p>
           )}
 
           {chartType === 'Ahorro acumulado' && (
@@ -503,85 +555,54 @@ export default function DashboardPage() {
                         <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="month" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={fmtShort} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip {...TTStyle} formatter={fmtTT} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+                    <XAxis dataKey="month" tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={fmtShort} tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip {...TTStyle} formatter={fmtTT} cursor={false} />
                     <Line type="monotone" dataKey="cumulative" name="Ahorro acumulado" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3, fill: '#10b981' }} />
                   </LineChart>
                 </ResponsiveContainer>
-              : <p className="text-slate-500 text-sm">Sin datos para el período.</p>
+              : <p className="app-subtitle text-sm">Sin datos para el período.</p>
           )}
 
           {chartType === 'Gasto fijo vs variable' && (
             expense > 0
               ? <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={fixedVarData} barCategoryGap="40%">
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={fmtShort} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip {...TTStyle} formatter={fmtTT} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+                    <XAxis dataKey="name" tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={fmtShort} tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip {...TTStyle} formatter={fmtTT} cursor={false} />
                     <Bar dataKey="value" name="Gasto" radius={[4,4,0,0]}>
                       <Cell fill="#f59e0b" />
                       <Cell fill="#6366f1" />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-              : <p className="text-slate-500 text-sm">Sin gastos registrados en el período.</p>
+              : <p className="app-subtitle text-sm">Sin gastos registrados en el período.</p>
           )}
 
           {chartType === 'Gasto por categoría por mes' && (
             stackedRows.length > 0
               ? <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={stackedRows} barCategoryGap="20%">
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="month" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={fmtShort} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip {...TTStyle} formatter={fmtTT} />
-                    <Legend wrapperStyle={{ fontSize: 11, color: '#94a3b8' }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+                    <XAxis dataKey="month" tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={fmtShort} tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip {...TTStyle} formatter={fmtTT} cursor={false} />
+                    <Legend wrapperStyle={{ fontSize: 11, color: CHART_LEGEND }} />
                     {stackedCats.map((cat, i) => (
                       <Bar key={cat} dataKey={cat} stackId="a" fill={PALETTE[i % PALETTE.length]} />
                     ))}
                   </BarChart>
                 </ResponsiveContainer>
-              : <p className="text-slate-500 text-sm">Sin gastos registrados en el período.</p>
+              : <p className="app-subtitle text-sm">Sin gastos registrados en el período.</p>
           )}
         </div>
       </section>
 
-      {/* Recent transactions */}
-      {recentTxs.length > 0 && (
-        <section>
-          <SectionTitle>Últimos movimientos</SectionTitle>
-          <div className="card-glass overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/10 text-slate-400 text-xs uppercase tracking-wider">
-                  <th className="text-left px-4 py-3">Descripción</th>
-                  <th className="text-left px-4 py-3 hidden sm:table-cell">Fecha</th>
-                  <th className="text-right px-4 py-3">Monto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentTxs.map(tx => (
-                  <tr key={tx.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="px-4 py-3 text-slate-200 truncate max-w-xs">{tx.description}</td>
-                    <td className="px-4 py-3 text-slate-400 hidden sm:table-cell">
-                      {new Date(tx.occurred_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td className={`px-4 py-3 text-right font-mono font-medium ${tx.transaction_type === 'INCOME' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {tx.transaction_type === 'INCOME' ? '+' : '-'}{fmtShort(Number(tx.amount))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
       {txs.length === 0 && (
-        <div className="card-glass p-10 text-center text-slate-400">
+        <div className="app-card p-10 text-center app-subtitle">
           <p className="text-lg mb-1">Sin transacciones en este período</p>
           <p className="text-sm">Ajusta el filtro de fechas o importa movimientos.</p>
         </div>

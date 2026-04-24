@@ -1,5 +1,65 @@
 @import "tailwindcss";
 
+:root,
+[data-theme="clean"] {
+  --af-bg: #f8fafc;
+  --af-bg-soft: #eef2f7;
+  --af-surface: #ffffff;
+  --af-surface-alt: #f8fafc;
+  --af-border: #e2e8f0;
+  --af-border-strong: #cbd5e1;
+  --af-text: #0f172a;
+  --af-text-muted: #64748b;
+  --af-text-soft: #94a3b8;
+  --af-accent: #0f766e;
+  --af-accent-hover: #0f766e;
+  --af-accent-soft: #ccfbf1;
+  --af-positive: #047857;
+  --af-positive-soft: #d1fae5;
+  --af-negative: #be123c;
+  --af-negative-soft: #ffe4e6;
+  --af-warning: #b45309;
+  --af-warning-soft: #fef3c7;
+  --af-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --af-shadow-md: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="midnight"] {
+  --af-bg: #020617;
+  --af-bg-soft: #0f172a;
+  --af-surface: #0b1220;
+  --af-surface-alt: #111a2f;
+  --af-border: #22304a;
+  --af-border-strong: #334155;
+  --af-text: #e2e8f0;
+  --af-text-muted: #94a3b8;
+  --af-text-soft: #64748b;
+  --af-accent: #14b8a6;
+  --af-accent-hover: #2dd4bf;
+  --af-accent-soft: rgba(20, 184, 166, 0.2);
+  --af-positive: #34d399;
+  --af-positive-soft: rgba(16, 185, 129, 0.2);
+  --af-negative: #fb7185;
+  --af-negative-soft: rgba(244, 63, 94, 0.2);
+  --af-warning: #f59e0b;
+  --af-warning-soft: rgba(245, 158, 11, 0.2);
+  --af-shadow-sm: 0 2px 10px rgba(2, 6, 23, 0.45);
+  --af-shadow-md: 0 16px 36px rgba(2, 6, 23, 0.55);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--af-bg);
+  color: var(--af-text);
+  font-family: "Manrope", "Segoe UI", Tahoma, sans-serif;
+}
+
 /* ─── Atlas Finance Design Tokens ─────────────────────────────────────────────
    Tailwind v4 @theme: genera utilidades como bg-brand-*, text-surface-*, etc.
    Uso: className="bg-page text-on-surface border-subtle"
@@ -50,6 +110,135 @@
    Para patrones repetitivos: fondo de página, tarjetas, inputs, botones.
    ──────────────────────────────────────────────────────────────────────────── */
 @layer utilities {
+  .app-page {
+    background: var(--af-bg);
+    color: var(--af-text);
+  }
+
+  .app-shell {
+    background: linear-gradient(160deg, var(--af-bg) 0%, var(--af-bg-soft) 100%);
+    color: var(--af-text);
+  }
+
+  .app-panel {
+    border: 1px solid var(--af-border);
+    border-radius: 0.875rem;
+    background: var(--af-surface);
+    box-shadow: var(--af-shadow-sm);
+  }
+
+  .app-card {
+    border: 1px solid var(--af-border);
+    border-radius: 0.875rem;
+    background: var(--af-surface);
+    box-shadow: var(--af-shadow-sm);
+  }
+
+  .app-title {
+    color: var(--af-text);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+
+  .app-subtitle {
+    color: var(--af-text-muted);
+  }
+
+  .app-label {
+    color: var(--af-text-muted);
+    font-size: 0.75rem;
+  }
+
+  .app-section-title {
+    color: var(--af-text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .app-control {
+    width: 100%;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--af-border);
+    background: var(--af-surface);
+    color: var(--af-text);
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
+    outline: none;
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+
+  .app-control:hover {
+    background: var(--af-surface-alt);
+    border-color: var(--af-border-strong);
+  }
+
+  .app-control:focus {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--af-accent) 35%, transparent);
+    border-color: var(--af-accent);
+  }
+
+  .app-menu {
+    border: 1px solid var(--af-border);
+    border-radius: 0.625rem;
+    background: var(--af-surface);
+    box-shadow: var(--af-shadow-md);
+  }
+
+  .app-btn-primary {
+    width: 100%;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    background: var(--af-accent);
+    color: #ffffff;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+
+  .app-btn-primary:hover {
+    background: var(--af-accent-hover);
+  }
+
+  .app-btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .app-link {
+    color: var(--af-accent);
+    font-weight: 600;
+    transition: color 0.15s;
+  }
+
+  .app-link:hover {
+    color: color-mix(in srgb, var(--af-accent) 80%, #000000 20%);
+  }
+
+  .tone-positive {
+    color: var(--af-positive);
+  }
+
+  .tone-negative {
+    color: var(--af-negative);
+  }
+
+  .bg-tone-positive {
+    background: var(--af-positive-soft);
+  }
+
+  .bg-tone-negative {
+    background: var(--af-negative-soft);
+  }
+
+  .bg-tone-neutral {
+    background: var(--af-accent-soft);
+  }
+
   /* Fondo de página con gradiente diagonal */
   .bg-page {
     background-image: linear-gradient(
@@ -138,11 +327,43 @@
   .btn-brand:hover    { background-color: var(--color-brand-hover); }
   .btn-brand:disabled { opacity: 0.5; cursor: not-allowed; }
 
+  /* Backward compatibility aliases now driven by global semantic theme */
+  .card-glass {
+    background: var(--af-surface);
+    border: 1px solid var(--af-border);
+    box-shadow: var(--af-shadow-sm);
+    backdrop-filter: none;
+  }
+
+  .input-dark {
+    border-color: var(--af-border);
+    background: var(--af-surface);
+    color: var(--af-text);
+  }
+
+  .input-dark::placeholder {
+    color: var(--af-text-soft);
+  }
+
+  .input-dark option {
+    background: var(--af-surface);
+    color: var(--af-text);
+  }
+
+  .btn-brand {
+    background: var(--af-accent);
+    box-shadow: none;
+  }
+
+  .btn-brand:hover {
+    background: var(--af-accent-hover);
+  }
+
   /* Alerta de error */
   .alert-error {
-    background-color: var(--color-error-bg);
-    border: 1px solid var(--color-error-border);
-    color: var(--color-error-text);
+    background: var(--af-negative-soft);
+    border: 1px solid color-mix(in srgb, var(--af-negative) 35%, transparent);
+    color: var(--af-negative);
     border-radius: 0.5rem;
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;

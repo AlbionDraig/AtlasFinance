@@ -5,13 +5,13 @@ interface AuthLoadingOverlayProps {
 
 export default function AuthLoadingOverlay({ title, subtitle }: AuthLoadingOverlayProps) {
   return (
-    <div className="fixed inset-0 z-50 bg-gray-950/35 backdrop-blur-[1px] flex items-center justify-center px-4">
-      <div className="w-full max-w-xs rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-xl p-5">
+    <div className="fixed inset-0 z-50 bg-[color-mix(in_srgb,var(--af-text)_28%,transparent)] backdrop-blur-[1px] flex items-center justify-center px-4">
+      <div className="w-full max-w-xs app-panel p-5">
         <div className="flex items-center gap-3">
-          <span className="h-5 w-5 rounded-full border-2 border-indigo-200 dark:border-indigo-800 border-t-indigo-600 dark:border-t-indigo-400 animate-spin" />
+          <span className="h-5 w-5 rounded-full border-2 border-[var(--af-border)] border-t-[var(--af-accent)] animate-spin" />
           <div>
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400">{subtitle}</p>
+            <p className="text-sm font-semibold text-[var(--af-text)]">{title}</p>
+            <p className="text-xs app-subtitle">{subtitle}</p>
           </div>
         </div>
       </div>

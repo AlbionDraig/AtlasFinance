@@ -1,8 +1,8 @@
 export default function PocketsPage() {
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Pockets</h1>
-      <p className="text-gray-500 dark:text-gray-400">
+    <div className="app-panel p-6">
+      <h1 className="app-title text-2xl mb-2">Bolsillos</h1>
+      <p className="app-subtitle">
         Savings pockets will go here.
       </p>
     </div>

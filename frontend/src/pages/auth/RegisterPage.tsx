@@ -38,12 +38,12 @@ export default function RegisterPage() {
   const checks = getPasswordChecks(password)
   const strength = getPasswordStrength(password)
 
-  const strengthBarClass =
+  const strengthBarColor =
     strength.level === 'debil'
-      ? 'bg-red-500'
+      ? 'var(--af-negative)'
       : strength.level === 'media'
-        ? 'bg-amber-500'
-        : 'bg-emerald-500'
+        ? 'var(--af-warning)'
+        : 'var(--af-positive)'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -94,7 +94,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-page px-4 py-8 relative overflow-hidden">
+    <div className="app-shell min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden">
       {/* Decorative blobs */}
       <div className="blob blob-primary -top-40 -left-40 w-96 h-96" />
       <div className="blob blob-secondary -bottom-40 -right-40 w-96 h-96" />
@@ -106,20 +106,20 @@ export default function RegisterPage() {
         />
       )}
 
-      <div className="relative w-full max-w-sm card-glass p-8">
+      <div className="relative w-full max-w-sm app-panel p-8">
         {/* Logo */}
         <div className="flex justify-center mb-4">
-          <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/40">
+          <div className="w-12 h-12 rounded-xl bg-[var(--af-accent)] flex items-center justify-center">
             <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V17a1 1 0 11-2 0v-.07A7.003 7.003 0 015 10h1a6 6 0 0012 0h1a7.003 7.003 0 01-6 6.93z" />
             </svg>
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold text-center mb-1 text-white tracking-tight">
+        <h1 className="app-title text-2xl text-center mb-1 tracking-tight">
           Atlas Finance
         </h1>
-        <p className="text-sm text-center text-slate-400 mb-6">
+        <p className="app-subtitle text-sm text-center mb-6">
           Crea tu cuenta
         </p>
 
@@ -129,7 +129,7 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1 text-slate-300">
+            <label className="block text-sm font-medium mb-1 app-subtitle">
               Nombre completo
             </label>
             <input
@@ -139,12 +139,12 @@ export default function RegisterPage() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Ej: Sebastian Gutierrez Betancourt"
-              className="input-dark"
+              className="app-control"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-slate-300">
+            <label className="block text-sm font-medium mb-1 app-subtitle">
               Email
             </label>
             <input
@@ -154,12 +154,12 @@ export default function RegisterPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu_correo@ejemplo.com"
-              className="input-dark"
+              className="app-control"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-slate-300">
+            <label className="block text-sm font-medium mb-1 app-subtitle">
               Contraseña
             </label>
             <input
@@ -170,40 +170,40 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Mínimo 8 caracteres"
-              className="input-dark"
+              className="app-control"
             />
 
             <div className="mt-2">
-              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+              <div className="flex items-center justify-between text-xs app-subtitle mb-1">
                 <span>Fortaleza de contraseña</span>
                 <span className="font-medium">{password ? strength.label : 'Sin definir'}</span>
               </div>
-              <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-[var(--af-bg-soft)] rounded-full overflow-hidden">
                 <div
-                  className={`h-full ${strengthBarClass} transition-all`}
-                  style={{ width: `${password ? strength.score : 0}%` }}
+                  className="h-full transition-all"
+                  style={{ width: `${password ? strength.score : 0}%`, backgroundColor: strengthBarColor }}
                 />
               </div>
             </div>
 
             <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs">
-              <li className={checks.minLength ? 'text-emerald-400' : 'text-slate-500'}>
+              <li className={checks.minLength ? 'tone-positive' : 'app-subtitle'}>
                 {checks.minLength ? '✓' : '•'} Mínimo 8 caracteres
               </li>
-              <li className={checks.hasUpper ? 'text-emerald-400' : 'text-slate-500'}>
+              <li className={checks.hasUpper ? 'tone-positive' : 'app-subtitle'}>
                 {checks.hasUpper ? '✓' : '•'} Al menos una mayúscula
               </li>
-              <li className={checks.hasNumber ? 'text-emerald-400' : 'text-slate-500'}>
+              <li className={checks.hasNumber ? 'tone-positive' : 'app-subtitle'}>
                 {checks.hasNumber ? '✓' : '•'} Al menos un número
               </li>
-              <li className={checks.hasSymbol ? 'text-emerald-400' : 'text-slate-500'}>
+              <li className={checks.hasSymbol ? 'tone-positive' : 'app-subtitle'}>
                 {checks.hasSymbol ? '✓' : '•'} Al menos un símbolo
               </li>
             </ul>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-slate-300">
+            <label className="block text-sm font-medium mb-1 app-subtitle">
               Confirmar contraseña
             </label>
             <input
@@ -214,11 +214,11 @@ export default function RegisterPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Repite tu contraseña"
-              className="input-dark"
+              className="app-control"
             />
 
             {confirmPassword && password !== confirmPassword && (
-              <p className="mt-1 text-xs text-red-400">
+              <p className="mt-1 text-xs tone-negative">
                 Las contraseñas no coinciden.
               </p>
             )}
@@ -227,14 +227,14 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="btn-brand"
+            className="app-btn-primary"
           >
             {loading ? 'Creando cuenta…' : 'Crear cuenta'}
           </button>
 
-          <p className="text-center text-sm text-slate-400">
+          <p className="text-center text-sm app-subtitle">
             ¿Ya tienes cuenta?{' '}
-            <Link to="/login" className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
+            <Link to="/login" className="app-link">
               Inicia sesión
             </Link>
           </p>
