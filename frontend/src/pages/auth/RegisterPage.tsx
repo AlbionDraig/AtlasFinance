@@ -5,27 +5,7 @@ import AuthLoadingOverlay from '@/components/ui/AuthLoadingOverlay'
 import FormField from '@/components/ui/FormField'
 import { useAuthStore } from '@/store/authStore'
 import { useToast } from '@/hooks/useToast'
-
-type StrengthLevel = 'debil' | 'media' | 'fuerte'
-
-function getPasswordChecks(password: string) {
-  return {
-    minLength: password.length >= 8,
-    hasUpper: /[A-Z]/.test(password),
-    hasNumber: /\d/.test(password),
-    hasSymbol: /[^A-Za-z0-9]/.test(password),
-  }
-}
-
-function getPasswordStrength(password: string): { score: number; label: string; level: StrengthLevel } {
-  const checks = getPasswordChecks(password)
-  const passed = Object.values(checks).filter(Boolean).length
-  const score = Math.round((passed / 4) * 100)
-
-  if (score <= 25) return { score, label: 'Débil', level: 'debil' }
-  if (score <= 75) return { score, label: 'Media', level: 'media' }
-  return { score, label: 'Fuerte', level: 'fuerte' }
-}
+import { getPasswordChecks, getPasswordStrength } from '@/lib/passwordStrength'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -39,13 +19,6 @@ export default function RegisterPage() {
 
   const checks = getPasswordChecks(password)
   const strength = getPasswordStrength(password)
-
-  const strengthBarColor =
-    strength.level === 'debil'
-      ? 'var(--af-negative)'
-      : strength.level === 'media'
-        ? 'var(--af-warning)'
-        : 'var(--af-positive)'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -176,7 +149,7 @@ export default function RegisterPage() {
               <div className="h-1.5 w-full bg-[var(--af-bg-soft)] rounded-full overflow-hidden">
                 <div
                   className="h-full transition-all"
-                  style={{ width: `${password ? strength.score : 0}%`, backgroundColor: strengthBarColor }}
+                  style={{ width: `${password ? strength.score : 0}%`, backgroundColor: strength.color }}
                 />
               </div>
             </div>

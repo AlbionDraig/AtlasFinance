@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
 import { useToast } from '@/hooks/useToast'
+import { getPasswordChecks, getPasswordStrength } from '@/lib/passwordStrength'
 
 interface FormState {
   full_name: string
@@ -24,6 +25,10 @@ export default function ProfilePage() {
   })
   const [loading, setLoading] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
+
+  const pwChecks = useMemo(() => getPasswordChecks(form.new_password), [form.new_password])
+  const pwStrength = useMemo(() => getPasswordStrength(form.new_password), [form.new_password])
+  const confirmMatch = form.confirm_password.length > 0 && form.confirm_password === form.new_password
 
   useEffect(() => {
     if (user) {
@@ -219,6 +224,34 @@ export default function ProfilePage() {
                     onChange={handleChange}
                     autoComplete="new-password"
                   />
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between text-xs text-neutral-400 mb-1">
+                      <span>Fortaleza de contraseña</span>
+                      <span className="font-medium" style={{ color: form.new_password ? pwStrength.color : undefined }}>
+                        {form.new_password ? pwStrength.label : 'Sin definir'}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-neutral-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full transition-all"
+                        style={{ width: `${form.new_password ? pwStrength.score : 0}%`, backgroundColor: pwStrength.color }}
+                      />
+                    </div>
+                    <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs">
+                      <li className={pwChecks.minLength ? 'text-success' : 'text-neutral-400'}>
+                        {pwChecks.minLength ? '✓' : '•'} Mínimo 8 caracteres
+                      </li>
+                      <li className={pwChecks.hasUpper ? 'text-success' : 'text-neutral-400'}>
+                        {pwChecks.hasUpper ? '✓' : '•'} Al menos una mayúscula
+                      </li>
+                      <li className={pwChecks.hasNumber ? 'text-success' : 'text-neutral-400'}>
+                        {pwChecks.hasNumber ? '✓' : '•'} Al menos un número
+                      </li>
+                      <li className={pwChecks.hasSymbol ? 'text-success' : 'text-neutral-400'}>
+                        {pwChecks.hasSymbol ? '✓' : '•'} Al menos un símbolo
+                      </li>
+                    </ul>
+                  </div>
                 </div>
                 <div className="flex flex-col gap-1">
                   <label htmlFor="confirm_password" className="app-label">Confirmar nueva contraseña</label>
@@ -231,6 +264,11 @@ export default function ProfilePage() {
                     onChange={handleChange}
                     autoComplete="new-password"
                   />
+                  {form.confirm_password.length > 0 && (
+                    <p className={`text-xs mt-1 ${confirmMatch ? 'text-success' : 'text-neutral-400'}`}>
+                      {confirmMatch ? '✓ Las contraseñas coinciden' : '• Las contraseñas no coinciden'}
+                    </p>
+                  )}
                 </div>
                 <button
                   type="button"
