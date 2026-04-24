@@ -7,6 +7,7 @@ interface DatePickerProps {
   min?: string
   max?: string
   className?: string
+  disabled?: boolean
 }
 
 const WEEK_DAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
@@ -49,7 +50,7 @@ function buildCalendarDays(viewDate: Date): Date[] {
   })
 }
 
-export default function DatePicker({ label, value, onChange, min, max, className = '' }: DatePickerProps) {
+export default function DatePicker({ label, value, onChange, min, max, className = '', disabled = false }: DatePickerProps) {
   const [open, setOpen] = useState(false)
   const [viewDate, setViewDate] = useState(() => parseIsoDate(value))
   const rootRef = useRef<HTMLDivElement>(null)
@@ -96,8 +97,12 @@ export default function DatePicker({ label, value, onChange, min, max, className
 
       <button
         type="button"
-        onClick={() => setOpen(prev => !prev)}
-        className="app-control w-36 text-left text-xs [transform:translateZ(0)] [backface-visibility:hidden]"
+        onClick={() => {
+          if (disabled) return
+          setOpen(prev => !prev)
+        }}
+        disabled={disabled}
+        className={`app-control w-36 text-left text-xs [transform:translateZ(0)] [backface-visibility:hidden] ${disabled ? 'cursor-not-allowed opacity-70' : ''}`}
       >
         <span className="inline-flex w-full items-center gap-2 whitespace-nowrap">
           <svg className="h-3.5 w-3.5 app-subtitle" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -110,7 +115,7 @@ export default function DatePicker({ label, value, onChange, min, max, className
         </span>
       </button>
 
-      {open && (
+      {open && !disabled && (
         <div className="app-menu absolute left-0 top-full z-50 mt-2 w-72 p-3">
           <div className="mb-2 flex items-center justify-between">
             <button

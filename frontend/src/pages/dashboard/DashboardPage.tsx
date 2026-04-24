@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -106,6 +106,12 @@ function resolveCatName(rawId: number | null, lookup: Map<number, string>): stri
   return lookup.get(rawId) ?? 'Sin categoría'
 }
 
+function toneToVariant(tone: Tone, fallback: BadgeVariant = 'neutral'): BadgeVariant {
+  if (tone === 'positive') return 'success'
+  if (tone === 'negative') return 'brand'
+  return fallback
+}
+
 // ─── Build aggregates ─────────────────────────────────────────────────────────
 type MonthlyRow = { month: string; income: number; expense: number; cashflow: number; cumulative: number }
 function buildMonthly(txs: Transaction[]): MonthlyRow[] {
@@ -175,26 +181,144 @@ const CHART_GRID = 'var(--af-border)'
 const CHART_LEGEND = 'var(--af-text-muted)'
 const TTStyle = { contentStyle: { background: 'var(--af-surface)', border: '1px solid var(--af-border)', borderRadius: '0.5rem', color: 'var(--af-text)', fontSize: 12, boxShadow: 'var(--af-shadow-md)' } }
 
+// ─── Help descriptions ───────────────────────────────────────────────────────
+const KPI_HELP: Record<string, string> = {
+  'Patrimonio neto': 'Suma de los saldos actuales de todas tus cuentas en la moneda seleccionada. Refleja tu riqueza neta disponible en este momento.',
+  'Ingresos': 'Total de entradas de dinero registradas en el período. Incluye salarios, transferencias recibidas y cualquier otro ingreso.',
+  'Gastos': 'Total de egresos del período. Cuanto más bajo sea respecto a tus ingresos, mayor es tu capacidad de ahorro.',
+  'Tasa de ahorro': 'Porcentaje de tus ingresos que no gastaste. ≥20% es saludable, 5–19% moderado, <5% requiere atención.',
+}
+
+const INSIGHT_HELP: Record<string, string> = {
+  'Balance del período': 'Ingresos menos gastos del período seleccionado. Positivo significa que generaste excedente; negativo indica déficit.',
+  'Movimientos': 'Número total de transacciones registradas en el período. Un volumen muy alto puede indicar atomización del gasto.',
+  'Relación gastos/ingresos': 'Qué fracción de tus ingresos se va en gastos. ≤70% es saludable, 71–90% moderado, >90% indica que estás gastando casi todo lo que ganas.',
+  'Mayor impacto': 'La categoría que concentró el mayor monto de gasto en el período. Útil para identificar dónde recortar.',
+  'Mayor gasto individual': 'La transacción de egreso con el mayor importe registrado en el período.',
+  'Cobertura de efectivo': 'Cuántos meses podrías sostenerte con tu patrimonio actual al ritmo de gasto mensual promedio del período. Se recomienda ≥6 meses.',
+  'Mes más costoso': 'El mes que concentró el mayor nivel de gasto dentro del período seleccionado.',
+  'Variación del gasto': 'Cambio porcentual del gasto total versus el período inmediatamente anterior de igual duración.',
+  'Participación gasto fijo': 'Proporción del gasto total que corresponde a obligaciones recurrentes (arriendo, servicios, suscripciones, etc.). <35% flexible, 35–60% normal, >60% comprometido.',
+}
+
+const CHART_HELP: Record<string, string> = {
+  'Ingresos vs gastos': 'Barras mensuales de ingresos y gastos lado a lado. Permite detectar rápidamente los meses en que los gastos superaron los ingresos.',
+  'Flujo neto mensual': 'Diferencia mensual entre ingresos y gastos (ingresos − gastos). Valores positivos significan ahorro, negativos significan déficit en ese mes.',
+  'Top categorías': 'Las 10 categorías de gasto más importantes del período, ordenadas de mayor a menor importe. Revela dónde se concentra tu gasto.',
+  'Distribución de gasto': 'Vista proporcional (donut) de cuánto representa cada categoría sobre el gasto total. Ideal para ver la composición del gasto de un vistazo.',
+  'Ahorro acumulado': 'Suma del flujo neto mes a mes a lo largo del período. Muestra si tu ahorro crece de forma sostenida o se erosiona en algún punto.',
+  'Gasto fijo vs variable': 'Compara el total gastado en obligaciones fijas (arriendo, servicios, suscripciones) contra gastos discrecionales o variables.',
+  'Gasto por categoría por mes': 'Barras apiladas que muestran cómo evoluciona el gasto de las 5 principales categorías mes a mes. Útil para detectar tendencias por rubro.',
+}
+
+// ─── Help tooltip ─────────────────────────────────────────────────────────────
+function HelpTooltip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false)
+  const [align, setAlign] = useState<'left' | 'center' | 'right'>('center')
+  const ref = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    if (!open || !ref.current) return
+    const rect = ref.current.getBoundingClientRect()
+    const vw = window.innerWidth
+    const tooltipWidth = 224
+    const margin = 8
+    if (rect.left < tooltipWidth / 2 + margin) {
+      setAlign('left')
+      return
+    }
+    if (vw - rect.right < tooltipWidth / 2 + margin) {
+      setAlign('right')
+      return
+    }
+    setAlign('center')
+  }, [open])
+
+  const tooltipPosClass = align === 'left'
+    ? 'left-0'
+    : align === 'right'
+      ? 'right-0'
+      : 'left-1/2 -translate-x-1/2'
+  const arrowPosClass = align === 'left'
+    ? 'left-2'
+    : align === 'right'
+      ? 'right-2'
+      : 'left-1/2 -translate-x-1/2'
+
+  return (
+    <span
+      ref={ref}
+      className="relative inline-flex items-center"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <span className="w-4 h-4 rounded-full bg-transparent border border-neutral-900 text-neutral-900 text-[10px] flex items-center justify-center cursor-help select-none leading-none font-medium">
+        ?
+      </span>
+      {open && (
+        <span className={`absolute bottom-full mb-2 z-50 w-56 max-w-[calc(100vw-1rem)] bg-neutral-900 text-white text-xs rounded-xl px-3 py-2.5 shadow-xl leading-relaxed pointer-events-none ${tooltipPosClass}`}>
+          {text}
+          <span className={`absolute top-full border-4 border-transparent border-t-neutral-900 ${arrowPosClass}`} />
+        </span>
+      )}
+    </span>
+  )
+}
+
 // ─── Small sub-components ─────────────────────────────────────────────────────
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="app-section-title mb-3">{children}</h2>
 }
 
-interface BadgeProps { text: string; variant: 'brand' | 'success' | 'warning' }
-function Badge({ text, variant }: BadgeProps) {
+type BadgeVariant = 'brand' | 'success' | 'warning' | 'neutral'
+interface BadgeProps { text: string; variant: BadgeVariant; hint?: string }
+function Badge({ text, variant, hint }: BadgeProps) {
+  const [open, setOpen] = useState(false)
+  const [align, setAlign] = useState<'left' | 'right'>('right')
+  const ref = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    if (!open || !ref.current) return
+    const rect = ref.current.getBoundingClientRect()
+    const tooltipWidth = 208
+    const margin = 8
+    if (rect.left < tooltipWidth - rect.width + margin) {
+      setAlign('left')
+      return
+    }
+    setAlign('right')
+  }, [open])
+
   const cls = {
     brand: 'bg-[#fce8e8] text-[#8a0808]',
     success: 'bg-[#e6f4ef] text-[#0f5c40]',
     warning: 'bg-[#fff4e0] text-[#8a5200]',
+    neutral: 'bg-[#edeceb] text-[#4a4845]',
   }[variant]
-  return <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cls}`}>{text}</span>
+  return (
+    <span ref={ref} className="relative inline-flex"
+      onMouseEnter={() => hint && setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cls} ${hint ? 'cursor-help' : ''}`}>{text}</span>
+      {open && hint && (
+        <span className={`absolute bottom-full mb-2 z-50 w-52 max-w-[calc(100vw-1rem)] bg-neutral-900 text-white text-xs rounded-xl px-3 py-2.5 shadow-xl leading-relaxed pointer-events-none whitespace-normal ${align === 'left' ? 'left-0' : 'right-0'}`}>
+          {hint}
+          <span className={`absolute top-full border-4 border-transparent border-t-neutral-900 ${align === 'left' ? 'left-3' : 'right-3'}`} />
+        </span>
+      )}
+    </span>
+  )
 }
 
-interface KpiCardProps { label: string; value: string; sub?: string; badge?: BadgeProps; accentClass?: string; valueClass?: string }
-function KpiCard({ label, value, sub, badge, accentClass = 'border-t-[var(--af-border)]', valueClass = 'text-[var(--af-text)]' }: KpiCardProps) {
+interface KpiCardProps { label: string; value: string; sub?: string; badge?: BadgeProps; accentClass?: string; valueClass?: string; help?: string }
+function KpiCard({ label, value, sub, badge, accentClass = 'border-t-[var(--af-border)]', valueClass = 'text-[var(--af-text)]', help }: KpiCardProps) {
   return (
-    <div className={`app-card p-5 border-t-4 ${accentClass}`}>
-      <p className="app-label uppercase tracking-wider mb-1">{label}</p>
+    <div className={`app-card p-5 border-t-4 relative ${accentClass}`}>
+      {help && <span className="absolute top-3 right-3"><HelpTooltip text={help} /></span>}
+      <div className="flex items-center gap-1.5 mb-1">
+        <p className="app-label uppercase tracking-wider">{label}</p>
+      </div>
       <p className={`text-2xl font-bold leading-none ${valueClass}`}>{value}</p>
       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
         {sub && <p className="app-subtitle text-xs">{sub}</p>}
@@ -204,12 +328,15 @@ function KpiCard({ label, value, sub, badge, accentClass = 'border-t-[var(--af-b
   )
 }
 
-interface InsightCardProps { label: string; value: string; sub?: string; tone?: Tone }
-function InsightCard({ label, value, sub, tone = 'neutral' }: InsightCardProps) {
+interface InsightCardProps { label: string; value: string; sub?: string; tone?: Tone; help?: string }
+function InsightCard({ label, value, sub, tone = 'neutral', help }: InsightCardProps) {
   const valCls = { positive: 'text-[#0f7a55]', negative: 'text-[#c47a00]', flat: 'text-[#4a4845]', neutral: 'text-[#1c1b1a]' }[tone]
   return (
-    <div className="bg-white border border-[#edeceb] rounded-xl p-4 shadow-sm">
-      <p className="text-[#4a4845] text-xs uppercase tracking-wider mb-1">{label}</p>
+    <div className="bg-white border border-[#edeceb] rounded-xl p-4 shadow-sm relative">
+      {help && <span className="absolute top-3 right-3"><HelpTooltip text={help} /></span>}
+      <div className="flex items-center gap-1.5 mb-1">
+        <p className="text-[#4a4845] text-xs uppercase tracking-wider">{label}</p>
+      </div>
       <p className={`text-lg font-bold leading-none truncate ${valCls}`}>{value}</p>
       {sub && <p className="app-subtitle text-xs mt-1 leading-snug">{sub}</p>}
     </div>
@@ -375,43 +502,41 @@ export default function DashboardPage() {
   return (
     <div className="app-shell space-y-6 max-w-7xl rounded-2xl p-4 md:p-6">
 
-      {/* Header + filters */}
-      <div className="app-panel relative z-40 overflow-visible flex flex-wrap items-start justify-between gap-4 px-3 py-3">
-        <div>
-          <h1 className="app-title text-xl">Panorama financiero</h1>
-          <p className="app-subtitle text-sm mt-0.5">Vista general de tus finanzas en el período elegido</p>
+      {/* Header */}
+      <div>
+        <h1 className="app-title text-xl">Panorama financiero</h1>
+        <p className="app-subtitle text-sm mt-0.5">Vista general de tus finanzas en el período elegido</p>
+      </div>
+
+      {/* Filters */}
+      <div className="sticky top-0 z-40 overflow-visible bg-white border border-neutral-100 rounded-2xl flex flex-wrap items-end gap-4 px-5 py-4 shadow-sm">
+        <div className="flex flex-col gap-1">
+          <label className="app-label">Período</label>
+          <Select value={period} onChange={v => setPeriod(v as Period)}
+            options={['Año actual','Últimos 90 días','Últimos 30 días','Personalizado'].map(v => ({ value: v, label: v }))}
+            className="w-44" />
         </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex flex-col gap-1">
-            <label className="app-label">Período</label>
-            <Select value={period} onChange={v => setPeriod(v as Period)}
-              options={['Año actual','Últimos 90 días','Últimos 30 días','Personalizado'].map(v => ({ value: v, label: v }))}
-              className="w-44" />
-          </div>
-          {period === 'Personalizado' && (
-            <>
-              <DatePicker
-                label="Desde"
-                value={customFrom}
-                onChange={setCustomFrom}
-                min={dataBounds.min}
-                max={customTo < dataBounds.max ? customTo : dataBounds.max}
-              />
-              <DatePicker
-                label="Hasta"
-                value={customTo}
-                onChange={setCustomTo}
-                min={customFrom > dataBounds.min ? customFrom : dataBounds.min}
-                max={dataBounds.max}
-              />
-            </>
-          )}
-          <div className="flex flex-col gap-1">
-            <label className="app-label">Moneda</label>
-            <Select value={currency} onChange={setCurrency}
-              options={[{ value: 'COP', label: 'COP' }, { value: 'USD', label: 'USD' }]}
-              className="w-24" />
-          </div>
+        <DatePicker
+          label="Desde"
+          value={period === 'Personalizado' ? customFrom : toISODate(dateFrom)}
+          onChange={setCustomFrom}
+          min={dataBounds.min}
+          max={customTo < dataBounds.max ? customTo : dataBounds.max}
+          disabled={period !== 'Personalizado'}
+        />
+        <DatePicker
+          label="Hasta"
+          value={period === 'Personalizado' ? customTo : toISODate(dateTo)}
+          onChange={setCustomTo}
+          min={customFrom > dataBounds.min ? customFrom : dataBounds.min}
+          max={dataBounds.max}
+          disabled={period !== 'Personalizado'}
+        />
+        <div className="flex flex-col gap-1 ml-auto">
+          <label className="app-label">Moneda</label>
+          <Select value={currency} onChange={setCurrency}
+            options={[{ value: 'COP', label: 'COP' }, { value: 'USD', label: 'USD' }]}
+            className="w-24" />
         </div>
       </div>
 
@@ -419,16 +544,17 @@ export default function DashboardPage() {
       <section>
         <SectionTitle>Indicadores clave</SectionTitle>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KpiCard label="Patrimonio neto" value={fmt(netWorth, currency)} accentClass="border-t-[#ca0b0b]" valueClass="text-[#ca0b0b]" sub="saldo actual" badge={{ text: cashflowBadge.text, variant: 'brand' }} />
-          <KpiCard label="Ingresos" value={fmt(income, currency)} accentClass="border-t-[#0f7a55]" valueClass="text-[#0f7a55]" sub="total del período" badge={{ text: incomeBadge.text, variant: 'success' }} />
-          <KpiCard label="Gastos" value={fmt(expense, currency)} accentClass="border-t-[#c47a00]" valueClass="text-[#c47a00]" sub="total del período" badge={{ text: expenseBadge.text, variant: 'warning' }} />
+          <KpiCard label="Patrimonio neto" value={fmt(netWorth, currency)} accentClass="border-t-[#ca0b0b]" valueClass="text-[#ca0b0b]" sub="saldo actual" badge={{ text: cashflowBadge.text, variant: toneToVariant(cashflowBadge.tone, 'brand'), hint: hasPrev ? `El flujo neto del período anterior fue ${fmt(prevCashflow, currency)}. Un flujo positivo mejora tu patrimonio acumulado.` : 'No hay período anterior para comparar.' }} help={KPI_HELP['Patrimonio neto']} />
+          <KpiCard label="Ingresos" value={fmt(income, currency)} accentClass="border-t-[#0f7a55]" valueClass="text-[#0f7a55]" sub="total del período" badge={{ text: incomeBadge.text, variant: toneToVariant(incomeBadge.tone, 'success'), hint: hasPrev ? `En el período anterior tus ingresos fueron ${fmt(prevIncome, currency)}. ${incomeBadge.tone === 'positive' ? 'Generaste más ingresos, buen ritmo.' : incomeBadge.tone === 'negative' ? 'Tus ingresos cayeron respecto al período previo.' : 'Ingresos estables.'}` : 'No hay período anterior para comparar.' }} help={KPI_HELP['Ingresos']} />
+          <KpiCard label="Gastos" value={fmt(expense, currency)} accentClass="border-t-[#c47a00]" valueClass="text-[#c47a00]" sub="total del período" badge={{ text: expenseBadge.text, variant: toneToVariant(expenseBadge.tone, 'warning'), hint: hasPrev ? `En el período anterior tus gastos fueron ${fmt(prevExpense, currency)}. ${expenseBadge.tone === 'positive' ? 'Gastaste menos que antes, bien.' : expenseBadge.tone === 'negative' ? 'Tus gastos aumentaron respecto al período previo.' : 'Gasto estable.'}` : 'No hay período anterior para comparar.' }} help={KPI_HELP['Gastos']} />
           <KpiCard
             label="Tasa de ahorro"
             value={income === 0 ? 'Sin datos' : `${Math.abs(savingsRate) >= 999 ? (savingsRate > 0 ? '>999' : '<-999') : savingsRate.toFixed(1)}%`}
             sub={income > 0 ? (savingsRate >= 20 ? 'margen saludable' : savingsRate >= 5 ? 'margen moderado' : 'margen bajo') : 'sin ingresos'}
             accentClass="border-t-[#5f0404]"
             valueClass="text-[#5f0404]"
-            badge={{ text: savingsBadge.text, variant: 'brand' }}
+            badge={{ text: savingsBadge.text, variant: toneToVariant(savingsBadge.tone, 'brand'), hint: hasPrev ? `Tu tasa de ahorro en el período anterior fue ${prevSavings.toFixed(1)}%. ${savingsBadge.tone === 'positive' ? 'Estás ahorrando una mayor proporción de tus ingresos.' : savingsBadge.tone === 'negative' ? 'Tu tasa de ahorro bajó respecto al período previo.' : 'Tasa de ahorro estable.'}` : 'No hay período anterior para comparar.' }}
+            help={KPI_HELP['Tasa de ahorro']}
           />
         </div>
       </section>
@@ -437,34 +563,38 @@ export default function DashboardPage() {
       <section>
         <SectionTitle>Análisis del período</SectionTitle>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <InsightCard label="Balance del período" value={fmt(balance, currency)} sub={balance > 0 ? 'Saldo positivo ✓' : balance < 0 ? 'Gastos superan ingresos' : 'Equilibrado'} tone={toneFn(balance)} />
-          <InsightCard label="Movimientos" value={`${txs.length.toLocaleString('es-CO')}`} sub="Transacciones en el período" tone="neutral" />
+          <InsightCard label="Balance del período" value={fmt(balance, currency)} sub={balance > 0 ? 'Saldo positivo ✓' : balance < 0 ? 'Gastos superan ingresos' : 'Equilibrado'} tone={toneFn(balance)} help={INSIGHT_HELP['Balance del período']} />
+          <InsightCard label="Movimientos" value={`${txs.length.toLocaleString('es-CO')}`} sub="Transacciones en el período" tone="neutral" help={INSIGHT_HELP['Movimientos']} />
           <InsightCard
             label="Relación gastos/ingresos"
             value={expRatio != null ? `${expRatio.toFixed(1)}%` : 'Sin datos'}
             sub={expRatio != null ? `${expRatio <= 70 ? 'saludable' : expRatio <= 90 ? 'moderado' : 'alto'} · ${fmt(expense, currency)} de ${fmt(income, currency)}` : 'No hay ingresos'}
             tone={expRatio == null ? 'neutral' : expRatio <= 70 ? 'positive' : expRatio <= 90 ? 'flat' : 'negative'}
+            help={INSIGHT_HELP['Relación gastos/ingresos']}
           />
-          <InsightCard label="Mayor impacto" value={topCat?.name ?? 'Sin gastos'} sub={topCat ? `${topCatShare.toFixed(1)}% del gasto · ${fmt(topCat.value, currency)}` : 'No hay egresos suficientes'} tone="neutral" />
-          <InsightCard label="Mayor gasto individual" value={biggestTx ? fmt(Number(biggestTx.amount), currency) : 'Sin gastos'} sub={biggestTx?.description ?? 'No hay egresos registrados'} tone="negative" />
+          <InsightCard label="Mayor impacto" value={topCat?.name ?? 'Sin gastos'} sub={topCat ? `${topCatShare.toFixed(1)}% del gasto · ${fmt(topCat.value, currency)}` : 'No hay egresos suficientes'} tone="neutral" help={INSIGHT_HELP['Mayor impacto']} />
+          <InsightCard label="Mayor gasto individual" value={biggestTx ? fmt(Number(biggestTx.amount), currency) : 'Sin gastos'} sub={biggestTx?.description ?? 'No hay egresos registrados'} tone="negative" help={INSIGHT_HELP['Mayor gasto individual']} />
           <InsightCard
             label="Cobertura de efectivo"
             value={cashCoverage != null ? `${cashCoverage.toFixed(1)} meses` : netWorth <= 0 ? fmt(netWorth, currency) : 'Sin referencia'}
             sub={cashCoverage != null ? `Al ritmo de ${fmt(avgMonthlyExp, currency)}/mes` : 'Necesitas gasto mensual para estimar'}
             tone={cashCoverage == null ? 'neutral' : cashCoverage >= 6 ? 'positive' : cashCoverage < 1 ? 'negative' : 'flat'}
+            help={INSIGHT_HELP['Cobertura de efectivo']}
           />
-          <InsightCard label="Mes más costoso" value={highestMonth?.month ?? 'Sin gastos'} sub={highestMonth ? `Gasto: ${fmt(highestMonth.expense, currency)}` : 'No hay meses con gasto'} tone="neutral" />
+          <InsightCard label="Mes más costoso" value={highestMonth?.month ?? 'Sin gastos'} sub={highestMonth ? `Gasto: ${fmt(highestMonth.expense, currency)}` : 'No hay meses con gasto'} tone="neutral" help={INSIGHT_HELP['Mes más costoso']} />
           <InsightCard
             label="Variación del gasto"
             value={expVariation != null ? `${expVariation > 0 ? '+' : ''}${expVariation.toFixed(1)}%` : 'Sin referencia'}
             sub={expVariation != null ? `Anterior: ${fmt(prevExpense, currency)} · Actual: ${fmt(expense, currency)}` : 'No hay período anterior'}
             tone={expVariation == null ? 'neutral' : expVariation > 0 ? 'negative' : expVariation < 0 ? 'positive' : 'flat'}
+            help={INSIGHT_HELP['Variación del gasto']}
           />
           <InsightCard
             label="Participación gasto fijo"
             value={fixedShare != null ? `${fixedShare.toFixed(1)}%` : 'Sin gastos'}
             sub={fixedShare != null ? `Fijo: ${fmt(fixedTotal, currency)} · Variable: ${fmt(expense - fixedTotal, currency)}` : 'No hay egresos'}
             tone={fixedShare == null ? 'neutral' : fixedShare >= 60 ? 'negative' : fixedShare <= 35 ? 'positive' : 'flat'}
+            help={INSIGHT_HELP['Participación gasto fijo']}
           />
         </div>
       </section>
@@ -473,14 +603,17 @@ export default function DashboardPage() {
       <section>
         <SectionTitle>Análisis gráfico</SectionTitle>
         <div className="app-panel p-5 space-y-5">
-          {/* Chart type tabs */}
-          <div className="flex flex-wrap gap-2">
-            {CHART_OPTIONS.map(opt => (
-              <button key={opt} type="button" onClick={() => setChartType(opt)}
-                className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer transition-[background-color,color,border-color] ${chartType === opt ? 'bg-[#ca0b0b] border-[#ca0b0b] text-white' : 'bg-white border-[#edeceb] text-[#4a4845] hover:border-[#ca0b0b] hover:text-[#ca0b0b]'}`}>
-                {opt}
-              </button>
-            ))}
+          {/* Chart type selector */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <Select
+                value={chartType}
+                onChange={v => setChartType(v as ChartType)}
+                options={CHART_OPTIONS.map(opt => ({ value: opt, label: opt }))}
+                className="w-72"
+              />
+            </div>
+            <p className="text-neutral-400 text-xs leading-snug max-w-xl">{CHART_HELP[chartType]}</p>
           </div>
 
           {/* Charts */}
