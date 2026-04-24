@@ -5,6 +5,7 @@ import AuthLoadingOverlay from '@/components/ui/AuthLoadingOverlay'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import FormField from '@/components/ui/FormField'
 import { useAuthStore } from '@/store/authStore'
+import { useToast } from '@/hooks/useToast'
 
 type StrengthLevel = 'debil' | 'media' | 'fuerte'
 
@@ -30,11 +31,12 @@ function getPasswordStrength(password: string): { score: number; label: string; 
 export default function RegisterPage() {
   const navigate = useNavigate()
   const { setToken, setUser } = useAuthStore()
+  const { toast } = useToast()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [validationError, setValidationError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const checks = getPasswordChecks(password)
@@ -49,20 +51,20 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError(null)
+    setValidationError(null)
 
     if (fullName.trim().length < 2) {
-      setError('El nombre completo debe tener al menos 2 caracteres.')
+      setValidationError('El nombre completo debe tener al menos 2 caracteres.')
       return
     }
 
     if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres.')
+      setValidationError('La contraseña debe tener al menos 8 caracteres.')
       return
     }
 
     if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden.')
+      setValidationError('Las contraseñas no coinciden.')
       return
     }
 
@@ -89,7 +91,7 @@ export default function RegisterPage() {
           ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
           : null
 
-      setError(maybeDetail ?? 'No se pudo crear la cuenta. Intenta nuevamente.')
+      toast(maybeDetail ?? 'No se pudo crear la cuenta. Intenta nuevamente.', 'error')
     } finally {
       setLoading(false)
     }
@@ -125,8 +127,8 @@ export default function RegisterPage() {
           Crea tu cuenta
         </p>
 
-        {error && (
-          <ErrorAlert message={error} className="mb-4" />
+        {validationError && (
+          <ErrorAlert message={validationError} className="mb-4" />
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">

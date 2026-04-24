@@ -3,21 +3,20 @@ import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import { authApi } from '@/api/auth'
 import AuthLoadingOverlay from '@/components/ui/AuthLoadingOverlay'
-import ErrorAlert from '@/components/ui/ErrorAlert'
 import FormField from '@/components/ui/FormField'
 import { useAuthStore } from '@/store/authStore'
+import { useToast } from '@/hooks/useToast'
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const { setToken, setUser } = useAuthStore()
+  const { toast } = useToast()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError(null)
     setLoading(true)
     try {
       const { data } = await authApi.login({ email, password })
@@ -43,11 +42,11 @@ export default function LoginPage() {
           : null
 
       if (status === 401) {
-        setError(detail ?? 'Credenciales inválidas. Verifica tu correo y contraseña.')
+        toast(detail ?? 'Credenciales inválidas. Verifica tu correo y contraseña.', 'error')
       } else if (status && status >= 500) {
-        setError('El servidor no respondió correctamente. Intenta de nuevo en unos segundos.')
+        toast('El servidor no respondió correctamente. Intenta de nuevo en unos segundos.', 'error')
       } else {
-        setError('No se pudo conectar con el backend. Revisa que los servicios estén arriba.')
+        toast('No se pudo conectar con el backend. Revisa que los servicios estén arriba.', 'error')
       }
     } finally {
       setLoading(false)
@@ -83,10 +82,6 @@ export default function LoginPage() {
         <p className="app-subtitle text-sm text-center mb-6">
           Inicia sesión en tu cuenta
         </p>
-
-        {error && (
-          <ErrorAlert message={error} className="mb-4" />
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <FormField

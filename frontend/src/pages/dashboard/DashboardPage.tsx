@@ -13,6 +13,7 @@ import DatePicker from '@/components/ui/DatePicker'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import AppTooltip from '@/components/ui/Tooltip'
+import { useToast } from '@/hooks/useToast'
 import type { Transaction, Account } from '@/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -322,7 +323,7 @@ export default function DashboardPage() {
   const [prevTxs, setPrevTxs] = useState<Transaction[]>([])
   const [catLookup, setCatLookup] = useState<Map<number, string>>(new Map())
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
 
   // Compute date ranges
   const { dateFrom, dateTo } = useMemo(() => computeDates(period, customFrom, customTo), [period, customFrom, customTo])
@@ -367,7 +368,6 @@ export default function DashboardPage() {
   // Fetch data
   useEffect(() => {
     setLoading(true)
-    setError(null)
     const dfStr = toISODate(dateFrom) + 'T00:00:00'
     const dtStr = toISODate(dateTo) + 'T23:59:59'
     const pfStr = toISODate(prevFrom) + 'T00:00:00'
@@ -388,7 +388,7 @@ export default function DashboardPage() {
         const lookup = new Map<number, string>(c.data.map((cat: Category) => [cat.id, cat.name]))
         setCatLookup(lookup)
       })
-      .catch(() => setError('No se pudieron cargar los datos del dashboard.'))
+      .catch(() => toast('No se pudieron cargar los datos del dashboard.', 'error'))
       .finally(() => setLoading(false))
   }, [currency, dateFrom.getTime(), dateTo.getTime()])
 
@@ -445,7 +445,6 @@ export default function DashboardPage() {
       <LoadingSpinner size={8} />
     </div>
   )
-  if (error) return <ErrorAlert message={error} className="max-w-md mx-auto mt-8" />
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (

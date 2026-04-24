@@ -10,6 +10,7 @@ import TransactionsHistoryCard from './components/TransactionsHistoryCard'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { useToast } from '@/hooks/useToast'
 import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
 
 const INCOME_HINTS = [
@@ -156,26 +157,26 @@ function resolvePeriodRange(period: PeriodFilter, fallbackFrom: string, fallback
 }
 
 export default function TransactionsPage() {
+  const { toast } = useToast()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [form, setForm] = useState<FormState>(() => buildDefaultForm([]))
   const [filters, setFilters] = useState<FiltersState>(() => buildDefaultFilters())
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => {
     async function loadData() {
       setLoading(true)
-      setError(null)
+      setLoadError(null)
 
       try {
         const [accountsResponse, categoriesResponse, transactionsResponse] = await Promise.all([
@@ -189,7 +190,7 @@ export default function TransactionsPage() {
         setTransactions(transactionsResponse.data)
         setForm((current) => current.accountId ? current : buildDefaultForm(accountsResponse.data))
       } catch (loadError) {
-        setError(getApiErrorMessage(loadError, 'No se pudieron cargar los movimientos.'))
+        setLoadError(getApiErrorMessage(loadError, 'No se pudieron cargar los movimientos.'))
       } finally {
         setLoading(false)
       }
@@ -285,7 +286,6 @@ export default function TransactionsPage() {
   function handleEdit(transaction: Transaction) {
     const occurredAt = new Date(transaction.occurred_at)
     setEditingId(transaction.id)
-    setSuccessMessage(null)
     setFormError(null)
     setModalOpen(true)
     setForm({
@@ -302,7 +302,6 @@ export default function TransactionsPage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setFormError(null)
-    setSuccessMessage(null)
 
     if (form.description.trim().length < 2) {
       setFormError('La descripción debe tener al menos 2 caracteres.')
@@ -339,11 +338,11 @@ export default function TransactionsPage() {
         setTransactions((current) => current.map((transaction) => (
           transaction.id === editingId ? response.data : transaction
         )))
-        setSuccessMessage('Movimiento actualizado con éxito.')
+        toast('Movimiento actualizado con éxito.')
       } else {
         const response = await transactionsApi.create(payload)
         setTransactions((current) => [response.data, ...current])
-        setSuccessMessage('Movimiento guardado con éxito.')
+        toast('Movimiento guardado con éxito.')
       }
       resetForm()
     } catch (submitError) {
@@ -356,16 +355,14 @@ export default function TransactionsPage() {
   async function handleDelete(transactionId: number) {
     setDeletingId(transactionId)
     setPendingDeleteId(null)
-    setError(null)
-    setSuccessMessage(null)
 
     try {
       await transactionsApi.delete(transactionId)
       setTransactions((current) => current.filter((transaction) => transaction.id !== transactionId))
       if (editingId === transactionId) resetForm()
-      setSuccessMessage('Movimiento eliminado con éxito.')
+      toast('Movimiento eliminado con éxito.')
     } catch (deleteError) {
-      setError(getApiErrorMessage(deleteError, 'No se pudo eliminar el movimiento.'))
+      toast(getApiErrorMessage(deleteError, 'No se pudo eliminar el movimiento.'), 'error')
     } finally {
       setDeletingId(null)
     }
@@ -379,8 +376,8 @@ export default function TransactionsPage() {
     )
   }
 
-  if (error && !transactions.length && !accounts.length) {
-    return <ErrorAlert message={error} className="max-w-xl mx-auto mt-8" />
+  if (loadError && !transactions.length && !accounts.length) {
+    return <ErrorAlert message={loadError} className="max-w-xl mx-auto mt-8" />
   }
 
   return (
@@ -391,12 +388,7 @@ export default function TransactionsPage() {
           <p className="app-subtitle mt-1">Registra, filtra y administra tus ingresos y gastos desde una sola vista.</p>
         </div>
 
-        <ErrorAlert message={error} />
-        {successMessage && (
-          <p className="rounded-lg border border-[color-mix(in_srgb,var(--af-positive)_35%,transparent)] bg-[var(--af-positive-soft)] px-3 py-2 text-sm text-[var(--af-positive-soft-text)]">
-            {successMessage}
-          </p>
-        )}
+        <ErrorAlert message={loadError} />
 
         {modalOpen && (
           <TransactionEditModal
