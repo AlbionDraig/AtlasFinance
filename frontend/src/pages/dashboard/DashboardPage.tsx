@@ -504,7 +504,7 @@ export default function DashboardPage() {
 
       {/* Header */}
       <div>
-        <h1 className="app-title text-xl">Panorama financiero</h1>
+        <h1 className="app-title text-xl">Resumen financiero</h1>
         <p className="app-subtitle text-sm mt-0.5">Vista general de tus finanzas en el período elegido</p>
       </div>
 
