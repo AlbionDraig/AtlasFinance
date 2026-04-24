@@ -1,9 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import type { KeyboardEvent, ClipboardEvent } from 'react'
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: '$',
+  COP: '$',
+  EUR: '€',
+  GBP: '£',
+}
+
 interface AmountInputProps {
   value: string                      // raw numeric string, dot as decimal (e.g. "1250000.50")
   onChange: (raw: string) => void    // called with raw string on every change
+  currency?: string                  // e.g. "COP", "USD" — shows symbol prefix
   className?: string
   placeholder?: string
   disabled?: boolean
@@ -39,10 +47,12 @@ function rawToDisplayCursor(rawCursor: number, display: string): number {
 export default function AmountInput({
   value,
   onChange,
+  currency,
   className = '',
   placeholder = '0.00',
   disabled = false,
 }: AmountInputProps) {
+  const symbol = currency ? (CURRENCY_SYMBOLS[currency.toUpperCase()] ?? currency) : null
   const inputRef = useRef<HTMLInputElement>(null)
   const skipSyncRef = useRef(false)
   const [display, setDisplay] = useState(() => formatDisplay(value))
@@ -120,18 +130,45 @@ export default function AmountInput({
     requestAnimationFrame(() => { skipSyncRef.current = false })
   }
 
+  if (!symbol) {
+    return (
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="decimal"
+        value={display}
+        onChange={() => { /* controlled via onKeyDown */ }}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        disabled={disabled}
+        className={`app-control ${className}`}
+        placeholder={placeholder}
+      />
+    )
+  }
+
   return (
-    <input
-      ref={inputRef}
-      type="text"
-      inputMode="decimal"
-      value={display}
-      onChange={() => { /* controlled via onKeyDown */ }}
-      onKeyDown={handleKeyDown}
-      onPaste={handlePaste}
-      disabled={disabled}
-      className={`app-control ${className}`}
-      placeholder={placeholder}
-    />
+    <div className={`flex items-center app-control p-0 overflow-hidden ${className}`}>
+      <span className="select-none px-3 py-2 text-sm font-medium text-neutral-400 border-r border-neutral-100 bg-neutral-50 shrink-0">
+        {symbol}
+      </span>
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="decimal"
+        value={display}
+        onChange={() => { /* controlled via onKeyDown */ }}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        disabled={disabled}
+        className="flex-1 min-w-0 px-3 py-2 text-sm bg-transparent outline-none"
+        placeholder={placeholder}
+      />
+      {currency && (
+        <span className="select-none px-3 py-2 text-xs font-medium text-neutral-400 shrink-0">
+          {currency.toUpperCase()}
+        </span>
+      )}
+    </div>
   )
 }
