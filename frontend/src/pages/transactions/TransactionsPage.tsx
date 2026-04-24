@@ -383,13 +383,11 @@ export default function TransactionsPage() {
   return (
     <div className="w-full max-w-7xl mx-auto space-y-4 pb-20">
       {/* Page header */}
-      <section className="app-panel w-full px-6 pt-6 pb-5 overflow-x-hidden">
-        <div>
-          <h1 className="app-title text-2xl">Movimientos</h1>
-          <p className="app-subtitle mt-1">Registra, filtra y administra tus ingresos y gastos desde una sola vista.</p>
-        </div>
-        <ErrorAlert message={loadError} />
-      </section>
+      <div>
+        <h1 className="app-title text-xl">Movimientos</h1>
+        <p className="app-subtitle text-sm mt-0.5">Registra, filtra y administra tus ingresos y gastos desde una sola vista.</p>
+      </div>
+      <ErrorAlert message={loadError} />
 
       {modalOpen && (
         <TransactionEditModal
@@ -416,7 +414,7 @@ export default function TransactionsPage() {
       )}
 
       {/* Sticky filters */}
-      <div className="sticky top-0 z-20 -mx-6 px-6 py-3 bg-neutral-50/95 backdrop-blur-sm border-b border-neutral-100">
+      <div className="sticky top-0 z-20 -mx-6 px-6 py-3 bg-neutral-50/95 backdrop-blur-sm border-b border-neutral-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
         <TransactionsFiltersCard
           filters={filters}
           setFilters={setFilters}
@@ -457,14 +455,17 @@ export default function TransactionsPage() {
       />
 
       {/* Sticky footer bar */}
-      <div className="fixed bottom-0 left-20 right-0 z-30 flex items-center justify-between gap-3 border-t border-neutral-100 bg-white/95 backdrop-blur-sm px-6 py-3">
-        <p className="text-xs text-neutral-700">¿Quieres agregar otro movimiento?</p>
+      <div className="fixed bottom-0 left-20 right-0 z-30 flex items-center justify-between gap-3 border-t border-neutral-100 bg-white/95 backdrop-blur-sm px-6 py-3 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+        <p className="text-xs text-neutral-400">Registra tus ingresos y gastos</p>
         <button
           type="button"
-          className="app-btn-secondary px-3 py-1.5 text-sm"
+          className="app-btn-primary flex items-center gap-2 px-4 py-2 text-sm"
           onClick={() => { resetForm(); setModalOpen(true) }}
         >
-          + Registrar movimiento
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          Registrar movimiento
         </button>
       </div>
     </div>

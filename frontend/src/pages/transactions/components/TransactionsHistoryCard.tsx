@@ -141,12 +141,12 @@ export default function TransactionsHistoryCard({
             </colgroup>
             <thead>
               <tr>
-                <th className="border-b-2 border-r border-white/20 border-b-brand-deep bg-brand-hover px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-white">Fecha</th>
-                <th className="border-b-2 border-r border-white/20 border-b-brand-deep bg-brand-hover px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-white">Descripción</th>
-                <th className="border-b-2 border-r border-white/20 border-b-brand-deep bg-brand-hover px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-white">Cuenta</th>
-                <th className="border-b-2 border-r border-white/20 border-b-brand-deep bg-brand-hover px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-white">Categoría</th>
-                <th className="border-b-2 border-r border-white/20 border-b-brand-deep bg-brand-hover px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-white">Monto</th>
-                <th className="border-b-2 border-r border-white/20 border-b-brand-deep bg-brand-hover px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-white">Acciones</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Fecha</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Descripción</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Cuenta</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Categoría</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Monto</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Acciones</th>
               </tr>
             </thead>
             <tbody>
