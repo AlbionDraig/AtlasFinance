@@ -46,7 +46,7 @@ export default function TimePicker({ label, value, onChange, className = '', dis
 
   const activeValue = open ? draftValue : value
   const { hours, minutes } = useMemo(() => parseTime(activeValue), [activeValue])
-  const display = useMemo(() => formatDisplay(activeValue), [activeValue])
+  const display = useMemo(() => value ? formatDisplay(activeValue) : null, [activeValue, value])
 
   useEffect(() => {
     if (!open) {
@@ -143,7 +143,7 @@ export default function TimePicker({ label, value, onChange, className = '', dis
             <circle cx="12" cy="12" r="9" />
             <path d="M12 7v5l3 2" />
           </svg>
-          <span className="truncate">{display}</span>
+          <span className={`truncate ${!display ? 'text-neutral-400' : ''}`}>{display ?? 'Selecciona una hora'}</span>
           <svg className="ml-auto h-3.5 w-3.5 app-subtitle" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="m6 9 6 6 6-6" />
           </svg>

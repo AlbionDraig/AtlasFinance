@@ -87,11 +87,13 @@ export default function DatePicker({ label, value, onChange, min, max, className
   const prevMonth = () => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))
   const nextMonth = () => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))
 
-  const display = selectedDate.toLocaleDateString('es-CO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
+  const display = value
+    ? selectedDate.toLocaleDateString('es-CO', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+    : null
 
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
@@ -124,7 +126,7 @@ export default function DatePicker({ label, value, onChange, min, max, className
             <line x1="8" y1="2" x2="8" y2="6" />
             <line x1="3" y1="10" x2="21" y2="10" />
           </svg>
-          <span className="truncate">{display}</span>
+          <span className={`truncate ${!display ? 'text-neutral-400' : ''}`}>{display ?? 'Selecciona una fecha'}</span>
           {disabled && (
             <svg className="h-3 w-3 text-neutral-400 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="3" y="11" width="18" height="10" rx="2" ry="2" />

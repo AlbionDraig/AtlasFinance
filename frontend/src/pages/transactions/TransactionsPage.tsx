@@ -67,8 +67,8 @@ function buildDefaultForm(accounts: Account[]): FormState {
     accountId: '',
     categoryId: 'none',
     transactionType: '',
-    occurredDate: toDateInputValue(now),
-    occurredTime: toTimeInputValue(now),
+    occurredDate: '',
+    occurredTime: '',
   }
 }
 
@@ -287,8 +287,19 @@ export default function TransactionsPage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
+    if (form.description.trim().length < 2) {
+      toast('La descripción debe tener al menos 2 caracteres.', 'error')
+      return
+    }
+
     if (!form.transactionType) {
       toast('Selecciona el tipo de movimiento (Gasto o Ingreso).', 'error')
+      return
+    }
+
+    const amount = Number(form.amount)
+    if (Number.isNaN(amount) || amount <= 0) {
+      toast('El monto debe ser mayor que 0.', 'error')
       return
     }
 
@@ -297,14 +308,13 @@ export default function TransactionsPage() {
       return
     }
 
-    if (form.description.trim().length < 2) {
-      toast('La descripción debe tener al menos 2 caracteres.', 'error')
+    if (!form.occurredDate) {
+      toast('Selecciona la fecha del movimiento.', 'error')
       return
     }
 
-    const amount = Number(form.amount)
-    if (Number.isNaN(amount) || amount <= 0) {
-      toast('El monto debe ser mayor que 0.', 'error')
+    if (!form.occurredTime) {
+      toast('Selecciona la hora del movimiento.', 'error')
       return
     }
 
