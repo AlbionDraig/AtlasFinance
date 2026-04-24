@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 
@@ -48,6 +48,48 @@ const navItems = [
 export default function AppLayout() {
   const { logout, user } = useAuthStore()
   const [expanded, setExpanded] = useState(false)
+  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const OPEN_DELAY_MS = 140
+  const CLOSE_DELAY_MS = 180
+
+  const clearTimers = () => {
+    if (openTimerRef.current) {
+      clearTimeout(openTimerRef.current)
+      openTimerRef.current = null
+    }
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current)
+      closeTimerRef.current = null
+    }
+  }
+
+  const scheduleOpen = () => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current)
+      closeTimerRef.current = null
+    }
+    if (expanded || openTimerRef.current) return
+    openTimerRef.current = setTimeout(() => {
+      setExpanded(true)
+      openTimerRef.current = null
+    }, OPEN_DELAY_MS)
+  }
+
+  const scheduleClose = () => {
+    if (openTimerRef.current) {
+      clearTimeout(openTimerRef.current)
+      openTimerRef.current = null
+    }
+    if (!expanded || closeTimerRef.current) return
+    closeTimerRef.current = setTimeout(() => {
+      setExpanded(false)
+      closeTimerRef.current = null
+    }, CLOSE_DELAY_MS)
+  }
+
+  useEffect(() => clearTimers, [])
 
   const collapsed = !expanded
 
@@ -56,12 +98,15 @@ export default function AppLayout() {
       {/* Sidebar */}
       <aside
         className="relative w-20 shrink-0 overflow-visible"
-        onMouseEnter={() => setExpanded(true)}
-        onMouseLeave={() => setExpanded(false)}
-        onFocusCapture={() => setExpanded(true)}
+        onMouseEnter={scheduleOpen}
+        onMouseLeave={scheduleClose}
+        onFocusCapture={() => {
+          clearTimers()
+          setExpanded(true)
+        }}
         onBlurCapture={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-            setExpanded(false)
+            scheduleClose()
           }
         }}
       >
