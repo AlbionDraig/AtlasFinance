@@ -23,7 +23,7 @@ export default function LoginPage() {
       setUser(me)
       navigate('/dashboard')
     } catch {
-      setError('Invalid credentials. Please try again.')
+      setError('Credenciales inválidas. Verifica tu correo y contraseña.')
     } finally {
       setLoading(false)
     }
@@ -36,7 +36,7 @@ export default function LoginPage() {
           Atlas Finance
         </h1>
         <p className="text-sm text-center text-gray-500 dark:text-gray-400 mb-6">
-          Sign in to your account
+          Inicia sesión en tu cuenta
         </p>
 
         {error && (
@@ -56,12 +56,13 @@ export default function LoginPage() {
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="tu_correo@ejemplo.com"
               className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              Password
+              Contraseña
             </label>
             <input
               type="password"
@@ -69,6 +70,7 @@ export default function LoginPage() {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="Tu contraseña"
               className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
@@ -77,13 +79,13 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
           >
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? 'Ingresando…' : 'Iniciar sesión'}
           </button>
 
           <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-            New here?{' '}
+            ¿No tienes cuenta?{' '}
             <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
-              Create account
+              Crear cuenta
             </Link>
           </p>
         </form>

@@ -2,6 +2,27 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi } from '@/api/auth'
 
+type StrengthLevel = 'debil' | 'media' | 'fuerte'
+
+function getPasswordChecks(password: string) {
+  return {
+    minLength: password.length >= 8,
+    hasUpper: /[A-Z]/.test(password),
+    hasNumber: /\d/.test(password),
+    hasSymbol: /[^A-Za-z0-9]/.test(password),
+  }
+}
+
+function getPasswordStrength(password: string): { score: number; label: string; level: StrengthLevel } {
+  const checks = getPasswordChecks(password)
+  const passed = Object.values(checks).filter(Boolean).length
+  const score = Math.round((passed / 4) * 100)
+
+  if (score <= 25) return { score, label: 'Débil', level: 'debil' }
+  if (score <= 75) return { score, label: 'Media', level: 'media' }
+  return { score, label: 'Fuerte', level: 'fuerte' }
+}
+
 export default function RegisterPage() {
   const navigate = useNavigate()
   const [fullName, setFullName] = useState('')
@@ -12,23 +33,33 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  const checks = getPasswordChecks(password)
+  const strength = getPasswordStrength(password)
+
+  const strengthBarClass =
+    strength.level === 'debil'
+      ? 'bg-red-500'
+      : strength.level === 'media'
+        ? 'bg-amber-500'
+        : 'bg-emerald-500'
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setSuccess(null)
 
     if (fullName.trim().length < 2) {
-      setError('Full name must have at least 2 characters.')
+      setError('El nombre completo debe tener al menos 2 caracteres.')
       return
     }
 
     if (password.length < 8) {
-      setError('Password must have at least 8 characters.')
+      setError('La contraseña debe tener al menos 8 caracteres.')
       return
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match.')
+      setError('Las contraseñas no coinciden.')
       return
     }
 
@@ -39,7 +70,7 @@ export default function RegisterPage() {
         full_name: fullName.trim(),
         password,
       })
-      setSuccess('Account created successfully. Redirecting to login...')
+      setSuccess('Cuenta creada correctamente. Redirigiendo al login...')
       setTimeout(() => navigate('/login'), 1200)
     } catch (err: unknown) {
       const maybeDetail =
@@ -50,7 +81,7 @@ export default function RegisterPage() {
           ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
           : null
 
-      setError(maybeDetail ?? 'Could not create account. Please try again.')
+      setError(maybeDetail ?? 'No se pudo crear la cuenta. Intenta nuevamente.')
     } finally {
       setLoading(false)
     }
@@ -63,7 +94,7 @@ export default function RegisterPage() {
           Atlas Finance
         </h1>
         <p className="text-sm text-center text-gray-500 dark:text-gray-400 mb-6">
-          Create your account
+          Crea tu cuenta
         </p>
 
         {error && (
@@ -81,7 +112,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              Full name
+              Nombre completo
             </label>
             <input
               type="text"
@@ -89,6 +120,7 @@ export default function RegisterPage() {
               autoComplete="name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
+              placeholder="Ej: Sebastián Gómez"
               className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
@@ -103,13 +135,14 @@ export default function RegisterPage() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="tu_correo@ejemplo.com"
               className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              Password
+              Contraseña
             </label>
             <input
               type="password"
@@ -118,13 +151,42 @@ export default function RegisterPage() {
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="Mínimo 8 caracteres"
               className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
+
+            <div className="mt-2">
+              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <span>Fortaleza de contraseña</span>
+                <span className="font-medium">{password ? strength.label : 'Sin definir'}</span>
+              </div>
+              <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full ${strengthBarClass} transition-all`}
+                  style={{ width: `${password ? strength.score : 0}%` }}
+                />
+              </div>
+            </div>
+
+            <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs">
+              <li className={checks.minLength ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}>
+                {checks.minLength ? '✓' : '•'} Mínimo 8 caracteres
+              </li>
+              <li className={checks.hasUpper ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}>
+                {checks.hasUpper ? '✓' : '•'} Al menos una mayúscula
+              </li>
+              <li className={checks.hasNumber ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}>
+                {checks.hasNumber ? '✓' : '•'} Al menos un número
+              </li>
+              <li className={checks.hasSymbol ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}>
+                {checks.hasSymbol ? '✓' : '•'} Al menos un símbolo
+              </li>
+            </ul>
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              Confirm password
+              Confirmar contraseña
             </label>
             <input
               type="password"
@@ -133,8 +195,15 @@ export default function RegisterPage() {
               autoComplete="new-password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Repite tu contraseña"
               className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
+
+            {confirmPassword && password !== confirmPassword && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                Las contraseñas no coinciden.
+              </p>
+            )}
           </div>
 
           <button
@@ -142,13 +211,13 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
           >
-            {loading ? 'Creating account…' : 'Create account'}
+            {loading ? 'Creando cuenta…' : 'Crear cuenta'}
           </button>
 
           <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-            Already have an account?{' '}
+            ¿Ya tienes cuenta?{' '}
             <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
-              Sign in
+              Inicia sesión
             </Link>
           </p>
         </form>
