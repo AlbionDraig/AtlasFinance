@@ -142,7 +142,7 @@ export default function AppLayout() {
       </aside>
 
       {/* Main content */}
-      <main className="app-page flex-1 overflow-y-auto overflow-x-hidden p-6">
+      <main className={`app-page flex-1 overflow-y-auto overflow-x-hidden p-6 transition-[padding-left] duration-200 ${expanded ? 'pl-44' : 'pl-6'}`}>
         <Outlet />
       </main>
     </div>
