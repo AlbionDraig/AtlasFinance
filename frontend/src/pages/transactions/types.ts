@@ -7,7 +7,7 @@ export interface FormState {
   amount: string
   accountId: string
   categoryId: string
-  transactionType: TransactionType
+  transactionType: TransactionType | ''
   occurredDate: string
   occurredTime: string
 }

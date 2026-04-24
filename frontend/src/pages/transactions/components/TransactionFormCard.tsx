@@ -105,6 +105,7 @@ export default function TransactionFormCard({
               categoryId: 'none',
             }))}
             options={[
+              { value: '', label: 'Selecciona un tipo' },
               { value: 'EXPENSE', label: 'Gasto' },
               { value: 'INCOME', label: 'Ingreso' },
             ]}
@@ -129,7 +130,10 @@ export default function TransactionFormCard({
           <Select
             value={form.accountId}
             onChange={(value) => setForm((current) => ({ ...current, accountId: value }))}
-            options={accounts.map((account) => ({ value: String(account.id), label: `${account.name} (${account.currency})` }))}
+            options={[
+              { value: '', label: 'Selecciona una cuenta' },
+              ...accounts.map((account) => ({ value: String(account.id), label: `${account.name} (${account.currency})` })),
+            ]}
             className="w-full"
             disabled={!accounts.length}
           />

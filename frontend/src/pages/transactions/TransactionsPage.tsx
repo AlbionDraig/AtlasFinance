@@ -64,9 +64,9 @@ function buildDefaultForm(accounts: Account[]): FormState {
   return {
     description: '',
     amount: '',
-    accountId: accounts[0] ? String(accounts[0].id) : '',
+    accountId: '',
     categoryId: 'none',
-    transactionType: 'EXPENSE',
+    transactionType: '',
     occurredDate: toDateInputValue(now),
     occurredTime: toTimeInputValue(now),
   }
@@ -197,16 +197,6 @@ export default function TransactionsPage() {
   }, [])
 
   useEffect(() => {
-    if (!accounts.length) return
-    setForm((current) => {
-      if (current.accountId && accounts.some((account) => String(account.id) === current.accountId)) {
-        return current
-      }
-      return { ...current, accountId: String(accounts[0].id) }
-    })
-  }, [accounts])
-
-  useEffect(() => {
     setPage(1)
   }, [filters.query, filters.transactionType, filters.currency, filters.accountId, filters.period, filters.from, filters.to, filters.pageSize])
 
@@ -296,6 +286,16 @@ export default function TransactionsPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    if (!form.transactionType) {
+      toast('Selecciona el tipo de movimiento (Gasto o Ingreso).', 'error')
+      return
+    }
+
+    if (!form.accountId) {
+      toast('Selecciona una cuenta para registrar el movimiento.', 'error')
+      return
+    }
 
     if (form.description.trim().length < 2) {
       toast('La descripción debe tener al menos 2 caracteres.', 'error')
