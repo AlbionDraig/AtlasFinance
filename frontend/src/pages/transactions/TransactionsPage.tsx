@@ -48,7 +48,7 @@ function buildDefaultFilters(): FiltersState {
     transactionType: 'all',
     currency: 'all',
     accountId: 'all',
-    period: '30d',
+    period: 'all',
     from: toDateInputValue(start),
     to: toDateInputValue(today),
     pageSize: 25,
