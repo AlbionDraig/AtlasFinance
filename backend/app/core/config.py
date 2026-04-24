@@ -17,14 +17,14 @@ class Settings(BaseSettings):
 
     exchange_rate_api_url: str = "https://api.exchangerate.host/"
     default_currency: str = "COP"
-    cors_origins: list[str] = [
+    backend_cors_origins: list[str] = [
         "http://localhost:8502",
         "http://127.0.0.1:8502",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
 
-    @field_validator("cors_origins", mode="before")
+    @field_validator("backend_cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, value: object) -> object:
         if isinstance(value, str):
