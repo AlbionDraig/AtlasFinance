@@ -1,5 +1,6 @@
 import Pagination from '@/components/ui/Pagination'
 import Badge from '@/components/ui/Badge'
+import Tooltip from '@/components/ui/Tooltip'
 import type { Category } from '@/api/categories'
 import type { Account, Transaction } from '@/types'
 
@@ -55,9 +56,35 @@ export default function TransactionsHistoryCard({
   currency,
 }: TransactionsHistoryCardProps) {
   const netFlow = incomeTotal - expenseTotal
+  const metrics = [
+    {
+      key: 'count',
+      variant: 'neutral' as const,
+      label: `${filteredTransactions.length} movimientos`,
+      help: 'Total de movimientos que cumplen los filtros actuales.',
+    },
+    {
+      key: 'income',
+      variant: 'positive' as const,
+      label: `Ingresos ${formatCurrency(incomeTotal, currency)}`,
+      help: 'Suma de transacciones de ingreso dentro del filtro activo.',
+    },
+    {
+      key: 'expense',
+      variant: 'negative' as const,
+      label: `Gastos ${formatCurrency(expenseTotal, currency)}`,
+      help: 'Suma de transacciones de gasto dentro del filtro activo.',
+    },
+    {
+      key: 'net',
+      variant: (netFlow >= 0 ? 'positive' : 'negative') as const,
+      label: `Flujo neto ${formatCurrency(netFlow, currency)}`,
+      help: 'Diferencia entre ingresos y gastos en el filtro actual.',
+    },
+  ]
 
   return (
-    <div className="app-card overflow-hidden">
+    <div className="app-card overflow-visible">
 
       {/* Header */}
       <div className="flex items-center justify-between gap-4 border-b border-neutral-100 bg-neutral-50 px-6 py-4">
@@ -78,13 +105,16 @@ export default function TransactionsHistoryCard({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-white px-6 py-3">
-        <Badge variant="neutral">{filteredTransactions.length} movimientos</Badge>
-        <Badge variant="positive">Ingresos {formatCurrency(incomeTotal, currency)}</Badge>
-        <Badge variant="negative">Gastos {formatCurrency(expenseTotal, currency)}</Badge>
-        <Badge variant={netFlow >= 0 ? 'positive' : 'negative'}>
-          Flujo neto {formatCurrency(netFlow, currency)}
-        </Badge>
+      <div className="flex flex-wrap items-center gap-3 border-b border-neutral-100 bg-white px-6 py-3">
+        {metrics.map((metric) => (
+          <Tooltip
+            key={metric.key}
+            content={metric.help}
+            ariaLabel={`${metric.label}. ${metric.help}`}
+          >
+            <Badge variant={metric.variant}>{metric.label}</Badge>
+          </Tooltip>
+        ))}
       </div>
 
       {/* Empty state */}
