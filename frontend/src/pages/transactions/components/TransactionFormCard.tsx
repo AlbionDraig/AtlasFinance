@@ -132,10 +132,6 @@ export default function TransactionFormCard({
         </div>
       </div>
 
-      <div className="rounded-lg bg-[var(--af-bg-soft)] px-4 py-3 text-sm text-[var(--af-text-muted)]">
-        Moneda derivada de la cuenta: <span className="font-medium text-[var(--af-text)]">{accountCurrency}</span>
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button type="submit" className="app-btn-primary" disabled={saving || !accounts.length}>
           {saving ? 'Guardando...' : editingId != null ? 'Guardar cambios' : 'Guardar movimiento'}
