@@ -311,10 +311,11 @@ function Badge({ text, variant, hint }: BadgeProps) {
   )
 }
 
-interface KpiCardProps { label: string; value: string; sub?: string; badge?: BadgeProps; accentClass?: string; valueClass?: string; help?: string }
-function KpiCard({ label, value, sub, badge, accentClass = 'border-t-[var(--af-border)]', valueClass = 'text-[var(--af-text)]', help }: KpiCardProps) {
+interface KpiCardProps { label: string; value: string; sub?: string; badge?: BadgeProps; accentClass?: string; accentRingClass?: string; valueClass?: string; help?: string }
+function KpiCard({ label, value, sub, badge, accentClass = 'bg-neutral-100', accentRingClass = 'ring-1 ring-neutral-100', valueClass = 'text-[var(--af-text)]', help }: KpiCardProps) {
   return (
-    <div className={`app-card p-5 border-t-4 relative ${accentClass}`}>
+    <div className={`app-card p-5 relative ${accentRingClass}`}>
+      <div className={`absolute top-0 left-0 right-0 h-1.5 ${accentClass}`} />
       {help && <span className="absolute top-3 right-3"><HelpTooltip text={help} /></span>}
       <div className="flex items-center gap-1.5 mb-1">
         <p className="app-label uppercase tracking-wider">{label}</p>
@@ -544,14 +545,15 @@ export default function DashboardPage() {
       <section>
         <SectionTitle>Indicadores clave</SectionTitle>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KpiCard label="Patrimonio neto" value={fmt(netWorth, currency)} accentClass="border-t-[#ca0b0b]" valueClass="text-[#ca0b0b]" sub="saldo actual" badge={{ text: cashflowBadge.text, variant: toneToVariant(cashflowBadge.tone, 'brand'), hint: hasPrev ? `El flujo neto del período anterior fue ${fmt(prevCashflow, currency)}. Un flujo positivo mejora tu patrimonio acumulado.` : 'No hay período anterior para comparar.' }} help={KPI_HELP['Patrimonio neto']} />
-          <KpiCard label="Ingresos" value={fmt(income, currency)} accentClass="border-t-[#0f7a55]" valueClass="text-[#0f7a55]" sub="total del período" badge={{ text: incomeBadge.text, variant: toneToVariant(incomeBadge.tone, 'success'), hint: hasPrev ? `En el período anterior tus ingresos fueron ${fmt(prevIncome, currency)}. ${incomeBadge.tone === 'positive' ? 'Generaste más ingresos, buen ritmo.' : incomeBadge.tone === 'negative' ? 'Tus ingresos cayeron respecto al período previo.' : 'Ingresos estables.'}` : 'No hay período anterior para comparar.' }} help={KPI_HELP['Ingresos']} />
-          <KpiCard label="Gastos" value={fmt(expense, currency)} accentClass="border-t-[#c47a00]" valueClass="text-[#c47a00]" sub="total del período" badge={{ text: expenseBadge.text, variant: toneToVariant(expenseBadge.tone, 'warning'), hint: hasPrev ? `En el período anterior tus gastos fueron ${fmt(prevExpense, currency)}. ${expenseBadge.tone === 'positive' ? 'Gastaste menos que antes, bien.' : expenseBadge.tone === 'negative' ? 'Tus gastos aumentaron respecto al período previo.' : 'Gasto estable.'}` : 'No hay período anterior para comparar.' }} help={KPI_HELP['Gastos']} />
+          <KpiCard label="Patrimonio neto" value={fmt(netWorth, currency)} accentClass="bg-[#ca0b0b]" accentRingClass="ring-2 ring-brand/20" valueClass="text-[#ca0b0b]" sub="saldo actual" badge={{ text: cashflowBadge.text, variant: toneToVariant(cashflowBadge.tone, 'brand'), hint: hasPrev ? `El flujo neto del período anterior fue ${fmt(prevCashflow, currency)}. Un flujo positivo mejora tu patrimonio acumulado.` : 'No hay período anterior para comparar.' }} help={KPI_HELP['Patrimonio neto']} />
+          <KpiCard label="Ingresos" value={fmt(income, currency)} accentClass="bg-[#0f7a55]" accentRingClass="ring-2 ring-success/20" valueClass="text-[#0f7a55]" sub="total del período" badge={{ text: incomeBadge.text, variant: toneToVariant(incomeBadge.tone, 'success'), hint: hasPrev ? `En el período anterior tus ingresos fueron ${fmt(prevIncome, currency)}. ${incomeBadge.tone === 'positive' ? 'Generaste más ingresos, buen ritmo.' : incomeBadge.tone === 'negative' ? 'Tus ingresos cayeron respecto al período previo.' : 'Ingresos estables.'}` : 'No hay período anterior para comparar.' }} help={KPI_HELP['Ingresos']} />
+          <KpiCard label="Gastos" value={fmt(expense, currency)} accentClass="bg-[#c47a00]" accentRingClass="ring-2 ring-warning/20" valueClass="text-[#c47a00]" sub="total del período" badge={{ text: expenseBadge.text, variant: toneToVariant(expenseBadge.tone, 'warning'), hint: hasPrev ? `En el período anterior tus gastos fueron ${fmt(prevExpense, currency)}. ${expenseBadge.tone === 'positive' ? 'Gastaste menos que antes, bien.' : expenseBadge.tone === 'negative' ? 'Tus gastos aumentaron respecto al período previo.' : 'Gasto estable.'}` : 'No hay período anterior para comparar.' }} help={KPI_HELP['Gastos']} />
           <KpiCard
             label="Tasa de ahorro"
             value={income === 0 ? 'Sin datos' : `${Math.abs(savingsRate) >= 999 ? (savingsRate > 0 ? '>999' : '<-999') : savingsRate.toFixed(1)}%`}
             sub={income > 0 ? (savingsRate >= 20 ? 'margen saludable' : savingsRate >= 5 ? 'margen moderado' : 'margen bajo') : 'sin ingresos'}
-            accentClass="border-t-[#5f0404]"
+            accentClass="bg-[#5f0404]"
+            accentRingClass="ring-2 ring-brand-deep/20"
             valueClass="text-[#5f0404]"
             badge={{ text: savingsBadge.text, variant: toneToVariant(savingsBadge.tone, 'brand'), hint: hasPrev ? `Tu tasa de ahorro en el período anterior fue ${prevSavings.toFixed(1)}%. ${savingsBadge.tone === 'positive' ? 'Estás ahorrando una mayor proporción de tus ingresos.' : savingsBadge.tone === 'negative' ? 'Tu tasa de ahorro bajó respecto al período previo.' : 'Tasa de ahorro estable.'}` : 'No hay período anterior para comparar.' }}
             help={KPI_HELP['Tasa de ahorro']}
