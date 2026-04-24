@@ -24,7 +24,6 @@ interface TransactionsHistoryCardProps {
   normalizeTransactionType: (value: string | null | undefined) => 'INCOME' | 'EXPENSE'
   pageSize: number
   onPageSizeChange: (size: number) => void
-  onCreateMovement: () => void
   incomeTotal: number
   expenseTotal: number
   currency: string
@@ -50,7 +49,6 @@ export default function TransactionsHistoryCard({
   normalizeTransactionType,
   pageSize,
   onPageSizeChange,
-  onCreateMovement,
   incomeTotal,
   expenseTotal,
   currency,
@@ -249,16 +247,6 @@ export default function TransactionsHistoryCard({
         onPageSizeChange={onPageSizeChange}
       />
 
-      <div className="flex flex-col gap-3 border-t border-neutral-100 bg-neutral-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <p className="text-xs text-neutral-700">¿Quieres agregar otro movimiento?</p>
-        <button
-          type="button"
-          className="app-btn-secondary px-3 py-1.5 text-sm"
-          onClick={onCreateMovement}
-        >
-          + Registrar movimiento
-        </button>
-      </div>
     </div>
   )
 }

@@ -53,7 +53,7 @@ function buildDefaultFilters(): FiltersState {
     period: 'all',
     from: toDateInputValue(start),
     to: toDateInputValue(today),
-    pageSize: 5,
+    pageSize: 25,
   }
 }
 
@@ -385,7 +385,7 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="app-shell w-full max-w-7xl mx-auto space-y-6 overflow-x-hidden">
+    <div className="app-shell w-full max-w-7xl mx-auto space-y-6 overflow-x-hidden pb-20">
       <section className="app-panel w-full p-6 space-y-6 overflow-x-hidden">
         <div>
           <h1 className="app-title text-2xl">Movimientos</h1>
@@ -441,7 +441,6 @@ export default function TransactionsPage() {
               onNextPage={() => setPage((current) => Math.min(totalPages, current + 1))}
               pageSize={filters.pageSize}
               onPageSizeChange={(size) => setFilters((current) => ({ ...current, pageSize: size }))}
-              onCreateMovement={() => { resetForm(); setModalOpen(true) }}
               incomeTotal={incomeTotal}
               expenseTotal={expenseTotal}
               currency={filters.currency === 'USD' ? 'USD' : 'COP'}
@@ -457,6 +456,18 @@ export default function TransactionsPage() {
           </div>
         </div>
       </section>
+
+      {/* Sticky footer bar */}
+      <div className="fixed bottom-0 left-20 right-0 z-30 flex items-center justify-between gap-3 border-t border-neutral-100 bg-white/95 backdrop-blur-sm px-6 py-3">
+        <p className="text-xs text-neutral-700">¿Quieres agregar otro movimiento?</p>
+        <button
+          type="button"
+          className="app-btn-secondary px-3 py-1.5 text-sm"
+          onClick={() => { resetForm(); setModalOpen(true) }}
+        >
+          + Registrar movimiento
+        </button>
+      </div>
     </div>
   )
 }
