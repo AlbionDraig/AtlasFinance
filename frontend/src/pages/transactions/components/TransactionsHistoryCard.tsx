@@ -4,9 +4,10 @@ import type { Account, Transaction } from '@/types'
 interface TransactionsHistoryCardProps {
   filteredTransactions: Transaction[]
   paginatedTransactions: Transaction[]
-  startIndex: number
   currentPage: number
   totalPages: number
+  startIndex: number
+  endIndex: number
   deletingId: number | null
   accounts: Account[]
   categories: Category[]
@@ -23,9 +24,10 @@ interface TransactionsHistoryCardProps {
 export default function TransactionsHistoryCard({
   filteredTransactions,
   paginatedTransactions,
-  startIndex,
   currentPage,
   totalPages,
+  startIndex,
+  endIndex,
   deletingId,
   accounts,
   categories,
@@ -44,22 +46,8 @@ export default function TransactionsHistoryCard({
         <div>
           <h2 className="app-section-title mb-1">Historial</h2>
           <p className="app-subtitle text-sm">
-            Mostrando {filteredTransactions.length ? startIndex + 1 : 0} a {startIndex + paginatedTransactions.length} de {filteredTransactions.length} movimientos
+            Mostrando {filteredTransactions.length ? startIndex + 1 : 0} a {endIndex} de {filteredTransactions.length} movimientos
           </p>
-        </div>
-        <div className="flex flex-wrap justify-end gap-2">
-          <button
-            type="button"
-            className="app-btn-secondary !w-auto px-4 py-2"
-            onClick={onPrevPage}
-            disabled={currentPage === 1}
-          >Anterior</button>
-          <button
-            type="button"
-            className="app-btn-secondary !w-auto px-4 py-2"
-            onClick={onNextPage}
-            disabled={currentPage === totalPages}
-          >Siguiente</button>
         </div>
       </div>
 
@@ -71,7 +59,7 @@ export default function TransactionsHistoryCard({
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-[var(--af-border)]">
-            <thead className="bg-[var(--af-bg-soft)]">
+            <thead className="bg-[var(--af-bg-soft)] sticky top-0 z-10">
               <tr>
                 <th className="px-5 py-3 text-left app-label">Fecha</th>
                 <th className="px-5 py-3 text-left app-label">Descripcion</th>
@@ -132,25 +120,23 @@ export default function TransactionsHistoryCard({
         </div>
       )}
 
-      {filteredTransactions.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--af-border)] px-5 py-4">
-          <p className="app-subtitle text-sm">Pagina {currentPage} de {totalPages}</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="app-btn-secondary !w-auto px-4 py-2"
-              onClick={onPrevPage}
-              disabled={currentPage === 1}
-            >←</button>
-            <button
-              type="button"
-              className="app-btn-secondary !w-auto px-4 py-2"
-              onClick={onNextPage}
-              disabled={currentPage === totalPages}
-            >→</button>
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--af-border)] px-5 py-4">
+        <p className="app-subtitle text-sm">Pagina {currentPage} de {totalPages}</p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="app-btn-secondary !w-auto px-3 py-2 disabled:opacity-45 disabled:cursor-not-allowed"
+            onClick={onPrevPage}
+            disabled={currentPage === 1}
+          >←</button>
+          <button
+            type="button"
+            className="app-btn-secondary !w-auto px-3 py-2 disabled:opacity-45 disabled:cursor-not-allowed"
+            onClick={onNextPage}
+            disabled={currentPage === totalPages}
+          >→</button>
         </div>
-      )}
+      </div>
     </div>
   )
 }

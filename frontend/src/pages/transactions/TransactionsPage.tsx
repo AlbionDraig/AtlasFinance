@@ -51,7 +51,7 @@ function buildDefaultFilters(): FiltersState {
     period: '30d',
     from: toDateInputValue(start),
     to: toDateInputValue(today),
-    pageSize: 12,
+    pageSize: 25,
   }
 }
 
@@ -260,7 +260,8 @@ export default function TransactionsPage() {
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / filters.pageSize))
   const currentPage = Math.min(page, totalPages)
   const startIndex = (currentPage - 1) * filters.pageSize
-  const paginatedTransactions = filteredTransactions.slice(startIndex, startIndex + filters.pageSize)
+  const endIndex = Math.min(startIndex + filters.pageSize, filteredTransactions.length)
+  const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex)
   const activeFilters = [
     filters.transactionType !== 'all' ? `Tipo: ${filters.transactionType === 'INCOME' ? 'Ingresos' : 'Gastos'}` : null,
     filters.currency !== 'all' ? `Moneda: ${filters.currency}` : null,
@@ -435,9 +436,10 @@ export default function TransactionsPage() {
             <TransactionsHistoryCard
               filteredTransactions={filteredTransactions}
               paginatedTransactions={paginatedTransactions}
-              startIndex={startIndex}
               currentPage={currentPage}
               totalPages={totalPages}
+              startIndex={startIndex}
+              endIndex={endIndex}
               deletingId={deletingId}
               accounts={accounts}
               categories={categories}
