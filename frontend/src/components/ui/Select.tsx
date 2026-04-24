@@ -10,9 +10,10 @@ interface SelectProps {
   onChange: (value: string) => void
   options: SelectOption[]
   className?: string
+  disabled?: boolean
 }
 
-export default function Select({ value, onChange, options, className = '' }: SelectProps) {
+export default function Select({ value, onChange, options, className = '', disabled = false }: SelectProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -25,15 +26,22 @@ export default function Select({ value, onChange, options, className = '' }: Sel
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const selected = options.find(o => o.value === value) ?? options[0]
+  const selected = options.find(o => o.value === value) ?? options[0] ?? { value: '', label: 'Sin opciones' }
+  const isDisabled = disabled || options.length === 0
 
   return (
     <div ref={ref} className={`relative ${open ? 'z-[120]' : 'z-10'} isolate [transform:translateZ(0)] [backface-visibility:hidden] ${className}`}>
       {/* Trigger */}
       <button
         type="button"
-        onClick={() => setOpen(prev => !prev)}
-        className="app-control flex items-center justify-between gap-2 text-xs cursor-pointer [transform:translateZ(0)] [backface-visibility:hidden]"
+        onClick={() => {
+          if (isDisabled) return
+          setOpen(prev => !prev)
+        }}
+        disabled={isDisabled}
+        className={`app-control flex items-center justify-between gap-2 text-xs [transform:translateZ(0)] [backface-visibility:hidden] ${
+          isDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+        }`}
       >
         <span className="truncate whitespace-nowrap">{selected.label}</span>
         <svg
@@ -45,7 +53,7 @@ export default function Select({ value, onChange, options, className = '' }: Sel
       </button>
 
       {/* Dropdown */}
-      {open && (
+      {open && !isDisabled && (
         <ul
           className="app-menu absolute right-0 mt-1.5 w-full z-[130] overflow-hidden py-1 text-xs"
         >
