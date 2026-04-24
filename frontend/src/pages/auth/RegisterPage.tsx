@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi } from '@/api/auth'
 import AuthLoadingOverlay from '@/components/ui/AuthLoadingOverlay'
-import ErrorAlert from '@/components/ui/ErrorAlert'
 import FormField from '@/components/ui/FormField'
 import { useAuthStore } from '@/store/authStore'
 import { useToast } from '@/hooks/useToast'
@@ -36,7 +35,6 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [validationError, setValidationError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const checks = getPasswordChecks(password)
@@ -51,20 +49,18 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setValidationError(null)
-
     if (fullName.trim().length < 2) {
-      setValidationError('El nombre completo debe tener al menos 2 caracteres.')
+      toast('El nombre completo debe tener al menos 2 caracteres.', 'error')
       return
     }
 
     if (password.length < 8) {
-      setValidationError('La contraseña debe tener al menos 8 caracteres.')
+      toast('La contraseña debe tener al menos 8 caracteres.', 'error')
       return
     }
 
     if (password !== confirmPassword) {
-      setValidationError('Las contraseñas no coinciden.')
+      toast('Las contraseñas no coinciden.', 'error')
       return
     }
 
@@ -83,15 +79,27 @@ export default function RegisterPage() {
       setUser(me)
       navigate('/dashboard', { replace: true })
     } catch (err: unknown) {
-      const maybeDetail =
-        typeof err === 'object' &&
-        err !== null &&
-        'response' in err &&
-        typeof (err as { response?: { data?: { detail?: string } } }).response?.data?.detail === 'string'
-          ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
-          : null
+      const res = (err as { response?: { status?: number; data?: { detail?: unknown } } })?.response
+      const status = res?.status
+      const rawDetail = res?.data?.detail
+      const detail =
+        typeof rawDetail === 'string'
+          ? rawDetail
+          : Array.isArray(rawDetail)
+            ? (rawDetail as { msg?: string }[]).map((e) => e.msg).filter(Boolean).join(', ')
+            : undefined
 
-      toast(maybeDetail ?? 'No se pudo crear la cuenta. Intenta nuevamente.', 'error')
+      if (status === 409 || (typeof detail === 'string' && detail.toLowerCase().includes('already'))) {
+        toast('Ya existe una cuenta con ese correo. Inicia sesión o usa otro email.', 'error')
+      } else if (status === 422) {
+        toast('Algunos datos no son válidos. Revisa el formulario e intenta de nuevo.', 'error')
+      } else if (status && status >= 500) {
+        toast('El servidor no respondió. Intenta de nuevo en unos segundos.', 'error')
+      } else if (!status) {
+        toast('No se pudo conectar con el servidor. Revisa tu conexión.', 'error')
+      } else {
+        toast(detail ?? 'No se pudo crear la cuenta. Intenta de nuevo.', 'error')
+      }
     } finally {
       setLoading(false)
     }
@@ -126,10 +134,6 @@ export default function RegisterPage() {
         <p className="app-subtitle text-sm text-center mb-6">
           Crea tu cuenta
         </p>
-
-        {validationError && (
-          <ErrorAlert message={validationError} className="mb-4" />
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <FormField
