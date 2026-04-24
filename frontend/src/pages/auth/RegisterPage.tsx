@@ -32,7 +32,6 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const checks = getPasswordChecks(password)
@@ -48,7 +47,6 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    setSuccess(null)
 
     if (fullName.trim().length < 2) {
       setError('El nombre completo debe tener al menos 2 caracteres.')
@@ -78,9 +76,7 @@ export default function RegisterPage() {
 
       const { data: me } = await authApi.me()
       setUser(me)
-
-      setSuccess('Cuenta creada. Entrando a tu panel...')
-      setTimeout(() => navigate('/dashboard'), 700)
+      navigate('/dashboard', { replace: true })
     } catch (err: unknown) {
       const maybeDetail =
         typeof err === 'object' &&
@@ -98,6 +94,24 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
+      {loading && (
+        <div className="fixed inset-0 z-50 bg-gray-950/35 backdrop-blur-[1px] flex items-center justify-center px-4">
+          <div className="w-full max-w-xs rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-xl p-5">
+            <div className="flex items-center gap-3">
+              <span className="h-5 w-5 rounded-full border-2 border-indigo-200 dark:border-indigo-800 border-t-indigo-600 dark:border-t-indigo-400 animate-spin" />
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  Configurando tu cuenta
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  Creando usuario e iniciando sesión...
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-8">
         <h1 className="text-2xl font-bold text-center mb-1 text-gray-900 dark:text-white">
           Atlas Finance
@@ -109,12 +123,6 @@ export default function RegisterPage() {
         {error && (
           <p className="mb-4 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 rounded-lg px-3 py-2">
             {error}
-          </p>
-        )}
-
-        {success && (
-          <p className="mb-4 text-sm text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950 rounded-lg px-3 py-2">
-            {success}
           </p>
         )}
 
