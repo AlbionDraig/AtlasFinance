@@ -100,6 +100,24 @@
     color: var(--color-text-primary);
   }
 
+  /* Ajustes para calendario nativo en modo oscuro */
+  .input-dark[type="date"] {
+    color-scheme: dark;
+    min-height: 2.25rem;
+    padding-right: 0.625rem;
+  }
+  .input-dark[type="date"]::-webkit-datetime-edit {
+    color: var(--color-text-primary);
+  }
+  .input-dark[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.9;
+    filter: invert(84%) sepia(8%) saturate(632%) hue-rotate(186deg) brightness(95%) contrast(90%);
+  }
+  .input-dark[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
   /* Botón primario de marca */
   .btn-brand {
     background-color: var(--color-brand);
