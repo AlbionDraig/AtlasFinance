@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi } from '@/api/auth'
+import AuthLoadingOverlay from '@/components/ui/AuthLoadingOverlay'
 import { useAuthStore } from '@/store/authStore'
 
 type StrengthLevel = 'debil' | 'media' | 'fuerte'
@@ -95,21 +96,10 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
       {loading && (
-        <div className="fixed inset-0 z-50 bg-gray-950/35 backdrop-blur-[1px] flex items-center justify-center px-4">
-          <div className="w-full max-w-xs rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-xl p-5">
-            <div className="flex items-center gap-3">
-              <span className="h-5 w-5 rounded-full border-2 border-indigo-200 dark:border-indigo-800 border-t-indigo-600 dark:border-t-indigo-400 animate-spin" />
-              <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  Configurando tu cuenta
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Creando usuario e iniciando sesión...
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AuthLoadingOverlay
+          title="Configurando tu cuenta"
+          subtitle="Creando usuario e iniciando sesión..."
+        />
       )}
 
       <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-8">

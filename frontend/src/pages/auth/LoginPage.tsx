@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import { authApi } from '@/api/auth'
+import AuthLoadingOverlay from '@/components/ui/AuthLoadingOverlay'
 import { useAuthStore } from '@/store/authStore'
 
 export default function LoginPage() {
@@ -31,6 +32,13 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
+      {loading && (
+        <AuthLoadingOverlay
+          title="Iniciando sesión"
+          subtitle="Validando tus credenciales..."
+        />
+      )}
+
       <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-8">
         <h1 className="text-2xl font-bold text-center mb-1 text-gray-900 dark:text-white">
           Atlas Finance
