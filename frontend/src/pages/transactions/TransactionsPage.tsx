@@ -420,8 +420,8 @@ export default function TransactionsPage() {
           </p>
         )}
 
-        <div className="grid gap-4 2xl:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
-          <form onSubmit={handleSubmit} className="app-card p-5 space-y-4">
+        <div className="grid gap-4">
+          <form onSubmit={handleSubmit} className="order-3 app-card p-5 space-y-4">
             <div className="flex items-center justify-between gap-3">
               <h2 className="app-section-title">{editingId != null ? 'Editar movimiento' : 'Registrar movimiento'}</h2>
               {editingId != null && (
@@ -535,7 +535,7 @@ export default function TransactionsPage() {
             </div>
           </form>
 
-          <div className="space-y-4">
+          <div className="order-1 space-y-4">
             <div className="app-card p-5 space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="app-section-title">Filtros</h2>
