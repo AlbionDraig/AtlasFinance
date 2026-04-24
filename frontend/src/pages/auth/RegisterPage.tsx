@@ -94,7 +94,11 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-page px-4 py-8 relative overflow-hidden">
+      {/* Decorative blobs */}
+      <div className="blob blob-primary -top-40 -left-40 w-96 h-96" />
+      <div className="blob blob-secondary -bottom-40 -right-40 w-96 h-96" />
+
       {loading && (
         <AuthLoadingOverlay
           title="Configurando tu cuenta"
@@ -102,23 +106,30 @@ export default function RegisterPage() {
         />
       )}
 
-      <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-8">
-        <h1 className="text-2xl font-bold text-center mb-1 text-gray-900 dark:text-white">
+      <div className="relative w-full max-w-sm card-glass p-8">
+        {/* Logo */}
+        <div className="flex justify-center mb-4">
+          <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/40">
+            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V17a1 1 0 11-2 0v-.07A7.003 7.003 0 015 10h1a6 6 0 0012 0h1a7.003 7.003 0 01-6 6.93z" />
+            </svg>
+          </div>
+        </div>
+
+        <h1 className="text-2xl font-bold text-center mb-1 text-white tracking-tight">
           Atlas Finance
         </h1>
-        <p className="text-sm text-center text-gray-500 dark:text-gray-400 mb-6">
+        <p className="text-sm text-center text-slate-400 mb-6">
           Crea tu cuenta
         </p>
 
         {error && (
-          <p className="mb-4 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 rounded-lg px-3 py-2">
-            {error}
-          </p>
+          <p className="mb-4 alert-error">{error}</p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium mb-1 text-slate-300">
               Nombre completo
             </label>
             <input
@@ -128,12 +139,12 @@ export default function RegisterPage() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Ej: Sebastian Gutierrez Betancourt"
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="input-dark"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium mb-1 text-slate-300">
               Email
             </label>
             <input
@@ -143,12 +154,12 @@ export default function RegisterPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu_correo@ejemplo.com"
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="input-dark"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium mb-1 text-slate-300">
               Contraseña
             </label>
             <input
@@ -159,15 +170,15 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Mínimo 8 caracteres"
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="input-dark"
             />
 
             <div className="mt-2">
-              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                 <span>Fortaleza de contraseña</span>
                 <span className="font-medium">{password ? strength.label : 'Sin definir'}</span>
               </div>
-              <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
                 <div
                   className={`h-full ${strengthBarClass} transition-all`}
                   style={{ width: `${password ? strength.score : 0}%` }}
@@ -176,23 +187,23 @@ export default function RegisterPage() {
             </div>
 
             <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs">
-              <li className={checks.minLength ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}>
+              <li className={checks.minLength ? 'text-emerald-400' : 'text-slate-500'}>
                 {checks.minLength ? '✓' : '•'} Mínimo 8 caracteres
               </li>
-              <li className={checks.hasUpper ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}>
+              <li className={checks.hasUpper ? 'text-emerald-400' : 'text-slate-500'}>
                 {checks.hasUpper ? '✓' : '•'} Al menos una mayúscula
               </li>
-              <li className={checks.hasNumber ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}>
+              <li className={checks.hasNumber ? 'text-emerald-400' : 'text-slate-500'}>
                 {checks.hasNumber ? '✓' : '•'} Al menos un número
               </li>
-              <li className={checks.hasSymbol ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}>
+              <li className={checks.hasSymbol ? 'text-emerald-400' : 'text-slate-500'}>
                 {checks.hasSymbol ? '✓' : '•'} Al menos un símbolo
               </li>
             </ul>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium mb-1 text-slate-300">
               Confirmar contraseña
             </label>
             <input
@@ -203,11 +214,11 @@ export default function RegisterPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Repite tu contraseña"
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="input-dark"
             />
 
             {confirmPassword && password !== confirmPassword && (
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+              <p className="mt-1 text-xs text-red-400">
                 Las contraseñas no coinciden.
               </p>
             )}
@@ -216,14 +227,14 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+            className="btn-brand"
           >
             {loading ? 'Creando cuenta…' : 'Crear cuenta'}
           </button>
 
-          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-center text-sm text-slate-400">
             ¿Ya tienes cuenta?{' '}
-            <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+            <Link to="/login" className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
               Inicia sesión
             </Link>
           </p>

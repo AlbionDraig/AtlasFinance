@@ -1,1 +1,124 @@
 @import "tailwindcss";
+
+/* ─── Atlas Finance Design Tokens ─────────────────────────────────────────────
+   Tailwind v4 @theme: genera utilidades como bg-brand-*, text-surface-*, etc.
+   Uso: className="bg-page text-on-surface border-subtle"
+   ──────────────────────────────────────────────────────────────────────────── */
+@theme {
+  /* Fondos de página */
+  --color-page-from:    #020617; /* slate-950 */
+  --color-page-via:     #1e1b4b; /* indigo-950 */
+  --color-page-to:      #0f172a; /* slate-900 */
+
+  /* Tarjetas / superficies */
+  --color-surface-card:    rgba(255,255,255,0.05);
+  --color-surface-input:   rgba(255,255,255,0.10);
+  --color-surface-hover:   rgba(255,255,255,0.08);
+
+  /* Bordes */
+  --color-border-subtle:   rgba(255,255,255,0.10);
+  --color-border-focus:    #6366f1; /* indigo-500 */
+
+  /* Texto */
+  --color-text-primary:    #ffffff;
+  --color-text-secondary:  #94a3b8; /* slate-400 */
+  --color-text-muted:      #64748b; /* slate-500 */
+  --color-text-placeholder: #64748b;
+
+  /* Marca / acento */
+  --color-brand:           #4f46e5; /* indigo-600 */
+  --color-brand-hover:     #6366f1; /* indigo-500 */
+  --color-brand-shadow:    rgba(79,70,229,0.30);
+
+  /* Estado: error */
+  --color-error-text:      #f87171; /* red-400 */
+  --color-error-bg:        rgba(239,68,68,0.10);
+  --color-error-border:    rgba(239,68,68,0.20);
+
+  /* Estado: éxito */
+  --color-success:         #34d399; /* emerald-400 */
+
+  /* Estado: advertencia */
+  --color-warning:         #fbbf24; /* amber-400 */
+
+  /* Decorativos (blobs de fondo) */
+  --color-blob-primary:    rgba(79,70,229,0.20);   /* indigo */
+  --color-blob-secondary:  rgba(139,92,246,0.20);  /* violet */
+}
+
+/* ─── Clases de utilidad compuestas ──────────────────────────────────────────
+   Para patrones repetitivos: fondo de página, tarjetas, inputs, botones.
+   ──────────────────────────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Fondo de página con gradiente diagonal */
+  .bg-page {
+    background-image: linear-gradient(
+      to bottom right,
+      var(--color-page-from),
+      var(--color-page-via),
+      var(--color-page-to)
+    );
+  }
+
+  /* Blobs decorativos (posiciona con absolute + clases de tamaño) */
+  .blob {
+    border-radius: 9999px;
+    filter: blur(96px);
+    pointer-events: none;
+    position: absolute;
+  }
+  .blob-primary   { background-color: var(--color-blob-primary); }
+  .blob-secondary { background-color: var(--color-blob-secondary); }
+
+  /* Tarjeta de vidrio oscuro */
+  .card-glass {
+    background-color: var(--color-surface-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+  }
+
+  /* Input oscuro translúcido */
+  .input-dark {
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border-subtle);
+    background-color: var(--color-surface-input);
+    color: var(--color-text-primary);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    outline: none;
+  }
+  .input-dark::placeholder { color: var(--color-text-placeholder); }
+  .input-dark:focus {
+    box-shadow: 0 0 0 2px var(--color-border-focus);
+    border-color: transparent;
+  }
+
+  /* Botón primario de marca */
+  .btn-brand {
+    background-color: var(--color-brand);
+    color: #ffffff;
+    border-radius: 0.5rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: 0 10px 15px -3px var(--color-brand-shadow);
+    transition: background-color 0.15s;
+    cursor: pointer;
+    width: 100%;
+  }
+  .btn-brand:hover    { background-color: var(--color-brand-hover); }
+  .btn-brand:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Alerta de error */
+  .alert-error {
+    background-color: var(--color-error-bg);
+    border: 1px solid var(--color-error-border);
+    color: var(--color-error-text);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+}
