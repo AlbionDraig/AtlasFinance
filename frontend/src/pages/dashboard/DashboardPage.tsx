@@ -509,7 +509,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Filters */}
-      <div className="sticky top-0 z-40 overflow-visible bg-white border border-neutral-100 rounded-2xl flex flex-wrap items-end gap-4 px-5 py-4 shadow-sm">
+      <div className="sticky top-2 z-50 overflow-visible bg-white/98 backdrop-blur-md border border-neutral-100 border-t-4 border-t-brand ring-2 ring-brand/20 rounded-2xl flex flex-wrap items-end gap-4 px-5 py-4 shadow-xl">
         <div className="flex flex-col gap-1">
           <label className="app-label">Período</label>
           <Select value={period} onChange={v => setPeriod(v as Period)}
