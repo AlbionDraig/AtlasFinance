@@ -52,6 +52,8 @@ function buildCalendarDays(viewDate: Date): Date[] {
 
 export default function DatePicker({ label, value, onChange, min, max, className = '', disabled = false }: DatePickerProps) {
   const [open, setOpen] = useState(false)
+  const [openUpward, setOpenUpward] = useState(false)
+  const [openLeft, setOpenLeft] = useState(false)
   const [viewDate, setViewDate] = useState(() => parseIsoDate(value))
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -92,16 +94,27 @@ export default function DatePicker({ label, value, onChange, min, max, className
   })
 
   return (
-    <div ref={rootRef} className={`relative isolate flex flex-col gap-1 [transform:translateZ(0)] [backface-visibility:hidden] ${className}`}>
+    <div className={`flex flex-col gap-1 ${className}`}>
       <label className={`app-label ${disabled ? 'text-neutral-400' : ''}`}>{label}</label>
+
+      <div ref={rootRef} className={`relative isolate [transform:translateZ(0)] [backface-visibility:hidden] ${open ? 'z-[140]' : 'z-10'}`}>
 
       <button
         type="button"
+        disabled={disabled}
         onClick={() => {
           if (disabled) return
-          setOpen(prev => !prev)
+          setOpen(prev => {
+            if (!prev && rootRef.current) {
+              const rect = rootRef.current.getBoundingClientRect()
+              const popoverHeight = 320
+              const popoverWidth = 288
+              setOpenUpward(window.innerHeight - rect.bottom < popoverHeight && rect.top > popoverHeight)
+              setOpenLeft(window.innerWidth - rect.left < popoverWidth && rect.right > popoverWidth)
+            }
+            return !prev
+          })
         }}
-        disabled={disabled}
         className={`app-control w-36 text-left text-xs [transform:translateZ(0)] [backface-visibility:hidden] ${disabled ? 'cursor-not-allowed bg-neutral-50 border-neutral-100 text-neutral-700' : ''}`}
       >
         <span className="inline-flex w-full items-center gap-2 whitespace-nowrap">
@@ -122,7 +135,7 @@ export default function DatePicker({ label, value, onChange, min, max, className
       </button>
 
       {open && !disabled && (
-        <div className="app-menu absolute left-0 top-full z-50 mt-2 w-72 p-3">
+        <div className={['app-menu absolute z-[150] w-72 p-3', openUpward ? 'bottom-full mb-2' : 'top-full mt-2', openLeft ? 'right-0' : 'left-0'].join(' ')}>
           <div className="mb-2 flex items-center justify-between">
             <button
               type="button"
@@ -179,6 +192,7 @@ export default function DatePicker({ label, value, onChange, min, max, className
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
