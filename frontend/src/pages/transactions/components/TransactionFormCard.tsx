@@ -2,6 +2,7 @@ import type { Dispatch, FormEvent, SetStateAction } from 'react'
 import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
 import Select from '@/components/ui/Select'
+import TimePicker from '@/components/ui/TimePicker'
 import type { Account } from '@/types'
 import type { Category } from '@/api/categories'
 import type { FormState, TransactionType } from '../types'
@@ -160,16 +161,12 @@ export default function TransactionFormCard({
           max={maxDate}
           className="w-full"
         />
-        <div className="space-y-1">
-          <label className="app-label">Hora</label>
-          <input
-            type="time"
-            step="60"
-            value={form.occurredTime}
-            onChange={(event) => setForm((current) => ({ ...current, occurredTime: event.target.value }))}
-            className="app-control w-full"
-          />
-        </div>
+        <TimePicker
+          label="Hora"
+          value={form.occurredTime}
+          onChange={(value) => setForm((current) => ({ ...current, occurredTime: value }))}
+          className="w-full"
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

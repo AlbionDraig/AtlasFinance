@@ -48,7 +48,7 @@ export default function TransactionEditModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 overflow-y-auto p-4"
       aria-modal="true"
       role="dialog"
     >
@@ -60,7 +60,7 @@ export default function TransactionEditModal({
       />
 
       {/* Modal panel */}
-      <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="relative z-10 mx-auto flex min-h-full w-full max-w-lg items-center justify-center py-6">
         <TransactionFormCard
           form={form}
           setForm={setForm}
