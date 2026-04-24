@@ -2,24 +2,30 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 
 const navItems = [
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/transactions', label: 'Transactions' },
-  { to: '/accounts', label: 'Accounts' },
-  { to: '/pockets', label: 'Pockets' },
+  { to: '/dashboard', label: 'Inicio' },
+  { to: '/transactions', label: 'Movimientos' },
+  { to: '/accounts', label: 'Cuentas' },
+  { to: '/pockets', label: 'Bolsillos' },
 ]
 
 export default function AppLayout() {
-  const logout = useAuthStore((s) => s.logout)
+  const { logout, user } = useAuthStore()
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+    <div className="flex h-screen bg-page text-white">
       {/* Sidebar */}
-      <aside className="w-60 shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col">
-        <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-800">
-          <span className="text-xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
-            Atlas Finance
-          </span>
+      <aside className="w-60 shrink-0 bg-white/5 border-r border-white/10 flex flex-col backdrop-blur-sm">
+        {/* Logo */}
+        <div className="px-6 py-5 border-b border-white/10 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow shadow-indigo-600/40 shrink-0">
+            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V17a1 1 0 11-2 0v-.07A7.003 7.003 0 015 10h1a6 6 0 0012 0h1a7.003 7.003 0 01-6 6.93z" />
+            </svg>
+          </div>
+          <span className="text-base font-bold tracking-tight text-white">Atlas Finance</span>
         </div>
+
+        {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map(({ to, label }) => (
             <NavLink
@@ -28,8 +34,8 @@ export default function AppLayout() {
               className={({ isActive }) =>
                 `flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
-                    : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`
               }
             >
@@ -37,12 +43,20 @@ export default function AppLayout() {
             </NavLink>
           ))}
         </nav>
-        <div className="px-3 py-4 border-t border-gray-200 dark:border-gray-800">
+
+        {/* Footer: user + logout */}
+        <div className="px-3 py-4 border-t border-white/10 space-y-2">
+          {user && (
+            <div className="px-3 py-2">
+              <p className="text-xs font-medium text-white truncate">{user.full_name}</p>
+              <p className="text-xs text-slate-500 truncate">{user.email}</p>
+            </div>
+          )}
           <button
             onClick={logout}
-            className="w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950 transition-colors"
+            className="w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
           >
-            Log out
+            Cerrar sesión
           </button>
         </div>
       </aside>

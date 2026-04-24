@@ -1,7 +1,7 @@
 import apiClient from '@/lib/axios'
-import type { MetricSummary } from '@/types'
+import type { DashboardMetrics } from '@/types'
 
 export const metricsApi = {
-  summary: (params?: { start_date?: string; end_date?: string }) =>
-    apiClient.get<MetricSummary>('/metrics/summary', { params }),
+  dashboard: (currency = 'COP') =>
+    apiClient.get<DashboardMetrics>('/metrics/dashboard', { params: { currency } }),
 }

@@ -1,4 +1,4 @@
-import apiClient from '@/lib/axios'
+﻿import apiClient from '@/lib/axios'
 import type { Transaction } from '@/types'
 
 export interface TransactionFilters {
@@ -6,6 +6,7 @@ export interface TransactionFilters {
   category_id?: number
   start_date?: string
   end_date?: string
+  currency?: string
   skip?: number
   limit?: number
 }

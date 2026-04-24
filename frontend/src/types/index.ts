@@ -30,6 +30,7 @@ export interface Account {
   account_type: string
   currency: string
   balance: number
+  current_balance?: number
 }
 
 // Transaction
@@ -39,8 +40,10 @@ export interface Transaction {
   amount: number
   description: string
   category_id: number | null
-  transaction_date: string
-  type: 'income' | 'expense'
+  pocket_id: number | null
+  currency: string
+  transaction_type: 'INCOME' | 'EXPENSE'
+  occurred_at: string
 }
 
 // Pocket
@@ -53,9 +56,10 @@ export interface Pocket {
 }
 
 // Metric
-export interface MetricSummary {
+export interface DashboardMetrics {
+  net_worth: number
   total_income: number
   total_expenses: number
-  net_balance: number
-  currency: string
+  savings_rate: number
+  cashflow: number
 }

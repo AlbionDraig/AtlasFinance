@@ -95,6 +95,10 @@
     box-shadow: 0 0 0 2px var(--color-border-focus);
     border-color: transparent;
   }
+  .input-dark option {
+    background-color: #1e293b;
+    color: var(--color-text-primary);
+  }
 
   /* Botón primario de marca */
   .btn-brand {
