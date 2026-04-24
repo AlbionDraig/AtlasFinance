@@ -54,7 +54,7 @@ function buildDefaultFilters(): FiltersState {
     period: 'all',
     from: toDateInputValue(start),
     to: toDateInputValue(today),
-    pageSize: 25,
+    pageSize: 5,
   }
 }
 
