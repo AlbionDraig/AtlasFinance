@@ -173,7 +173,7 @@ export default function TransactionFormCard({
         <button type="submit" className="app-btn-primary" disabled={saving || !accounts.length}>
           {submitLabel}
         </button>
-        <button type="button" className="app-btn-secondary" onClick={onReset}>
+        <button type="button" className="app-btn-secondary order-last sm:order-none" onClick={onReset}>
           Cancelar
         </button>
       </div>

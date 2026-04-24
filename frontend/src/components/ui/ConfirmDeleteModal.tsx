@@ -47,14 +47,6 @@ export default function ConfirmDeleteModal({
         <div className="flex items-center justify-end gap-2 px-5 py-3">
           <button
             type="button"
-            onClick={onClose}
-            disabled={loading}
-            className="rounded-lg border border-neutral-100 px-3.5 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:pointer-events-none disabled:opacity-60"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
             onClick={onConfirm}
             disabled={loading}
             className="flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-hover disabled:pointer-events-none disabled:opacity-60"
@@ -65,6 +57,14 @@ export default function ConfirmDeleteModal({
               </svg>
             )}
             {confirmLabel}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="rounded-lg border border-neutral-100 px-3.5 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:pointer-events-none disabled:opacity-60"
+          >
+            Cancelar
           </button>
         </div>
       </div>
