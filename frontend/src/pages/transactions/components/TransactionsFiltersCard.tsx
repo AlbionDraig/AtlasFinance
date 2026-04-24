@@ -29,7 +29,15 @@ export default function TransactionsFiltersCard({
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <h2 className="app-section-title">Filtros</h2>
-        <button type="button" className="text-sm app-link" onClick={onResetFilters}>
+        <button
+          type="button"
+          disabled={activeFilters.length === 0}
+          onClick={onResetFilters}
+          className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors disabled:pointer-events-none disabled:border-neutral-100 disabled:text-neutral-400 border-brand text-brand-text hover:bg-brand-light"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
           Limpiar filtros
         </button>
       </div>
