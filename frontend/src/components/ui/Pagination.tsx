@@ -42,19 +42,29 @@ export default function Pagination({
       </div>
       <div className="flex items-center gap-3">
         <p className="app-subtitle text-sm">Página {currentPage} de {totalPages}</p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             type="button"
-            className="app-btn-secondary !w-auto px-3 py-2 disabled:opacity-45 disabled:cursor-not-allowed"
             onClick={onPrevPage}
             disabled={currentPage === 1}
-          >←</button>
+            aria-label="Página anterior"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-100 bg-white text-neutral-700 transition-colors hover:border-brand hover:bg-brand-light hover:text-brand-text disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-neutral-100 disabled:hover:bg-white disabled:hover:text-neutral-700"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
           <button
             type="button"
-            className="app-btn-secondary !w-auto px-3 py-2 disabled:opacity-45 disabled:cursor-not-allowed"
             onClick={onNextPage}
             disabled={currentPage === totalPages}
-          >→</button>
+            aria-label="Página siguiente"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-100 bg-white text-neutral-700 transition-colors hover:border-brand hover:bg-brand-light hover:text-brand-text disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-neutral-100 disabled:hover:bg-white disabled:hover:text-neutral-700"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
