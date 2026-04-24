@@ -1,4 +1,5 @@
 import Pagination from '@/components/ui/Pagination'
+import Badge from '@/components/ui/Badge'
 import type { Category } from '@/api/categories'
 import type { Account, Transaction } from '@/types'
 
@@ -23,6 +24,9 @@ interface TransactionsHistoryCardProps {
   pageSize: number
   onPageSizeChange: (size: number) => void
   onCreateMovement: () => void
+  incomeTotal: number
+  expenseTotal: number
+  currency: string
 }
 
 export default function TransactionsHistoryCard({
@@ -46,7 +50,12 @@ export default function TransactionsHistoryCard({
   pageSize,
   onPageSizeChange,
   onCreateMovement,
+  incomeTotal,
+  expenseTotal,
+  currency,
 }: TransactionsHistoryCardProps) {
+  const netFlow = incomeTotal - expenseTotal
+
   return (
     <div className="app-card overflow-hidden">
 
@@ -67,6 +76,15 @@ export default function TransactionsHistoryCard({
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-white px-6 py-3">
+        <Badge variant="neutral">{filteredTransactions.length} movimientos</Badge>
+        <Badge variant="positive">Ingresos {formatCurrency(incomeTotal, currency)}</Badge>
+        <Badge variant="negative">Gastos {formatCurrency(expenseTotal, currency)}</Badge>
+        <Badge variant={netFlow >= 0 ? 'positive' : 'negative'}>
+          Flujo neto {formatCurrency(netFlow, currency)}
+        </Badge>
       </div>
 
       {/* Empty state */}

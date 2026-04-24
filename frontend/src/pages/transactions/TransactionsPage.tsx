@@ -7,7 +7,6 @@ import type { Account, Transaction } from '@/types'
 import TransactionEditModal from './components/TransactionEditModal'
 import TransactionsFiltersCard from './components/TransactionsFiltersCard'
 import TransactionsHistoryCard from './components/TransactionsHistoryCard'
-import Badge from '@/components/ui/Badge'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
@@ -388,16 +387,9 @@ export default function TransactionsPage() {
   return (
     <div className="app-shell w-full max-w-7xl mx-auto space-y-6 overflow-x-hidden">
       <section className="app-panel w-full p-6 space-y-6 overflow-x-hidden">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h1 className="app-title text-2xl">Movimientos</h1>
-            <p className="app-subtitle mt-1">Registra, filtra y administra tus ingresos y gastos desde una sola vista.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="neutral">{filteredTransactions.length} movimientos</Badge>
-            <Badge variant="positive">Ingresos {formatCurrency(incomeTotal, filters.currency === 'USD' ? 'USD' : 'COP')}</Badge>
-            <Badge variant="negative">Gastos {formatCurrency(expenseTotal, filters.currency === 'USD' ? 'USD' : 'COP')}</Badge>
-          </div>
+        <div>
+          <h1 className="app-title text-2xl">Movimientos</h1>
+          <p className="app-subtitle mt-1">Registra, filtra y administra tus ingresos y gastos desde una sola vista.</p>
         </div>
 
         <ErrorAlert message={error} />
@@ -432,10 +424,7 @@ export default function TransactionsPage() {
               activeFilters={activeFilters}
               datasetRange={datasetRange}
               derivedRange={derivedRange}
-              incomeTotal={incomeTotal}
-              expenseTotal={expenseTotal}
               onResetFilters={() => setFilters(buildDefaultFilters())}
-              formatCurrency={formatCurrency}
             />
 
             <TransactionsHistoryCard
@@ -453,6 +442,9 @@ export default function TransactionsPage() {
               pageSize={filters.pageSize}
               onPageSizeChange={(size) => setFilters((current) => ({ ...current, pageSize: size }))}
               onCreateMovement={() => { resetForm(); setModalOpen(true) }}
+              incomeTotal={incomeTotal}
+              expenseTotal={expenseTotal}
+              currency={filters.currency === 'USD' ? 'USD' : 'COP'}
               onEdit={handleEdit}
               onDelete={(transactionId) => {
                 void handleDelete(transactionId)
