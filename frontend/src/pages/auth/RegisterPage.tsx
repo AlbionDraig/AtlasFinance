@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi } from '@/api/auth'
+import { useAuthStore } from '@/store/authStore'
 
 type StrengthLevel = 'debil' | 'media' | 'fuerte'
 
@@ -25,6 +26,7 @@ function getPasswordStrength(password: string): { score: number; label: string; 
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const { setToken, setUser } = useAuthStore()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -70,8 +72,15 @@ export default function RegisterPage() {
         full_name: fullName.trim(),
         password,
       })
-      setSuccess('Cuenta creada correctamente. Redirigiendo al login...')
-      setTimeout(() => navigate('/login'), 1200)
+
+      const { data: tokenData } = await authApi.login({ email, password })
+      setToken(tokenData.access_token)
+
+      const { data: me } = await authApi.me()
+      setUser(me)
+
+      setSuccess('Cuenta creada. Entrando a tu panel...')
+      setTimeout(() => navigate('/dashboard'), 700)
     } catch (err: unknown) {
       const maybeDetail =
         typeof err === 'object' &&
@@ -120,7 +129,7 @@ export default function RegisterPage() {
               autoComplete="name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Ej: Sebastián Gómez"
+              placeholder="Ej: Sebastian Gutierrez Betancourt"
               className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
