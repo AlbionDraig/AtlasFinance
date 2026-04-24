@@ -31,6 +31,7 @@ export default function TransactionsFiltersCard({
 }: TransactionsFiltersCardProps) {
   return (
     <div className="app-card p-5 space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <h2 className="app-section-title">Filtros</h2>
         <button type="button" className="text-sm app-link" onClick={onResetFilters}>
@@ -38,6 +39,7 @@ export default function TransactionsFiltersCard({
         </button>
       </div>
 
+      {/* Active filter chips */}
       {activeFilters.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {activeFilters.map((label) => (
@@ -48,8 +50,9 @@ export default function TransactionsFiltersCard({
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-3">
-        <div className="space-y-1 md:col-span-2 2xl:col-span-1">
+      {/* Main filter grid */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="space-y-1 sm:col-span-2 lg:col-span-4">
           <label className="app-label">Buscar</label>
           <input
             type="search"
@@ -117,9 +120,38 @@ export default function TransactionsFiltersCard({
             className="w-full"
           />
         </div>
+      </div>
 
-        <div className="space-y-1">
-          <label className="app-label">Por pagina</label>
+      {/* Custom date range — only visible when period is 'custom' */}
+      {filters.period === 'custom' && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <DatePicker
+            label="Desde"
+            value={derivedRange.from || datasetRange.min}
+            onChange={(value) => setFilters((current) => ({ ...current, from: value }))}
+            min={datasetRange.min}
+            max={derivedRange.to || datasetRange.max}
+          />
+          <DatePicker
+            label="Hasta"
+            value={derivedRange.to || datasetRange.max}
+            onChange={(value) => setFilters((current) => ({ ...current, to: value }))}
+            min={derivedRange.from || datasetRange.min}
+            max={datasetRange.max}
+          />
+        </div>
+      )}
+
+      {/* Bottom bar: flujo neto + por página */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-3">
+        <div className="rounded-lg bg-[var(--af-bg-soft)] px-4 py-2.5 text-sm text-[var(--af-text-muted)]">
+          Flujo neto{' '}
+          <span className={incomeTotal - expenseTotal >= 0 ? 'tone-positive font-medium' : 'tone-negative font-medium'}>
+            {formatCurrency(incomeTotal - expenseTotal, filters.currency === 'USD' ? 'USD' : 'COP')}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="app-label whitespace-nowrap">Por página</label>
           <Select
             value={String(filters.pageSize)}
             onChange={(value) => setFilters((current) => ({ ...current, pageSize: Number(value) }))}
@@ -128,33 +160,8 @@ export default function TransactionsFiltersCard({
               { value: '50', label: '50' },
               { value: '100', label: '100' },
             ]}
-            className="w-full"
+            className="w-20"
           />
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-4 md:flex-row md:items-end">
-        <DatePicker
-          label="Desde"
-          value={derivedRange.from || datasetRange.min}
-          onChange={(value) => setFilters((current) => ({ ...current, period: 'custom', from: value }))}
-          min={datasetRange.min}
-          max={derivedRange.to || datasetRange.max}
-          disabled={filters.period !== 'custom'}
-        />
-        <DatePicker
-          label="Hasta"
-          value={derivedRange.to || datasetRange.max}
-          onChange={(value) => setFilters((current) => ({ ...current, period: 'custom', to: value }))}
-          min={derivedRange.from || datasetRange.min}
-          max={datasetRange.max}
-          disabled={filters.period !== 'custom'}
-        />
-        <div className="rounded-lg bg-[var(--af-bg-soft)] px-4 py-3 text-sm text-[var(--af-text-muted)]">
-          Flujo neto{' '}
-          <span className={incomeTotal - expenseTotal >= 0 ? 'tone-positive font-medium' : 'tone-negative font-medium'}>
-            {formatCurrency(incomeTotal - expenseTotal, filters.currency === 'USD' ? 'USD' : 'COP')}
-          </span>
         </div>
       </div>
     </div>
