@@ -1,4 +1,5 @@
-import Select from '@/components/ui/Select'
+import Pagination from '@/components/ui/Pagination'
+import Badge from '@/components/ui/Badge'
 import type { Category } from '@/api/categories'
 import type { Account, Transaction } from '@/types'
 
@@ -92,9 +93,9 @@ export default function TransactionsHistoryCard({
                     </td>
                     <td className="px-5 py-4 text-sm text-[var(--af-text)]">{transaction.description}</td>
                     <td className="px-5 py-4 text-sm">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${isIncome ? 'bg-tone-positive' : 'bg-tone-negative'}`}>
+                      <Badge variant={isIncome ? 'positive' : 'negative'} className="px-2.5 py-1">
                         {isIncome ? 'Ingreso' : 'Gasto'}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="px-5 py-4 text-sm text-[var(--af-text-muted)]">{transaction.currency}</td>
                     <td className="px-5 py-4 text-sm text-[var(--af-text-muted)]">{getCompactAccountName(transaction.account_id, accounts)}</td>
@@ -125,42 +126,14 @@ export default function TransactionsHistoryCard({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--af-border)] px-5 py-4">
-        <div className="flex items-center gap-2">
-          <label className="app-label whitespace-nowrap">Por página</label>
-          <Select
-            value={String(pageSize)}
-            onChange={(value) => onPageSizeChange(Number(value))}
-            options={[
-              { value: '5', label: '5' },
-              { value: '10', label: '10' },
-              { value: '15', label: '15' },
-              { value: '25', label: '25' },
-              { value: '50', label: '50' },
-              { value: '100', label: '100' },
-            ]}
-            visibleItems={3}
-            className="w-20"
-          />
-        </div>
-        <div className="flex items-center gap-3">
-          <p className="app-subtitle text-sm">Página {currentPage} de {totalPages}</p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="app-btn-secondary !w-auto px-3 py-2 disabled:opacity-45 disabled:cursor-not-allowed"
-              onClick={onPrevPage}
-              disabled={currentPage === 1}
-            >←</button>
-            <button
-              type="button"
-              className="app-btn-secondary !w-auto px-3 py-2 disabled:opacity-45 disabled:cursor-not-allowed"
-              onClick={onNextPage}
-              disabled={currentPage === totalPages}
-            >→</button>
-          </div>
-        </div>
-      </div>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        onPrevPage={onPrevPage}
+        onNextPage={onNextPage}
+        onPageSizeChange={onPageSizeChange}
+      />
     </div>
   )
 }

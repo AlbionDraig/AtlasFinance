@@ -7,6 +7,9 @@ import type { Account, Transaction } from '@/types'
 import TransactionEditModal from './components/TransactionEditModal'
 import TransactionsFiltersCard from './components/TransactionsFiltersCard'
 import TransactionsHistoryCard from './components/TransactionsHistoryCard'
+import Badge from '@/components/ui/Badge'
+import ErrorAlert from '@/components/ui/ErrorAlert'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
 
 const INCOME_HINTS = [
@@ -373,16 +376,13 @@ export default function TransactionsPage() {
   if (loading) {
     return (
       <div className="app-panel p-6 flex min-h-72 items-center justify-center">
-        <div className="flex items-center gap-3 app-subtitle">
-          <span className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--af-border)] border-t-[var(--af-accent)]" />
-          Cargando movimientos...
-        </div>
+        <LoadingSpinner text="Cargando movimientos..." />
       </div>
     )
   }
 
   if (error && !transactions.length && !accounts.length) {
-    return <div className="alert-error max-w-xl mx-auto mt-8">{error}</div>
+    return <ErrorAlert message={error} className="max-w-xl mx-auto mt-8" />
   }
 
   return (
@@ -394,9 +394,9 @@ export default function TransactionsPage() {
             <p className="app-subtitle mt-1">Registra, filtra y administra tus ingresos y gastos desde una sola vista.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-tone-neutral px-3 py-1 text-xs font-medium">{filteredTransactions.length} movimientos</span>
-            <span className="rounded-full bg-tone-positive px-3 py-1 text-xs font-medium">Ingresos {formatCurrency(incomeTotal, filters.currency === 'USD' ? 'USD' : 'COP')}</span>
-            <span className="rounded-full bg-tone-negative px-3 py-1 text-xs font-medium">Gastos {formatCurrency(expenseTotal, filters.currency === 'USD' ? 'USD' : 'COP')}</span>
+            <Badge variant="neutral">{filteredTransactions.length} movimientos</Badge>
+            <Badge variant="positive">Ingresos {formatCurrency(incomeTotal, filters.currency === 'USD' ? 'USD' : 'COP')}</Badge>
+            <Badge variant="negative">Gastos {formatCurrency(expenseTotal, filters.currency === 'USD' ? 'USD' : 'COP')}</Badge>
             <button
               type="button"
               className="app-btn-primary px-4 py-1.5 text-sm"
@@ -407,7 +407,7 @@ export default function TransactionsPage() {
           </div>
         </div>
 
-        {error && <p className="alert-error">{error}</p>}
+        <ErrorAlert message={error} />
         {successMessage && (
           <p className="rounded-lg border border-[color-mix(in_srgb,var(--af-positive)_35%,transparent)] bg-[var(--af-positive-soft)] px-3 py-2 text-sm text-[var(--af-positive-soft-text)]">
             {successMessage}

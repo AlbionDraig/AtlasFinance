@@ -1,4 +1,4 @@
-import { useEffect, type FormEvent, type Dispatch, type SetStateAction } from 'react'
+import Modal from '@/components/ui/Modal'
 import TransactionFormCard from './TransactionFormCard'
 import type { Account } from '@/types'
 import type { Category } from '@/api/categories'
@@ -31,50 +31,21 @@ export default function TransactionEditModal({
   onSubmit,
   onClose,
 }: TransactionEditModalProps) {
-  // Close on Escape
-  useEffect(() => {
-    function handleKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
-  }, [onClose])
-
-  // Prevent body scroll while modal is open
-  useEffect(() => {
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
-  }, [])
-
   return (
-    <div
-      className="fixed inset-0 z-50 overflow-y-auto p-4"
-      aria-modal="true"
-      role="dialog"
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
+    <Modal onClose={onClose}>
+      <TransactionFormCard
+        form={form}
+        setForm={setForm}
+        accounts={accounts}
+        categoryOptions={categoryOptions}
+        accountCurrency={accountCurrency}
+        editingId={editingId}
+        saving={saving}
+        formError={formError}
+        maxDate={maxDate}
+        onSubmit={onSubmit}
+        onReset={onClose}
       />
-
-      {/* Modal panel */}
-      <div className="relative z-10 mx-auto flex min-h-full w-full max-w-lg items-center justify-center py-6">
-        <TransactionFormCard
-          form={form}
-          setForm={setForm}
-          accounts={accounts}
-          categoryOptions={categoryOptions}
-          accountCurrency={accountCurrency}
-          editingId={editingId}
-          saving={saving}
-          formError={formError}
-          maxDate={maxDate}
-          onSubmit={onSubmit}
-          onReset={onClose}
-        />
-      </div>
-    </div>
+    </Modal>
   )
 }

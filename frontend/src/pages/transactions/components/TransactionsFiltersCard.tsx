@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react'
 import DatePicker from '@/components/ui/DatePicker'
 import Select from '@/components/ui/Select'
+import Badge from '@/components/ui/Badge'
 import type { Account } from '@/types'
 import type { FiltersState, PeriodFilter } from '../types'
 
@@ -43,9 +44,7 @@ export default function TransactionsFiltersCard({
       {activeFilters.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {activeFilters.map((label) => (
-            <span key={label} className="rounded-full bg-tone-neutral px-3 py-1 text-xs font-medium">
-              {label}
-            </span>
+            <Badge key={label}>{label}</Badge>
           ))}
         </div>
       )}

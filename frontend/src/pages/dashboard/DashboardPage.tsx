@@ -10,6 +10,8 @@ import { transactionsApi } from '@/api/transactions'
 import { categoriesApi, type Category } from '@/api/categories'
 import Select from '@/components/ui/Select'
 import DatePicker from '@/components/ui/DatePicker'
+import ErrorAlert from '@/components/ui/ErrorAlert'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import type { Transaction, Account } from '@/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -500,10 +502,10 @@ export default function DashboardPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-[var(--af-accent)] border-t-transparent rounded-full animate-spin" />
+      <LoadingSpinner size={8} />
     </div>
   )
-  if (error) return <div className="alert-error max-w-md mx-auto mt-8">{error}</div>
+  if (error) return <ErrorAlert message={error} className="max-w-md mx-auto mt-8" />
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (

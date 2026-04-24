@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import { authApi } from '@/api/auth'
 import AuthLoadingOverlay from '@/components/ui/AuthLoadingOverlay'
+import ErrorAlert from '@/components/ui/ErrorAlert'
+import FormField from '@/components/ui/FormField'
 import { useAuthStore } from '@/store/authStore'
 
 export default function LoginPage() {
@@ -83,38 +85,28 @@ export default function LoginPage() {
         </p>
 
         {error && (
-          <p className="mb-4 alert-error">{error}</p>
+          <ErrorAlert message={error} className="mb-4" />
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1 app-subtitle">
-              Email
-            </label>
-            <input
-              type="email"
-              required
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu_correo@ejemplo.com"
-              className="app-control"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1 app-subtitle">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Tu contraseña"
-              className="app-control"
-            />
-          </div>
+          <FormField
+            label="Email"
+            type="email"
+            required
+            autoComplete="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="tu_correo@ejemplo.com"
+          />
+          <FormField
+            label="Contraseña"
+            type="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Tu contraseña"
+          />
           <button
             type="submit"
             disabled={loading}

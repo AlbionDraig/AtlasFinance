@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi } from '@/api/auth'
 import AuthLoadingOverlay from '@/components/ui/AuthLoadingOverlay'
+import ErrorAlert from '@/components/ui/ErrorAlert'
+import FormField from '@/components/ui/FormField'
 import { useAuthStore } from '@/store/authStore'
 
 type StrengthLevel = 'debil' | 'media' | 'fuerte'
@@ -124,44 +126,31 @@ export default function RegisterPage() {
         </p>
 
         {error && (
-          <p className="mb-4 alert-error">{error}</p>
+          <ErrorAlert message={error} className="mb-4" />
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1 app-subtitle">
-              Nombre completo
-            </label>
-            <input
-              type="text"
-              required
-              autoComplete="name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Ej: Sebastian Gutierrez Betancourt"
-              className="app-control"
-            />
-          </div>
+          <FormField
+            label="Nombre completo"
+            type="text"
+            required
+            autoComplete="name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Ej: Sebastian Gutierrez Betancourt"
+          />
 
-          <div>
-            <label className="block text-sm font-medium mb-1 app-subtitle">
-              Email
-            </label>
-            <input
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu_correo@ejemplo.com"
-              className="app-control"
-            />
-          </div>
+          <FormField
+            label="Email"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="tu_correo@ejemplo.com"
+          />
 
-          <div>
-            <label className="block text-sm font-medium mb-1 app-subtitle">
-              Contraseña
-            </label>
+          <FormField label="Contraseña">
             <input
               type="password"
               required
@@ -200,12 +189,12 @@ export default function RegisterPage() {
                 {checks.hasSymbol ? '✓' : '•'} Al menos un símbolo
               </li>
             </ul>
-          </div>
+          </FormField>
 
-          <div>
-            <label className="block text-sm font-medium mb-1 app-subtitle">
-              Confirmar contraseña
-            </label>
+          <FormField
+            label="Confirmar contraseña"
+            error={confirmPassword && password !== confirmPassword ? 'Las contraseñas no coinciden.' : undefined}
+          >
             <input
               type="password"
               required
@@ -216,13 +205,7 @@ export default function RegisterPage() {
               placeholder="Repite tu contraseña"
               className="app-control"
             />
-
-            {confirmPassword && password !== confirmPassword && (
-              <p className="mt-1 text-xs tone-negative">
-                Las contraseñas no coinciden.
-              </p>
-            )}
-          </div>
+          </FormField>
 
           <button
             type="submit"
