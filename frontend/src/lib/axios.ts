@@ -17,6 +17,7 @@ apiClient.interceptors.response.use(
     const isAuthEndpoint = err.config?.url?.includes('/auth/')
     if (err.response?.status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('access_token')
+      sessionStorage.setItem('session_expired', '1')
       window.location.href = '/login'
     }
     return Promise.reject(err)
