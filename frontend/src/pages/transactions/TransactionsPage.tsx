@@ -457,6 +457,8 @@ export default function TransactionsPage() {
               categories={categories}
               onPrevPage={() => setPage((current) => Math.max(1, current - 1))}
               onNextPage={() => setPage((current) => Math.min(totalPages, current + 1))}
+              pageSize={filters.pageSize}
+              onPageSizeChange={(size) => setFilters((current) => ({ ...current, pageSize: size }))}
               onEdit={handleEdit}
               onDelete={(transactionId) => {
                 void handleDelete(transactionId)

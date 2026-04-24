@@ -1,5 +1,6 @@
 import type { Category } from '@/api/categories'
 import type { Account, Transaction } from '@/types'
+import Select from '@/components/ui/Select'
 
 interface TransactionsHistoryCardProps {
   filteredTransactions: Transaction[]
@@ -19,6 +20,8 @@ interface TransactionsHistoryCardProps {
   getCategoryName: (categoryId: number | null, categories: Category[]) => string
   formatCurrency: (value: number, currency: string) => string
   normalizeTransactionType: (value: string | null | undefined) => 'INCOME' | 'EXPENSE'
+  pageSize: number
+  onPageSizeChange: (size: number) => void
 }
 
 export default function TransactionsHistoryCard({
@@ -39,9 +42,11 @@ export default function TransactionsHistoryCard({
   getCategoryName,
   formatCurrency,
   normalizeTransactionType,
+  pageSize,
+  onPageSizeChange,
 }: TransactionsHistoryCardProps) {
   return (
-    <div className="app-card overflow-hidden">
+    <div className="app-card">
       <div className="flex items-center justify-between gap-3 border-b border-[var(--af-border)] px-5 py-4">
         <div>
           <h2 className="app-section-title mb-1">Historial</h2>
@@ -57,7 +62,7 @@ export default function TransactionsHistoryCard({
           <p className="app-subtitle mt-2">Ajusta el periodo, cambia la busqueda o registra un nuevo movimiento.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-hidden overflow-x-auto">
           <table className="min-w-full divide-y divide-[var(--af-border)]">
             <thead className="bg-[var(--af-bg-soft)] sticky top-0 z-10">
               <tr>
@@ -121,20 +126,35 @@ export default function TransactionsHistoryCard({
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--af-border)] px-5 py-4">
-        <p className="app-subtitle text-sm">Pagina {currentPage} de {totalPages}</p>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="app-btn-secondary !w-auto px-3 py-2 disabled:opacity-45 disabled:cursor-not-allowed"
-            onClick={onPrevPage}
-            disabled={currentPage === 1}
-          >←</button>
-          <button
-            type="button"
-            className="app-btn-secondary !w-auto px-3 py-2 disabled:opacity-45 disabled:cursor-not-allowed"
-            onClick={onNextPage}
-            disabled={currentPage === totalPages}
-          >→</button>
+          <label className="app-label whitespace-nowrap">Por página</label>
+          <Select
+            value={String(pageSize)}
+            onChange={(value) => onPageSizeChange(Number(value))}
+            options={[
+              { value: '25', label: '25' },
+              { value: '50', label: '50' },
+              { value: '100', label: '100' },
+            ]}
+            className="w-20"
+          />
+        </div>
+        <div className="flex items-center gap-3">
+          <p className="app-subtitle text-sm">Página {currentPage} de {totalPages}</p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="app-btn-secondary !w-auto px-3 py-2 disabled:opacity-45 disabled:cursor-not-allowed"
+              onClick={onPrevPage}
+              disabled={currentPage === 1}
+            >←</button>
+            <button
+              type="button"
+              className="app-btn-secondary !w-auto px-3 py-2 disabled:opacity-45 disabled:cursor-not-allowed"
+              onClick={onNextPage}
+              disabled={currentPage === totalPages}
+            >→</button>
+          </div>
         </div>
       </div>
     </div>

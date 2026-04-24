@@ -142,26 +142,13 @@ export default function TransactionsFiltersCard({
         </div>
       )}
 
-      {/* Bottom bar: flujo neto + por página */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-3">
+      {/* Bottom bar: flujo neto */}
+      <div className="flex flex-wrap items-center gap-3 border-t border-neutral-100 pt-3">
         <div className="rounded-lg bg-[var(--af-bg-soft)] px-4 py-2.5 text-sm text-[var(--af-text-muted)]">
           Flujo neto{' '}
           <span className={incomeTotal - expenseTotal >= 0 ? 'tone-positive font-medium' : 'tone-negative font-medium'}>
             {formatCurrency(incomeTotal - expenseTotal, filters.currency === 'USD' ? 'USD' : 'COP')}
           </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="app-label whitespace-nowrap">Por página</label>
-          <Select
-            value={String(filters.pageSize)}
-            onChange={(value) => setFilters((current) => ({ ...current, pageSize: Number(value) }))}
-            options={[
-              { value: '25', label: '25' },
-              { value: '50', label: '50' },
-              { value: '100', label: '100' },
-            ]}
-            className="w-20"
-          />
         </div>
       </div>
     </div>

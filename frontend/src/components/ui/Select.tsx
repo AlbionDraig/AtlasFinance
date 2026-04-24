@@ -15,6 +15,7 @@ interface SelectProps {
 
 export default function Select({ value, onChange, options, className = '', disabled = false }: SelectProps) {
   const [open, setOpen] = useState(false)
+  const [openUpward, setOpenUpward] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   // Close when clicking outside
@@ -29,15 +30,24 @@ export default function Select({ value, onChange, options, className = '', disab
   const selected = options.find(o => o.value === value) ?? options[0] ?? { value: '', label: 'Sin opciones' }
   const isDisabled = disabled || options.length === 0
 
+  function handleOpen() {
+    if (isDisabled) return
+    setOpen(prev => {
+      if (!prev && ref.current) {
+        const rect = ref.current.getBoundingClientRect()
+        const estimatedHeight = Math.min(options.length * 36 + 8, 208)
+        setOpenUpward(window.innerHeight - rect.bottom < estimatedHeight && rect.top > estimatedHeight)
+      }
+      return !prev
+    })
+  }
+
   return (
     <div ref={ref} className={`relative ${open ? 'z-[120]' : 'z-10'} isolate [transform:translateZ(0)] [backface-visibility:hidden] ${className}`}>
       {/* Trigger */}
       <button
         type="button"
-        onClick={() => {
-          if (isDisabled) return
-          setOpen(prev => !prev)
-        }}
+        onClick={handleOpen}
         disabled={isDisabled}
         className={`app-control flex items-center justify-between gap-2 text-xs [transform:translateZ(0)] [backface-visibility:hidden] ${
           isDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
@@ -55,7 +65,7 @@ export default function Select({ value, onChange, options, className = '', disab
       {/* Dropdown */}
       {open && !isDisabled && (
         <ul
-          className="app-menu absolute right-0 mt-1.5 w-full z-[130] max-h-52 overflow-y-auto py-1 text-xs"
+          className={['app-menu absolute right-0 w-full z-[130] max-h-52 overflow-y-auto py-1 text-xs', openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'].join(' ')}
         >
           {options.map(opt => (
             <li key={opt.value}>
