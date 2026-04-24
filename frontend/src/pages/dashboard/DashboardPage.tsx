@@ -510,34 +510,37 @@ export default function DashboardPage() {
       </div>
 
       {/* Filters */}
-      <div className="sticky top-2 z-50 overflow-visible bg-white/98 backdrop-blur-md border border-neutral-100 border-t-4 border-t-brand ring-2 ring-brand/20 rounded-2xl flex flex-wrap items-end gap-4 px-5 py-4 shadow-xl">
-        <div className="flex flex-col gap-1">
-          <label className="app-label">Período</label>
-          <Select value={period} onChange={v => setPeriod(v as Period)}
-            options={['Año actual','Últimos 90 días','Últimos 30 días','Personalizado'].map(v => ({ value: v, label: v }))}
-            className="w-44" />
-        </div>
-        <DatePicker
-          label="Desde"
-          value={period === 'Personalizado' ? customFrom : toISODate(dateFrom)}
-          onChange={setCustomFrom}
-          min={dataBounds.min}
-          max={customTo < dataBounds.max ? customTo : dataBounds.max}
-          disabled={period !== 'Personalizado'}
-        />
-        <DatePicker
-          label="Hasta"
-          value={period === 'Personalizado' ? customTo : toISODate(dateTo)}
-          onChange={setCustomTo}
-          min={customFrom > dataBounds.min ? customFrom : dataBounds.min}
-          max={dataBounds.max}
-          disabled={period !== 'Personalizado'}
-        />
-        <div className="flex flex-col gap-1 ml-auto">
-          <label className="app-label">Moneda</label>
-          <Select value={currency} onChange={setCurrency}
-            options={[{ value: 'COP', label: 'COP' }, { value: 'USD', label: 'USD' }]}
-            className="w-24" />
+      <div className="sticky top-0 z-50 relative -mx-4 md:-mx-6 px-4 md:px-6 pt-1 pb-0 bg-neutral-50">
+        <div className="absolute -top-8 left-0 right-0 h-8 bg-neutral-50 pointer-events-none" />
+        <div className="overflow-visible bg-white border border-neutral-100 border-t-4 border-t-brand border-b-neutral-400/40 ring-2 ring-brand/20 rounded-2xl flex flex-wrap items-end gap-4 px-5 py-4 shadow-xl">
+          <div className="flex flex-col gap-1">
+            <label className="app-label">Período</label>
+            <Select value={period} onChange={v => setPeriod(v as Period)}
+              options={['Año actual','Últimos 90 días','Últimos 30 días','Personalizado'].map(v => ({ value: v, label: v }))}
+              className="w-44" />
+          </div>
+          <DatePicker
+            label="Desde"
+            value={period === 'Personalizado' ? customFrom : toISODate(dateFrom)}
+            onChange={setCustomFrom}
+            min={dataBounds.min}
+            max={customTo < dataBounds.max ? customTo : dataBounds.max}
+            disabled={period !== 'Personalizado'}
+          />
+          <DatePicker
+            label="Hasta"
+            value={period === 'Personalizado' ? customTo : toISODate(dateTo)}
+            onChange={setCustomTo}
+            min={customFrom > dataBounds.min ? customFrom : dataBounds.min}
+            max={dataBounds.max}
+            disabled={period !== 'Personalizado'}
+          />
+          <div className="flex flex-col gap-1 ml-auto">
+            <label className="app-label">Moneda</label>
+            <Select value={currency} onChange={setCurrency}
+              options={[{ value: 'COP', label: 'COP' }, { value: 'USD', label: 'USD' }]}
+              className="w-24" />
+          </div>
         </div>
       </div>
 
