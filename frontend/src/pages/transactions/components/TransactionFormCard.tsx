@@ -15,7 +15,6 @@ interface TransactionFormCardProps {
   accountCurrency: string
   editingId: number | null
   saving: boolean
-  formError: string | null
   maxDate: string
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   onReset: () => void
@@ -47,7 +46,6 @@ export default function TransactionFormCard({
   accountCurrency,
   editingId,
   saving,
-  formError,
   maxDate,
   onSubmit,
   onReset,
@@ -84,8 +82,6 @@ export default function TransactionFormCard({
           </div>
         </div>
       </div>
-
-      {formError && <p className="alert-error">{formError}</p>}
 
       <div className="space-y-1">
         <label className="app-label">Descripcion</label>

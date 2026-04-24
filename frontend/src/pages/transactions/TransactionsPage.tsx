@@ -9,7 +9,6 @@ import TransactionsFiltersCard from './components/TransactionsFiltersCard'
 import StickyBar from '@/components/ui/StickyBar'
 import TransactionsHistoryCard from './components/TransactionsHistoryCard'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
-import ErrorAlert from '@/components/ui/ErrorAlert'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/hooks/useToast'
 import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
@@ -165,19 +164,16 @@ export default function TransactionsPage() {
   const [form, setForm] = useState<FormState>(() => buildDefaultForm([]))
   const [filters, setFilters] = useState<FiltersState>(() => buildDefaultFilters())
   const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [formError, setFormError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => {
     async function loadData() {
       setLoading(true)
-      setLoadError(null)
 
       try {
         const [accountsResponse, categoriesResponse, transactionsResponse] = await Promise.all([
@@ -191,7 +187,7 @@ export default function TransactionsPage() {
         setTransactions(transactionsResponse.data)
         setForm((current) => current.accountId ? current : buildDefaultForm(accountsResponse.data))
       } catch (loadError) {
-        setLoadError(getApiErrorMessage(loadError, 'No se pudieron cargar los movimientos.'))
+        toast(getApiErrorMessage(loadError, 'No se pudieron cargar los movimientos.'), 'error')
       } finally {
         setLoading(false)
       }
@@ -279,7 +275,6 @@ export default function TransactionsPage() {
 
   function resetForm(nextAccounts = accounts) {
     setEditingId(null)
-    setFormError(null)
     setModalOpen(false)
     setForm(buildDefaultForm(nextAccounts))
   }
@@ -287,7 +282,6 @@ export default function TransactionsPage() {
   function handleEdit(transaction: Transaction) {
     const occurredAt = new Date(transaction.occurred_at)
     setEditingId(transaction.id)
-    setFormError(null)
     setModalOpen(true)
     setForm({
       description: transaction.description,
@@ -302,21 +296,20 @@ export default function TransactionsPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setFormError(null)
 
     if (form.description.trim().length < 2) {
-      setFormError('La descripción debe tener al menos 2 caracteres.')
+      toast('La descripción debe tener al menos 2 caracteres.', 'error')
       return
     }
 
     const amount = Number(form.amount)
     if (Number.isNaN(amount) || amount <= 0) {
-      setFormError('El monto debe ser mayor que 0.')
+      toast('El monto debe ser mayor que 0.', 'error')
       return
     }
 
     if (!selectedAccount) {
-      setFormError('Primero crea o selecciona una cuenta para registrar movimientos.')
+      toast('Primero crea o selecciona una cuenta para registrar movimientos.', 'error')
       return
     }
 
@@ -347,7 +340,7 @@ export default function TransactionsPage() {
       }
       resetForm()
     } catch (submitError) {
-      setFormError(getApiErrorMessage(submitError, 'No se pudo guardar el movimiento.'))
+      toast(getApiErrorMessage(submitError, 'No se pudo guardar el movimiento.'), 'error')
     } finally {
       setSaving(false)
     }
@@ -377,10 +370,6 @@ export default function TransactionsPage() {
     )
   }
 
-  if (loadError && !transactions.length && !accounts.length) {
-    return <ErrorAlert message={loadError} className="max-w-xl mx-auto mt-8" />
-  }
-
   return (
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       {/* Page header */}
@@ -388,7 +377,6 @@ export default function TransactionsPage() {
         <h1 className="app-title text-xl">Movimientos</h1>
         <p className="app-subtitle text-sm mt-0.5">Registra, filtra y administra tus ingresos y gastos desde una sola vista.</p>
       </div>
-      <ErrorAlert message={loadError} />
 
       {modalOpen && (
         <TransactionEditModal
@@ -399,7 +387,6 @@ export default function TransactionsPage() {
           accountCurrency={accountCurrency}
           editingId={editingId}
           saving={saving}
-          formError={formError}
           maxDate={toDateInputValue(new Date())}
           onSubmit={handleSubmit}
           onClose={() => resetForm()}

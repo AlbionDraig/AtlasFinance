@@ -12,7 +12,6 @@ interface TransactionEditModalProps {
   accountCurrency: string
   editingId: number | null
   saving: boolean
-  formError: string | null
   maxDate: string
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   onClose: () => void
@@ -26,7 +25,6 @@ export default function TransactionEditModal({
   accountCurrency,
   editingId,
   saving,
-  formError,
   maxDate,
   onSubmit,
   onClose,
@@ -41,7 +39,6 @@ export default function TransactionEditModal({
         accountCurrency={accountCurrency}
         editingId={editingId}
         saving={saving}
-        formError={formError}
         maxDate={maxDate}
         onSubmit={onSubmit}
         onReset={onClose}
