@@ -6,6 +6,7 @@ import { transactionsApi } from '@/api/transactions'
 import type { Account, Transaction } from '@/types'
 import TransactionEditModal from './components/TransactionEditModal'
 import TransactionsFiltersCard from './components/TransactionsFiltersCard'
+import StickyBar from '@/components/ui/StickyBar'
 import TransactionsHistoryCard from './components/TransactionsHistoryCard'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import ErrorAlert from '@/components/ui/ErrorAlert'
@@ -414,20 +415,17 @@ export default function TransactionsPage() {
       )}
 
       {/* Sticky filters */}
-      <div className="sticky top-0 z-50 relative -mx-4 md:-mx-6 px-4 md:px-6 pt-1 pb-0 bg-neutral-50">
-        <div className="absolute -top-8 left-0 right-0 h-8 bg-neutral-50 pointer-events-none" />
-        <div className="pb-3">
-          <TransactionsFiltersCard
-            filters={filters}
-            setFilters={setFilters}
-            accounts={accounts}
-            activeFilters={activeFilters}
-            datasetRange={datasetRange}
-            derivedRange={derivedRange}
-            onResetFilters={() => setFilters(buildDefaultFilters())}
-          />
-        </div>
-      </div>
+      <StickyBar>
+        <TransactionsFiltersCard
+          filters={filters}
+          setFilters={setFilters}
+          accounts={accounts}
+          activeFilters={activeFilters}
+          datasetRange={datasetRange}
+          derivedRange={derivedRange}
+          onResetFilters={() => setFilters(buildDefaultFilters())}
+        />
+      </StickyBar>
 
       {/* Transactions table */}
       <TransactionsHistoryCard

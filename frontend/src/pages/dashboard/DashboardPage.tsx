@@ -10,6 +10,7 @@ import { transactionsApi } from '@/api/transactions'
 import { categoriesApi, type Category } from '@/api/categories'
 import Select from '@/components/ui/Select'
 import DatePicker from '@/components/ui/DatePicker'
+import StickyBar from '@/components/ui/StickyBar'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import AppTooltip from '@/components/ui/Tooltip'
@@ -457,8 +458,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Filters */}
-      <div className="sticky top-0 z-50 relative -mx-4 md:-mx-6 px-4 md:px-6 pt-1 pb-0 bg-neutral-50">
-        <div className="absolute -top-8 left-0 right-0 h-8 bg-neutral-50 pointer-events-none" />
+      <StickyBar>
         <div className="overflow-visible bg-white border border-neutral-100 border-t-4 border-t-brand border-b-neutral-400/40 ring-2 ring-brand/20 rounded-2xl flex flex-wrap items-end gap-4 px-5 py-4 shadow-xl">
           <div className="flex flex-col gap-1">
             <label className="app-label">Período</label>
@@ -489,7 +489,7 @@ export default function DashboardPage() {
               className="w-24" />
           </div>
         </div>
-      </div>
+      </StickyBar>
 
       {/* KPI strip */}
       <section>
