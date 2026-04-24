@@ -200,6 +200,13 @@ export default function TransactionsPage() {
     setPage(1)
   }, [filters.query, filters.transactionType, filters.currency, filters.accountId, filters.period, filters.from, filters.to, filters.pageSize])
 
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      const main = document.querySelector('main.app-page')
+      if (main) main.scrollTop = main.scrollHeight
+    })
+  }, [page])
+
   const datasetRange = getDatasetRange(transactions)
   const derivedRange = resolvePeriodRange(filters.period, filters.from, filters.to, datasetRange.max)
   const selectedAccount = accounts.find((account) => String(account.id) === form.accountId) ?? null
