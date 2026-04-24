@@ -7,6 +7,7 @@ import DashboardPage from '@/pages/dashboard/DashboardPage'
 import TransactionsPage from '@/pages/transactions/TransactionsPage'
 import AccountsPage from '@/pages/accounts/AccountsPage'
 import PocketsPage from '@/pages/pockets/PocketsPage'
+import ProfilePage from '@/pages/profile/ProfilePage'
 import { ToastProvider } from '@/hooks/useToast'
 import ToastContainer from '@/components/ui/ToastContainer'
 
@@ -23,6 +24,7 @@ export default function App() {
               <Route path="/transactions" element={<TransactionsPage />} />
               <Route path="/accounts" element={<AccountsPage />} />
               <Route path="/pockets" element={<PocketsPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

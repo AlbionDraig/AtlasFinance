@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.security import get_password_hash, hash_token, verify_password
 from app.models.revoked_token import RevokedToken
 from app.models.user import User
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserUpdate
 
 
 def create_user(db: Session, payload: UserCreate) -> User:
@@ -33,6 +33,29 @@ def authenticate_user(db: Session, email: str, password: str) -> User | None:
         return None
     if not verify_password(password, user.hashed_password):
         return None
+    return user
+
+
+def update_user(db: Session, user: User, payload: UserUpdate) -> User:
+    """Update mutable profile fields. Raises ValueError on validation issues."""
+    if payload.full_name is not None:
+        user.full_name = payload.full_name
+
+    if payload.email is not None and payload.email != user.email:
+        conflict = db.scalar(select(User).where(User.email == payload.email))
+        if conflict:
+            raise ValueError("Email already in use")
+        user.email = payload.email
+
+    if payload.new_password is not None:
+        if not payload.current_password:
+            raise ValueError("current_password is required to set a new password")
+        if not verify_password(payload.current_password, user.hashed_password):
+            raise ValueError("Incorrect current password")
+        user.hashed_password = get_password_hash(payload.new_password)
+
+    db.commit()
+    db.refresh(user)
     return user
 
 

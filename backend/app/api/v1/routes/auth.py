@@ -12,8 +12,8 @@ from app.core.security import create_access_token
 from app.db.base import get_db
 from app.models.user import User
 from app.schemas.token import Token
-from app.schemas.user import UserCreate, UserLogin, UserRead
-from app.services.auth_service import authenticate_user, create_user, revoke_access_token
+from app.schemas.user import UserCreate, UserLogin, UserRead, UserUpdate
+from app.services.auth_service import authenticate_user, create_user, revoke_access_token, update_user
 
 settings = get_settings()
 
@@ -45,6 +45,20 @@ def login(payload: UserLogin, db: Annotated[Session, Depends(get_db)], response:
 def read_current_user(current_user: Annotated[User, Depends(get_current_user)]) -> UserRead:
     """Return the authenticated user profile."""
     return current_user
+
+
+@router.patch("/me", responses={400: {"description": "Bad Request"}})
+def update_current_user(
+    payload: UserUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> UserRead:
+    """Update the authenticated user's profile fields."""
+    try:
+        user = update_user(db, current_user, payload)
+    except ValueError as exc:
+        raise_bad_request_from_value_error(exc)
+    return user
 
 
 @router.post("/refresh", responses={401: {"description": "Unauthorized"}})

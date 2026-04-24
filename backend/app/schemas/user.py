@@ -17,6 +17,14 @@ class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserUpdate(BaseModel):
+    """Fields the user may update on their own profile."""
+    full_name: str | None = Field(default=None, min_length=2, max_length=255)
+    email: EmailStr | None = None
+    current_password: str | None = None
+    new_password: str | None = Field(default=None, min_length=8, max_length=64)
+
+
 class UserLogin(BaseModel):
     """Credentials payload used to authenticate users."""
     email: EmailStr

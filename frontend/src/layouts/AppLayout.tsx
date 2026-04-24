@@ -153,10 +153,41 @@ export default function AppLayout() {
           {/* Footer: user + logout */}
           <div className="px-3 py-4 border-t border-white/10 space-y-2">
             {!collapsed && user && (
-              <div className="px-3 py-2">
-                <p className="text-xs font-medium text-[#f7f7f6] truncate">{user.full_name}</p>
-                <p className="text-xs text-[#b0aeab] truncate">{user.email}</p>
-              </div>
+              <NavLink
+                to="/profile"
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                    isActive
+                      ? 'bg-[#ca0b0b] text-white'
+                      : 'text-[#b0aeab] hover:text-[#f7f7f6] hover:bg-white/10'
+                  }`
+                }
+              >
+                <div className="w-6 h-6 rounded-full bg-[#fce8e8] flex items-center justify-center shrink-0">
+                  <span className="text-[10px] font-medium text-[#8a0808]">
+                    {user.full_name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium truncate leading-tight">{user.full_name}</p>
+                  <p className="text-[10px] text-[#b0aeab] truncate leading-tight">{user.email}</p>
+                </div>
+              </NavLink>
+            )}
+            {collapsed && user && (
+              <NavLink
+                to="/profile"
+                title="Mi perfil"
+                className={({ isActive }) =>
+                  `flex items-center justify-center h-9 w-9 mx-auto rounded-lg transition-colors ${
+                    isActive ? 'bg-[#ca0b0b]' : 'text-[#b0aeab] hover:text-[#f7f7f6] hover:bg-white/10'
+                  }`
+                }
+              >
+                <span className="text-xs font-medium">
+                  {user.full_name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
+                </span>
+              </NavLink>
             )}
             <button
               onClick={logout}
