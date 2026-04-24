@@ -1,5 +1,0 @@
-FROM python:3.12-slim
-
-# Legacy file kept for backward compatibility.
-# Active frontend image build now uses docker/Dockerfile.frontend.
-WORKDIR /app
