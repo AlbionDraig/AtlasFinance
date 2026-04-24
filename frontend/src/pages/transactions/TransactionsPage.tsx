@@ -381,80 +381,80 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="app-shell w-full max-w-7xl mx-auto space-y-6 overflow-x-hidden pb-20">
-      <section className="app-panel w-full p-6 space-y-6 overflow-x-hidden">
+    <div className="w-full max-w-7xl mx-auto space-y-4 pb-20">
+      {/* Page header */}
+      <section className="app-panel w-full px-6 pt-6 pb-5 overflow-x-hidden">
         <div>
           <h1 className="app-title text-2xl">Movimientos</h1>
           <p className="app-subtitle mt-1">Registra, filtra y administra tus ingresos y gastos desde una sola vista.</p>
         </div>
-
         <ErrorAlert message={loadError} />
-
-        {modalOpen && (
-          <TransactionEditModal
-            form={form}
-            setForm={setForm}
-            accounts={accounts}
-            categoryOptions={categoryOptions}
-            accountCurrency={accountCurrency}
-            editingId={editingId}
-            saving={saving}
-            formError={formError}
-            maxDate={toDateInputValue(new Date())}
-            onSubmit={handleSubmit}
-            onClose={() => resetForm()}
-          />
-        )}
-
-        {pendingDeleteId !== null && (
-          <ConfirmDeleteModal
-            loading={deletingId === pendingDeleteId}
-            onConfirm={() => { void handleDelete(pendingDeleteId) }}
-            onClose={() => setPendingDeleteId(null)}
-          />
-        )}
-
-        <div className="grid gap-4">
-          <div className="order-1 space-y-4">
-            <TransactionsFiltersCard
-              filters={filters}
-              setFilters={setFilters}
-              accounts={accounts}
-              activeFilters={activeFilters}
-              datasetRange={datasetRange}
-              derivedRange={derivedRange}
-              onResetFilters={() => setFilters(buildDefaultFilters())}
-            />
-
-            <TransactionsHistoryCard
-              filteredTransactions={filteredTransactions}
-              paginatedTransactions={paginatedTransactions}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              startIndex={startIndex}
-              endIndex={endIndex}
-              deletingId={deletingId}
-              accounts={accounts}
-              categories={categories}
-              onPrevPage={() => setPage((current) => Math.max(1, current - 1))}
-              onNextPage={() => setPage((current) => Math.min(totalPages, current + 1))}
-              pageSize={filters.pageSize}
-              onPageSizeChange={(size) => setFilters((current) => ({ ...current, pageSize: size }))}
-              incomeTotal={incomeTotal}
-              expenseTotal={expenseTotal}
-              currency={filters.currency === 'USD' ? 'USD' : 'COP'}
-              onEdit={handleEdit}
-              onDelete={(transactionId) => {
-                setPendingDeleteId(transactionId)
-              }}
-              getCompactAccountName={getCompactAccountName}
-              getCategoryName={getCategoryName}
-              formatCurrency={formatCurrency}
-              normalizeTransactionType={normalizeTransactionType}
-            />
-          </div>
-        </div>
       </section>
+
+      {modalOpen && (
+        <TransactionEditModal
+          form={form}
+          setForm={setForm}
+          accounts={accounts}
+          categoryOptions={categoryOptions}
+          accountCurrency={accountCurrency}
+          editingId={editingId}
+          saving={saving}
+          formError={formError}
+          maxDate={toDateInputValue(new Date())}
+          onSubmit={handleSubmit}
+          onClose={() => resetForm()}
+        />
+      )}
+
+      {pendingDeleteId !== null && (
+        <ConfirmDeleteModal
+          loading={deletingId === pendingDeleteId}
+          onConfirm={() => { void handleDelete(pendingDeleteId) }}
+          onClose={() => setPendingDeleteId(null)}
+        />
+      )}
+
+      {/* Sticky filters */}
+      <div className="sticky top-0 z-20 -mx-6 px-6 py-3 bg-neutral-50/95 backdrop-blur-sm border-b border-neutral-100">
+        <TransactionsFiltersCard
+          filters={filters}
+          setFilters={setFilters}
+          accounts={accounts}
+          activeFilters={activeFilters}
+          datasetRange={datasetRange}
+          derivedRange={derivedRange}
+          onResetFilters={() => setFilters(buildDefaultFilters())}
+        />
+      </div>
+
+      {/* Transactions table */}
+      <TransactionsHistoryCard
+        filteredTransactions={filteredTransactions}
+        paginatedTransactions={paginatedTransactions}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        startIndex={startIndex}
+        endIndex={endIndex}
+        deletingId={deletingId}
+        accounts={accounts}
+        categories={categories}
+        onPrevPage={() => setPage((current) => Math.max(1, current - 1))}
+        onNextPage={() => setPage((current) => Math.min(totalPages, current + 1))}
+        pageSize={filters.pageSize}
+        onPageSizeChange={(size) => setFilters((current) => ({ ...current, pageSize: size }))}
+        incomeTotal={incomeTotal}
+        expenseTotal={expenseTotal}
+        currency={filters.currency === 'USD' ? 'USD' : 'COP'}
+        onEdit={handleEdit}
+        onDelete={(transactionId) => {
+          setPendingDeleteId(transactionId)
+        }}
+        getCompactAccountName={getCompactAccountName}
+        getCategoryName={getCategoryName}
+        formatCurrency={formatCurrency}
+        normalizeTransactionType={normalizeTransactionType}
+      />
 
       {/* Sticky footer bar */}
       <div className="fixed bottom-0 left-20 right-0 z-30 flex items-center justify-between gap-3 border-t border-neutral-100 bg-white/95 backdrop-blur-sm px-6 py-3">
