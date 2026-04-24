@@ -53,7 +53,11 @@ function computePrevDates(period: Period, dateFrom: Date, dateTo: Date): { prevF
 }
 
 // ─── Number helpers ───────────────────────────────────────────────────────────
-const PALETTE = ['#6366f1','#8b5cf6','#10b981','#f43f5e','#f59e0b','#06b6d4','#ec4899','#84cc16']
+const PALETTE = ['#ca0b0b','#5f0404','#0f7a55','#c47a00','#8a0808','#4a4845','#b0aeab','#1c1b1a']
+const CHART_INCOME = '#0f7a55'
+const CHART_EXPENSE = '#c47a00'
+const CHART_SAVINGS = '#ca0b0b'
+const CHART_NEUTRAL = '#b0aeab'
 
 function fmt(v: number, currency = 'COP'): string {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency, maximumFractionDigits: 0 }).format(v)
@@ -176,18 +180,22 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="app-section-title mb-3">{children}</h2>
 }
 
-interface BadgeProps { text: string; tone: Tone }
-function Badge({ text, tone }: BadgeProps) {
-  const cls = { positive: 'bg-tone-positive tone-positive', negative: 'bg-tone-negative tone-negative', flat: 'bg-tone-neutral app-subtitle', neutral: 'bg-tone-neutral app-subtitle' }[tone]
+interface BadgeProps { text: string; variant: 'brand' | 'success' | 'warning' }
+function Badge({ text, variant }: BadgeProps) {
+  const cls = {
+    brand: 'bg-[#fce8e8] text-[#8a0808]',
+    success: 'bg-[#e6f4ef] text-[#0f5c40]',
+    warning: 'bg-[#fff4e0] text-[#8a5200]',
+  }[variant]
   return <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cls}`}>{text}</span>
 }
 
-interface KpiCardProps { label: string; value: string; sub?: string; badge?: BadgeProps; accentClass?: string }
-function KpiCard({ label, value, sub, badge, accentClass = 'border-l-[var(--af-border)]' }: KpiCardProps) {
+interface KpiCardProps { label: string; value: string; sub?: string; badge?: BadgeProps; accentClass?: string; valueClass?: string }
+function KpiCard({ label, value, sub, badge, accentClass = 'border-t-[var(--af-border)]', valueClass = 'text-[var(--af-text)]' }: KpiCardProps) {
   return (
-    <div className={`app-card p-5 border-l-4 ${accentClass}`}>
+    <div className={`app-card p-5 border-t-4 ${accentClass}`}>
       <p className="app-label uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-2xl font-bold text-[var(--af-text)] leading-none">{value}</p>
+      <p className={`text-2xl font-bold leading-none ${valueClass}`}>{value}</p>
       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
         {sub && <p className="app-subtitle text-xs">{sub}</p>}
         {badge && <Badge {...badge} />}
@@ -198,10 +206,10 @@ function KpiCard({ label, value, sub, badge, accentClass = 'border-l-[var(--af-b
 
 interface InsightCardProps { label: string; value: string; sub?: string; tone?: Tone }
 function InsightCard({ label, value, sub, tone = 'neutral' }: InsightCardProps) {
-  const valCls = { positive: 'tone-positive', negative: 'tone-negative', flat: 'text-[var(--af-text-muted)]', neutral: 'text-[var(--af-text)]' }[tone]
+  const valCls = { positive: 'text-[#0f7a55]', negative: 'text-[#c47a00]', flat: 'text-[#4a4845]', neutral: 'text-[#1c1b1a]' }[tone]
   return (
-    <div className="app-card p-4">
-      <p className="app-label uppercase tracking-wider mb-1">{label}</p>
+    <div className="bg-white border border-[#edeceb] rounded-xl p-4 shadow-sm">
+      <p className="text-[#4a4845] text-xs uppercase tracking-wider mb-1">{label}</p>
       <p className={`text-lg font-bold leading-none truncate ${valCls}`}>{value}</p>
       {sub && <p className="app-subtitle text-xs mt-1 leading-snug">{sub}</p>}
     </div>
@@ -411,15 +419,16 @@ export default function DashboardPage() {
       <section>
         <SectionTitle>Indicadores clave</SectionTitle>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KpiCard label="Patrimonio neto" value={fmt(netWorth, currency)} accentClass={toneFn(netWorth) === 'positive' ? 'border-l-[var(--af-accent)]' : 'border-l-[var(--af-negative)]'} sub="saldo actual" badge={cashflowBadge} />
-          <KpiCard label="Ingresos" value={fmt(income, currency)} accentClass="border-l-[var(--af-positive)]" sub="total del período" badge={incomeBadge} />
-          <KpiCard label="Gastos" value={fmt(expense, currency)} accentClass="border-l-[var(--af-negative)]" sub="total del período" badge={expenseBadge} />
+          <KpiCard label="Patrimonio neto" value={fmt(netWorth, currency)} accentClass="border-t-[#ca0b0b]" valueClass="text-[#ca0b0b]" sub="saldo actual" badge={{ text: cashflowBadge.text, variant: 'brand' }} />
+          <KpiCard label="Ingresos" value={fmt(income, currency)} accentClass="border-t-[#0f7a55]" valueClass="text-[#0f7a55]" sub="total del período" badge={{ text: incomeBadge.text, variant: 'success' }} />
+          <KpiCard label="Gastos" value={fmt(expense, currency)} accentClass="border-t-[#c47a00]" valueClass="text-[#c47a00]" sub="total del período" badge={{ text: expenseBadge.text, variant: 'warning' }} />
           <KpiCard
             label="Tasa de ahorro"
             value={income === 0 ? 'Sin datos' : `${Math.abs(savingsRate) >= 999 ? (savingsRate > 0 ? '>999' : '<-999') : savingsRate.toFixed(1)}%`}
             sub={income > 0 ? (savingsRate >= 20 ? 'margen saludable' : savingsRate >= 5 ? 'margen moderado' : 'margen bajo') : 'sin ingresos'}
-            accentClass={savingsRate > 0 ? 'border-l-[var(--af-positive)]' : 'border-l-[var(--af-negative)]'}
-            badge={savingsBadge}
+            accentClass="border-t-[#5f0404]"
+            valueClass="text-[#5f0404]"
+            badge={{ text: savingsBadge.text, variant: 'brand' }}
           />
         </div>
       </section>
@@ -468,7 +477,7 @@ export default function DashboardPage() {
           <div className="flex flex-wrap gap-2">
             {CHART_OPTIONS.map(opt => (
               <button key={opt} type="button" onClick={() => setChartType(opt)}
-                className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer transition-[background-color,color] ${chartType === opt ? 'bg-tone-neutral border-[var(--af-border-strong)] text-[var(--af-accent)]' : 'border-[var(--af-border)] bg-[var(--af-surface)] app-subtitle hover:bg-[var(--af-surface-alt)] hover:text-[var(--af-text)]'}`}>
+                className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer transition-[background-color,color,border-color] ${chartType === opt ? 'bg-[#ca0b0b] border-[#ca0b0b] text-white' : 'bg-white border-[#edeceb] text-[#4a4845] hover:border-[#ca0b0b] hover:text-[#ca0b0b]'}`}>
                 {opt}
               </button>
             ))}
@@ -484,8 +493,8 @@ export default function DashboardPage() {
                     <YAxis tickFormatter={fmtShort} tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip {...TTStyle} formatter={fmtTT} cursor={false} />
                     <Legend wrapperStyle={{ fontSize: 12, color: CHART_LEGEND }} />
-                    <Bar dataKey="income" name="Ingresos" fill="#10b981" radius={[4,4,0,0]} />
-                    <Bar dataKey="expense" name="Gastos" fill="#f43f5e" radius={[4,4,0,0]} />
+                    <Bar dataKey="income" name="Ingresos" fill={CHART_INCOME} radius={[4,4,0,0]} />
+                    <Bar dataKey="expense" name="Gastos" fill={CHART_EXPENSE} radius={[4,4,0,0]} />
                   </BarChart>
                 </ResponsiveContainer>
               : <p className="app-subtitle text-sm">Sin datos para el período.</p>
@@ -497,19 +506,19 @@ export default function DashboardPage() {
                   <AreaChart data={monthly}>
                     <defs>
                       <linearGradient id="posGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        <stop offset="5%" stopColor={CHART_SAVINGS} stopOpacity={0.2} />
+                        <stop offset="95%" stopColor={CHART_SAVINGS} stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="negGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                        <stop offset="5%" stopColor={CHART_EXPENSE} stopOpacity={0.2} />
+                        <stop offset="95%" stopColor={CHART_EXPENSE} stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
                     <XAxis dataKey="month" tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tickFormatter={fmtShort} tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip {...TTStyle} formatter={fmtTT} cursor={false} />
-                    <Area type="monotone" dataKey="cashflow" name="Flujo neto" stroke="#6366f1" fill="url(#posGrad)" strokeWidth={2.5} dot={{ r: 3, fill: '#6366f1' }} />
+                    <Area type="monotone" dataKey="cashflow" name="Flujo neto" stroke={CHART_NEUTRAL} fill="url(#posGrad)" strokeWidth={2.5} dot={{ r: 3, fill: CHART_NEUTRAL }} />
                   </AreaChart>
                 </ResponsiveContainer>
               : <p className="app-subtitle text-sm">Sin datos para el período.</p>
@@ -551,15 +560,15 @@ export default function DashboardPage() {
                   <LineChart data={monthly}>
                     <defs>
                       <linearGradient id="cumGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        <stop offset="5%" stopColor={CHART_SAVINGS} stopOpacity={0.2} />
+                        <stop offset="95%" stopColor={CHART_SAVINGS} stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
                     <XAxis dataKey="month" tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tickFormatter={fmtShort} tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip {...TTStyle} formatter={fmtTT} cursor={false} />
-                    <Line type="monotone" dataKey="cumulative" name="Ahorro acumulado" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3, fill: '#10b981' }} />
+                    <Line type="monotone" dataKey="cumulative" name="Ahorro acumulado" stroke={CHART_SAVINGS} strokeWidth={2.5} dot={{ r: 3, fill: CHART_SAVINGS }} />
                   </LineChart>
                 </ResponsiveContainer>
               : <p className="app-subtitle text-sm">Sin datos para el período.</p>
@@ -574,8 +583,8 @@ export default function DashboardPage() {
                     <YAxis tickFormatter={fmtShort} tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip {...TTStyle} formatter={fmtTT} cursor={false} />
                     <Bar dataKey="value" name="Gasto" radius={[4,4,0,0]}>
-                      <Cell fill="#f59e0b" />
-                      <Cell fill="#6366f1" />
+                      <Cell fill={CHART_EXPENSE} />
+                      <Cell fill={CHART_NEUTRAL} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
