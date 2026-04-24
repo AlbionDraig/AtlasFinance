@@ -300,7 +300,7 @@ function Badge({ text, variant, hint }: BadgeProps) {
       onMouseEnter={() => hint && setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cls} ${hint ? 'cursor-help' : ''}`}>{text}</span>
+      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${cls} ${hint ? 'cursor-help' : ''}`}>{text}</span>
       {open && hint && (
         <span className={`absolute bottom-full mb-2 z-50 w-52 max-w-[calc(100vw-1rem)] bg-neutral-900 text-white text-xs rounded-xl px-3 py-2.5 shadow-xl leading-relaxed pointer-events-none whitespace-normal ${align === 'left' ? 'left-0' : 'right-0'}`}>
           {hint}
@@ -319,9 +319,9 @@ function KpiCard({ label, value, sub, badge, accentClass = 'border-t-[var(--af-b
       <div className="flex items-center gap-1.5 mb-1">
         <p className="app-label uppercase tracking-wider">{label}</p>
       </div>
-      <p className={`text-2xl font-bold leading-none ${valueClass}`}>{value}</p>
+      <p className={`text-2xl font-medium leading-none ${valueClass}`}>{value}</p>
       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-        {sub && <p className="app-subtitle text-xs">{sub}</p>}
+        {sub && <p className="app-subtitle text-xs leading-snug">{sub}</p>}
         {badge && <Badge {...badge} />}
       </div>
     </div>
@@ -335,10 +335,10 @@ function InsightCard({ label, value, sub, tone = 'neutral', help }: InsightCardP
     <div className="bg-white border border-[#edeceb] rounded-xl p-4 shadow-sm relative">
       {help && <span className="absolute top-3 right-3"><HelpTooltip text={help} /></span>}
       <div className="flex items-center gap-1.5 mb-1">
-        <p className="text-[#4a4845] text-xs uppercase tracking-wider">{label}</p>
+        <p className="app-label uppercase tracking-wider">{label}</p>
       </div>
-      <p className={`text-lg font-bold leading-none truncate ${valCls}`}>{value}</p>
-      {sub && <p className="app-subtitle text-xs mt-1 leading-snug">{sub}</p>}
+      <p className={`text-2xl font-medium leading-none truncate ${valCls}`}>{value}</p>
+      {sub && <p className="app-subtitle text-xs mt-1.5 leading-snug">{sub}</p>}
     </div>
   )
 }
