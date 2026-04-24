@@ -25,28 +25,27 @@ export default function LoginPage() {
       setUser(me)
       navigate('/dashboard')
     } catch (err: unknown) {
-      const status =
-        typeof err === 'object' &&
-        err !== null &&
-        'response' in err &&
-        typeof (err as { response?: { status?: number } }).response?.status === 'number'
-          ? (err as { response?: { status?: number } }).response?.status
-          : undefined
+      const status = (err as { response?: { status?: number } })?.response?.status
+      const rawDetail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
 
+      // FastAPI may return detail as a string or as an array of validation error objects
       const detail =
-        typeof err === 'object' &&
-        err !== null &&
-        'response' in err &&
-        typeof (err as { response?: { data?: { detail?: string } } }).response?.data?.detail === 'string'
-          ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
-          : null
+        typeof rawDetail === 'string'
+          ? rawDetail
+          : Array.isArray(rawDetail)
+            ? (rawDetail as { msg?: string }[]).map((e) => e.msg).filter(Boolean).join(', ')
+            : undefined
 
-      if (status === 401) {
+      if (status === 401 || status === 403) {
         toast(detail ?? 'Credenciales inválidas. Verifica tu correo y contraseña.', 'error')
+      } else if (status === 422) {
+        toast('Credenciales incorrectas. Verifica tu correo y contraseña.', 'error')
       } else if (status && status >= 500) {
         toast('El servidor no respondió correctamente. Intenta de nuevo en unos segundos.', 'error')
+      } else if (status) {
+        toast(detail ?? 'Error inesperado. Intenta de nuevo.', 'error')
       } else {
-        toast('No se pudo conectar con el backend. Revisa que los servicios estén arriba.', 'error')
+        toast('No se pudo conectar con el servidor. Revisa tu conexión.', 'error')
       }
     } finally {
       setLoading(false)
