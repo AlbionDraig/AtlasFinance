@@ -28,16 +28,16 @@ export default function Select({ value, onChange, options, className = '' }: Sel
   const selected = options.find(o => o.value === value) ?? options[0]
 
   return (
-    <div ref={ref} className={`relative ${className}`}>
+    <div ref={ref} className={`relative ${open ? 'z-[120]' : 'z-10'} isolate [transform:translateZ(0)] [backface-visibility:hidden] ${className}`}>
       {/* Trigger */}
       <button
         type="button"
         onClick={() => setOpen(prev => !prev)}
         className="flex h-10 items-center justify-between gap-2 w-full px-3 text-xs rounded-lg
-          border border-white/10 bg-white/5 text-slate-200
-          hover:bg-white/10 hover:border-white/20
+          border border-slate-700 bg-slate-900 text-slate-200
+          hover:bg-slate-800
           focus:outline-none focus:ring-2 focus:ring-indigo-500/50
-          transition-colors cursor-pointer"
+          transition-[background-color] cursor-pointer [transform:translateZ(0)] [backface-visibility:hidden]"
       >
         <span className="truncate whitespace-nowrap">{selected.label}</span>
         <svg
@@ -51,8 +51,8 @@ export default function Select({ value, onChange, options, className = '' }: Sel
       {/* Dropdown */}
       {open && (
         <ul
-          className="absolute right-0 mt-1.5 w-full z-50 overflow-hidden rounded-lg
-            border border-white/10 bg-slate-900/95 backdrop-blur-sm shadow-xl
+          className="absolute right-0 mt-1.5 w-full z-[130] overflow-hidden rounded-lg
+            border border-slate-700 bg-slate-900 shadow-xl
             py-1 text-xs text-slate-200"
         >
           {options.map(opt => (
@@ -63,7 +63,7 @@ export default function Select({ value, onChange, options, className = '' }: Sel
                 className={`w-full text-left px-3 py-2 transition-colors cursor-pointer
                   ${opt.value === value
                     ? 'bg-indigo-600/30 text-indigo-300'
-                    : 'hover:bg-white/10 text-slate-200'
+                    : 'hover:bg-slate-800 text-slate-200'
                   }`}
               >
                 {opt.label}

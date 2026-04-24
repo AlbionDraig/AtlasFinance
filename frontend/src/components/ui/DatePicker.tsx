@@ -91,13 +91,13 @@ export default function DatePicker({ label, value, onChange, min, max, className
   })
 
   return (
-    <div ref={rootRef} className={`relative flex flex-col gap-1 ${className}`}>
+    <div ref={rootRef} className={`relative isolate flex flex-col gap-1 [transform:translateZ(0)] [backface-visibility:hidden] ${className}`}>
       <label className="text-xs text-slate-400">{label}</label>
 
       <button
         type="button"
         onClick={() => setOpen(prev => !prev)}
-        className="h-10 w-36 rounded-lg border border-white/10 bg-white/10 px-3 text-left text-xs text-slate-200 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+        className="h-10 w-36 rounded-lg border border-slate-700 bg-slate-900 px-3 text-left text-xs text-slate-200 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-[background-color] [transform:translateZ(0)] [backface-visibility:hidden]"
       >
         <span className="inline-flex w-full items-center gap-2 whitespace-nowrap">
           <svg className="h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -111,12 +111,12 @@ export default function DatePicker({ label, value, onChange, min, max, className
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border border-white/10 bg-slate-900/95 p-3 shadow-2xl backdrop-blur-sm">
+        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border border-slate-700 bg-slate-900 p-3 shadow-2xl">
           <div className="mb-2 flex items-center justify-between">
             <button
               type="button"
               onClick={prevMonth}
-              className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-300 hover:bg-white/10"
+              className="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-300 hover:bg-slate-700"
               aria-label="Mes anterior"
             >
               {'<'}
@@ -125,7 +125,7 @@ export default function DatePicker({ label, value, onChange, min, max, className
             <button
               type="button"
               onClick={nextMonth}
-              className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-300 hover:bg-white/10"
+              className="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-300 hover:bg-slate-700"
               aria-label="Mes siguiente"
             >
               {'>'}
@@ -156,8 +156,8 @@ export default function DatePicker({ label, value, onChange, min, max, className
                   className={[
                     'h-8 rounded-md text-xs transition-colors',
                     selected ? 'bg-indigo-600 text-white' : '',
-                    !selected && inCurrentMonth ? 'text-slate-200 hover:bg-white/10' : '',
-                    !selected && !inCurrentMonth ? 'text-slate-500 hover:bg-white/5' : '',
+                    !selected && inCurrentMonth ? 'text-slate-200 hover:bg-slate-800' : '',
+                    !selected && !inCurrentMonth ? 'text-slate-500 hover:bg-slate-800/70' : '',
                     disabled ? 'cursor-not-allowed opacity-40 hover:bg-transparent' : '',
                   ].join(' ')}
                 >
