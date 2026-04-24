@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
 interface ModalProps {
   onClose: () => void
@@ -23,9 +24,9 @@ export default function Modal({ onClose, children, maxWidth = 'max-w-lg' }: Moda
     return () => { document.body.style.overflow = '' }
   }, [])
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 overflow-y-auto p-4"
+      className="fixed inset-0 z-[200] overflow-y-auto p-4"
       aria-modal="true"
       role="dialog"
     >
@@ -37,6 +38,7 @@ export default function Modal({ onClose, children, maxWidth = 'max-w-lg' }: Moda
       <div className={`relative z-10 mx-auto flex min-h-full w-full ${maxWidth} items-center justify-center py-6`}>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
