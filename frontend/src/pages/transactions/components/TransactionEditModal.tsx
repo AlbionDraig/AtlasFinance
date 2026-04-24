@@ -30,7 +30,7 @@ export default function TransactionEditModal({
   onClose,
 }: TransactionEditModalProps) {
   return (
-    <Modal onClose={onClose}>
+    <Modal onClose={onClose} maxWidth="max-w-4xl">
       <TransactionFormCard
         form={form}
         setForm={setForm}

@@ -94,7 +94,7 @@ export default function TransactionFormCard({
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <label className="app-label">Tipo</label>
           <Select
@@ -123,7 +123,7 @@ export default function TransactionFormCard({
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <label className="app-label">Cuenta</label>
           <Select
@@ -149,7 +149,7 @@ export default function TransactionFormCard({
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
+      <div className="grid grid-cols-2 gap-4">
         <DatePicker
           label="Fecha"
           value={form.occurredDate}
