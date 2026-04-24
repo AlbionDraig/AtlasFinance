@@ -72,7 +72,8 @@ export default function TimePicker({ label, value, onChange, className = '', dis
 
     function onDocPointerDown(event: PointerEvent) {
       if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        return
+        onChange(draftValueRef.current)
+        setOpen(false)
       }
     }
 
@@ -117,9 +118,10 @@ export default function TimePicker({ label, value, onChange, className = '', dis
   }
 
   return (
-    <div ref={rootRef} className={`relative isolate flex flex-col gap-1 [transform:translateZ(0)] [backface-visibility:hidden] ${open ? 'z-[140]' : 'z-10'} ${className}`}>
+    <div className={`flex flex-col gap-1 ${className}`}>
       <label className={`app-label ${disabled ? 'text-neutral-400' : ''}`}>{label}</label>
 
+    <div ref={rootRef} className={`relative isolate [transform:translateZ(0)] [backface-visibility:hidden] ${open ? 'z-[140]' : 'z-10'}`}>
       <button
         type="button"
         onClick={() => {
@@ -219,6 +221,7 @@ export default function TimePicker({ label, value, onChange, className = '', dis
           </div>
         </div>
       )}
+    </div>
     </div>
   )
 }
