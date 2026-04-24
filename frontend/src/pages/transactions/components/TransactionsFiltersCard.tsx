@@ -101,17 +101,20 @@ export default function TransactionsFiltersCard({
           />
         </div>
 
-        <button
-          type="button"
-          disabled={activeFilters.length === 0}
-          onClick={onResetFilters}
-          className="flex items-center gap-1.5 self-end rounded-lg border px-2.5 py-2 text-xs font-medium transition-colors disabled:pointer-events-none disabled:border-neutral-100 disabled:text-neutral-400 border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand-text hover:bg-brand-light"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-          </svg>
-          Limpiar
-        </button>
+        <div className="flex flex-col gap-1">
+          <label className="app-label opacity-0 select-none" aria-hidden="true">_</label>
+          <button
+            type="button"
+            disabled={activeFilters.length === 0}
+            onClick={onResetFilters}
+            className="flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors disabled:pointer-events-none disabled:border-neutral-100 disabled:text-neutral-400 border-brand bg-brand text-white hover:bg-brand-hover hover:border-brand-hover disabled:bg-transparent disabled:border-neutral-100"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+            Limpiar filtros
+          </button>
+        </div>
       </div>
 
       {/* Custom date range */}
