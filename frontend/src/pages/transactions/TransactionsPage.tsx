@@ -7,6 +7,7 @@ import type { Account, Transaction } from '@/types'
 import TransactionEditModal from './components/TransactionEditModal'
 import TransactionsFiltersCard from './components/TransactionsFiltersCard'
 import TransactionsHistoryCard from './components/TransactionsHistoryCard'
+import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
@@ -163,6 +164,7 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
@@ -352,11 +354,8 @@ export default function TransactionsPage() {
   }
 
   async function handleDelete(transactionId: number) {
-    if (!window.confirm('Se eliminará este movimiento. Esta acción no se puede deshacer.')) {
-      return
-    }
-
     setDeletingId(transactionId)
+    setPendingDeleteId(null)
     setError(null)
     setSuccessMessage(null)
 
@@ -415,6 +414,14 @@ export default function TransactionsPage() {
           />
         )}
 
+        {pendingDeleteId !== null && (
+          <ConfirmDeleteModal
+            loading={deletingId === pendingDeleteId}
+            onConfirm={() => { void handleDelete(pendingDeleteId) }}
+            onClose={() => setPendingDeleteId(null)}
+          />
+        )}
+
         <div className="grid gap-4">
           <div className="order-1 space-y-4">
             <TransactionsFiltersCard
@@ -446,7 +453,7 @@ export default function TransactionsPage() {
               currency={filters.currency === 'USD' ? 'USD' : 'COP'}
               onEdit={handleEdit}
               onDelete={(transactionId) => {
-                void handleDelete(transactionId)
+                setPendingDeleteId(transactionId)
               }}
               getCompactAccountName={getCompactAccountName}
               getCategoryName={getCategoryName}
