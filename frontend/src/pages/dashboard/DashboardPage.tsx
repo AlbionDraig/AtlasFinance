@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -12,6 +12,7 @@ import Select from '@/components/ui/Select'
 import DatePicker from '@/components/ui/DatePicker'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import AppTooltip from '@/components/ui/Tooltip'
 import type { Transaction, Account } from '@/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -215,55 +216,12 @@ const CHART_HELP: Record<string, string> = {
 
 // ─── Help tooltip ─────────────────────────────────────────────────────────────
 function HelpTooltip({ text }: { text: string }) {
-  const [open, setOpen] = useState(false)
-  const [align, setAlign] = useState<'left' | 'center' | 'right'>('center')
-  const ref = useRef<HTMLSpanElement>(null)
-
-  useEffect(() => {
-    if (!open || !ref.current) return
-    const rect = ref.current.getBoundingClientRect()
-    const vw = window.innerWidth
-    const tooltipWidth = 224
-    const margin = 8
-    if (rect.left < tooltipWidth / 2 + margin) {
-      setAlign('left')
-      return
-    }
-    if (vw - rect.right < tooltipWidth / 2 + margin) {
-      setAlign('right')
-      return
-    }
-    setAlign('center')
-  }, [open])
-
-  const tooltipPosClass = align === 'left'
-    ? 'left-0'
-    : align === 'right'
-      ? 'right-0'
-      : 'left-1/2 -translate-x-1/2'
-  const arrowPosClass = align === 'left'
-    ? 'left-2'
-    : align === 'right'
-      ? 'right-2'
-      : 'left-1/2 -translate-x-1/2'
-
   return (
-    <span
-      ref={ref}
-      className="relative inline-flex items-center"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-    >
+    <AppTooltip content={text} ariaLabel={text}>
       <span className="w-4 h-4 rounded-full bg-transparent border border-neutral-900 text-neutral-900 text-[10px] flex items-center justify-center cursor-help select-none leading-none font-medium">
         ?
       </span>
-      {open && (
-        <span className={`absolute bottom-full mb-2 z-50 w-56 max-w-[calc(100vw-1rem)] bg-neutral-900 text-white text-xs rounded-xl px-3 py-2.5 shadow-xl leading-relaxed pointer-events-none ${tooltipPosClass}`}>
-          {text}
-          <span className={`absolute top-full border-4 border-transparent border-t-neutral-900 ${arrowPosClass}`} />
-        </span>
-      )}
-    </span>
+    </AppTooltip>
   )
 }
 
@@ -275,41 +233,23 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 type BadgeVariant = 'brand' | 'success' | 'warning' | 'neutral'
 interface BadgeProps { text: string; variant: BadgeVariant; hint?: string }
 function Badge({ text, variant, hint }: BadgeProps) {
-  const [open, setOpen] = useState(false)
-  const [align, setAlign] = useState<'left' | 'right'>('right')
-  const ref = useRef<HTMLSpanElement>(null)
-
-  useEffect(() => {
-    if (!open || !ref.current) return
-    const rect = ref.current.getBoundingClientRect()
-    const tooltipWidth = 208
-    const margin = 8
-    if (rect.left < tooltipWidth - rect.width + margin) {
-      setAlign('left')
-      return
-    }
-    setAlign('right')
-  }, [open])
-
   const cls = {
     brand: 'bg-[#fce8e8] text-[#8a0808]',
     success: 'bg-[#e6f4ef] text-[#0f5c40]',
     warning: 'bg-[#fff4e0] text-[#8a5200]',
     neutral: 'bg-[#edeceb] text-[#4a4845]',
   }[variant]
+
+  const content = <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${cls} ${hint ? 'cursor-help' : ''}`}>{text}</span>
+
+  if (!hint) {
+    return <span className="relative inline-flex">{content}</span>
+  }
+
   return (
-    <span ref={ref} className="relative inline-flex"
-      onMouseEnter={() => hint && setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-    >
-      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${cls} ${hint ? 'cursor-help' : ''}`}>{text}</span>
-      {open && hint && (
-        <span className={`absolute bottom-full mb-2 z-50 w-52 max-w-[calc(100vw-1rem)] bg-neutral-900 text-white text-xs rounded-xl px-3 py-2.5 shadow-xl leading-relaxed pointer-events-none whitespace-normal ${align === 'left' ? 'left-0' : 'right-0'}`}>
-          {hint}
-          <span className={`absolute top-full border-4 border-transparent border-t-neutral-900 ${align === 'left' ? 'left-3' : 'right-3'}`} />
-        </span>
-      )}
-    </span>
+    <AppTooltip content={hint} ariaLabel={hint} widthClassName="w-52">
+      {content}
+    </AppTooltip>
   )
 }
 
