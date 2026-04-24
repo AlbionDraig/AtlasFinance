@@ -12,9 +12,10 @@ interface SelectProps {
   className?: string
   disabled?: boolean
   visibleItems?: number
+  active?: boolean
 }
 
-export default function Select({ value, onChange, options, className = '', disabled = false, visibleItems }: SelectProps) {
+export default function Select({ value, onChange, options, className = '', disabled = false, visibleItems, active = false }: SelectProps) {
   const [open, setOpen] = useState(false)
   const [openUpward, setOpenUpward] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -50,8 +51,12 @@ export default function Select({ value, onChange, options, className = '', disab
         type="button"
         onClick={handleOpen}
         disabled={isDisabled}
-        className={`app-control flex items-center justify-between gap-2 text-xs [transform:translateZ(0)] [backface-visibility:hidden] ${
+        className={`flex items-center justify-between gap-2 text-xs [transform:translateZ(0)] [backface-visibility:hidden] transition-colors ${
           isDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+        } ${
+          active
+            ? 'app-control border-brand bg-brand-light text-brand-text'
+            : 'app-control'
         }`}
       >
         <span className="truncate whitespace-nowrap">{selected.label}</span>

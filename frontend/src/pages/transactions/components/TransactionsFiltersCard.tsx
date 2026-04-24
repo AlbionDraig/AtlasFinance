@@ -25,7 +25,7 @@ export default function TransactionsFiltersCard({
   onResetFilters,
 }: TransactionsFiltersCardProps) {
   return (
-    <div className="app-card p-5 space-y-4">
+    <div className="bg-white border border-neutral-100 border-t-4 border-t-brand ring-2 ring-brand/20 rounded-2xl shadow-xl p-5 space-y-4 overflow-visible">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <h2 className="app-section-title">Filtros</h2>
@@ -75,6 +75,7 @@ export default function TransactionsFiltersCard({
               { value: 'EXPENSE', label: 'Gastos' },
             ]}
             className="w-full"
+            active={filters.transactionType !== 'all'}
           />
         </div>
 
@@ -89,6 +90,7 @@ export default function TransactionsFiltersCard({
               { value: 'USD', label: 'USD' },
             ]}
             className="w-full"
+            active={filters.currency !== 'all'}
           />
         </div>
 
@@ -102,6 +104,7 @@ export default function TransactionsFiltersCard({
               ...accounts.map((account) => ({ value: String(account.id), label: account.name })),
             ]}
             className="w-full"
+            active={filters.accountId !== 'all'}
           />
         </div>
 
@@ -118,6 +121,7 @@ export default function TransactionsFiltersCard({
               { value: 'custom', label: 'Personalizado' },
               { value: 'all', label: 'Todos' },
             ]}
+            active={filters.period !== 'all'}
             className="w-full"
           />
         </div>
