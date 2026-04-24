@@ -38,8 +38,7 @@ services:
       dockerfile: docker/Dockerfile.frontend
     container_name: atlas-frontend
     environment:
-      ATLAS_API_BASE_URL: http://backend:8000/api/v1
-      STREAMLIT_SERVER_FILE_WATCHER_TYPE: poll
+      CHOKIDAR_USEPOLLING: "true"
     depends_on:
       backend:
         condition: service_started
@@ -47,6 +46,7 @@ services:
       - "8502:8501"
     volumes:
       - ./frontend:/app/frontend
+      - /app/frontend/node_modules
 
 volumes:
   postgres_data:
