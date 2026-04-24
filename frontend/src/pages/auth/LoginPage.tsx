@@ -23,8 +23,30 @@ export default function LoginPage() {
       const { data: me } = await authApi.me()
       setUser(me)
       navigate('/dashboard')
-    } catch {
-      setError('Credenciales inválidas. Verifica tu correo y contraseña.')
+    } catch (err: unknown) {
+      const status =
+        typeof err === 'object' &&
+        err !== null &&
+        'response' in err &&
+        typeof (err as { response?: { status?: number } }).response?.status === 'number'
+          ? (err as { response?: { status?: number } }).response?.status
+          : undefined
+
+      const detail =
+        typeof err === 'object' &&
+        err !== null &&
+        'response' in err &&
+        typeof (err as { response?: { data?: { detail?: string } } }).response?.data?.detail === 'string'
+          ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
+          : null
+
+      if (status === 401) {
+        setError(detail ?? 'Credenciales inválidas. Verifica tu correo y contraseña.')
+      } else if (status && status >= 500) {
+        setError('El servidor no respondió correctamente. Intenta de nuevo en unos segundos.')
+      } else {
+        setError('No se pudo conectar con el backend. Revisa que los servicios estén arriba.')
+      }
     } finally {
       setLoading(false)
     }
