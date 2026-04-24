@@ -381,7 +381,7 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-4 pb-20">
+    <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       {/* Page header */}
       <div>
         <h1 className="app-title text-xl">Movimientos</h1>
@@ -414,16 +414,19 @@ export default function TransactionsPage() {
       )}
 
       {/* Sticky filters */}
-      <div className="sticky top-0 z-20 -mx-6 px-6 py-3 bg-neutral-50/95 backdrop-blur-sm border-b border-neutral-100 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-        <TransactionsFiltersCard
-          filters={filters}
-          setFilters={setFilters}
-          accounts={accounts}
-          activeFilters={activeFilters}
-          datasetRange={datasetRange}
-          derivedRange={derivedRange}
-          onResetFilters={() => setFilters(buildDefaultFilters())}
-        />
+      <div className="sticky top-0 z-50 relative -mx-4 md:-mx-6 px-4 md:px-6 pt-1 pb-0 bg-neutral-50">
+        <div className="absolute -top-8 left-0 right-0 h-8 bg-neutral-50 pointer-events-none" />
+        <div className="pb-3">
+          <TransactionsFiltersCard
+            filters={filters}
+            setFilters={setFilters}
+            accounts={accounts}
+            activeFilters={activeFilters}
+            datasetRange={datasetRange}
+            derivedRange={derivedRange}
+            onResetFilters={() => setFilters(buildDefaultFilters())}
+          />
+        </div>
       </div>
 
       {/* Transactions table */}
