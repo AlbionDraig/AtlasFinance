@@ -507,7 +507,7 @@ export default function DashboardPage() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="app-shell space-y-7 md:space-y-8 max-w-7xl rounded-2xl p-4 md:p-6">
+    <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] rounded-2xl p-4 md:p-6">
 
       {/* Header */}
       <div>
