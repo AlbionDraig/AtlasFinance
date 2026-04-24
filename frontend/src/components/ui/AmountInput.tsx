@@ -141,15 +141,21 @@ export default function AmountInput({
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         disabled={disabled}
-        className={`app-control ${className}`}
+        className={`app-control [transform:translateZ(0)] [backface-visibility:hidden] ${className}`}
         placeholder={placeholder}
       />
     )
   }
 
   return (
-    <div className={`flex items-center app-control p-0 overflow-hidden ${className}`}>
-      <span className="select-none px-3 py-2 text-sm font-medium text-neutral-400 border-r border-neutral-100 bg-neutral-50 shrink-0">
+    <div
+      className={[
+        'app-control flex items-center p-0 [transform:translateZ(0)] [backface-visibility:hidden]',
+        disabled ? 'cursor-not-allowed opacity-70' : 'cursor-text',
+        className,
+      ].join(' ')}
+    >
+      <span className="pointer-events-none flex h-full w-10 shrink-0 items-center justify-center text-sm font-medium text-[var(--af-text-muted)]">
         {symbol}
       </span>
       <input
@@ -161,11 +167,11 @@ export default function AmountInput({
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         disabled={disabled}
-        className="flex-1 min-w-0 px-3 py-2 text-sm bg-transparent outline-none"
+        className="h-full min-w-0 flex-1 border-0 bg-transparent px-1 text-sm text-[var(--af-text)] outline-none placeholder:text-[var(--af-text-soft)]"
         placeholder={placeholder}
       />
       {currency && (
-        <span className="select-none px-3 py-2 text-xs font-medium text-neutral-400 shrink-0">
+        <span className="pointer-events-none flex h-full w-14 shrink-0 items-center justify-center pr-1 text-xs font-medium tracking-wide text-[var(--af-text-muted)]">
           {currency.toUpperCase()}
         </span>
       )}

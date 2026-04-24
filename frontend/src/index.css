@@ -194,6 +194,15 @@ body {
     border-color: var(--af-accent);
   }
 
+  .app-control:focus-within {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--af-accent) 35%, transparent);
+    border-color: var(--af-accent);
+  }
+
+  .app-control:focus-within:hover {
+    border-color: var(--af-accent);
+  }
+
   .app-menu {
     border: 1px solid var(--af-border);
     border-radius: 0.625rem;
