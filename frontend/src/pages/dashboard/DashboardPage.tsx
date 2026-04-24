@@ -500,7 +500,7 @@ export default function DashboardPage() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="app-shell space-y-6 max-w-7xl rounded-2xl p-4 md:p-6">
+    <div className="app-shell space-y-7 md:space-y-8 max-w-7xl rounded-2xl p-4 md:p-6">
 
       {/* Header */}
       <div>
@@ -560,7 +560,7 @@ export default function DashboardPage() {
       </section>
 
       {/* Insight cards */}
-      <section>
+      <section className="pt-1">
         <SectionTitle>Análisis del período</SectionTitle>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <InsightCard label="Balance del período" value={fmt(balance, currency)} sub={balance > 0 ? 'Saldo positivo ✓' : balance < 0 ? 'Gastos superan ingresos' : 'Equilibrado'} tone={toneFn(balance)} help={INSIGHT_HELP['Balance del período']} />
@@ -600,7 +600,7 @@ export default function DashboardPage() {
       </section>
 
       {/* Analysis section */}
-      <section>
+      <section className="pt-1">
         <SectionTitle>Análisis gráfico</SectionTitle>
         <div className="app-panel p-5 space-y-5">
           {/* Chart type selector */}
