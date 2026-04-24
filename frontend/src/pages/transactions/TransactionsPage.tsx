@@ -3,33 +3,11 @@ import { AxiosError } from 'axios'
 import { accountsApi } from '@/api/accounts'
 import { categoriesApi, type Category } from '@/api/categories'
 import { transactionsApi } from '@/api/transactions'
-import DatePicker from '@/components/ui/DatePicker'
-import Select from '@/components/ui/Select'
 import type { Account, Transaction } from '@/types'
-
-type TransactionType = 'INCOME' | 'EXPENSE'
-type PeriodFilter = 'all' | 'today' | '7d' | '30d' | 'month' | 'custom'
-
-interface FormState {
-  description: string
-  amount: string
-  accountId: string
-  categoryId: string
-  transactionType: TransactionType
-  occurredDate: string
-  occurredTime: string
-}
-
-interface FiltersState {
-  query: string
-  transactionType: 'all' | TransactionType
-  currency: 'all' | 'COP' | 'USD'
-  accountId: string
-  period: PeriodFilter
-  from: string
-  to: string
-  pageSize: number
-}
+import TransactionFormCard from './components/TransactionFormCard'
+import TransactionsFiltersCard from './components/TransactionsFiltersCard'
+import TransactionsHistoryCard from './components/TransactionsHistoryCard'
+import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
 
 const INCOME_HINTS = [
   'salario',
@@ -426,364 +404,54 @@ export default function TransactionsPage() {
         )}
 
         <div className="grid gap-4">
-          <form onSubmit={handleSubmit} className="order-3 app-card p-5 space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="app-section-title">{editingId != null ? 'Editar movimiento' : 'Registrar movimiento'}</h2>
-              {editingId != null && (
-                <span className="rounded-full bg-[var(--af-warning-soft)] px-3 py-1 text-xs font-medium text-[var(--af-negative)]">
-                  Modo edición
-                </span>
-              )}
-            </div>
-
-            {formError && <p className="alert-error">{formError}</p>}
-
-            <div className="space-y-1">
-              <label className="app-label">Descripción</label>
-              <input
-                type="text"
-                value={form.description}
-                onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-                className="app-control w-full"
-                placeholder="Ej: Supermercado, salario, gasolina"
-              />
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
-              <div className="space-y-1">
-                <label className="app-label">Tipo</label>
-                <select
-                  value={form.transactionType}
-                  onChange={(event) => setForm((current) => ({ ...current, transactionType: event.target.value as TransactionType, categoryId: 'none' }))}
-                  className="app-control w-full"
-                >
-                  <option value="EXPENSE">Gasto</option>
-                  <option value="INCOME">Ingreso</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="app-label">Monto</label>
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={form.amount}
-                  onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))}
-                  className="app-control w-full"
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
-              <div className="space-y-1">
-                <label className="app-label">Cuenta</label>
-                <select
-                  value={form.accountId}
-                  onChange={(event) => setForm((current) => ({ ...current, accountId: event.target.value }))}
-                  className="app-control w-full"
-                  disabled={!accounts.length}
-                >
-                  {accounts.map((account) => (
-                    <option key={account.id} value={account.id}>{account.name} ({account.currency})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="app-label">Categoría</label>
-                <select
-                  value={form.categoryId}
-                  onChange={(event) => setForm((current) => ({ ...current, categoryId: event.target.value }))}
-                  className="app-control w-full"
-                >
-                  <option value="none">Sin categoría</option>
-                  {categoryOptions.map((category) => (
-                    <option key={category.id} value={category.id}>{category.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
-              <DatePicker
-                label="Fecha"
-                value={form.occurredDate}
-                onChange={(value) => setForm((current) => ({ ...current, occurredDate: value }))}
-                max={toDateInputValue(new Date())}
-                className="w-full"
-              />
-              <div className="space-y-1">
-                <label className="app-label">Hora</label>
-                <input
-                  type="time"
-                  step="60"
-                  value={form.occurredTime}
-                  onChange={(event) => setForm((current) => ({ ...current, occurredTime: event.target.value }))}
-                  className="app-control w-full"
-                />
-              </div>
-            </div>
-
-            <div className="rounded-lg bg-[var(--af-bg-soft)] px-4 py-3 text-sm text-[var(--af-text-muted)]">
-              Moneda derivada de la cuenta: <span className="font-medium text-[var(--af-text)]">{accountCurrency}</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button type="submit" className="app-btn-primary" disabled={saving || !accounts.length}>
-                {saving ? 'Guardando...' : editingId != null ? 'Guardar cambios' : 'Guardar movimiento'}
-              </button>
-              <button type="button" className="app-btn-secondary" onClick={() => resetForm()}>
-                {editingId != null ? 'Cancelar' : 'Limpiar'}
-              </button>
-            </div>
-          </form>
+          <TransactionFormCard
+            form={form}
+            setForm={setForm}
+            accounts={accounts}
+            categoryOptions={categoryOptions}
+            accountCurrency={accountCurrency}
+            editingId={editingId}
+            saving={saving}
+            formError={formError}
+            maxDate={toDateInputValue(new Date())}
+            onSubmit={handleSubmit}
+            onReset={() => resetForm()}
+          />
 
           <div className="order-1 space-y-4">
-            <div className="app-card p-5 space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="app-section-title">Filtros</h2>
-                <button type="button" className="text-sm app-link" onClick={() => setFilters(buildDefaultFilters())}>
-                  Limpiar filtros
-                </button>
-              </div>
+            <TransactionsFiltersCard
+              filters={filters}
+              setFilters={setFilters}
+              accounts={accounts}
+              activeFilters={activeFilters}
+              datasetRange={datasetRange}
+              derivedRange={derivedRange}
+              incomeTotal={incomeTotal}
+              expenseTotal={expenseTotal}
+              onResetFilters={() => setFilters(buildDefaultFilters())}
+              formatCurrency={formatCurrency}
+            />
 
-              {activeFilters.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {activeFilters.map((label) => (
-                    <span key={label} className="rounded-full bg-tone-neutral px-3 py-1 text-xs font-medium">
-                      {label}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-3">
-                <div className="space-y-1 md:col-span-2 2xl:col-span-1">
-                  <label className="app-label">Buscar</label>
-                  <input
-                    type="search"
-                    value={filters.query}
-                    onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
-                    className="app-control w-full"
-                    placeholder="Descripción, cuenta o categoría"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="app-label">Tipo</label>
-                  <Select
-                    value={filters.transactionType}
-                    onChange={(value) => setFilters((current) => ({ ...current, transactionType: value as FiltersState['transactionType'] }))}
-                    options={[
-                      { value: 'all', label: 'Todos' },
-                      { value: 'INCOME', label: 'Ingresos' },
-                      { value: 'EXPENSE', label: 'Gastos' },
-                    ]}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="app-label">Moneda</label>
-                  <Select
-                    value={filters.currency}
-                    onChange={(value) => setFilters((current) => ({ ...current, currency: value as FiltersState['currency'] }))}
-                    options={[
-                      { value: 'all', label: 'Todas' },
-                      { value: 'COP', label: 'COP' },
-                      { value: 'USD', label: 'USD' },
-                    ]}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="app-label">Cuenta</label>
-                  <Select
-                    value={filters.accountId}
-                    onChange={(value) => setFilters((current) => ({ ...current, accountId: value }))}
-                    options={[
-                      { value: 'all', label: 'Todas' },
-                      ...accounts.map((account) => ({ value: String(account.id), label: account.name })),
-                    ]}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="app-label">Período</label>
-                  <Select
-                    value={filters.period}
-                    onChange={(value) => setFilters((current) => ({ ...current, period: value as PeriodFilter }))}
-                    options={[
-                      { value: 'today', label: 'Hoy' },
-                      { value: '7d', label: 'Últimos 7 días' },
-                      { value: '30d', label: 'Últimos 30 días' },
-                      { value: 'month', label: 'Mes actual' },
-                      { value: 'custom', label: 'Personalizado' },
-                      { value: 'all', label: 'Todos' },
-                    ]}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="app-label">Por página</label>
-                  <Select
-                    value={String(filters.pageSize)}
-                    onChange={(value) => setFilters((current) => ({ ...current, pageSize: Number(value) }))}
-                    options={[
-                      { value: '8', label: '8' },
-                      { value: '12', label: '12' },
-                      { value: '20', label: '20' },
-                      { value: '30', label: '30' },
-                    ]}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-4 md:flex-row md:items-end">
-                <DatePicker
-                  label="Desde"
-                  value={derivedRange.from || datasetRange.min}
-                  onChange={(value) => setFilters((current) => ({ ...current, period: 'custom', from: value }))}
-                  min={datasetRange.min}
-                  max={derivedRange.to || datasetRange.max}
-                  disabled={filters.period !== 'custom'}
-                />
-                <DatePicker
-                  label="Hasta"
-                  value={derivedRange.to || datasetRange.max}
-                  onChange={(value) => setFilters((current) => ({ ...current, period: 'custom', to: value }))}
-                  min={derivedRange.from || datasetRange.min}
-                  max={datasetRange.max}
-                  disabled={filters.period !== 'custom'}
-                />
-                <div className="rounded-lg bg-[var(--af-bg-soft)] px-4 py-3 text-sm text-[var(--af-text-muted)]">
-                  Flujo neto{' '}
-                  <span className={incomeTotal - expenseTotal >= 0 ? 'tone-positive font-medium' : 'tone-negative font-medium'}>
-                    {formatCurrency(incomeTotal - expenseTotal, filters.currency === 'USD' ? 'USD' : 'COP')}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="app-card overflow-hidden">
-              <div className="flex items-center justify-between gap-3 border-b border-[var(--af-border)] px-5 py-4">
-                <div>
-                  <h2 className="app-section-title mb-1">Historial</h2>
-                  <p className="app-subtitle text-sm">
-                    Mostrando {filteredTransactions.length ? startIndex + 1 : 0} a {startIndex + paginatedTransactions.length} de {filteredTransactions.length} movimientos
-                  </p>
-                </div>
-                <div className="flex flex-wrap justify-end gap-2">
-                  <button
-                    type="button"
-                    className="app-btn-secondary !w-auto px-4 py-2"
-                    onClick={() => setPage((current) => Math.max(1, current - 1))}
-                    disabled={currentPage === 1}
-                  >Anterior</button>
-                  <button
-                    type="button"
-                    className="app-btn-secondary !w-auto px-4 py-2"
-                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                    disabled={currentPage === totalPages}
-                  >Siguiente</button>
-                </div>
-              </div>
-
-              {!paginatedTransactions.length ? (
-                <div className="px-5 py-10 text-center">
-                  <p className="app-title text-lg">No hay movimientos que coincidan con los filtros.</p>
-                  <p className="app-subtitle mt-2">Ajusta el período, cambia la búsqueda o registra un nuevo movimiento.</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-[var(--af-border)]">
-                    <thead className="bg-[var(--af-bg-soft)]">
-                      <tr>
-                        <th className="px-5 py-3 text-left app-label">Fecha</th>
-                        <th className="px-5 py-3 text-left app-label">Descripción</th>
-                        <th className="px-5 py-3 text-left app-label">Tipo</th>
-                        <th className="px-5 py-3 text-left app-label">Moneda</th>
-                        <th className="px-5 py-3 text-left app-label">Cuenta</th>
-                        <th className="px-5 py-3 text-left app-label">Categoría</th>
-                        <th className="px-5 py-3 text-right app-label">Monto</th>
-                        <th className="px-5 py-3 text-right app-label">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--af-border)] bg-white">
-                      {paginatedTransactions.map((transaction) => {
-                        const isIncome = normalizeTransactionType(String(transaction.transaction_type)) === 'INCOME'
-                        return (
-                          <tr key={transaction.id} className="transition-colors hover:bg-[var(--af-bg-soft)]/70">
-                            <td className="px-5 py-4 text-sm text-[var(--af-text-muted)] whitespace-nowrap">
-                              {new Date(transaction.occurred_at).toLocaleString('es-CO', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </td>
-                            <td className="px-5 py-4 text-sm text-[var(--af-text)]">{transaction.description}</td>
-                            <td className="px-5 py-4 text-sm">
-                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${isIncome ? 'bg-tone-positive' : 'bg-tone-negative'}`}>
-                                {isIncome ? 'Ingreso' : 'Gasto'}
-                              </span>
-                            </td>
-                            <td className="px-5 py-4 text-sm text-[var(--af-text-muted)]">{transaction.currency}</td>
-                            <td className="px-5 py-4 text-sm text-[var(--af-text-muted)]">{getCompactAccountName(transaction.account_id, accounts)}</td>
-                            <td className="px-5 py-4 text-sm text-[var(--af-text-muted)]">{getCategoryName(transaction.category_id, categories)}</td>
-                            <td className={`px-5 py-4 text-right text-sm font-medium whitespace-nowrap ${isIncome ? 'tone-positive' : 'tone-negative'}`}>
-                              {isIncome ? '+' : '-'} {formatCurrency(Number(transaction.amount), transaction.currency)}
-                            </td>
-                            <td className="px-5 py-4">
-                              <div className="flex flex-wrap justify-end gap-2">
-                                <button type="button" className="app-btn-secondary !w-auto px-3 py-2" onClick={() => handleEdit(transaction)}>
-                                  Editar
-                                </button>
-                                <button
-                                  type="button"
-                                  className="max-w-max rounded-lg border border-[var(--af-accent-soft)] bg-[var(--af-accent-soft)] px-3 py-2 text-sm font-medium text-[var(--af-accent-soft-text)] transition-colors hover:bg-[var(--af-accent)] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-                                  onClick={() => void handleDelete(transaction.id)}
-                                  disabled={deletingId === transaction.id}
-                                >
-                                  {deletingId === transaction.id ? 'Eliminando...' : 'Eliminar'}
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {filteredTransactions.length > 0 && (
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--af-border)] px-5 py-4">
-                  <p className="app-subtitle text-sm">Página {currentPage} de {totalPages}</p>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className="app-btn-secondary !w-auto px-4 py-2"
-                      onClick={() => setPage((current) => Math.max(1, current - 1))}
-                      disabled={currentPage === 1}
-                    >←</button>
-                    <button
-                      type="button"
-                      className="app-btn-secondary !w-auto px-4 py-2"
-                      onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                      disabled={currentPage === totalPages}
-                    >→</button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <TransactionsHistoryCard
+              filteredTransactions={filteredTransactions}
+              paginatedTransactions={paginatedTransactions}
+              startIndex={startIndex}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              deletingId={deletingId}
+              accounts={accounts}
+              categories={categories}
+              onPrevPage={() => setPage((current) => Math.max(1, current - 1))}
+              onNextPage={() => setPage((current) => Math.min(totalPages, current + 1))}
+              onEdit={handleEdit}
+              onDelete={(transactionId) => {
+                void handleDelete(transactionId)
+              }}
+              getCompactAccountName={getCompactAccountName}
+              getCategoryName={getCategoryName}
+              formatCurrency={formatCurrency}
+              normalizeTransactionType={normalizeTransactionType}
+            />
           </div>
         </div>
       </section>
