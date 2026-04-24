@@ -103,6 +103,10 @@ function isIncomeCategory(label: string): boolean {
   return INCOME_HINTS.some((hint) => normalized.includes(hint))
 }
 
+function normalizeTransactionType(value: string | null | undefined): TransactionType {
+  return String(value ?? '').toLowerCase() === 'income' ? 'INCOME' : 'EXPENSE'
+}
+
 function formatCurrency(value: number, currency: string): string {
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
@@ -248,7 +252,8 @@ export default function TransactionsPage() {
         if (query && !description.includes(query) && !categoryName.includes(query) && !accountName.includes(query)) {
           return false
         }
-        if (filters.transactionType !== 'all' && transaction.transaction_type !== filters.transactionType) {
+        const txType = normalizeTransactionType(String(transaction.transaction_type))
+        if (filters.transactionType !== 'all' && txType !== filters.transactionType) {
           return false
         }
         if (filters.currency !== 'all' && transaction.currency !== filters.currency) {
@@ -269,10 +274,10 @@ export default function TransactionsPage() {
   }, [accounts, categories, derivedRange.from, derivedRange.to, filters.accountId, filters.currency, filters.query, filters.transactionType, transactions])
 
   const incomeTotal = filteredTransactions
-    .filter((transaction) => transaction.transaction_type === 'INCOME')
+    .filter((transaction) => normalizeTransactionType(String(transaction.transaction_type)) === 'INCOME')
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0)
   const expenseTotal = filteredTransactions
-    .filter((transaction) => transaction.transaction_type === 'EXPENSE')
+    .filter((transaction) => normalizeTransactionType(String(transaction.transaction_type)) === 'EXPENSE')
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0)
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / filters.pageSize))
   const currentPage = Math.min(page, totalPages)
@@ -302,7 +307,7 @@ export default function TransactionsPage() {
       amount: String(transaction.amount),
       accountId: String(transaction.account_id),
       categoryId: transaction.category_id == null ? 'none' : String(transaction.category_id),
-      transactionType: transaction.transaction_type,
+      transactionType: normalizeTransactionType(String(transaction.transaction_type)),
       occurredDate: toDateInputValue(occurredAt),
       occurredTime: toTimeInputValue(occurredAt),
     })
@@ -712,7 +717,7 @@ export default function TransactionsPage() {
                     </thead>
                     <tbody className="divide-y divide-[var(--af-border)] bg-white">
                       {paginatedTransactions.map((transaction) => {
-                        const isIncome = transaction.transaction_type === 'INCOME'
+                        const isIncome = normalizeTransactionType(String(transaction.transaction_type)) === 'INCOME'
                         return (
                           <tr key={transaction.id} className="transition-colors hover:bg-[var(--af-bg-soft)]/70">
                             <td className="px-5 py-4 text-sm text-[var(--af-text-muted)] whitespace-nowrap">
