@@ -332,8 +332,14 @@ function KpiCard({ label, value, sub, badge, accentClass = 'bg-neutral-100', acc
 interface InsightCardProps { label: string; value: string; sub?: string; tone?: Tone; help?: string }
 function InsightCard({ label, value, sub, tone = 'neutral', help }: InsightCardProps) {
   const valCls = { positive: 'text-[#0f7a55]', negative: 'text-[#c47a00]', flat: 'text-[#4a4845]', neutral: 'text-[#1c1b1a]' }[tone]
+  const accentCls = {
+    positive: 'border-l-4 border-l-success ring-1 ring-success/20',
+    negative: 'border-l-4 border-l-warning ring-1 ring-warning/20',
+    flat: 'border-l-4 border-l-neutral-400 ring-1 ring-neutral-100',
+    neutral: 'border-l-4 border-l-neutral-400 ring-1 ring-neutral-100',
+  }[tone]
   return (
-    <div className="bg-white border border-[#edeceb] rounded-xl p-4 shadow-sm relative">
+    <div className={`bg-white border border-[#edeceb] rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ${accentCls}`}>
       {help && <span className="absolute top-3 right-3"><HelpTooltip text={help} /></span>}
       <div className="flex items-center gap-1.5 mb-1">
         <p className="app-label uppercase tracking-wider">{label}</p>
