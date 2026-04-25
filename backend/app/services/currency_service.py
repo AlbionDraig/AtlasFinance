@@ -16,6 +16,11 @@ _RATE_CACHE: dict[tuple[str, str], tuple[Decimal, float]] = {}
 _CACHE_TTL_SECONDS: float = 3600.0  # 1 hour
 
 
+def _clear_rate_cache() -> None:
+    """Clear in-process FX cache (used by tests and maintenance tasks)."""
+    _RATE_CACHE.clear()
+
+
 def _get_rate(from_currency: str, to_currency: str) -> Decimal | None:
     """Fetch and cache (with TTL) the conversion rate for a currency pair."""
     key = (from_currency, to_currency)
@@ -39,6 +44,10 @@ def _get_rate(from_currency: str, to_currency: str) -> Decimal | None:
     except Exception:
         # On failure, return the stale value if available rather than breaking.
         return entry[0] if entry is not None else None
+
+
+# Compatibility shim for tests that previously relied on functools.lru_cache.
+_get_rate.cache_clear = _clear_rate_cache
 
 
 def convert_currency(amount: Decimal, from_currency: str, to_currency: str) -> Decimal:

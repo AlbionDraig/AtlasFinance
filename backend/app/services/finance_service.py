@@ -22,7 +22,6 @@ from app.schemas.pocket import PocketCreate
 from app.schemas.transaction import TransactionCreate
 from app.services.currency_service import convert_currency
 
-
 # In-process cache for dashboard aggregates: {(user_id, currency) -> (metrics, expires_at)}
 # This reduces repeated heavy reads in short time windows.
 # NOTE: cache is not shared across workers.
