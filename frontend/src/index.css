@@ -148,6 +148,18 @@ body {
     box-shadow: var(--af-shadow-sm);
   }
 
+  .app-filter-card {
+    overflow: visible;
+    background: var(--af-surface);
+    border: 1px solid var(--af-border);
+    border-top: 4px solid var(--af-accent);
+    border-radius: 0.875rem;
+    box-shadow: var(--af-shadow-md);
+    outline: 2px solid color-mix(in srgb, var(--af-accent) 20%, transparent);
+    outline-offset: 0;
+    padding: 1.25rem;
+  }
+
   .app-title {
     color: var(--af-text);
     font-weight: 700;

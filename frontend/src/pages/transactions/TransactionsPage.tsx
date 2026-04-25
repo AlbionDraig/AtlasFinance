@@ -6,7 +6,6 @@ import { transactionsApi } from '@/api/transactions'
 import type { Account, Transaction } from '@/types'
 import TransactionEditModal from './components/TransactionEditModal'
 import TransactionsFiltersCard from './components/TransactionsFiltersCard'
-import StickyBar from '@/components/ui/StickyBar'
 import TransactionsHistoryCard from './components/TransactionsHistoryCard'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -424,17 +423,15 @@ export default function TransactionsPage() {
       )}
 
       {/* Sticky filters */}
-      <StickyBar>
-        <TransactionsFiltersCard
-          filters={filters}
-          setFilters={setFilters}
-          accounts={accounts}
-          activeFilters={activeFilters}
-          datasetRange={datasetRange}
-          derivedRange={derivedRange}
-          onResetFilters={() => setFilters(buildDefaultFilters())}
-        />
-      </StickyBar>
+      <TransactionsFiltersCard
+        filters={filters}
+        setFilters={setFilters}
+        accounts={accounts}
+        activeFilters={activeFilters}
+        datasetRange={datasetRange}
+        derivedRange={derivedRange}
+        onResetFilters={() => setFilters(buildDefaultFilters())}
+      />
 
       {/* Transactions table */}
       <TransactionsHistoryCard
