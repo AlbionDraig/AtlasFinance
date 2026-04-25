@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from 'react'
 import DatePicker from '@/components/ui/DatePicker'
 import Select from '@/components/ui/Select'
 import FilterCard from '@/components/ui/FilterCard'
+import SearchInput from '@/components/ui/SearchInput'
 import type { Account } from '@/types'
 import type { FiltersState, PeriodFilter } from '../types'
 
@@ -29,11 +30,9 @@ export default function TransactionsFiltersCard({
       {/* Buscar */}
       <div className="flex flex-col gap-1 flex-1 min-w-[160px]">
         <label className="app-label">Buscar</label>
-        <input
-          type="search"
+        <SearchInput
           value={filters.query}
-          onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
-          className="app-control w-full"
+          onChange={(value) => setFilters((current) => ({ ...current, query: value }))}
           placeholder="Descripcion, cuenta o categoria"
         />
       </div>

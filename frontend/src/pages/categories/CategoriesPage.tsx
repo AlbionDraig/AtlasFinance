@@ -5,6 +5,7 @@ import FormField from '@/components/ui/FormField'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import FilterCard from '@/components/ui/FilterCard'
+import SearchInput from '@/components/ui/SearchInput'
 import { useToast } from '@/hooks/useToast'
 
 
@@ -231,18 +232,11 @@ export default function CategoriesPage() {
       <FilterCard sticky activeFilters={activeFilters} onReset={() => setQuery('')}>
         <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
           <label className="app-label">Buscar</label>
-          <div className="relative">
-            <svg className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-            </svg>
-            <input
-              type="search"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Buscar por nombre de categoría…"
-              className="app-control w-full pl-9"
-            />
-          </div>
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="Buscar por nombre de categoría…"
+          />
         </div>
       </FilterCard>
 

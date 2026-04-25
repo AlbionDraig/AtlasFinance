@@ -196,6 +196,11 @@ body {
     transition: background-color 0.15s, border-color 0.15s;
   }
 
+  /* Modificador para inputs con icono a la izquierda */
+  .app-control-icon-left {
+    padding-left: 2.25rem;
+  }
+
   .app-control:hover {
     background: var(--af-surface-alt);
     border-color: var(--af-border-strong);
