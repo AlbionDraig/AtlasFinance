@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { categoriesApi, type Category } from '@/api/categories'
+import { categoriesApi, type Category, type CategoryPayload } from '@/api/categories'
 import Modal from '@/components/ui/Modal'
 import FormField from '@/components/ui/FormField'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
@@ -11,9 +11,10 @@ import { useToast } from '@/hooks/useToast'
 interface FormState {
   name: string
   is_fixed: boolean
+  keywords: string
 }
 
-const EMPTY_FORM: FormState = { name: '', is_fixed: false }
+const EMPTY_FORM: FormState = { name: '', is_fixed: false, keywords: '' }
 
 // ─── Modal de formulario ──────────────────────────────────────────────────────
 interface CategoryModalProps {
@@ -67,6 +68,17 @@ function CategoryModal({ initial, loading, title, onSubmit, onClose }: CategoryM
               placeholder="Ej: Servicios públicos"
               maxLength={120}
               autoFocus
+            />
+          </FormField>
+
+          <FormField label="¿Cuándo usarla? (opcional)">
+            <textarea
+              className="app-control h-auto py-2 resize-none"
+              rows={2}
+              value={form.keywords}
+              onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))}
+              placeholder="Ej: pagos mensuales, recibos, facturas fijas…"
+              maxLength={300}
             />
           </FormField>
 
@@ -136,7 +148,8 @@ export default function CategoriesPage() {
   async function handleCreate(data: FormState) {
     setSaving(true)
     try {
-      const r = await categoriesApi.create(data)
+      const payload: CategoryPayload = { name: data.name, is_fixed: data.is_fixed, keywords: data.keywords || null }
+      const r = await categoriesApi.create(payload)
       setCategories(prev => [r.data, ...prev])
       setShowCreate(false)
       toast('Categoría creada.', 'success')
@@ -151,7 +164,8 @@ export default function CategoriesPage() {
     if (!editing) return
     setSaving(true)
     try {
-      const r = await categoriesApi.update(editing.id, data)
+      const payload: CategoryPayload = { name: data.name, is_fixed: data.is_fixed, keywords: data.keywords || null }
+      const r = await categoriesApi.update(editing.id, payload)
       setCategories(prev => prev.map(c => (c.id === editing.id ? r.data : c)))
       setEditing(null)
       toast('Categoría actualizada.', 'success')
@@ -258,7 +272,7 @@ export default function CategoriesPage() {
       {editing && (
         <CategoryModal
           title="Editar categoría"
-          initial={{ name: editing.name, is_fixed: editing.is_fixed }}
+          initial={{ name: editing.name, is_fixed: editing.is_fixed, keywords: editing.keywords ?? '' }}
           loading={saving}
           onSubmit={handleUpdate}
           onClose={() => setEditing(null)}
@@ -330,8 +344,13 @@ function CategoryGroup({ title, subtitle, accentClass, headerBg, titleColor, bad
       ) : (
         <ul className="divide-y divide-neutral-100">
           {items.map(cat => (
-            <li key={cat.id} className="flex items-center justify-between px-5 py-3 gap-3 group hover:bg-neutral-50 transition-colors">
-              <span className="text-sm text-neutral-900 truncate">{cat.name}</span>
+            <li key={cat.id} className="flex items-start justify-between px-5 py-3 gap-3 group hover:bg-neutral-50 transition-colors">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-neutral-900 truncate">{cat.name}</p>
+                {cat.keywords && (
+                  <p className="text-xs text-neutral-400 mt-0.5 line-clamp-2 leading-relaxed">{cat.keywords}</p>
+                )}
+              </div>
               <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   type="button"
