@@ -7,6 +7,14 @@ CATEGORY_RULES = {
     "salary": ["nomina", "salario", "payroll"],
 }
 
+# Categories whose expenses are considered recurring/fixed obligations
+FIXED_CATEGORIES: frozenset[str] = frozenset({"housing"})
+
+
+def is_fixed_category(category_name: str) -> bool:
+    """Return True if the given classifier category name is a fixed expense."""
+    return category_name in FIXED_CATEGORIES
+
 
 def classify_transaction(description: str, transaction_type: TransactionType) -> str:
     text = description.lower().strip()

@@ -107,13 +107,19 @@ def run_seed() -> None:
             pockets[name] = p
 
         # ── Categorías ─────────────────────────────────────────────────────
-        category_names = [
-            "Alimentación", "Transporte", "Salud", "Entretenimiento",
-            "Servicios", "Educación", "Salario", "Freelance",
+        category_data = [
+            ("Alimentación",    False),
+            ("Transporte",      False),
+            ("Salud",           False),
+            ("Entretenimiento", False),
+            ("Servicios",       True),
+            ("Educación",       True),
+            ("Salario",         False),
+            ("Freelance",       False),
         ]
         categories: dict[str, Category] = {}
-        for name in category_names:
-            c = Category(name=name, user_id=user.id)
+        for name, is_fixed in category_data:
+            c = Category(name=name, is_fixed=is_fixed, user_id=user.id)
             db.add(c)
             db.flush()
             categories[name] = c

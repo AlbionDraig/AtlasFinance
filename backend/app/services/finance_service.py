@@ -98,7 +98,7 @@ def create_pocket(db: Session, user_id: int, payload: PocketCreate) -> Pocket:
 
 def create_category(db: Session, user_id: int, payload: CategoryCreate) -> Category:
     """Create a custom category for the authenticated user."""
-    category = Category(name=payload.name, user_id=user_id)
+    category = Category(name=payload.name, is_fixed=payload.is_fixed, user_id=user_id)
     return _persist_and_refresh(db, category)
 
 

@@ -4,6 +4,7 @@ import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.etl.classifier import is_fixed_category
 from app.etl.normalizer import normalize_dataframe
 from app.models.account import Account
 from app.models.category import Category
@@ -45,7 +46,7 @@ def ingest_transactions(
             select(Category).where(Category.user_id == user_id, Category.name == record.category)
         )
         if category is None:
-            category = Category(name=record.category, user_id=user_id)
+            category = Category(name=record.category, is_fixed=is_fixed_category(record.category), user_id=user_id)
             db.add(category)
             db.flush()
 

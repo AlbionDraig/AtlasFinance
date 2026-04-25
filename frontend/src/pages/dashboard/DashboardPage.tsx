@@ -101,14 +101,12 @@ function toneFn(v: number): Tone {
 }
 
 // ─── Category helpers ─────────────────────────────────────────────────────────
-const FIXED_KW = ['arriendo','alquiler','servicio','suscrip','internet','celular','seguro','educaci','colegio','universidad','hipoteca']
-function classifyExpense(name: string): 'Gasto fijo' | 'Gasto variable' {
-  const l = name.toLowerCase()
-  return FIXED_KW.some(k => l.includes(k)) ? 'Gasto fijo' : 'Gasto variable'
+function resolveCat(rawId: number | null, lookup: Map<number, Category>): Category | null {
+  if (rawId == null) return null
+  return lookup.get(rawId) ?? null
 }
-function resolveCatName(rawId: number | null, lookup: Map<number, string>): string {
-  if (rawId == null) return 'Sin categoría'
-  return lookup.get(rawId) ?? 'Sin categoría'
+function resolveCatName(rawId: number | null, lookup: Map<number, Category>): string {
+  return resolveCat(rawId, lookup)?.name ?? 'Sin categoría'
 }
 
 function toneToVariant(tone: Tone, fallback: BadgeVariant = 'neutral'): BadgeVariant {
@@ -140,18 +138,21 @@ function buildMonthly(txs: Transaction[]): MonthlyRow[] {
   return rows
 }
 type CatRow = { name: string; value: number; bucket: string }
-function buildCategoryRows(txs: Transaction[], lookup: Map<number, string>): CatRow[] {
-  const map = new Map<string, number>()
+function buildCategoryRows(txs: Transaction[], lookup: Map<number, Category>): CatRow[] {
+  const map = new Map<string, { value: number; isFixed: boolean }>()
   for (const tx of txs.filter(t => txType(t) === 'EXPENSE')) {
-    const name = resolveCatName(tx.category_id, lookup)
-    map.set(name, (map.get(name) ?? 0) + Number(tx.amount))
+    const cat = resolveCat(tx.category_id, lookup)
+    const name = cat?.name ?? 'Sin categoría'
+    const isFixed = cat?.is_fixed ?? false
+    const prev = map.get(name)
+    map.set(name, { value: (prev?.value ?? 0) + Number(tx.amount), isFixed })
   }
-  return Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([name, value]) => ({
-    name, value, bucket: classifyExpense(name),
+  return Array.from(map.entries()).sort((a, b) => b[1].value - a[1].value).slice(0, 10).map(([name, { value, isFixed }]) => ({
+    name, value, bucket: isFixed ? 'Gasto fijo' : 'Gasto variable',
   }))
 }
 type StackedRow = { month: string; [cat: string]: number | string }
-function buildStacked(txs: Transaction[], lookup: Map<number, string>): { rows: StackedRow[]; cats: string[] } {
+function buildStacked(txs: Transaction[], lookup: Map<number, Category>): { rows: StackedRow[]; cats: string[] } {
   const expTxs = txs.filter(t => txType(t) === 'EXPENSE')
   const monthCatMap = new Map<string, Map<string, number>>()
   const catTotals = new Map<string, number>()
@@ -322,7 +323,7 @@ export default function DashboardPage() {
   const [accounts, setAccounts] = useState<Account[]>([])
   const [txs, setTxs] = useState<Transaction[]>([])
   const [prevTxs, setPrevTxs] = useState<Transaction[]>([])
-  const [catLookup, setCatLookup] = useState<Map<number, string>>(new Map())
+  const [catLookup, setCatLookup] = useState<Map<number, Category>>(new Map())
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
@@ -386,7 +387,7 @@ export default function DashboardPage() {
         setAccounts(a.data)
         setTxs(currentTxs)
         setPrevTxs(previousTxs)
-        const lookup = new Map<number, string>(c.data.map((cat: Category) => [cat.id, cat.name]))
+        const lookup = new Map<number, Category>(c.data.map((cat: Category) => [cat.id, cat]))
         setCatLookup(lookup)
       })
       .catch(() => toast('No se pudieron cargar los datos del dashboard.', 'error'))
@@ -424,8 +425,8 @@ export default function DashboardPage() {
   const highestMonth = monthly.length > 0 ? monthly.reduce((a, b) => a.expense > b.expense ? a : b) : null
   const expVariation = prevExpense > 0 ? ((expense - prevExpense) / prevExpense) * 100 : null
   const fixedTotal = expTxs.reduce((s, tx) => {
-    const name = resolveCatName(tx.category_id, catLookup)
-    return s + (classifyExpense(name) === 'Gasto fijo' ? Number(tx.amount) : 0)
+    const isFixed = resolveCat(tx.category_id, catLookup)?.is_fixed ?? false
+    return s + (isFixed ? Number(tx.amount) : 0)
   }, 0)
   const fixedShare = expense > 0 ? (fixedTotal / expense) * 100 : null
 
