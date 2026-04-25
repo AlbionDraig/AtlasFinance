@@ -43,6 +43,15 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    to: '/categories',
+    label: 'Categorías',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M11 7h6M7 12h.01M11 12h6M7 17h.01M11 17h6" />
+      </svg>
+    ),
+  },
 ]
 
 export default function AppLayout() {

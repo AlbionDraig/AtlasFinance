@@ -7,6 +7,12 @@ class CategoryCreate(BaseModel):
     is_fixed: bool = False
 
 
+class CategoryUpdate(BaseModel):
+    """Payload used to update an existing category."""
+    name: str = Field(min_length=2, max_length=120)
+    is_fixed: bool = False
+
+
 class CategoryRead(BaseModel):
     """Serialized category response exposed by the API."""
     id: int

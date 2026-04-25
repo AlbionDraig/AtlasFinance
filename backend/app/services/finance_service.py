@@ -102,6 +102,25 @@ def create_category(db: Session, user_id: int, payload: CategoryCreate) -> Categ
     return _persist_and_refresh(db, category)
 
 
+def update_category(db: Session, user_id: int, category_id: int, payload) -> Category:
+    """Update name and is_fixed for a category owned by the user."""
+    category = db.get(Category, category_id)
+    if not category or category.user_id != user_id:
+        raise ValueError("Category not found")
+    category.name = payload.name
+    category.is_fixed = payload.is_fixed
+    return _commit_and_refresh(db, category)
+
+
+def delete_category(db: Session, user_id: int, category_id: int) -> None:
+    """Delete a category owned by the user."""
+    category = db.get(Category, category_id)
+    if not category or category.user_id != user_id:
+        raise ValueError("Category not found")
+    db.delete(category)
+    db.commit()
+
+
 def list_categories(db: Session, user_id: int) -> list[Category]:
     """List categories owned by the authenticated user."""
     query = select(Category).where(Category.user_id == user_id).order_by(Category.created_at.desc())
