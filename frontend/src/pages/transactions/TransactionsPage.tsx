@@ -315,6 +315,11 @@ export default function TransactionsPage() {
       return
     }
 
+    if (form.transactionType === 'EXPENSE' && (!form.categoryId || form.categoryId === 'none')) {
+      toast('Los gastos deben tener una categoría asociada.', 'error')
+      return
+    }
+
     if (!form.occurredDate) {
       toast('Selecciona la fecha del movimiento.', 'error')
       return
