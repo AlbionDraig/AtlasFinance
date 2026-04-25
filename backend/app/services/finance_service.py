@@ -1,6 +1,7 @@
 from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
+from time import monotonic
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -20,6 +21,40 @@ from app.schemas.metric import DashboardMetrics
 from app.schemas.pocket import PocketCreate
 from app.schemas.transaction import TransactionCreate
 from app.services.currency_service import convert_currency
+
+
+# In-process cache for dashboard aggregates: {(user_id, currency) -> (metrics, expires_at)}
+# This reduces repeated heavy reads in short time windows.
+# NOTE: cache is not shared across workers.
+_METRICS_CACHE: dict[tuple[int, str], tuple[DashboardMetrics, float]] = {}
+_METRICS_CACHE_TTL_SECONDS: float = 60.0
+
+
+def _invalidate_metrics_cache(user_id: int) -> None:
+    """Remove all cached dashboard snapshots for a user across currencies."""
+    keys = [key for key in _METRICS_CACHE if key[0] == user_id]
+    for key in keys:
+        _METRICS_CACHE.pop(key, None)
+
+
+def _get_cached_metrics(user_id: int, target_currency: str) -> DashboardMetrics | None:
+    """Return cached dashboard metrics when entry is still fresh."""
+    key = (user_id, target_currency)
+    entry = _METRICS_CACHE.get(key)
+    if entry is None:
+        return None
+    metrics, expires_at = entry
+    if monotonic() >= expires_at:
+        _METRICS_CACHE.pop(key, None)
+        return None
+    return metrics
+
+
+def _set_cached_metrics(user_id: int, target_currency: str, metrics: DashboardMetrics) -> DashboardMetrics:
+    """Store dashboard metrics snapshot with TTL and return the same object."""
+    key = (user_id, target_currency)
+    _METRICS_CACHE[key] = (metrics, monotonic() + _METRICS_CACHE_TTL_SECONDS)
+    return metrics
 
 
 def _get_user(db: Session, user_id: int) -> User:
@@ -196,7 +231,9 @@ def register_transaction(db: Session, user_id: int, payload: TransactionCreate) 
 
     _apply_transaction_effect(account, payload.transaction_type, payload.amount)
 
-    return _commit_and_refresh(db, txn)
+    created_txn = _commit_and_refresh(db, txn)
+    _invalidate_metrics_cache(user_id)
+    return created_txn
 
 
 def update_transaction(db: Session, user_id: int, transaction_id: int, payload: TransactionCreate) -> Transaction:
@@ -221,7 +258,9 @@ def update_transaction(db: Session, user_id: int, transaction_id: int, payload: 
 
     _apply_transaction_effect(new_account, payload.transaction_type, payload.amount)
 
-    return _commit_and_refresh(db, txn)
+    updated_txn = _commit_and_refresh(db, txn)
+    _invalidate_metrics_cache(user_id)
+    return updated_txn
 
 
 def delete_transaction(db: Session, user_id: int, transaction_id: int) -> None:
@@ -234,6 +273,7 @@ def delete_transaction(db: Session, user_id: int, transaction_id: int) -> None:
     _revert_transaction_effect(account, txn.transaction_type, txn.amount)
     db.delete(txn)
     db.commit()
+    _invalidate_metrics_cache(user_id)
 
 
 def list_transactions(
@@ -254,6 +294,10 @@ def list_transactions(
 
 def get_dashboard_metrics(db: Session, user_id: int, target_currency: str = "COP") -> DashboardMetrics:
     """Aggregate net worth, income, expenses and savings rate in a target currency."""
+    cached_metrics = _get_cached_metrics(user_id, target_currency)
+    if cached_metrics is not None:
+        return cached_metrics
+
     accounts = db.scalars(select(Account).join(Bank).where(Bank.user_id == user_id)).all()
     investments = db.scalars(select(Investment).where(Investment.user_id == user_id)).all()
     transactions = db.scalars(select(Transaction).where(Transaction.user_id == user_id)).all()
@@ -274,10 +318,11 @@ def get_dashboard_metrics(db: Session, user_id: int, target_currency: str = "COP
     cashflow = total_income - total_expenses
     savings_rate = (cashflow / total_income * Decimal("100")) if total_income > 0 else Decimal("0")
 
-    return DashboardMetrics(
+    metrics = DashboardMetrics(
         net_worth=total_assets,
         total_income=total_income,
         total_expenses=total_expenses,
         savings_rate=savings_rate.quantize(Decimal("0.01")),
         cashflow=cashflow,
     )
+    return _set_cached_metrics(user_id, target_currency, metrics)
