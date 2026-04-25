@@ -6,6 +6,8 @@ import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import FilterCard from '@/components/ui/FilterCard'
 import SearchInput from '@/components/ui/SearchInput'
+import EditButton from '@/components/ui/EditButton'
+import DeleteButton from '@/components/ui/DeleteButton'
 import { useToast } from '@/hooks/useToast'
 
 
@@ -107,18 +109,18 @@ function CategoryModal({ initial, loading, title, onSubmit, onClose }: CategoryM
           {/* Footer */}
           <div className="flex justify-end gap-2 pt-1">
             <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm rounded-lg border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
               type="submit"
               disabled={loading}
               className="px-4 py-2 text-sm rounded-lg bg-brand text-white hover:bg-brand-hover disabled:opacity-50 transition-colors"
             >
               {loading ? 'Guardando…' : 'Guardar'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm rounded-lg border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand transition-colors"
+            >
+              Cancelar
             </button>
           </div>
         </form>
@@ -382,34 +384,16 @@ function CategoryGroup({ title, subtitle, accentClass, headerBg, titleColor, bad
       ) : (
         <ul className="divide-y divide-neutral-100">
           {items.map(cat => (
-            <li key={cat.id} className="flex items-start justify-between px-5 py-3 gap-3 group hover:bg-neutral-50 transition-colors">
+            <li key={cat.id} className="flex items-center justify-between px-4 py-2.5 gap-3 hover:bg-neutral-50 transition-colors">
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-neutral-900 truncate">{cat.name}</p>
                 {cat.description && (
-                  <p className="text-xs text-neutral-400 mt-0.5 line-clamp-2 leading-relaxed">{cat.description}</p>
+                  <p className="text-xs text-neutral-400 mt-0.5 line-clamp-1 leading-relaxed">{cat.description}</p>
                 )}
               </div>
-              <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  type="button"
-                  onClick={() => onEdit(cat)}
-                  aria-label={`Editar ${cat.name}`}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
-                >
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onDelete(cat)}
-                  aria-label={`Eliminar ${cat.name}`}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-brand-light hover:text-brand-text transition-colors"
-                >
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <EditButton onClick={() => onEdit(cat)} label={`Editar ${cat.name}`} />
+                <DeleteButton onClick={() => onDelete(cat)} label={`Eliminar ${cat.name}`} />
               </div>
             </li>
           ))}
