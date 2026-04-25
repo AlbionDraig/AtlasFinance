@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
 interface TooltipProps {
   content: ReactNode
@@ -95,7 +96,7 @@ export default function Tooltip({
         {children}
       </button>
 
-      {open && (
+      {open && createPortal(
         <span
           ref={tooltipRef}
           className="fixed z-50 bg-neutral-900 text-white text-xs rounded-xl px-3 py-2.5 shadow-xl leading-relaxed pointer-events-none whitespace-normal"
@@ -110,7 +111,8 @@ export default function Tooltip({
             className={`absolute border-4 border-transparent ${tooltipPos.placement === 'top' ? 'top-full border-t-neutral-900' : 'bottom-full border-b-neutral-900'}`}
             style={{ left: tooltipPos.arrowLeft, transform: 'translateX(-50%)' }}
           />
-        </span>
+        </span>,
+        document.body
       )}
     </span>
   )
