@@ -13,7 +13,12 @@ from app.db.base import get_db
 from app.models.user import User
 from app.schemas.token import Token
 from app.schemas.user import UserCreate, UserLogin, UserRead, UserUpdate
-from app.services.auth_service import authenticate_user, create_user, revoke_access_token, update_user
+from app.services.auth_service import (
+    authenticate_user,
+    create_user,
+    revoke_access_token,
+    update_user,
+)
 
 settings = get_settings()
 
