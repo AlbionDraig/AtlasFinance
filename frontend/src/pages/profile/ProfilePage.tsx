@@ -276,7 +276,7 @@ export default function ProfilePage() {
                     setChangingPassword(false)
                     setForm((f) => ({ ...f, current_password: '', new_password: '', confirm_password: '' }))
                   }}
-                  className="w-full flex items-center justify-center gap-1.5 bg-brand-light text-brand-text hover:bg-brand hover:text-white text-sm font-medium rounded-lg py-2 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 bg-brand-light border border-brand-light text-brand-text hover:bg-brand hover:border-brand hover:text-white text-sm font-medium rounded-lg h-10 transition-colors"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
