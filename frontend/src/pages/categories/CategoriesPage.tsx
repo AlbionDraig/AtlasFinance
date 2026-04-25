@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { categoriesApi, type Category, type CategoryPayload } from '@/api/categories'
 import Modal from '@/components/ui/Modal'
 import FormField from '@/components/ui/FormField'
@@ -136,6 +136,7 @@ export default function CategoriesPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [editing, setEditing] = useState<Category | null>(null)
   const [deleting, setDeleting] = useState<Category | null>(null)
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
     categoriesApi
@@ -191,8 +192,13 @@ export default function CategoriesPage() {
     }
   }
 
-  const fixed = categories.filter(c => c.is_fixed)
-  const variable = categories.filter(c => !c.is_fixed)
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return q ? categories.filter(c => c.name.toLowerCase().includes(q)) : categories
+  }, [categories, query])
+
+  const fixed = filtered.filter(c => c.is_fixed)
+  const variable = filtered.filter(c => !c.is_fixed)
 
   if (loading) {
     return (
@@ -210,6 +216,25 @@ export default function CategoriesPage() {
         <p className="app-subtitle text-sm mt-0.5">Organiza tus gastos e ingresos con categorías propias</p>
       </div>
 
+      {/* Buscador */}
+      <div className="overflow-visible bg-white border border-neutral-100 border-t-4 border-t-brand ring-2 ring-brand/20 rounded-2xl shadow-xl p-5">
+        <div className="flex flex-col gap-1">
+          <label className="app-label">Buscar</label>
+          <div className="relative">
+            <svg className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+            </svg>
+            <input
+              type="search"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Buscar por nombre de categoría…"
+              className="app-control w-full pl-9"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Contenido */}
       {categories.length === 0 ? (
         <div className="app-card flex flex-col items-center gap-3 p-12">
@@ -220,6 +245,14 @@ export default function CategoriesPage() {
           </div>
           <p className="text-sm text-neutral-700">No tienes categorías todavía.</p>
           <p className="text-xs text-neutral-400">Crea tu primera categoría usando el botón de abajo.</p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="app-card flex flex-col items-center gap-3 p-10">
+          <svg className="h-8 w-8 text-neutral-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          </svg>
+          <p className="text-sm text-neutral-700">Sin resultados para <span className="font-medium">"{query}"</span></p>
+          <button type="button" onClick={() => setQuery('')} className="text-xs text-brand hover:underline">Limpiar búsqueda</button>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-6">
