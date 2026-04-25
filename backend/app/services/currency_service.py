@@ -1,5 +1,5 @@
 from decimal import Decimal
-from functools import lru_cache
+from time import monotonic
 
 import httpx
 
@@ -7,10 +7,22 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+# In-process TTL cache: {pair -> (rate, expires_at)}
+# TTL is intentionally short (1 h) to avoid serving stale FX rates.
+# NOTE: each worker process has its own cache; this is acceptable for a
+# single-worker deployment. For multi-worker production, replace with a
+# shared store (Redis, DB table with expiry column, etc.).
+_RATE_CACHE: dict[tuple[str, str], tuple[Decimal, float]] = {}
+_CACHE_TTL_SECONDS: float = 3600.0  # 1 hour
 
-@lru_cache(maxsize=32)
+
 def _get_rate(from_currency: str, to_currency: str) -> Decimal | None:
-    """Fetch and cache conversion rate for a currency pair."""
+    """Fetch and cache (with TTL) the conversion rate for a currency pair."""
+    key = (from_currency, to_currency)
+    entry = _RATE_CACHE.get(key)
+    if entry is not None and monotonic() < entry[1]:
+        return entry[0]
+
     try:
         response = httpx.get(
             f"{settings.exchange_rate_api_url}convert",
@@ -21,9 +33,12 @@ def _get_rate(from_currency: str, to_currency: str) -> Decimal | None:
         result = response.json().get("result")
         if result is None:
             return None
-        return Decimal(str(result))
+        rate = Decimal(str(result))
+        _RATE_CACHE[key] = (rate, monotonic() + _CACHE_TTL_SECONDS)
+        return rate
     except Exception:
-        return None
+        # On failure, return the stale value if available rather than breaking.
+        return entry[0] if entry is not None else None
 
 
 def convert_currency(amount: Decimal, from_currency: str, to_currency: str) -> Decimal:
