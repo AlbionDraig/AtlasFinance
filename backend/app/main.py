@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.db.init_db import init_db
+from app.db.seed import run_seed
 
 settings = get_settings()
 
@@ -25,6 +26,8 @@ app.add_middleware(
 @app.on_event("startup")
 def startup_event() -> None:
     init_db()
+    if settings.seed_on_startup or settings.environment != "production":
+        run_seed()
 
 
 @app.get("/health", tags=["system"])

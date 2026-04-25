@@ -10,6 +10,11 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     database_url: str = "postgresql+psycopg://atlas:atlas@db:5432/atlas_finance"
 
+    # "development" | "test" | "production"
+    environment: str = "production"
+    # Carga datos demo al arrancar. Se activa automáticamente cuando environment != "production"
+    seed_on_startup: bool = False
+
     secret_key: str = "change-this-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 120))
