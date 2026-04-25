@@ -3,14 +3,14 @@ import apiClient from '@/lib/axios'
 export interface Category {
   id: number
   name: string
-  keywords: string | null
+  description: string | null
   is_fixed: boolean
 }
 
 export interface CategoryPayload {
   name: string
   is_fixed: boolean
-  keywords?: string | null
+  description?: string | null
 }
 
 export const categoriesApi = {

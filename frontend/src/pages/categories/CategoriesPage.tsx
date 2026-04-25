@@ -11,10 +11,10 @@ import { useToast } from '@/hooks/useToast'
 interface FormState {
   name: string
   is_fixed: boolean
-  keywords: string
+  description: string
 }
 
-const EMPTY_FORM: FormState = { name: '', is_fixed: false, keywords: '' }
+const EMPTY_FORM: FormState = { name: '', is_fixed: false, description: '' }
 
 // ─── Modal de formulario ──────────────────────────────────────────────────────
 interface CategoryModalProps {
@@ -75,8 +75,8 @@ function CategoryModal({ initial, loading, title, onSubmit, onClose }: CategoryM
             <textarea
               className="app-control h-auto py-2 resize-none"
               rows={2}
-              value={form.keywords}
-              onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))}
+              value={form.description}
+              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Ej: pagos mensuales, recibos, facturas fijas…"
               maxLength={300}
             />
@@ -148,7 +148,7 @@ export default function CategoriesPage() {
   async function handleCreate(data: FormState) {
     setSaving(true)
     try {
-      const payload: CategoryPayload = { name: data.name, is_fixed: data.is_fixed, keywords: data.keywords || null }
+      const payload: CategoryPayload = { name: data.name, is_fixed: data.is_fixed, description: data.description || null }
       const r = await categoriesApi.create(payload)
       setCategories(prev => [r.data, ...prev])
       setShowCreate(false)
@@ -164,7 +164,7 @@ export default function CategoriesPage() {
     if (!editing) return
     setSaving(true)
     try {
-      const payload: CategoryPayload = { name: data.name, is_fixed: data.is_fixed, keywords: data.keywords || null }
+      const payload: CategoryPayload = { name: data.name, is_fixed: data.is_fixed, description: data.description || null }
       const r = await categoriesApi.update(editing.id, payload)
       setCategories(prev => prev.map(c => (c.id === editing.id ? r.data : c)))
       setEditing(null)
@@ -272,7 +272,7 @@ export default function CategoriesPage() {
       {editing && (
         <CategoryModal
           title="Editar categoría"
-          initial={{ name: editing.name, is_fixed: editing.is_fixed, keywords: editing.keywords ?? '' }}
+          initial={{ name: editing.name, is_fixed: editing.is_fixed, description: editing.description ?? '' }}
           loading={saving}
           onSubmit={handleUpdate}
           onClose={() => setEditing(null)}
@@ -347,8 +347,8 @@ function CategoryGroup({ title, subtitle, accentClass, headerBg, titleColor, bad
             <li key={cat.id} className="flex items-start justify-between px-5 py-3 gap-3 group hover:bg-neutral-50 transition-colors">
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-neutral-900 truncate">{cat.name}</p>
-                {cat.keywords && (
-                  <p className="text-xs text-neutral-400 mt-0.5 line-clamp-2 leading-relaxed">{cat.keywords}</p>
+                {cat.description && (
+                  <p className="text-xs text-neutral-400 mt-0.5 line-clamp-2 leading-relaxed">{cat.description}</p>
                 )}
               </div>
               <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">

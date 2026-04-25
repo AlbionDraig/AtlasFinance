@@ -98,19 +98,19 @@ def create_pocket(db: Session, user_id: int, payload: PocketCreate) -> Pocket:
 
 def create_category(db: Session, user_id: int, payload: CategoryCreate) -> Category:
     """Create a custom category for the authenticated user."""
-    category = Category(name=payload.name, keywords=payload.keywords, is_fixed=payload.is_fixed, user_id=user_id)
+    category = Category(name=payload.name, description=payload.description, is_fixed=payload.is_fixed, user_id=user_id)
     return _persist_and_refresh(db, category)
 
 
 def update_category(db: Session, user_id: int, category_id: int, payload: CategoryUpdate) -> Category:
-    """Update name and/or keywords of a category owned by the user."""
+    """Update name and/or description of a category owned by the user."""
     category = db.scalar(select(Category).where(Category.id == category_id, Category.user_id == user_id))
     if not category:
         raise ValueError(f"Category {category_id} not found")
     if payload.name is not None:
         category.name = payload.name
-    if payload.keywords is not None:
-        category.keywords = payload.keywords
+    if payload.description is not None:
+        category.description = payload.description
     if payload.is_fixed is not None:
         category.is_fixed = payload.is_fixed
     db.commit()

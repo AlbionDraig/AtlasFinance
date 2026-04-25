@@ -107,20 +107,30 @@ def run_seed() -> None:
             pockets[name] = p
 
         # ── Categorías ─────────────────────────────────────────────────────
-        # (name, keywords, is_fixed)
+        # (name, description, is_fixed)
         category_data = [
-            ("Alimentación",    "restaurante, almuerzo, cafe, cafeteria, mercado, supermercado, comida, tienda, panaderia, pizza, domicilio, rappi, ifood", False),
-            ("Transporte",      "uber, taxi, metro, peaje, gasolina, bus, transmilenio, sitp, parqueadero, combustible, tren",                             False),
-            ("Salud",           "farmacia, medico, clinica, hospital, drogueria, laboratorio, consulta, odontologia, oftalmologia",                        False),
-            ("Entretenimiento", "cine, netflix, spotify, youtube, juego, teatro, evento, concierto, streaming, disney, hbo, prime",                        False),
-            ("Servicios",       "luz, agua, energia, gas, internet, telefono, claro, movistar, tigo, servicios, recibo, factura",                          True),
-            ("Educación",       "colegio, universidad, curso, libro, matricula, icetex, capacitacion, udemy, coursera, platzi",                            False),
-            ("Salario",         "nomina, salario, payroll, sueldo, remuneracion",                                                                          False),
-            ("Freelance",       "freelance, honorarios, proyecto, consultoria, pago proyecto, transferencia recibida",                                     False),
+            ("Arriendo",               "Pago mensual de arrendamiento o hipoteca de vivienda.",                           True),
+            ("Servicios públicos",     "Agua, luz, gas, internet y teléfono del hogar.",                                   True),
+            ("Suscripciones digitales","Netflix, Spotify, YouTube, Adobe, apps y plataformas de streaming.",               True),
+            ("Educación",             "Matrículas, cursos, libros, colegiaturas y capacitaciones.",                        False),
+            ("Alimentación",          "Compras de alimentos, mercado y comida del día a día.",                             False),
+            ("Entretenimiento",       "Cine, conciertos, videojuegos, salidas y ocio.",                                    False),
+            ("Salud",                 "Médicos, medicamentos, laboratorios, odontología y bienestar.",                     False),
+            ("Transporte",            "TransMilenio, bus, taxi, Uber, Cabify y transporte público.",                       False),
+            ("Restaurantes",          "Comidas en restaurantes, cafeterías y pedidos a domicilio.",                        False),
+            ("Supermercado",          "Compras en grandes superficies: Éxito, Carulla, D1, Ara.",                          False),
+            ("Ropa y calzado",        "Prendas de vestir, zapatos y accesorios personales.",                               False),
+            ("Salud y bienestar",     "Gym, spa, vitaminas y cuidado personal.",                                           False),
+            ("Movilidad",             "Gasolina, SOAT, mantenimiento vehicular y parqueadero.",                            False),
+            ("Casa",                  "Gastos del hogar: muebles, electrodomésticos, reparaciones.",                       False),
+            ("Salario",               "Ingreso mensual por nómina, honorarios o pago de empleador.",                      False),
+            ("Freelance",             "Ingresos por trabajos independientes, proyectos o consultoría.",                    False),
+            ("Inversiones",           "Aportes a fondos, acciones, criptomonedas o activos financieros.",                  False),
+            ("Transferencias",        "Movimientos entre cuentas propias o envíos a terceros.",                            False),
         ]
         categories: dict[str, Category] = {}
-        for name, keywords, is_fixed in category_data:
-            c = Category(name=name, keywords=keywords, is_fixed=is_fixed, user_id=user.id)
+        for name, description, is_fixed in category_data:
+            c = Category(name=name, description=description, is_fixed=is_fixed, user_id=user.id)
             db.add(c)
             db.flush()
             categories[name] = c
@@ -129,23 +139,24 @@ def run_seed() -> None:
         today = datetime.now()
         transactions_data = [
             # (account, currency, type, amount, description, category, days_ago)
-            (main_acc,  Currency.COP, TransactionType.INCOME,   4_800_000, "Salario enero",       "Salario",         85),
-            (main_acc,  Currency.COP, TransactionType.EXPENSE,    320_000, "Arriendo",            "Servicios",       83),
-            (main_acc,  Currency.COP, TransactionType.EXPENSE,     85_000, "Supermercado",        "Alimentación",    80),
-            (main_acc,  Currency.COP, TransactionType.EXPENSE,     42_000, "Transporte mensual",  "Transporte",      78),
-            (main_acc,  Currency.COP, TransactionType.INCOME,   4_800_000, "Salario febrero",     "Salario",         55),
-            (main_acc,  Currency.COP, TransactionType.EXPENSE,    320_000, "Arriendo",            "Servicios",       53),
-            (main_acc,  Currency.COP, TransactionType.EXPENSE,     97_500, "Supermercado",        "Alimentación",    50),
-            (checking,  Currency.COP, TransactionType.EXPENSE,    210_000, "Plan de datos",       "Servicios",       48),
-            (nequi_acc, Currency.COP, TransactionType.EXPENSE,     35_000, "Domicilio",           "Alimentación",    45),
-            (checking,  Currency.COP, TransactionType.INCOME,     500_000, "Proyecto freelance",  "Freelance",       40),
-            (main_acc,  Currency.COP, TransactionType.INCOME,   4_800_000, "Salario marzo",       "Salario",         25),
-            (main_acc,  Currency.COP, TransactionType.EXPENSE,    320_000, "Arriendo",            "Servicios",       23),
-            (main_acc,  Currency.COP, TransactionType.EXPENSE,    112_000, "Supermercado",        "Alimentación",    20),
-            (nequi_acc, Currency.COP, TransactionType.EXPENSE,     65_000, "Cine + cena",         "Entretenimiento", 15),
-            (checking,  Currency.COP, TransactionType.EXPENSE,     28_000, "Libro técnico",       "Educación",       10),
-            (main_acc,  Currency.COP, TransactionType.EXPENSE,     55_000, "Médico general",      "Salud",            5),
-            (nequi_acc, Currency.COP, TransactionType.EXPENSE,     18_000, "Café y snacks",       "Alimentación",     2),
+            (main_acc,  Currency.COP, TransactionType.INCOME,   4_800_000, "Salario enero",       "Salario",                85),
+            (main_acc,  Currency.COP, TransactionType.EXPENSE,  1_200_000, "Arriendo enero",      "Arriendo",               83),
+            (main_acc,  Currency.COP, TransactionType.EXPENSE,     85_000, "Supermercado Éxito",  "Supermercado",           80),
+            (main_acc,  Currency.COP, TransactionType.EXPENSE,     42_000, "Recarga SITP",        "Transporte",             78),
+            (main_acc,  Currency.COP, TransactionType.INCOME,   4_800_000, "Salario febrero",     "Salario",                55),
+            (main_acc,  Currency.COP, TransactionType.EXPENSE,  1_200_000, "Arriendo febrero",    "Arriendo",               53),
+            (main_acc,  Currency.COP, TransactionType.EXPENSE,     97_500, "Supermercado",        "Supermercado",           50),
+            (checking,  Currency.COP, TransactionType.EXPENSE,    140_000, "Agua, luz, gas",      "Servicios públicos",     48),
+            (nequi_acc, Currency.COP, TransactionType.EXPENSE,     35_000, "Domicilio Rappi",     "Restaurantes",           45),
+            (checking,  Currency.COP, TransactionType.INCOME,     500_000, "Proyecto freelance",  "Freelance",              40),
+            (main_acc,  Currency.COP, TransactionType.INCOME,   4_800_000, "Salario marzo",       "Salario",                25),
+            (main_acc,  Currency.COP, TransactionType.EXPENSE,  1_200_000, "Arriendo marzo",      "Arriendo",               23),
+            (main_acc,  Currency.COP, TransactionType.EXPENSE,    112_000, "Supermercado",        "Alimentación",           20),
+            (nequi_acc, Currency.COP, TransactionType.EXPENSE,     65_000, "Cine + cena",         "Entretenimiento",        15),
+            (checking,  Currency.COP, TransactionType.EXPENSE,     55_000, "Suscripciones",       "Suscripciones digitales",12),
+            (checking,  Currency.COP, TransactionType.EXPENSE,     28_000, "Libro técnico",       "Educación",              10),
+            (main_acc,  Currency.COP, TransactionType.EXPENSE,     55_000, "Médico general",      "Salud",                   5),
+            (nequi_acc, Currency.COP, TransactionType.EXPENSE,     18_000, "Café y snacks",       "Alimentación",            2),
         ]
         for acc, currency, ttype, amount, desc, cat_name, days_ago in transactions_data:
             t = Transaction(

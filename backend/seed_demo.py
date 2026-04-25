@@ -87,15 +87,28 @@ for name, balance, currency, acc_id in pocket_defs:
         print(f"  ✓ Pocket: {name} (id={res['id']})")
 
 # Categories
-cat_names = [
-    "Salario", "Freelance", "Arriendo", "Alimentación", "Transporte",
-    "Salud", "Entretenimiento", "Servicios públicos", "Ropa y calzado",
-    "Educación", "Restaurantes", "Supermercado", "Suscripciones digitales",
-    "Inversiones", "Transferencias",
+cat_defs = [
+    ("Arriendo",               True,  "Pago mensual de arrendamiento o hipoteca de vivienda."),
+    ("Servicios públicos",     True,  "Agua, luz, gas, internet y teléfono del hogar."),
+    ("Suscripciones digitales",True,  "Netflix, Spotify, YouTube, Adobe, apps y plataformas de streaming."),
+    ("Salario",                False, "Ingreso mensual por nómina, honorarios o pago de empleador."),
+    ("Freelance",              False, "Ingresos por trabajos independientes, proyectos o consultoría."),
+    ("Alimentación",           False, "Compras de alimentos, mercado y comida del día a día."),
+    ("Transporte",             False, "TransMilenio, bus, taxi, Uber, Cabify y transporte público."),
+    ("Salud",                  False, "Médicos, medicamentos, laboratorios, odontología y bienestar."),
+    ("Entretenimiento",        False, "Cine, conciertos, videojuegos, salidas y ocio."),
+    ("Restaurantes",           False, "Comidas en restaurantes, cafeterías y pedidos a domicilio."),
+    ("Supermercado",           False, "Compras en grandes superficies: Éxito, Carulla, D1, Ara."),
+    ("Ropa y calzado",         False, "Prendas de vestir, zapatos y accesorios personales."),
+    ("Educación",              False, "Matrículas, cursos, libros, colegiaturas y capacitaciones."),
+    ("Inversiones",            False, "Aportes a fondos, acciones, criptomonedas o activos financieros."),
+    ("Transferencias",         False, "Movimientos entre cuentas propias o envíos a terceros."),
+    ("Movilidad",              False, "Gasolina, SOAT, mantenimiento vehicular y parqueadero."),
+    ("Casa",                   False, "Gastos del hogar: muebles, electrodomésticos, reparaciones."),
 ]
 cats = {}
-for name in cat_names:
-    res = api("POST", "/categories/", token, json={"name": name})
+for name, is_fixed, description in cat_defs:
+    res = api("POST", "/categories/", token, json={"name": name, "is_fixed": is_fixed, "description": description})
     if res:
         cats[name] = res["id"]
 print(f"  ✓ {len(cats)} categorías creadas")
