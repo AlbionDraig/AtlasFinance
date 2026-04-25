@@ -8,8 +8,8 @@ Se ejecuta automáticamente al arrancar cuando:
 Es idempotente: si el usuario demo ya existe, no hace nada.
 """
 import logging
-from datetime import datetime, timedelta
 import random
+from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
