@@ -1,29 +1,15 @@
-from app.models.enums import TransactionType
+def classify_transaction(description: str, user_categories: list[tuple[str, str | None]]) -> str | None:
+    """Return the name of the first matching user category or None if no keywords match.
 
-CATEGORY_RULES = {
-    "food": ["restaurante", "almuerzo", "cafe", "mercado", "supermercado"],
-    "transport": ["uber", "taxi", "metro", "peaje", "gasolina"],
-    "housing": ["arriendo", "hipoteca", "servicios", "energia", "agua"],
-    "salary": ["nomina", "salario", "payroll"],
-}
-
-# Categories whose expenses are considered recurring/fixed obligations
-FIXED_CATEGORIES: frozenset[str] = frozenset({"housing"})
-
-
-def is_fixed_category(category_name: str) -> bool:
-    """Return True if the given classifier category name is a fixed expense."""
-    return category_name in FIXED_CATEGORIES
-
-
-def classify_transaction(description: str, transaction_type: TransactionType) -> str:
+    Each element in *user_categories* is a ``(name, keywords_csv)`` tuple where
+    *keywords_csv* is a comma-separated string of terms to look for in the
+    transaction description (case-insensitive substring match).
+    """
     text = description.lower().strip()
-
-    if transaction_type == TransactionType.INCOME:
-        return "income"
-
-    for category, keywords in CATEGORY_RULES.items():
-        if any(keyword in text for keyword in keywords):
-            return category
-
-    return "other"
+    for name, keywords_csv in user_categories:
+        if not keywords_csv:
+            continue
+        keywords = [kw.strip().lower() for kw in keywords_csv.split(",") if kw.strip()]
+        if any(kw in text for kw in keywords):
+            return name
+    return None

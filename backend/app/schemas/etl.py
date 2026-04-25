@@ -20,4 +20,4 @@ class NormalizedTransaction(BaseModel):
     transaction_type: TransactionType
     occurred_at: datetime
     currency: Currency
-    category: str
+    category: str | None

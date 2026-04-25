@@ -107,19 +107,20 @@ def run_seed() -> None:
             pockets[name] = p
 
         # ── Categorías ─────────────────────────────────────────────────────
+        # (name, keywords, is_fixed)
         category_data = [
-            ("Alimentación",    False),
-            ("Transporte",      False),
-            ("Salud",           False),
-            ("Entretenimiento", False),
-            ("Servicios",       True),
-            ("Educación",       True),
-            ("Salario",         False),
-            ("Freelance",       False),
+            ("Alimentación",    "restaurante, almuerzo, cafe, cafeteria, mercado, supermercado, comida, tienda, panaderia, pizza, domicilio, rappi, ifood", False),
+            ("Transporte",      "uber, taxi, metro, peaje, gasolina, bus, transmilenio, sitp, parqueadero, combustible, tren",                             False),
+            ("Salud",           "farmacia, medico, clinica, hospital, drogueria, laboratorio, consulta, odontologia, oftalmologia",                        False),
+            ("Entretenimiento", "cine, netflix, spotify, youtube, juego, teatro, evento, concierto, streaming, disney, hbo, prime",                        False),
+            ("Servicios",       "luz, agua, energia, gas, internet, telefono, claro, movistar, tigo, servicios, recibo, factura",                          True),
+            ("Educación",       "colegio, universidad, curso, libro, matricula, icetex, capacitacion, udemy, coursera, platzi",                            False),
+            ("Salario",         "nomina, salario, payroll, sueldo, remuneracion",                                                                          False),
+            ("Freelance",       "freelance, honorarios, proyecto, consultoria, pago proyecto, transferencia recibida",                                     False),
         ]
         categories: dict[str, Category] = {}
-        for name, is_fixed in category_data:
-            c = Category(name=name, is_fixed=is_fixed, user_id=user.id)
+        for name, keywords, is_fixed in category_data:
+            c = Category(name=name, keywords=keywords, is_fixed=is_fixed, user_id=user.id)
             db.add(c)
             db.flush()
             categories[name] = c

@@ -25,7 +25,11 @@ BANK_COLUMN_MAPS = {
 }
 
 
-def normalize_dataframe(df: pd.DataFrame, source: str) -> list[NormalizedTransaction]:
+def normalize_dataframe(
+    df: pd.DataFrame,
+    source: str,
+    user_categories: list[tuple[str, str | None]],
+) -> list[NormalizedTransaction]:
     source_key = source.lower()
     if source_key not in BANK_COLUMN_MAPS:
         raise ValueError(f"Unsupported source format: {source}")
@@ -38,7 +42,7 @@ def normalize_dataframe(df: pd.DataFrame, source: str) -> list[NormalizedTransac
         txn_type = TransactionType.INCOME if txn_type_raw in {"in", "income", "credito"} else TransactionType.EXPENSE
 
         description = str(row[column_map["description"]]).strip()
-        category = classify_transaction(description, txn_type)
+        category = classify_transaction(description, user_categories)
 
         occurred_at = pd.to_datetime(row[column_map["date"]], errors="coerce")
         if pd.isna(occurred_at):
