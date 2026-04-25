@@ -122,37 +122,6 @@ def test_api_main_flow(client, monkeypatch):
     assert body["total_expenses"] == 0
 
 
-def test_ingestion_upload(client):
-    headers = _auth_headers(client)
-
-    bank_resp = client.post("/api/v1/banks/", json={"name": "Bancolombia", "country_code": "CO"}, headers=headers)
-    bank_id = bank_resp.json()["id"]
-
-    account_resp = client.post(
-        "/api/v1/accounts/",
-        json={
-            "name": "Ahorros",
-            "account_type": "savings",
-            "currency": "COP",
-            "current_balance": 0,
-            "bank_id": bank_id,
-        },
-        headers=headers,
-    )
-    account_id = account_resp.json()["id"]
-
-    csv_data = "Fecha,Descripcion,Valor,Tipo,Moneda\n2026-03-01,NOMINA,1000,credito,COP\n"
-    upload_resp = client.post(
-        "/api/v1/ingestion/upload",
-        headers=headers,
-        data={"source": "bancolombia", "account_id": str(account_id)},
-        files={"file": ("data.csv", csv_data, "text/csv")},
-    )
-
-    assert upload_resp.status_code == 200
-    assert upload_resp.json()["imported_rows"] == 1
-
-
 def test_logout_revokes_access_token(client):
     headers = _auth_headers(client)
 

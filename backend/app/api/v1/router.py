@@ -5,7 +5,6 @@ from app.api.v1.routes import (
     auth,
     banks,
     categories,
-    ingestion,
     metrics,
     pockets,
     transactions,
@@ -19,4 +18,3 @@ api_router.include_router(pockets.router, prefix="/pockets", tags=["pockets"])
 api_router.include_router(categories.router, prefix="/categories", tags=["categories"])
 api_router.include_router(transactions.router, prefix="/transactions", tags=["transactions"])
 api_router.include_router(metrics.router, prefix="/metrics", tags=["metrics"])
-api_router.include_router(ingestion.router, prefix="/ingestion", tags=["ingestion"])
