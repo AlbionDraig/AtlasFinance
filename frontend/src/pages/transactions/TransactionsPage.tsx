@@ -375,6 +375,11 @@ export default function TransactionsPage() {
     if (!fromAccount || !toAccount) return
 
     const amount = Number(form.amount)
+    if (amount > Number(fromAccount.current_balance ?? fromAccount.balance ?? 0)) {
+      toast(`No hay fondos suficientes en la cuenta ${fromAccount.name} para pasar a la ${toAccount.name}.`, 'error')
+      return
+    }
+
     const description = `Transferencia de cuenta ${fromAccount.name} a ${toAccount.name}`
     const occurredAt = `${form.occurredDate}T${form.occurredTime}:00`
 

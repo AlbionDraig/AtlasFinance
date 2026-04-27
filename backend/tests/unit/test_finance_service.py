@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 
+import pytest
+
 from app.models.enums import AccountType, Currency, TransactionType
 from app.schemas.account import AccountCreate
 from app.schemas.bank import BankCreate
@@ -104,6 +106,20 @@ def test_categories_are_global_and_reusable_across_users(db_session):
         ),
     )
 
+    register_transaction(
+        db_session,
+        second_user.id,
+        TransactionCreate(
+            description="Fondeo inicial",
+            amount=Decimal("500"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.INCOME,
+            occurred_at=datetime.now(timezone.utc),
+            account_id=account.id,
+            category_id=category.id,
+        ),
+    )
+
     txn = register_transaction(
         db_session,
         second_user.id,
@@ -120,3 +136,36 @@ def test_categories_are_global_and_reusable_across_users(db_session):
 
     assert txn.category_id == category.id
     assert first_user.id != second_user.id
+
+
+def test_register_transaction_rejects_expense_when_funds_are_insufficient(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="insufficient@test.com", full_name="Insufficient", password=TEST_PASSWORD),
+    )
+    bank = create_bank(db_session, user.id, BankCreate(name="Bancolombia", country_code="CO"))
+    account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Cuenta origen",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("100"),
+            bank_id=bank.id,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="Fondos insuficientes en la cuenta seleccionada\\."):
+        register_transaction(
+            db_session,
+            user.id,
+            TransactionCreate(
+                description="Compra mayor al saldo",
+                amount=Decimal("150"),
+                currency=Currency.COP,
+                transaction_type=TransactionType.EXPENSE,
+                occurred_at=datetime.now(timezone.utc),
+                account_id=account.id,
+            ),
+        )

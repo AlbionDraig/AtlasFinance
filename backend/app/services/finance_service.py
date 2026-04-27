@@ -223,6 +223,11 @@ def _validate_transaction_payload(db: Session, user_id: int, payload: Transactio
     return account
 
 
+def _ensure_sufficient_funds(account: Account, transaction_type: TransactionType, amount: Decimal) -> None:
+    if transaction_type == TransactionType.EXPENSE and amount > account.current_balance:
+        raise ValueError("Fondos insuficientes en la cuenta seleccionada.")
+
+
 def register_transaction(db: Session, user_id: int, payload: TransactionCreate) -> Transaction:
     """Create a transaction and update the account running balance."""
     account = _validate_transaction_payload(db, user_id, payload)
@@ -237,6 +242,8 @@ def register_transaction(db: Session, user_id: int, payload: TransactionCreate) 
             raise ValueError(
                 "El saldo inicial solo se puede registrar una vez por cuenta."
             )
+
+    _ensure_sufficient_funds(account, payload.transaction_type, payload.amount)
 
     txn = Transaction(
         description=payload.description,
@@ -273,6 +280,7 @@ def update_transaction(
     _revert_transaction_effect(old_account, txn.transaction_type, txn.amount)
 
     new_account = _validate_transaction_payload(db, user_id, payload)
+    _ensure_sufficient_funds(new_account, payload.transaction_type, payload.amount)
 
     txn.description = payload.description
     txn.amount = payload.amount
