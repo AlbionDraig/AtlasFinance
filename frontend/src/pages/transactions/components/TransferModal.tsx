@@ -65,8 +65,8 @@ export default function TransferModal({
   )
 
   const autoDescription = fromAccount && toAccount
-    ? `Transferencia de cuenta (${fromAccount.name}) a (${toAccount.name})`
-    : 'Transferencia de cuenta origen a cuenta destino'
+    ? `Transferencia: ${fromAccount.name} a ${toAccount.name}`
+    : 'Transferencia: origen a destino'
 
   function handleFromChange(value: string) {
     setForm((prev) => ({

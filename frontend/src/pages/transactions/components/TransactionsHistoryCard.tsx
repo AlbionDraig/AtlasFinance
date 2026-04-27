@@ -55,12 +55,14 @@ export default function TransactionsHistoryCard({
   expenseTotal,
   currency,
 }: TransactionsHistoryCardProps) {
+  type MetricVariant = 'neutral' | 'positive' | 'negative'
+
   function isTransferTransaction(transaction: Transaction): boolean {
-    return transaction.description.startsWith('Transferencia de cuenta ')
+    return transaction.description.startsWith('Transferencia: ')
   }
 
   const netFlow = incomeTotal - expenseTotal
-  const metrics = [
+  const metrics: Array<{ key: string; variant: MetricVariant; label: string; help: string }> = [
     {
       key: 'count',
       variant: 'neutral' as const,
@@ -81,7 +83,7 @@ export default function TransactionsHistoryCard({
     },
     {
       key: 'net',
-      variant: (netFlow >= 0 ? 'positive' : 'negative') as const,
+      variant: netFlow >= 0 ? 'positive' : 'negative',
       label: `Flujo neto ${formatCurrency(netFlow, currency)}`,
       help: 'Diferencia entre ingresos y gastos en el filtro actual.',
     },

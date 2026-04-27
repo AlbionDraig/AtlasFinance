@@ -216,7 +216,7 @@ def test_update_transaction_rejects_transfer_transactions(db_session):
     )
 
     transfer_time = datetime.now(timezone.utc)
-    transfer_description = "Transferencia de cuenta Origen a Destino"
+    transfer_description = "Transferencia: Origen a Destino"
     transfer_expense = register_transaction(
         db_session,
         user.id,
@@ -301,7 +301,7 @@ def test_delete_transaction_rejects_transfer_transactions(db_session):
     )
 
     transfer_time = datetime.now(timezone.utc)
-    transfer_description = "Transferencia de cuenta Origen a Destino"
+    transfer_description = "Transferencia: Origen a Destino"
     transfer_income = register_transaction(
         db_session,
         user.id,

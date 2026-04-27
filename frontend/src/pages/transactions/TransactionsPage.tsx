@@ -111,7 +111,7 @@ function getCompactAccountName(accountId: number, accounts: Account[]): string {
 }
 
 function isTransferTransaction(transaction: Transaction): boolean {
-  return transaction.description.startsWith('Transferencia de cuenta ')
+  return transaction.description.startsWith('Transferencia: ')
 }
 
 function getDatasetRange(transactions: Transaction[]): { min: string; max: string } {
@@ -389,7 +389,7 @@ export default function TransactionsPage() {
       return
     }
 
-    const description = `Transferencia de cuenta ${fromAccount.name} a ${toAccount.name}`
+    const description = `Transferencia: ${fromAccount.name} a ${toAccount.name}`
     const occurredAt = `${form.occurredDate}T${form.occurredTime}:00`
 
     setSaving(true)

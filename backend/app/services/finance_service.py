@@ -229,7 +229,7 @@ def _ensure_sufficient_funds(account: Account, transaction_type: TransactionType
 
 
 def _is_transfer_transaction(db: Session, txn: Transaction) -> bool:
-    if not txn.description.startswith("Transferencia de cuenta "):
+    if not txn.description.startswith("Transferencia: "):
         return False
 
     opposite_type = (
