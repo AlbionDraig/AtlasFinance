@@ -45,7 +45,7 @@ export default function Select({ value, onChange, options, className = '', disab
   }
 
   return (
-    <div ref={ref} className={`relative ${open ? 'z-[120]' : 'z-10'} isolate [transform:translateZ(0)] [backface-visibility:hidden] ${className}`}>
+    <div ref={ref} className={`relative ${open ? 'z-[260]' : 'z-10'} isolate [transform:translateZ(0)] [backface-visibility:hidden] ${className}`}>
       {/* Trigger */}
       <button
         type="button"
@@ -71,7 +71,7 @@ export default function Select({ value, onChange, options, className = '', disab
       {/* Dropdown */}
       {open && !isDisabled && (
         <ul
-          className={['app-menu absolute right-0 w-full z-[130] overflow-y-auto py-1 text-xs', openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'].join(' ')}
+          className={['app-menu absolute right-0 w-full z-[270] overflow-y-auto py-1 text-xs', openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'].join(' ')}
           style={visibleItems ? { maxHeight: `${visibleItems * 36 + 8}px` } : { maxHeight: '208px' }}
         >
           {options.map(opt => (
