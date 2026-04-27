@@ -10,8 +10,8 @@ import AccountCreateModal from './components/AccountCreateModal'
 
 interface AccountFormState {
   name: string
-  accountType: 'savings' | 'checking'
-  currency: 'COP' | 'USD'
+  accountType: 'savings' | 'checking' | ''
+  currency: 'COP' | 'USD' | ''
   bankId: string
 }
 
@@ -25,8 +25,8 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
 
 const EMPTY_ACCOUNT_FORM: AccountFormState = {
   name: '',
-  accountType: 'savings',
-  currency: 'COP',
+  accountType: '',
+  currency: '',
   bankId: '',
 }
 
@@ -51,12 +51,6 @@ export default function AccountsPage() {
         ])
         setAccounts(accountsResponse.data)
         setBanks(banksResponse.data)
-        if (banksResponse.data.length > 0) {
-          setAccountForm((current) => ({
-            ...current,
-            bankId: current.bankId || String(banksResponse.data[0].id),
-          }))
-        }
       } catch (error) {
         toast(getApiErrorMessage(error, 'No se pudieron cargar las cuentas.'), 'error')
       } finally {
@@ -72,11 +66,33 @@ export default function AccountsPage() {
     [accounts],
   )
 
+  function resetAccountForm() {
+    setAccountForm(EMPTY_ACCOUNT_FORM)
+  }
+
+  function openCreateModal() {
+    resetAccountForm()
+    setCreateOpen(true)
+  }
+
+  function closeCreateModal() {
+    setCreateOpen(false)
+    resetAccountForm()
+  }
+
   async function handleCreateAccount(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     if (accountForm.name.trim().length < 2) {
       toast('El nombre de la cuenta debe tener al menos 2 caracteres.', 'error')
+      return
+    }
+    if (!accountForm.accountType) {
+      toast('Selecciona el tipo de cuenta.', 'error')
+      return
+    }
+    if (!accountForm.currency) {
+      toast('Selecciona la moneda de la cuenta.', 'error')
       return
     }
     if (!accountForm.bankId) {
@@ -94,13 +110,7 @@ export default function AccountsPage() {
         bank_id: Number(accountForm.bankId),
       })
       setAccounts((current) => [response.data, ...current])
-      setAccountForm((current) => ({
-        ...EMPTY_ACCOUNT_FORM,
-        accountType: current.accountType,
-        currency: current.currency,
-        bankId: current.bankId,
-      }))
-      setCreateOpen(false)
+      closeCreateModal()
       toast('Cuenta creada con éxito.')
     } catch (error) {
       toast(getApiErrorMessage(error, 'No se pudo crear la cuenta.'), 'error')
@@ -131,7 +141,7 @@ export default function AccountsPage() {
           banks={banks}
           saving={savingAccount}
           onSubmit={handleCreateAccount}
-          onClose={() => setCreateOpen(false)}
+          onClose={closeCreateModal}
         />
       )}
 
@@ -192,7 +202,7 @@ export default function AccountsPage() {
           {
             key: 'create-account',
             label: 'Crear cuenta',
-            onClick: () => setCreateOpen(true),
+            onClick: openCreateModal,
             icon: (
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
                 <path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />

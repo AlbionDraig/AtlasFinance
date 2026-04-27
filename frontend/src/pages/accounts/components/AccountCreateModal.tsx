@@ -5,8 +5,8 @@ import type { Bank } from '@/api/banks'
 
 interface AccountFormState {
   name: string
-  accountType: 'savings' | 'checking'
-  currency: 'COP' | 'USD'
+  accountType: 'savings' | 'checking' | ''
+  currency: 'COP' | 'USD' | ''
   bankId: string
 }
 
@@ -70,8 +70,9 @@ export default function AccountCreateModal({
               <label className="app-label">Tipo</label>
               <Select
                 value={form.accountType}
-                onChange={(value) => setForm((current) => ({ ...current, accountType: value as 'savings' | 'checking' }))}
+                onChange={(value) => setForm((current) => ({ ...current, accountType: value as 'savings' | 'checking' | '' }))}
                 options={[
+                  { value: '', label: 'Selecciona un tipo' },
                   { value: 'savings', label: 'Ahorros' },
                   { value: 'checking', label: 'Corriente' },
                 ]}
@@ -83,8 +84,9 @@ export default function AccountCreateModal({
               <label className="app-label">Moneda</label>
               <Select
                 value={form.currency}
-                onChange={(value) => setForm((current) => ({ ...current, currency: value as 'COP' | 'USD' }))}
+                onChange={(value) => setForm((current) => ({ ...current, currency: value as 'COP' | 'USD' | '' }))}
                 options={[
+                  { value: '', label: 'Selecciona una moneda' },
                   { value: 'COP', label: 'COP' },
                   { value: 'USD', label: 'USD' },
                 ]}
