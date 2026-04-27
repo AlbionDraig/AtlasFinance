@@ -7,6 +7,8 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/hooks/useToast'
 import type { Account } from '@/types'
 import AccountCreateModal from './components/AccountCreateModal'
+import AccountsFiltersCard, { type AccountsFiltersState } from './components/AccountsFiltersCard'
+import AccountsTableCard from './components/AccountsTableCard'
 
 interface AccountFormState {
   name: string
@@ -30,6 +32,24 @@ const EMPTY_ACCOUNT_FORM: AccountFormState = {
   bankId: '',
 }
 
+function buildDefaultFilters(): AccountsFiltersState {
+  return {
+    query: '',
+    accountType: 'all',
+    currency: 'all',
+    bankId: 'all',
+    pageSize: 10,
+  }
+}
+
+function formatCurrency(value: number, currency: string): string {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 0,
+  }).format(value)
+}
+
 export default function AccountsPage() {
   const { toast } = useToast()
 
@@ -38,8 +58,10 @@ export default function AccountsPage() {
   const [loading, setLoading] = useState(true)
   const [savingAccount, setSavingAccount] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
+  const [page, setPage] = useState(1)
 
   const [accountForm, setAccountForm] = useState<AccountFormState>(EMPTY_ACCOUNT_FORM)
+  const [filters, setFilters] = useState<AccountsFiltersState>(() => buildDefaultFilters())
 
   useEffect(() => {
     async function loadData() {
@@ -61,10 +83,54 @@ export default function AccountsPage() {
     void loadData()
   }, [])
 
-  const sortedAccounts = useMemo(
-    () => [...accounts].sort((a, b) => String(a.name).localeCompare(String(b.name))),
-    [accounts],
-  )
+  useEffect(() => {
+    setPage(1)
+  }, [filters.query, filters.accountType, filters.currency, filters.bankId, filters.pageSize])
+
+  const filteredAccounts = useMemo(() => {
+    return [...accounts]
+      .filter((account) => {
+        const bankName = banks.find((bank) => bank.id === account.bank_id)?.name ?? ''
+        const query = filters.query.trim().toLowerCase()
+
+        if (query) {
+          const haystack = [
+            account.name,
+            bankName,
+            account.account_type === 'checking' ? 'corriente' : 'ahorros',
+            account.currency,
+          ].join(' ').toLowerCase()
+          if (!haystack.includes(query)) return false
+        }
+
+        if (filters.accountType !== 'all' && account.account_type !== filters.accountType) {
+          return false
+        }
+        if (filters.currency !== 'all' && account.currency !== filters.currency) {
+          return false
+        }
+        if (filters.bankId !== 'all' && String(account.bank_id) !== filters.bankId) {
+          return false
+        }
+
+        return true
+      })
+      .sort((a, b) => String(a.name).localeCompare(String(b.name)))
+  }, [accounts, banks, filters.accountType, filters.bankId, filters.currency, filters.query])
+
+  const totalPages = Math.max(1, Math.ceil(filteredAccounts.length / filters.pageSize))
+  const currentPage = Math.min(page, totalPages)
+  const startIndex = (currentPage - 1) * filters.pageSize
+  const endIndex = Math.min(startIndex + filters.pageSize, filteredAccounts.length)
+  const paginatedAccounts = filteredAccounts.slice(startIndex, endIndex)
+  const activeFilters = [
+    filters.query.trim() ? `Búsqueda: ${filters.query.trim()}` : null,
+    filters.accountType !== 'all' ? `Tipo: ${filters.accountType === 'checking' ? 'Corriente' : 'Ahorros'}` : null,
+    filters.currency !== 'all' ? `Moneda: ${filters.currency}` : null,
+    filters.bankId !== 'all'
+      ? `Banco: ${banks.find((bank) => String(bank.id) === filters.bankId)?.name ?? `Banco #${filters.bankId}`}`
+      : null,
+  ].filter(Boolean) as string[]
 
   function resetAccountForm() {
     setAccountForm(EMPTY_ACCOUNT_FORM)
@@ -145,55 +211,28 @@ export default function AccountsPage() {
         />
       )}
 
-      <section className="app-card overflow-hidden">
-        <div className="flex items-center justify-between gap-4 border-b border-neutral-100 bg-neutral-50 px-6 py-4">
-          <div>
-            <h2 className="text-sm font-medium text-neutral-900">Cuentas registradas</h2>
-            <p className="text-xs text-neutral-400">{sortedAccounts.length} cuenta(s)</p>
-          </div>
-        </div>
+      <AccountsFiltersCard
+        filters={filters}
+        setFilters={setFilters}
+        banks={banks}
+        activeFilters={activeFilters}
+        onResetFilters={() => setFilters(buildDefaultFilters())}
+      />
 
-        {!sortedAccounts.length ? (
-          <div className="px-6 py-12 text-center">
-            <p className="text-sm text-neutral-700">Aún no tienes cuentas registradas.</p>
-            <p className="text-xs text-neutral-400 mt-1">Crea una cuenta desde el formulario superior.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border-separate border-spacing-0">
-              <thead>
-                <tr>
-                  <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-left text-xs font-medium tracking-widest uppercase text-neutral-700">Cuenta</th>
-                  <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-left text-xs font-medium tracking-widest uppercase text-neutral-700">Tipo</th>
-                  <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-left text-xs font-medium tracking-widest uppercase text-neutral-700">Moneda</th>
-                  <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-left text-xs font-medium tracking-widest uppercase text-neutral-700">Banco</th>
-                  <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-right text-xs font-medium tracking-widest uppercase text-neutral-700">Saldo actual</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedAccounts.map((account) => {
-                  const bank = banks.find((item) => item.id === account.bank_id)
-                  return (
-                    <tr key={account.id} className="odd:bg-white even:bg-neutral-50/50">
-                      <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-sm text-neutral-900">{account.name}</td>
-                      <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-sm text-neutral-700">{account.account_type === 'checking' ? 'Corriente' : 'Ahorros'}</td>
-                      <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-sm text-neutral-700">{account.currency}</td>
-                      <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-sm text-neutral-700">{bank?.name ?? `Banco #${account.bank_id}`}</td>
-                      <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-sm text-right text-brand-deep font-medium tabular-nums">
-                        {new Intl.NumberFormat('es-CO', {
-                          style: 'currency',
-                          currency: account.currency,
-                          maximumFractionDigits: 0,
-                        }).format(Number(account.current_balance ?? account.balance ?? 0))}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <AccountsTableCard
+        filteredAccounts={filteredAccounts}
+        paginatedAccounts={paginatedAccounts}
+        banks={banks}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        startIndex={startIndex}
+        endIndex={endIndex}
+        pageSize={filters.pageSize}
+        onPrevPage={() => setPage((current) => Math.max(1, current - 1))}
+        onNextPage={() => setPage((current) => Math.min(totalPages, current + 1))}
+        onPageSizeChange={(size) => setFilters((current) => ({ ...current, pageSize: size }))}
+        formatCurrency={formatCurrency}
+      />
 
       <FloatingActionMenu
         hidden={createOpen}
