@@ -116,7 +116,7 @@ export default function TransferModal({
 
   return (
     <Modal onClose={onClose} maxWidth="max-w-md">
-      <div className="bg-white rounded-2xl shadow-2xl w-full border border-neutral-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full border border-neutral-100 overflow-visible">
         {/* Header */}
         <div className="bg-brand-light border-b border-brand/10 px-6 py-4 flex items-start gap-3">
           <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white shadow-[0_0_0_5px_rgba(202,11,11,0.10)]">

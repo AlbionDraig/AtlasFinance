@@ -121,7 +121,7 @@ export default function TimePicker({ label, value, onChange, className = '', dis
     <div className={`flex flex-col gap-1 ${className}`}>
       <label className={`app-label ${disabled ? 'text-neutral-400' : ''}`}>{label}</label>
 
-    <div ref={rootRef} className={`relative isolate [transform:translateZ(0)] [backface-visibility:hidden] ${open ? 'z-[140]' : 'z-10'}`}>
+    <div ref={rootRef} className={`relative isolate [transform:translateZ(0)] [backface-visibility:hidden] ${open ? 'z-[260]' : 'z-10'}`}>
       <button
         type="button"
         onClick={() => {
@@ -153,7 +153,7 @@ export default function TimePicker({ label, value, onChange, className = '', dis
       {open && !disabled && (
         <div
           className={[
-            'app-menu absolute left-0 z-[150] w-64 p-3',
+            'app-menu absolute left-0 z-[270] w-64 p-3',
             openUpward ? 'bottom-full mb-2' : 'top-full mt-2',
           ].join(' ')}
         >
