@@ -1,11 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AxiosError } from 'axios'
+import { useSearchParams } from 'react-router-dom'
 import { banksApi, type Bank } from '@/api/banks'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import CategoriesPage from '@/pages/categories/CategoriesPage'
 import { useToast } from '@/hooks/useToast'
 import { useAuthStore } from '@/store/authStore'
 
-type AdminTab = 'banks' | 'users' | 'general'
+type AdminTab = 'banks' | 'categories' | 'users' | 'general'
+
+function normalizeTab(value: string | null): AdminTab {
+  if (value === 'banks' || value === 'categories' || value === 'users' || value === 'general') {
+    return value
+  }
+  return 'banks'
+}
 
 function getApiErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof AxiosError) {
@@ -18,8 +27,9 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
 export default function AdminPage() {
   const { toast } = useToast()
   const { user } = useAuthStore()
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  const [activeTab, setActiveTab] = useState<AdminTab>('banks')
+  const [activeTab, setActiveTab] = useState<AdminTab>(() => normalizeTab(searchParams.get('tab')))
   const [loadingBanks, setLoadingBanks] = useState(true)
   const [savingBank, setSavingBank] = useState(false)
   const [banks, setBanks] = useState<Bank[]>([])
@@ -45,6 +55,18 @@ export default function AdminPage() {
     () => [...banks].sort((a, b) => a.name.localeCompare(b.name)),
     [banks],
   )
+
+  useEffect(() => {
+    const tabFromUrl = normalizeTab(searchParams.get('tab'))
+    if (tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl)
+    }
+  }, [searchParams, activeTab])
+
+  function handleTabChange(tab: AdminTab) {
+    setActiveTab(tab)
+    setSearchParams({ tab })
+  }
 
   async function handleCreateBank(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -74,30 +96,41 @@ export default function AdminPage() {
       </div>
 
       <div className="app-card p-2">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
           <button
             type="button"
-            onClick={() => setActiveTab('banks')}
+            onClick={() => handleTabChange('banks')}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'banks' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
             Bancos
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('users')}
+            onClick={() => handleTabChange('categories')}
+            className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'categories' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
+          >
+            Categorías
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange('users')}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'users' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
             Usuarios
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('general')}
+            onClick={() => handleTabChange('general')}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'general' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
             General
           </button>
         </div>
       </div>
+
+      {activeTab === 'categories' && (
+        <CategoriesPage />
+      )}
 
       {activeTab === 'banks' && (
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_1.2fr] gap-6 items-start">
