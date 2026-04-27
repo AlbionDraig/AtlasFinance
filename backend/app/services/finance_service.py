@@ -130,15 +130,15 @@ def create_pocket(db: Session, user_id: int, payload: PocketCreate) -> Pocket:
     return _persist_and_refresh(db, pocket)
 
 
-def create_category(db: Session, user_id: int, payload: CategoryCreate) -> Category:
-    """Create a custom category for the authenticated user."""
-    category = Category(name=payload.name, description=payload.description, is_fixed=payload.is_fixed, user_id=user_id)
+def create_category(db: Session, payload: CategoryCreate) -> Category:
+    """Create a global category."""
+    category = Category(name=payload.name, description=payload.description, is_fixed=payload.is_fixed)
     return _persist_and_refresh(db, category)
 
 
-def update_category(db: Session, user_id: int, category_id: int, payload: CategoryUpdate) -> Category:
-    """Update name and/or description of a category owned by the user."""
-    category = db.scalar(select(Category).where(Category.id == category_id, Category.user_id == user_id))
+def update_category(db: Session, category_id: int, payload: CategoryUpdate) -> Category:
+    """Update a global category."""
+    category = db.get(Category, category_id)
     if not category:
         raise ValueError(f"Category {category_id} not found")
     if payload.name is not None:
@@ -152,18 +152,18 @@ def update_category(db: Session, user_id: int, category_id: int, payload: Catego
     return category
 
 
-def delete_category(db: Session, user_id: int, category_id: int) -> None:
-    """Delete a category owned by the user."""
-    category = db.scalar(select(Category).where(Category.id == category_id, Category.user_id == user_id))
+def delete_category(db: Session, category_id: int) -> None:
+    """Delete a global category."""
+    category = db.get(Category, category_id)
     if not category:
         raise ValueError(f"Category {category_id} not found")
     db.delete(category)
     db.commit()
 
 
-def list_categories(db: Session, user_id: int) -> list[Category]:
-    """List categories owned by the authenticated user."""
-    query = select(Category).where(Category.user_id == user_id).order_by(Category.created_at.desc())
+def list_categories(db: Session) -> list[Category]:
+    """List all global categories."""
+    query = select(Category).order_by(Category.created_at.desc())
     return list(db.scalars(query).all())
 
 
@@ -196,8 +196,8 @@ def _validate_transaction_payload(db: Session, user_id: int, payload: Transactio
 
     if payload.category_id:
         category = db.get(Category, payload.category_id)
-        if not category or category.user_id != user_id:
-            raise ValueError("Invalid category for user")
+        if not category:
+            raise ValueError("Invalid category")
 
     return account
 

@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 from app.models.enums import AccountType, Currency, TransactionType
-from app.schemas.account import AccountCreate
 from app.schemas.bank import BankCreate
+from app.schemas.account import AccountCreate
 from app.schemas.category import CategoryCreate
 from app.schemas.transaction import TransactionCreate
 from app.schemas.user import UserCreate
@@ -13,6 +13,7 @@ from app.services.finance_service import (
     create_bank,
     create_category,
     get_dashboard_metrics,
+    list_categories,
     register_transaction,
 )
 
@@ -38,7 +39,7 @@ def test_register_transaction_updates_balance_and_metrics(db_session, monkeypatc
             bank_id=bank.id,
         ),
     )
-    category = create_category(db_session, user.id, CategoryCreate(name="food"))
+    category = create_category(db_session, CategoryCreate(name="food"))
 
     register_transaction(
         db_session,
@@ -73,3 +74,49 @@ def test_register_transaction_updates_balance_and_metrics(db_session, monkeypatc
     assert metrics.total_expenses == Decimal("200")
     assert metrics.cashflow == Decimal("300")
     assert metrics.net_worth == Decimal("300")
+
+
+def test_categories_are_global_and_reusable_across_users(db_session):
+    first_user = create_user(
+        db_session,
+        UserCreate(email="categories1@test.com", full_name="Categories 1", password=TEST_PASSWORD),
+    )
+    second_user = create_user(
+        db_session,
+        UserCreate(email="categories2@test.com", full_name="Categories 2", password=TEST_PASSWORD),
+    )
+
+    category = create_category(db_session, CategoryCreate(name="shared-category"))
+
+    visible_categories = list_categories(db_session)
+    assert any(item.id == category.id for item in visible_categories)
+
+    bank = create_bank(db_session, second_user.id, BankCreate(name="Davivienda", country_code="CO"))
+    account = create_account(
+        db_session,
+        second_user.id,
+        AccountCreate(
+            name="Cuenta secundaria",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("2500"),
+            bank_id=bank.id,
+        ),
+    )
+
+    txn = register_transaction(
+        db_session,
+        second_user.id,
+        TransactionCreate(
+            description="Compra compartida",
+            amount=Decimal("300"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.EXPENSE,
+            occurred_at=datetime.now(timezone.utc),
+            account_id=account.id,
+            category_id=category.id,
+        ),
+    )
+
+    assert txn.category_id == category.id
+    assert first_user.id != second_user.id

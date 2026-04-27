@@ -17,6 +17,5 @@ class User(Base):
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     banks = relationship("Bank", back_populates="user", cascade=CASCADE_DELETE)
-    categories = relationship("Category", back_populates="user", cascade=CASCADE_DELETE)
     transactions = relationship("Transaction", back_populates="user", cascade=CASCADE_DELETE)
     investments = relationship("Investment", back_populates="user", cascade=CASCADE_DELETE)

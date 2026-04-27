@@ -1,3 +1,5 @@
+from sqlalchemy import inspect, text
+
 from app.db.base import Base, engine
 from app.models import (  # noqa: F401
     account,
@@ -11,5 +13,56 @@ from app.models import (  # noqa: F401
 )
 
 
+def _migrate_categories_to_global() -> None:
+    inspector = inspect(engine)
+    if "categories" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("categories")}
+    if "user_id" not in columns:
+        return
+
+    with engine.begin() as connection:
+        if connection.dialect.name == "sqlite":
+            connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+            connection.exec_driver_sql(
+                """
+                CREATE TABLE categories__tmp (
+                    id INTEGER NOT NULL PRIMARY KEY,
+                    name VARCHAR(120) NOT NULL,
+                    description TEXT,
+                    is_fixed BOOLEAN NOT NULL DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            connection.exec_driver_sql(
+                """
+                INSERT INTO categories__tmp (id, name, description, is_fixed, created_at)
+                SELECT id, name, description, COALESCE(is_fixed, 0), created_at
+                FROM categories
+                """
+            )
+            connection.exec_driver_sql("DROP TABLE categories")
+            connection.exec_driver_sql("ALTER TABLE categories__tmp RENAME TO categories")
+            connection.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_categories_id ON categories (id)")
+            connection.exec_driver_sql("PRAGMA foreign_keys=ON")
+            return
+
+        category_user_fk = next(
+            (
+                foreign_key
+                for foreign_key in inspector.get_foreign_keys("categories")
+                if "user_id" in foreign_key.get("constrained_columns", [])
+            ),
+            None,
+        )
+        if category_user_fk and category_user_fk.get("name"):
+            connection.execute(text(f'ALTER TABLE categories DROP CONSTRAINT "{category_user_fk["name"]}"'))
+
+        connection.execute(text("ALTER TABLE categories DROP COLUMN user_id"))
+
+
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
+    _migrate_categories_to_global()

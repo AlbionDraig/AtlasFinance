@@ -2,8 +2,8 @@
 Seed de datos demo para entornos de desarrollo y pruebas.
 
 Se ejecuta automáticamente al arrancar cuando:
-  ENVIRONMENT=development  o  ENVIRONMENT=test
-  o cuando SEED_ON_STARTUP=true
+    ENVIRONMENT=development  o  ENVIRONMENT=test
+    o cuando SEED_ON_STARTUP=true
 
 Es idempotente: si el usuario demo ya existe, no hace nada.
 """
@@ -11,6 +11,7 @@ import logging
 import random
 from datetime import datetime, timedelta
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.security import get_password_hash
@@ -128,9 +129,15 @@ def run_seed() -> None:
             ("Inversiones",           "Aportes a fondos, acciones, criptomonedas o activos financieros.",                  False),
             ("Transferencias",        "Movimientos entre cuentas propias o envíos a terceros.",                            False),
         ]
-        categories: dict[str, Category] = {}
+        existing_categories = {
+            category.name: category
+            for category in db.scalars(select(Category).where(Category.name.in_([name for name, _, _ in category_data]))).all()
+        }
+        categories: dict[str, Category] = dict(existing_categories)
         for name, description, is_fixed in category_data:
-            c = Category(name=name, description=description, is_fixed=is_fixed, user_id=user.id)
+            if name in categories:
+                continue
+            c = Category(name=name, description=description, is_fixed=is_fixed)
             db.add(c)
             db.flush()
             categories[name] = c

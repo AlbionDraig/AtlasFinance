@@ -3,11 +3,11 @@ from uuid import uuid4
 TEST_PASSWORD = f"AtlasFinanceTestPwd-{uuid4().hex}"
 
 
-def _auth_headers(client):
+def _auth_headers(client, email: str = "api@test.com"):
     register_resp = client.post(
         "/api/v1/auth/register",
         json={
-            "email": "api@test.com",
+            "email": email,
             "full_name": "API User",
             "password": TEST_PASSWORD,
         },
@@ -16,7 +16,7 @@ def _auth_headers(client):
 
     login_resp = client.post(
         "/api/v1/auth/login",
-        json={"email": "api@test.com", "password": TEST_PASSWORD},
+        json={"email": email, "password": TEST_PASSWORD},
     )
     assert login_resp.status_code == 200
     token = login_resp.json()["access_token"]
@@ -134,3 +134,15 @@ def test_logout_revokes_access_token(client):
     # A copied token must no longer grant access after logout.
     me_after = client.get("/api/v1/auth/me", headers=headers)
     assert me_after.status_code == 401
+
+
+def test_categories_are_global_across_authenticated_users(client):
+    first_headers = _auth_headers(client, email="api-global-1@test.com")
+    create_resp = client.post("/api/v1/categories/", json={"name": "shared-api-category"}, headers=first_headers)
+    assert create_resp.status_code == 201
+    created_id = create_resp.json()["id"]
+
+    second_headers = _auth_headers(client, email="api-global-2@test.com")
+    list_resp = client.get("/api/v1/categories/", headers=second_headers)
+    assert list_resp.status_code == 200
+    assert any(category["id"] == created_id for category in list_resp.json())
