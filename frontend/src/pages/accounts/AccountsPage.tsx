@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { AxiosError } from 'axios'
 import { accountsApi } from '@/api/accounts'
 import { banksApi, type Bank } from '@/api/banks'
+import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
-import Select from '@/components/ui/Select'
 import { useToast } from '@/hooks/useToast'
 import type { Account } from '@/types'
+import AccountCreateModal from './components/AccountCreateModal'
 
 interface AccountFormState {
   name: string
@@ -36,6 +37,7 @@ export default function AccountsPage() {
   const [banks, setBanks] = useState<Bank[]>([])
   const [loading, setLoading] = useState(true)
   const [savingAccount, setSavingAccount] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
 
   const [accountForm, setAccountForm] = useState<AccountFormState>(EMPTY_ACCOUNT_FORM)
 
@@ -92,7 +94,13 @@ export default function AccountsPage() {
         bank_id: Number(accountForm.bankId),
       })
       setAccounts((current) => [response.data, ...current])
-      setAccountForm((current) => ({ ...current, name: '' }))
+      setAccountForm((current) => ({
+        ...EMPTY_ACCOUNT_FORM,
+        accountType: current.accountType,
+        currency: current.currency,
+        bankId: current.bankId,
+      }))
+      setCreateOpen(false)
       toast('Cuenta creada con éxito.')
     } catch (error) {
       toast(getApiErrorMessage(error, 'No se pudo crear la cuenta.'), 'error')
@@ -116,87 +124,16 @@ export default function AccountsPage() {
         <p className="app-subtitle text-sm mt-0.5">Crea y administra tus cuentas bancarias.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 items-start">
-        <section className="app-card p-5 border-t-4 border-t-brand">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand text-white">
-              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
-                <path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="app-section-title text-brand-text">Crear cuenta</h2>
-              <p className="text-sm text-neutral-700">Registra una nueva cuenta para empezar a mover dinero.</p>
-            </div>
-          </div>
-
-          <form onSubmit={handleCreateAccount} className="space-y-4">
-            <div className="space-y-1">
-              <label className="app-label">Nombre de cuenta</label>
-              <input
-                type="text"
-                value={accountForm.name}
-                onChange={(event) => setAccountForm((current) => ({ ...current, name: event.target.value }))}
-                className="app-control w-full"
-                placeholder="Ej: Cuenta Ahorros Principal"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1">
-                <label className="app-label">Tipo</label>
-                <Select
-                  value={accountForm.accountType}
-                  onChange={(value) => setAccountForm((current) => ({ ...current, accountType: value as 'savings' | 'checking' }))}
-                  options={[
-                    { value: 'savings', label: 'Ahorros' },
-                    { value: 'checking', label: 'Corriente' },
-                  ]}
-                  className="w-full"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="app-label">Moneda</label>
-                <Select
-                  value={accountForm.currency}
-                  onChange={(value) => setAccountForm((current) => ({ ...current, currency: value as 'COP' | 'USD' }))}
-                  options={[
-                    { value: 'COP', label: 'COP' },
-                    { value: 'USD', label: 'USD' },
-                  ]}
-                  className="w-full"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="app-label">Banco</label>
-                <Select
-                  value={accountForm.bankId}
-                  onChange={(value) => setAccountForm((current) => ({ ...current, bankId: value }))}
-                  options={[
-                    { value: '', label: banks.length ? 'Selecciona un banco' : 'Sin bancos' },
-                    ...banks.map((bank) => ({ value: String(bank.id), label: `${bank.name} (${bank.country_code})` })),
-                  ]}
-                  className="w-full"
-                  disabled={!banks.length}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <button type="submit" className="app-btn-primary" disabled={savingAccount || !banks.length}>
-                {savingAccount ? 'Creando cuenta...' : 'Crear cuenta'}
-              </button>
-            </div>
-            {!banks.length && (
-              <p className="text-sm text-warning-text bg-warning-bg rounded-lg px-3 py-2">
-                No hay bancos disponibles. Crea bancos desde Administración.
-              </p>
-            )}
-          </form>
-        </section>
-      </div>
+      {createOpen && (
+        <AccountCreateModal
+          form={accountForm}
+          setForm={setAccountForm}
+          banks={banks}
+          saving={savingAccount}
+          onSubmit={handleCreateAccount}
+          onClose={() => setCreateOpen(false)}
+        />
+      )}
 
       <section className="app-card overflow-hidden">
         <div className="flex items-center justify-between gap-4 border-b border-neutral-100 bg-neutral-50 px-6 py-4">
@@ -247,6 +184,23 @@ export default function AccountsPage() {
           </div>
         )}
       </section>
+
+      <FloatingActionMenu
+        hidden={createOpen}
+        ariaLabel="Abrir acciones de cuentas"
+        items={[
+          {
+            key: 'create-account',
+            label: 'Crear cuenta',
+            onClick: () => setCreateOpen(true),
+            icon: (
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+                <path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+              </svg>
+            ),
+          },
+        ]}
+      />
     </div>
   )
 }

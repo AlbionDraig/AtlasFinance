@@ -9,6 +9,7 @@ import TransactionsFiltersCard from './components/TransactionsFiltersCard'
 import TransactionsHistoryCard from './components/TransactionsHistoryCard'
 import TransferModal from './components/TransferModal'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
+import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/hooks/useToast'
 import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
@@ -174,7 +175,6 @@ export default function TransactionsPage() {
   const [page, setPage] = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
-  const [fabMenuOpen, setFabMenuOpen] = useState(false)
 
   useEffect(() => {
     async function loadData() {
@@ -537,64 +537,33 @@ export default function TransactionsPage() {
         normalizeTransactionType={normalizeTransactionType}
       />
 
-      {/* FAB — hidden when a modal is open */}
-      {!modalOpen && !transferOpen && pendingDeleteId === null && (
-        <div className="fixed bottom-6 right-6 z-30">
-          {/* Expanded menu */}
-          {fabMenuOpen && (
-            <>
-              {/* Backdrop to close on outside click */}
-              <div
-                className="fixed inset-0 z-0"
-                onClick={() => setFabMenuOpen(false)}
-              />
-              <div className="absolute bottom-14 right-0 z-10 flex flex-col items-end gap-2 pb-1">
-                <button
-                  type="button"
-                  onClick={() => { setFabMenuOpen(false); setTransferOpen(true) }}
-                  className="flex items-center gap-2 bg-white border border-neutral-100 hover:border-brand hover:text-brand text-neutral-700 text-sm font-medium px-4 py-2.5 rounded-full shadow-md transition-colors whitespace-nowrap"
-                >
-                  <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4 shrink-0">
-                    <path d="M3 10h14M13 6l4 4-4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M7 14l-4-4 4-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  Mover dinero entre cuentas
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setFabMenuOpen(false); resetForm(); setModalOpen(true) }}
-                  className="flex items-center gap-2 bg-white border border-neutral-100 hover:border-brand hover:text-brand text-neutral-700 text-sm font-medium px-4 py-2.5 rounded-full shadow-md transition-colors whitespace-nowrap"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
-                  Registrar movimiento
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* Main FAB button */}
-          <button
-            type="button"
-            onClick={() => setFabMenuOpen((open) => !open)}
-            className={`flex h-14 w-14 items-center justify-center text-white rounded-full shadow-lg transition-colors ${
-              fabMenuOpen ? 'bg-brand-hover' : 'bg-brand hover:bg-brand-hover'
-            }`}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className={`h-6 w-6 transition-transform duration-200 ${fabMenuOpen ? 'rotate-45' : ''}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-        </div>
-      )}
+      <FloatingActionMenu
+        hidden={modalOpen || transferOpen || pendingDeleteId !== null}
+        ariaLabel="Abrir acciones de movimientos"
+        items={[
+          {
+            key: 'transfer',
+            label: 'Mover dinero entre cuentas',
+            onClick: () => setTransferOpen(true),
+            icon: (
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+                <path d="M3 10h14M13 6l4 4-4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M7 14l-4-4 4-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ),
+          },
+          {
+            key: 'register-transaction',
+            label: 'Registrar movimiento',
+            onClick: () => { resetForm(); setModalOpen(true) },
+            icon: (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+            ),
+          },
+        ]}
+      />
     </div>
   )
 }
