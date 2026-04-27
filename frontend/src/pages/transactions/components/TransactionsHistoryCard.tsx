@@ -138,10 +138,10 @@ export default function TransactionsHistoryCard({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full border-separate border-spacing-0">
+          <table className="min-w-full table-fixed border-separate border-spacing-0">
             <colgroup>
               <col className="w-36" />
-              <col />
+              <col className="w-[26rem]" />
               <col className="w-44" />
               <col className="w-40" />
               <col className="w-40" />
@@ -177,10 +177,23 @@ export default function TransactionsHistoryCard({
                     </td>
 
                     {/* Descripción */}
-                    <td className="border-b border-r border-neutral-100 px-5 py-3.5 align-middle">
-                      <span className="block truncate text-sm font-medium text-neutral-900" title={transaction.description}>
-                        {transaction.description}
-                      </span>
+                    <td className="border-b border-r border-neutral-100 px-5 py-3.5 align-middle max-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="block min-w-0 flex-1 truncate whitespace-nowrap text-sm font-medium text-neutral-900" title={transaction.description}>
+                          {transaction.description}
+                        </span>
+                        <Tooltip
+                          content={transaction.description}
+                          ariaLabel={`Ver descripción completa: ${transaction.description}`}
+                        >
+                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-md text-neutral-400 hover:text-brand">
+                            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+                              <path d="M1.5 10s3-5.5 8.5-5.5S18.5 10 18.5 10s-3 5.5-8.5 5.5S1.5 10 1.5 10Z" stroke="currentColor" strokeWidth="1.5" />
+                              <circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+                            </svg>
+                          </span>
+                        </Tooltip>
+                      </div>
                     </td>
 
                     {/* Cuenta */}
