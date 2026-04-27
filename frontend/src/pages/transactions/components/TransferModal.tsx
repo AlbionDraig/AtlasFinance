@@ -10,7 +10,6 @@ interface TransferForm {
   fromAccountId: string
   toAccountId: string
   amount: string
-  description: string
   occurredDate: string
   occurredTime: string
 }
@@ -42,7 +41,6 @@ function buildDefault(): TransferForm {
     fromAccountId: '',
     toAccountId: '',
     amount: '',
-    description: '',
     occurredDate: toDateInputValue(now),
     occurredTime: toTimeInputValue(now),
   }
@@ -59,11 +57,16 @@ export default function TransferModal({
   const [error, setError] = useState<string | null>(null)
 
   const fromAccount = accounts.find((a) => String(a.id) === form.fromAccountId) ?? null
+  const toAccount = accounts.find((a) => String(a.id) === form.toAccountId) ?? null
   const currency = fromAccount?.currency ?? null
 
   const eligibleDestinations = accounts.filter(
     (a) => String(a.id) !== form.fromAccountId && (!currency || a.currency === currency),
   )
+
+  const autoDescription = fromAccount && toAccount
+    ? `Transferencia de cuenta (${fromAccount.name}) a (${toAccount.name})`
+    : 'Transferencia de cuenta origen a cuenta destino'
 
   function handleFromChange(value: string) {
     setForm((prev) => ({
@@ -194,16 +197,11 @@ export default function TransferModal({
             />
           </div>
 
-          {/* Description */}
           <div className="space-y-1">
-            <label className="app-label">Descripción <span className="text-neutral-400 normal-case font-normal">(opcional)</span></label>
-            <input
-              type="text"
-              value={form.description}
-              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-              className="app-control w-full"
-              placeholder="Ej: Transferencia ahorros"
-            />
+            <label className="app-label">Descripción</label>
+            <p className="app-control w-full min-h-11 flex items-center text-neutral-700">
+              {autoDescription}
+            </p>
           </div>
 
           {/* Date / time */}

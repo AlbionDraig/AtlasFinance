@@ -59,8 +59,7 @@ function buildDefaultFilters(): FiltersState {
   }
 }
 
-function buildDefaultForm(accounts: Account[]): FormState {
-  const now = new Date()
+function buildDefaultForm(): FormState {
   return {
     description: '',
     amount: '',
@@ -161,7 +160,7 @@ export default function TransactionsPage() {
   const [accounts, setAccounts] = useState<Account[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [form, setForm] = useState<FormState>(() => buildDefaultForm([]))
+  const [form, setForm] = useState<FormState>(() => buildDefaultForm())
   const [filters, setFilters] = useState<FiltersState>(() => buildDefaultFilters())
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -187,7 +186,7 @@ export default function TransactionsPage() {
         setAccounts(accountsResponse.data)
         setCategories(categoriesResponse.data)
         setTransactions(transactionsResponse.data)
-        setForm((current) => current.accountId ? current : buildDefaultForm(accountsResponse.data))
+        setForm((current) => current.accountId ? current : buildDefaultForm())
       } catch (loadError) {
         toast(getApiErrorMessage(loadError, 'No se pudieron cargar los movimientos.'), 'error')
       } finally {
@@ -272,10 +271,10 @@ export default function TransactionsPage() {
     filters.query.trim() ? `Búsqueda: ${filters.query.trim()}` : null,
   ].filter(Boolean) as string[]
 
-  function resetForm(nextAccounts = accounts) {
+  function resetForm() {
     setEditingId(null)
     setModalOpen(false)
-    setForm(buildDefaultForm(nextAccounts))
+    setForm(buildDefaultForm())
   }
 
   function handleEdit(transaction: Transaction) {
@@ -370,13 +369,13 @@ export default function TransactionsPage() {
     }
   }
 
-  async function handleTransfer(form: { fromAccountId: string; toAccountId: string; amount: string; description: string; occurredDate: string; occurredTime: string }) {
+  async function handleTransfer(form: { fromAccountId: string; toAccountId: string; amount: string; occurredDate: string; occurredTime: string }) {
     const fromAccount = accounts.find((a) => String(a.id) === form.fromAccountId)
     const toAccount = accounts.find((a) => String(a.id) === form.toAccountId)
     if (!fromAccount || !toAccount) return
 
     const amount = Number(form.amount)
-    const description = form.description.trim() || `Transferencia ${fromAccount.name} → ${toAccount.name}`
+    const description = `Transferencia de cuenta ${fromAccount.name} a ${toAccount.name}`
     const occurredAt = `${form.occurredDate}T${form.occurredTime}:00`
 
     setSaving(true)
@@ -389,7 +388,7 @@ export default function TransactionsPage() {
           category_id: null,
           pocket_id: null,
           currency: fromAccount.currency,
-          transaction_type: 'expense',
+          transaction_type: 'expense' as Transaction['transaction_type'],
           occurred_at: occurredAt,
         } satisfies Omit<Transaction, 'id'>),
         transactionsApi.create({
@@ -399,7 +398,7 @@ export default function TransactionsPage() {
           category_id: null,
           pocket_id: null,
           currency: toAccount.currency,
-          transaction_type: 'income',
+          transaction_type: 'income' as Transaction['transaction_type'],
           occurred_at: occurredAt,
         } satisfies Omit<Transaction, 'id'>),
       ])
