@@ -1,9 +1,10 @@
 from decimal import Decimal
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Numeric, String, func
+from sqlalchemy import DateTime, Enum, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.columns import created_at_column, required_fk_column
 from app.models.enums import Currency
 
 
@@ -15,8 +16,8 @@ class Pocket(Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     balance: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=0)
     currency: Mapped[Currency] = mapped_column(Enum(Currency), nullable=False)
-    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
-    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    account_id: Mapped[int] = required_fk_column("accounts.id")
+    created_at: Mapped[DateTime] = created_at_column()
 
     account = relationship("Account", back_populates="pockets")
     transactions = relationship("Transaction", back_populates="pocket")

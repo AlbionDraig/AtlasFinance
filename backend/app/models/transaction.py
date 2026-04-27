@@ -19,10 +19,26 @@ class Transaction(Base):
     transaction_type: Mapped[TransactionType] = mapped_column(Enum(TransactionType), nullable=False)
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
-    category_id: Mapped[int] = mapped_column(ForeignKey("categories.id", ondelete="SET NULL"), nullable=True, index=True)
-    pocket_id: Mapped[int] = mapped_column(ForeignKey("pockets.id", ondelete="SET NULL"), nullable=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    account_id: Mapped[int] = mapped_column(
+        ForeignKey("accounts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    category_id: Mapped[int] = mapped_column(
+        ForeignKey("categories.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    pocket_id: Mapped[int] = mapped_column(
+        ForeignKey("pockets.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     user = relationship("User", back_populates="transactions")
     account = relationship("Account", back_populates="transactions")

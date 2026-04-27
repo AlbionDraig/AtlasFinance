@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 from app.models.enums import AccountType, Currency, TransactionType
-from app.schemas.bank import BankCreate
 from app.schemas.account import AccountCreate
+from app.schemas.bank import BankCreate
 from app.schemas.category import CategoryCreate
 from app.schemas.transaction import TransactionCreate
 from app.schemas.user import UserCreate

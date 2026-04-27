@@ -20,8 +20,16 @@ class Investment(Base):
     currency: Mapped[Currency] = mapped_column(Enum(Currency), nullable=False)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    bank_id: Mapped[int] = mapped_column(ForeignKey("banks.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    bank_id: Mapped[int] = mapped_column(
+        ForeignKey("banks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     user = relationship("User", back_populates="investments")
     bank = relationship("Bank", back_populates="investments")

@@ -41,7 +41,7 @@ def _get_rate(from_currency: str, to_currency: str) -> Decimal | None:
         rate = Decimal(str(result))
         _RATE_CACHE[key] = (rate, monotonic() + _CACHE_TTL_SECONDS)
         return rate
-    except Exception:
+    except (httpx.HTTPError, ValueError, ArithmeticError, RuntimeError):
         # On failure, return the stale value if available rather than breaking.
         return entry[0] if entry is not None else None
 

@@ -49,7 +49,11 @@ def _get_cached_metrics(user_id: int, target_currency: str) -> DashboardMetrics 
     return metrics
 
 
-def _set_cached_metrics(user_id: int, target_currency: str, metrics: DashboardMetrics) -> DashboardMetrics:
+def _set_cached_metrics(
+    user_id: int,
+    target_currency: str,
+    metrics: DashboardMetrics,
+) -> DashboardMetrics:
     """Store dashboard metrics snapshot with TTL and return the same object."""
     key = (user_id, target_currency)
     _METRICS_CACHE[key] = (metrics, monotonic() + _METRICS_CACHE_TTL_SECONDS)
@@ -111,7 +115,12 @@ def create_account(db: Session, user_id: int, payload: AccountCreate) -> Account
 
 def list_accounts(db: Session, user_id: int) -> list[Account]:
     """List accounts that belong to the authenticated user."""
-    query = select(Account).join(Bank).where(Bank.user_id == user_id).order_by(Account.created_at.desc())
+    query = (
+        select(Account)
+        .join(Bank)
+        .where(Bank.user_id == user_id)
+        .order_by(Account.created_at.desc())
+    )
     return list(db.scalars(query).all())
 
 
@@ -132,7 +141,11 @@ def create_pocket(db: Session, user_id: int, payload: PocketCreate) -> Pocket:
 
 def create_category(db: Session, payload: CategoryCreate) -> Category:
     """Create a global category."""
-    category = Category(name=payload.name, description=payload.description, is_fixed=payload.is_fixed)
+    category = Category(
+        name=payload.name,
+        description=payload.description,
+        is_fixed=payload.is_fixed,
+    )
     return _persist_and_refresh(db, category)
 
 
@@ -167,7 +180,11 @@ def list_categories(db: Session) -> list[Category]:
     return list(db.scalars(query).all())
 
 
-def _apply_transaction_effect(account: Account, transaction_type: TransactionType, amount: Decimal) -> None:
+def _apply_transaction_effect(
+    account: Account,
+    transaction_type: TransactionType,
+    amount: Decimal,
+) -> None:
     """Apply transaction impact to account balance."""
     if transaction_type == TransactionType.INCOME:
         account.current_balance += amount
@@ -175,7 +192,11 @@ def _apply_transaction_effect(account: Account, transaction_type: TransactionTyp
         account.current_balance -= amount
 
 
-def _revert_transaction_effect(account: Account, transaction_type: TransactionType, amount: Decimal) -> None:
+def _revert_transaction_effect(
+    account: Account,
+    transaction_type: TransactionType,
+    amount: Decimal,
+) -> None:
     """Revert a previously applied transaction impact from account balance."""
     if transaction_type == TransactionType.INCOME:
         account.current_balance -= amount
@@ -213,7 +234,9 @@ def register_transaction(db: Session, user_id: int, payload: TransactionCreate) 
             .limit(1)
         )
         if existing_tx is not None:
-            raise ValueError("El saldo inicial solo se puede registrar una vez por cuenta.")
+            raise ValueError(
+                "El saldo inicial solo se puede registrar una vez por cuenta."
+            )
 
     txn = Transaction(
         description=payload.description,
@@ -235,7 +258,12 @@ def register_transaction(db: Session, user_id: int, payload: TransactionCreate) 
     return created_txn
 
 
-def update_transaction(db: Session, user_id: int, transaction_id: int, payload: TransactionCreate) -> Transaction:
+def update_transaction(
+    db: Session,
+    user_id: int,
+    transaction_id: int,
+    payload: TransactionCreate,
+) -> Transaction:
     """Update a transaction and keep account balances consistent."""
     txn = db.get(Transaction, transaction_id)
     if not txn or txn.user_id != user_id:
@@ -291,7 +319,46 @@ def list_transactions(
     return list(db.scalars(query).all())
 
 
-def get_dashboard_metrics(db: Session, user_id: int, target_currency: str = "COP") -> DashboardMetrics:
+def _sum_assets_in_currency(
+    accounts: list[Account],
+    investments: list[Investment],
+    target_currency: str,
+) -> Decimal:
+    total_assets = Decimal("0")
+    for account in accounts:
+        total_assets += convert_currency(
+            account.current_balance,
+            account.currency.value,
+            target_currency,
+        )
+    for investment in investments:
+        total_assets += convert_currency(
+            investment.current_value,
+            investment.currency.value,
+            target_currency,
+        )
+    return total_assets
+
+
+def _sum_transactions_in_currency(
+    transactions: list[Transaction],
+    target_currency: str,
+) -> tuple[Decimal, Decimal]:
+    totals = defaultdict(lambda: Decimal("0"))
+    for txn in transactions:
+        converted = convert_currency(txn.amount, txn.currency.value, target_currency)
+        totals[txn.transaction_type.value] += converted
+
+    income = totals[TransactionType.INCOME.value]
+    expenses = totals[TransactionType.EXPENSE.value]
+    return income, expenses
+
+
+def get_dashboard_metrics(  # pylint: disable=too-many-locals
+    db: Session,
+    user_id: int,
+    target_currency: str = "COP",
+) -> DashboardMetrics:
     """Aggregate net worth, income, expenses and savings rate in a target currency."""
     cached_metrics = _get_cached_metrics(user_id, target_currency)
     if cached_metrics is not None:
@@ -301,19 +368,8 @@ def get_dashboard_metrics(db: Session, user_id: int, target_currency: str = "COP
     investments = db.scalars(select(Investment).where(Investment.user_id == user_id)).all()
     transactions = db.scalars(select(Transaction).where(Transaction.user_id == user_id)).all()
 
-    total_assets = Decimal("0")
-    for account in accounts:
-        total_assets += convert_currency(account.current_balance, account.currency.value, target_currency)
-    for investment in investments:
-        total_assets += convert_currency(investment.current_value, investment.currency.value, target_currency)
-
-    totals = defaultdict(lambda: Decimal("0"))
-    for txn in transactions:
-        converted = convert_currency(txn.amount, txn.currency.value, target_currency)
-        totals[txn.transaction_type.value] += converted
-
-    total_income = totals[TransactionType.INCOME.value]
-    total_expenses = totals[TransactionType.EXPENSE.value]
+    total_assets = _sum_assets_in_currency(accounts, investments, target_currency)
+    total_income, total_expenses = _sum_transactions_in_currency(transactions, target_currency)
     cashflow = total_income - total_expenses
     savings_rate = (cashflow / total_income * Decimal("100")) if total_income > 0 else Decimal("0")
 
