@@ -14,9 +14,11 @@ from app.services.finance_service import (
     create_account,
     create_bank,
     create_category,
+    delete_transaction,
     get_dashboard_metrics,
     list_categories,
     register_transaction,
+    update_transaction,
 )
 
 TEST_PASSWORD = "AtlasFinanceTestPwd123!"
@@ -169,3 +171,161 @@ def test_register_transaction_rejects_expense_when_funds_are_insufficient(db_ses
                 account_id=account.id,
             ),
         )
+
+
+def test_update_transaction_rejects_transfer_transactions(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="transfer-update@test.com", full_name="Transfer Update", password=TEST_PASSWORD),
+    )
+    bank = create_bank(db_session, user.id, BankCreate(name="Nequi", country_code="CO"))
+    from_account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Origen",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=bank.id,
+        ),
+    )
+    to_account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Destino",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=bank.id,
+        ),
+    )
+
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Fondeo",
+            amount=Decimal("500"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.INCOME,
+            occurred_at=datetime.now(timezone.utc),
+            account_id=from_account.id,
+        ),
+    )
+
+    transfer_time = datetime.now(timezone.utc)
+    transfer_description = "Transferencia de cuenta Origen a Destino"
+    transfer_expense = register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description=transfer_description,
+            amount=Decimal("100"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.EXPENSE,
+            occurred_at=transfer_time,
+            account_id=from_account.id,
+        ),
+    )
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description=transfer_description,
+            amount=Decimal("100"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.INCOME,
+            occurred_at=transfer_time,
+            account_id=to_account.id,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="Los movimientos de transferencia entre cuentas no se pueden editar ni eliminar\\."):
+        update_transaction(
+            db_session,
+            user.id,
+            transfer_expense.id,
+            TransactionCreate(
+                description="Intento editar",
+                amount=Decimal("80"),
+                currency=Currency.COP,
+                transaction_type=TransactionType.EXPENSE,
+                occurred_at=transfer_time,
+                account_id=from_account.id,
+            ),
+        )
+
+
+def test_delete_transaction_rejects_transfer_transactions(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="transfer-delete@test.com", full_name="Transfer Delete", password=TEST_PASSWORD),
+    )
+    bank = create_bank(db_session, user.id, BankCreate(name="Davivienda", country_code="CO"))
+    from_account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Origen",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=bank.id,
+        ),
+    )
+    to_account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Destino",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=bank.id,
+        ),
+    )
+
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Fondeo",
+            amount=Decimal("500"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.INCOME,
+            occurred_at=datetime.now(timezone.utc),
+            account_id=from_account.id,
+        ),
+    )
+
+    transfer_time = datetime.now(timezone.utc)
+    transfer_description = "Transferencia de cuenta Origen a Destino"
+    transfer_income = register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description=transfer_description,
+            amount=Decimal("120"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.INCOME,
+            occurred_at=transfer_time,
+            account_id=to_account.id,
+        ),
+    )
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description=transfer_description,
+            amount=Decimal("120"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.EXPENSE,
+            occurred_at=transfer_time,
+            account_id=from_account.id,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="Los movimientos de transferencia entre cuentas no se pueden editar ni eliminar\\."):
+        delete_transaction(db_session, user.id, transfer_income.id)

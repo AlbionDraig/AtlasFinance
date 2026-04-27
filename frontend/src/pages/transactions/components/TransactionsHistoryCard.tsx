@@ -55,6 +55,10 @@ export default function TransactionsHistoryCard({
   expenseTotal,
   currency,
 }: TransactionsHistoryCardProps) {
+  function isTransferTransaction(transaction: Transaction): boolean {
+    return transaction.description.startsWith('Transferencia de cuenta ')
+  }
+
   const netFlow = incomeTotal - expenseTotal
   const metrics = [
     {
@@ -154,6 +158,7 @@ export default function TransactionsHistoryCard({
             <tbody>
               {paginatedTransactions.map((transaction) => {
                 const isIncome = normalizeTransactionType(String(transaction.transaction_type)) === 'INCOME'
+                const isTransfer = isTransferTransaction(transaction)
                 return (
                   <tr key={transaction.id} className="group transition-colors hover:bg-brand-light/40 odd:bg-white even:bg-neutral-50/50">
 
@@ -201,10 +206,18 @@ export default function TransactionsHistoryCard({
                     {/* Acciones */}
                     <td className="border-b border-r border-neutral-100 px-5 py-3.5 align-middle">
                       <div className="flex items-center justify-end gap-1.5">
-                        {/* Editar */}
-                        <EditButton onClick={() => onEdit(transaction)} />
-                        {/* Eliminar */}
-                        <DeleteButton onClick={() => onDelete(transaction.id)} loading={deletingId === transaction.id} />
+                        {isTransfer ? (
+                          <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700 whitespace-nowrap">
+                            Bloqueado
+                          </span>
+                        ) : (
+                          <>
+                            {/* Editar */}
+                            <EditButton onClick={() => onEdit(transaction)} />
+                            {/* Eliminar */}
+                            <DeleteButton onClick={() => onDelete(transaction.id)} loading={deletingId === transaction.id} />
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

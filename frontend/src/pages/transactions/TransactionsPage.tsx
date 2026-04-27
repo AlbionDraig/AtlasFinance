@@ -110,6 +110,10 @@ function getCompactAccountName(accountId: number, accounts: Account[]): string {
   return getAccountName(accountId, accounts).replace(/\s+\((COP|USD)\)$/, '')
 }
 
+function isTransferTransaction(transaction: Transaction): boolean {
+  return transaction.description.startsWith('Transferencia de cuenta ')
+}
+
 function getDatasetRange(transactions: Transaction[]): { min: string; max: string } {
   if (!transactions.length) {
     const today = toDateInputValue(new Date())
@@ -278,6 +282,11 @@ export default function TransactionsPage() {
   }
 
   function handleEdit(transaction: Transaction) {
+    if (isTransferTransaction(transaction)) {
+      toast('Los movimientos de transferencia entre cuentas no se pueden editar ni eliminar.', 'error')
+      return
+    }
+
     const occurredAt = new Date(transaction.occurred_at)
     setEditingId(transaction.id)
     setModalOpen(true)
@@ -418,6 +427,13 @@ export default function TransactionsPage() {
   }
 
   async function handleDelete(transactionId: number) {
+    const target = transactions.find((transaction) => transaction.id === transactionId)
+    if (target && isTransferTransaction(target)) {
+      toast('Los movimientos de transferencia entre cuentas no se pueden editar ni eliminar.', 'error')
+      setPendingDeleteId(null)
+      return
+    }
+
     setDeletingId(transactionId)
     setPendingDeleteId(null)
 

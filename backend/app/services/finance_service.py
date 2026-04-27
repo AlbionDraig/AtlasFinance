@@ -228,6 +228,30 @@ def _ensure_sufficient_funds(account: Account, transaction_type: TransactionType
         raise ValueError("Fondos insuficientes en la cuenta seleccionada.")
 
 
+def _is_transfer_transaction(db: Session, txn: Transaction) -> bool:
+    if not txn.description.startswith("Transferencia de cuenta "):
+        return False
+
+    opposite_type = (
+        TransactionType.INCOME if txn.transaction_type == TransactionType.EXPENSE else TransactionType.EXPENSE
+    )
+    mirrored_tx_id = db.scalar(
+        select(Transaction.id)
+        .where(
+            Transaction.user_id == txn.user_id,
+            Transaction.id != txn.id,
+            Transaction.amount == txn.amount,
+            Transaction.currency == txn.currency,
+            Transaction.occurred_at == txn.occurred_at,
+            Transaction.description == txn.description,
+            Transaction.transaction_type == opposite_type,
+            Transaction.account_id != txn.account_id,
+        )
+        .limit(1)
+    )
+    return mirrored_tx_id is not None
+
+
 def register_transaction(db: Session, user_id: int, payload: TransactionCreate) -> Transaction:
     """Create a transaction and update the account running balance."""
     account = _validate_transaction_payload(db, user_id, payload)
@@ -275,6 +299,8 @@ def update_transaction(
     txn = db.get(Transaction, transaction_id)
     if not txn or txn.user_id != user_id:
         raise ValueError("Transaction not found")
+    if _is_transfer_transaction(db, txn):
+        raise ValueError("Los movimientos de transferencia entre cuentas no se pueden editar ni eliminar.")
 
     old_account = txn.account
     _revert_transaction_effect(old_account, txn.transaction_type, txn.amount)
@@ -303,6 +329,8 @@ def delete_transaction(db: Session, user_id: int, transaction_id: int) -> None:
     txn = db.get(Transaction, transaction_id)
     if not txn or txn.user_id != user_id:
         raise ValueError("Transaction not found")
+    if _is_transfer_transaction(db, txn):
+        raise ValueError("Los movimientos de transferencia entre cuentas no se pueden editar ni eliminar.")
 
     account = txn.account
     _revert_transaction_effect(account, txn.transaction_type, txn.amount)
