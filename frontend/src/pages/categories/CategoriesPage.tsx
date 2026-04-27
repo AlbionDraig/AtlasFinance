@@ -223,15 +223,9 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[860px] p-4 md:p-6 pb-20">
-      {/* Título */}
-      <div>
-        <h1 className="app-title text-xl">Categorías</h1>
-        <p className="app-subtitle text-sm mt-0.5">Organiza tus gastos e ingresos con categorías propias</p>
-      </div>
-
+    <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       {/* Buscador */}
-      <FilterCard sticky activeFilters={activeFilters} onReset={() => setQuery('')}>
+      <FilterCard sticky activeFilters={activeFilters}>
         <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
           <label className="app-label">Buscar</label>
           <SearchInput
