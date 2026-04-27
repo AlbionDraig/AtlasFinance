@@ -52,6 +52,16 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    to: '/admin',
+    label: 'Administración',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9M10.5 12h9M10.5 18h9" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h.01M4 12h.01M4 18h.01" />
+      </svg>
+    ),
+  },
 ]
 
 export default function AppLayout() {

@@ -36,10 +36,8 @@ export default function AccountsPage() {
   const [banks, setBanks] = useState<Bank[]>([])
   const [loading, setLoading] = useState(true)
   const [savingAccount, setSavingAccount] = useState(false)
-  const [savingBank, setSavingBank] = useState(false)
 
   const [accountForm, setAccountForm] = useState<AccountFormState>(EMPTY_ACCOUNT_FORM)
-  const [bankName, setBankName] = useState('')
 
   useEffect(() => {
     async function loadData() {
@@ -71,30 +69,6 @@ export default function AccountsPage() {
     () => [...accounts].sort((a, b) => String(a.name).localeCompare(String(b.name))),
     [accounts],
   )
-
-  async function handleCreateBank(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (bankName.trim().length < 2) {
-      toast('El nombre del banco debe tener al menos 2 caracteres.', 'error')
-      return
-    }
-
-    setSavingBank(true)
-    try {
-      const response = await banksApi.create({
-        name: bankName.trim(),
-        country_code: 'CO',
-      })
-      setBanks((current) => [response.data, ...current])
-      setAccountForm((current) => ({ ...current, bankId: String(response.data.id) }))
-      setBankName('')
-      toast('Banco creado con éxito.')
-    } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo crear el banco.'), 'error')
-    } finally {
-      setSavingBank(false)
-    }
-  }
 
   async function handleCreateAccount(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -142,7 +116,7 @@ export default function AccountsPage() {
         <p className="app-subtitle text-sm mt-0.5">Crea y administra tus cuentas bancarias.</p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1.15fr_1fr] gap-6 items-start">
+      <div className="grid grid-cols-1 gap-6 items-start">
         <section className="app-card p-5 border-t-4 border-t-brand">
           <div className="flex items-center gap-3 mb-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand text-white">
@@ -215,29 +189,11 @@ export default function AccountsPage() {
                 {savingAccount ? 'Creando cuenta...' : 'Crear cuenta'}
               </button>
             </div>
-          </form>
-        </section>
-
-        <section className="app-card p-5 border-t-4 border-t-warning">
-          <h2 className="app-section-title text-warning-text">Crear banco (si no existe)</h2>
-          <p className="text-sm text-neutral-700 mt-1 mb-4">Antes de crear una cuenta, necesitas al menos un banco.</p>
-
-          <form onSubmit={handleCreateBank} className="space-y-4">
-            <div className="space-y-1">
-              <label className="app-label">Nombre del banco</label>
-              <input
-                type="text"
-                value={bankName}
-                onChange={(event) => setBankName(event.target.value)}
-                className="app-control w-full"
-                placeholder="Ej: Bancolombia"
-              />
-            </div>
-            <div className="flex justify-end">
-              <button type="submit" className="app-btn-secondary" disabled={savingBank}>
-                {savingBank ? 'Creando banco...' : 'Crear banco'}
-              </button>
-            </div>
+            {!banks.length && (
+              <p className="text-sm text-warning-text bg-warning-bg rounded-lg px-3 py-2">
+                No hay bancos disponibles. Crea bancos desde Administración.
+              </p>
+            )}
           </form>
         </section>
       </div>
