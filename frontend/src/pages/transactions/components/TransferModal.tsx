@@ -4,6 +4,7 @@ import DatePicker from '@/components/ui/DatePicker'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
 import TimePicker from '@/components/ui/TimePicker'
+import { useToast } from '@/hooks/useToast'
 import type { Account } from '@/types'
 
 interface TransferForm {
@@ -53,8 +54,8 @@ export default function TransferModal({
   onSubmit,
   onClose,
 }: TransferModalProps) {
+  const { toast } = useToast()
   const [form, setForm] = useState<TransferForm>(buildDefault)
-  const [error, setError] = useState<string | null>(null)
 
   const fromAccount = accounts.find((a) => String(a.id) === form.fromAccountId) ?? null
   const toAccount = accounts.find((a) => String(a.id) === form.toAccountId) ?? null
@@ -78,36 +79,34 @@ export default function TransferModal({
           ? ''
           : prev.toAccountId,
     }))
-    setError(null)
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setError(null)
 
     if (!form.fromAccountId) {
-      setError('Selecciona la cuenta de origen.')
+      toast('Selecciona la cuenta de origen.', 'error')
       return
     }
     if (!form.toAccountId) {
-      setError('Selecciona la cuenta de destino.')
+      toast('Selecciona la cuenta de destino.', 'error')
       return
     }
     if (form.fromAccountId === form.toAccountId) {
-      setError('La cuenta de origen y destino deben ser diferentes.')
+      toast('La cuenta de origen y destino deben ser diferentes.', 'error')
       return
     }
     const amount = Number(form.amount)
     if (Number.isNaN(amount) || amount <= 0) {
-      setError('El monto debe ser mayor que 0.')
+      toast('El monto debe ser mayor que 0.', 'error')
       return
     }
     if (!form.occurredDate) {
-      setError('Selecciona la fecha.')
+      toast('Selecciona la fecha.', 'error')
       return
     }
     if (!form.occurredTime) {
-      setError('Selecciona la hora.')
+      toast('Selecciona la hora.', 'error')
       return
     }
 
@@ -166,7 +165,7 @@ export default function TransferModal({
             <label className="app-label">Cuenta de destino</label>
             <Select
               value={form.toAccountId}
-              onChange={(value) => { setForm((prev) => ({ ...prev, toAccountId: value })); setError(null) }}
+              onChange={(value) => { setForm((prev) => ({ ...prev, toAccountId: value })) }}
               options={[
                 {
                   value: '',
@@ -220,11 +219,6 @@ export default function TransferModal({
               className="w-full"
             />
           </div>
-
-          {/* Inline error */}
-          {error && (
-            <p className="text-sm text-brand-text bg-brand-light rounded-lg px-3 py-2">{error}</p>
-          )}
 
           {/* Actions */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
