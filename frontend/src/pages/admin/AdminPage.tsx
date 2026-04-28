@@ -308,7 +308,7 @@ export default function AdminPage() {
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       <div>
         <h1 className="app-title text-xl">Administración</h1>
-        <p className="app-subtitle text-sm mt-0.5">Gestiona catálogos y opciones operativas del sistema.</p>
+        <p className="app-subtitle text-sm mt-0.5">Administra los catálogos base del sistema, como bancos, países y categorías.</p>
       </div>
 
       <div className="app-card p-2">

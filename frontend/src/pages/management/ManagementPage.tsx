@@ -7,7 +7,7 @@ export default function ManagementPage() {
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       <div>
         <h1 className="app-title text-xl">Gestión</h1>
-        <p className="app-subtitle text-sm mt-0.5">Centraliza la administración operativa del sistema fuera del módulo de catálogos.</p>
+        <p className="app-subtitle text-sm mt-0.5">Gestiona la operación interna de la plataforma, separada de la configuración de catálogos.</p>
       </div>
 
       <section className="app-card p-5 border-t-4 border-t-brand-deep">
