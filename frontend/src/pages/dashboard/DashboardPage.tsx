@@ -180,7 +180,10 @@ function buildStacked(txs: Transaction[], lookup: Map<number, string>): { rows: 
 
 // ─── Recharts tooltip style ────────────────────────────────────────────────────
 const fmtTT = (v: unknown) => fmtShort(Number(v ?? 0))
-const fmtTTPair = (v: unknown): [string, string] => [fmtShort(Number(v ?? 0)), '']
+const fmtTTPair = (v: unknown, name: unknown, item: { payload?: { name?: string } }): [string, string] => [
+  fmtShort(Number(v ?? 0)),
+  item.payload?.name ?? String(name ?? 'Monto'),
+]
 const CHART_TICK = 'var(--af-text-muted)'
 const CHART_GRID = 'var(--af-border)'
 const CHART_LEGEND = 'var(--af-text-muted)'
