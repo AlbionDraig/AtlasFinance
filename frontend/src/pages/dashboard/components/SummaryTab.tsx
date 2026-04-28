@@ -81,10 +81,10 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 interface BadgeProps { text: string; variant: BadgeVariant; hint?: string }
 function Badge({ text, variant, hint }: BadgeProps) {
   const cls = {
-    brand: 'bg-[#fce8e8] text-[#8a0808]',
-    success: 'bg-[#e6f4ef] text-[#0f5c40]',
-    warning: 'bg-[#fff4e0] text-[#8a5200]',
-    neutral: 'bg-[#edeceb] text-[#4a4845]',
+    brand: 'bg-brand-light text-brand-text',
+    success: 'bg-success-bg text-success-text',
+    warning: 'bg-warning-bg text-warning-text',
+    neutral: 'bg-neutral-100 text-neutral-700',
   }[variant]
 
   const content = (
@@ -137,7 +137,7 @@ function KpiCard({
 
 interface InsightCardProps { label: string; value: string; sub?: string; tone?: Tone; help?: string }
 function InsightCard({ label, value, sub, tone = 'neutral', help }: InsightCardProps) {
-  const valCls = { positive: 'text-[#0f7a55]', negative: 'text-[#c47a00]', flat: 'text-[#4a4845]', neutral: 'text-[#1c1b1a]' }[tone]
+  const valCls = { positive: 'text-success', negative: 'text-warning', flat: 'text-neutral-700', neutral: 'text-neutral-900' }[tone]
   const accentCls = {
     positive: 'border-l-4 border-l-success ring-1 ring-success/20',
     negative: 'border-l-4 border-l-warning ring-1 ring-warning/20',
@@ -145,7 +145,7 @@ function InsightCard({ label, value, sub, tone = 'neutral', help }: InsightCardP
     neutral: 'border-l-4 border-l-neutral-400 ring-1 ring-neutral-100',
   }[tone]
   return (
-    <div className={`bg-white border border-[#edeceb] rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ${accentCls}`}>
+    <div className={`bg-white border border-neutral-100 rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ${accentCls}`}>
       {help && <span className="absolute top-3 right-3"><HelpTooltip text={help} /></span>}
       <div className="flex items-center gap-1.5 mb-1">
         <p className="app-label uppercase tracking-wider">{label}</p>
@@ -323,9 +323,9 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
           <KpiCard
             label="Patrimonio neto"
             value={fmt(netWorth, currency)}
-            accentClass="bg-[#ca0b0b]"
+            accentClass="bg-brand"
             accentRingClass="ring-2 ring-brand/20"
-            valueClass="text-[#ca0b0b]"
+            valueClass="text-brand"
             sub="saldo actual"
             badge={{ text: cashflowBadge.text, variant: toneToVariant(cashflowBadge.tone, 'brand'), hint: hasPrev ? `El flujo neto del período anterior fue ${fmt(prevCashflow, currency)}. Un flujo positivo mejora tu patrimonio acumulado.` : 'No hay período anterior para comparar.' }}
             help={KPI_HELP['Patrimonio neto']}
@@ -333,9 +333,9 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
           <KpiCard
             label="Ingresos"
             value={fmt(income, currency)}
-            accentClass="bg-[#0f7a55]"
+            accentClass="bg-success"
             accentRingClass="ring-2 ring-success/20"
-            valueClass="text-[#0f7a55]"
+            valueClass="text-success"
             sub="total del período"
             badge={{ text: incomeBadge.text, variant: toneToVariant(incomeBadge.tone, 'success'), hint: hasPrev ? `En el período anterior tus ingresos fueron ${fmt(prevIncome, currency)}. ${incomeBadge.tone === 'positive' ? 'Generaste más ingresos, buen ritmo.' : incomeBadge.tone === 'negative' ? 'Tus ingresos cayeron respecto al período previo.' : 'Ingresos estables.'}` : 'No hay período anterior para comparar.' }}
             help={KPI_HELP['Ingresos']}
@@ -343,9 +343,9 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
           <KpiCard
             label="Gastos"
             value={fmt(expense, currency)}
-            accentClass="bg-[#c47a00]"
+            accentClass="bg-warning"
             accentRingClass="ring-2 ring-warning/20"
-            valueClass="text-[#c47a00]"
+            valueClass="text-warning"
             sub="total del período"
             badge={{ text: expenseBadge.text, variant: toneToVariant(expenseBadge.tone, 'warning'), hint: hasPrev ? `En el período anterior tus gastos fueron ${fmt(prevExpense, currency)}. ${expenseBadge.tone === 'positive' ? 'Gastaste menos que antes, bien.' : expenseBadge.tone === 'negative' ? 'Tus gastos aumentaron respecto al período previo.' : 'Gasto estable.'}` : 'No hay período anterior para comparar.' }}
             help={KPI_HELP['Gastos']}
@@ -354,9 +354,9 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
             label="Tasa de ahorro"
             value={income === 0 ? 'Sin datos' : `${Math.abs(savingsRate) >= 999 ? (savingsRate > 0 ? '>999' : '<-999') : savingsRate.toFixed(1)}%`}
             sub={income > 0 ? (savingsRate >= 20 ? 'margen saludable' : savingsRate >= 5 ? 'margen moderado' : 'margen bajo') : 'sin ingresos'}
-            accentClass="bg-[#5f0404]"
+            accentClass="bg-brand-deep"
             accentRingClass="ring-2 ring-brand-deep/20"
-            valueClass="text-[#5f0404]"
+            valueClass="text-brand-deep"
             badge={{ text: savingsBadge.text, variant: toneToVariant(savingsBadge.tone, 'brand'), hint: hasPrev ? `Tu tasa de ahorro en el período anterior fue ${prevSavings.toFixed(1)}%. ${savingsBadge.tone === 'positive' ? 'Estás ahorrando una mayor proporción de tus ingresos.' : savingsBadge.tone === 'negative' ? 'Tu tasa de ahorro bajó respecto al período previo.' : 'Tasa de ahorro estable.'}` : 'No hay período anterior para comparar.' }}
             help={KPI_HELP['Tasa de ahorro']}
           />

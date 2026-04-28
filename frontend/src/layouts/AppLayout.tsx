@@ -153,16 +153,16 @@ export default function AppLayout() {
         }}
       >
         <div
-          className={`${collapsed ? 'w-20' : 'w-60 shadow-lg'} absolute left-0 top-0 h-full bg-[#1c1b1a] text-[#f7f7f6] border-r border-[#edeceb] flex flex-col z-[120]`}
+          className={`${collapsed ? 'w-20' : 'w-60 shadow-lg'} absolute left-0 top-0 h-full bg-neutral-900 text-neutral-50 border-r border-neutral-100 flex flex-col z-[120]`}
         >
           {/* Logo */}
           <div className={`${collapsed ? 'px-2 py-3 flex-col items-center gap-2' : 'px-6 py-5 items-center gap-3'} border-b border-white/10 flex`}>
-            <div className="w-8 h-8 rounded-lg bg-[#ca0b0b] flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center shrink-0">
               <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V17a1 1 0 11-2 0v-.07A7.003 7.003 0 015 10h1a6 6 0 0012 0h1a7.003 7.003 0 01-6 6.93z" />
               </svg>
             </div>
-            {!collapsed && <span className="text-base font-bold tracking-tight text-[#f7f7f6]">Atlas Finance</span>}
+            {!collapsed && <span className="text-base font-bold tracking-tight text-neutral-50">Atlas Finance</span>}
           </div>
 
           {/* Nav */}
@@ -174,8 +174,8 @@ export default function AppLayout() {
                 className={({ isActive }) =>
                   `flex items-center ${collapsed ? 'justify-center h-9 w-9 mx-auto px-0' : 'px-3 py-2'} rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-[#ca0b0b] text-white font-medium'
-                      : 'text-[#b0aeab] hover:text-[#f7f7f6] hover:bg-white/10'
+                      ? 'bg-brand text-white font-medium'
+                      : 'text-neutral-400 hover:text-neutral-50 hover:bg-white/10'
                   }`
                 }
                 title={collapsed ? label : undefined}
@@ -200,19 +200,19 @@ export default function AppLayout() {
                 className={({ isActive }) =>
                   `flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                     isActive
-                      ? 'bg-[#ca0b0b] text-white'
-                      : 'text-[#b0aeab] hover:text-[#f7f7f6] hover:bg-white/10'
+                      ? 'bg-brand text-white'
+                      : 'text-neutral-400 hover:text-neutral-50 hover:bg-white/10'
                   }`
                 }
               >
-                <div className="w-6 h-6 rounded-full bg-[#fce8e8] flex items-center justify-center shrink-0">
-                  <span className="text-[10px] font-medium text-[#8a0808]">
+                <div className="w-6 h-6 rounded-full bg-brand-light flex items-center justify-center shrink-0">
+                  <span className="text-[10px] font-medium text-brand-text">
                     {user.full_name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
                   </span>
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-medium truncate leading-tight">{user.full_name}</p>
-                  <p className="text-[10px] text-[#b0aeab] truncate leading-tight">{user.email}</p>
+                  <p className="text-[10px] text-neutral-400 truncate leading-tight">{user.email}</p>
                 </div>
               </NavLink>
             )}
@@ -222,7 +222,7 @@ export default function AppLayout() {
                 title="Mi perfil"
                 className={({ isActive }) =>
                   `flex items-center justify-center h-9 w-9 mx-auto rounded-lg transition-colors ${
-                    isActive ? 'bg-[#ca0b0b]' : 'text-[#b0aeab] hover:text-[#f7f7f6] hover:bg-white/10'
+                    isActive ? 'bg-brand' : 'text-neutral-400 hover:text-neutral-50 hover:bg-white/10'
                   }`
                 }
               >
@@ -233,7 +233,7 @@ export default function AppLayout() {
             )}
             <button
               onClick={handleLogout}
-              className={`w-full flex items-center ${collapsed ? 'justify-center h-9 w-9 mx-auto px-0' : 'px-3 py-2'} rounded-lg text-sm font-medium text-[#b0aeab] hover:text-[#f7f7f6] hover:bg-white/10 transition-colors`}
+              className={`w-full flex items-center ${collapsed ? 'justify-center h-9 w-9 mx-auto px-0' : 'px-3 py-2'} rounded-lg text-sm font-medium text-neutral-400 hover:text-neutral-50 hover:bg-white/10 transition-colors`}
               title={collapsed ? 'Cerrar sesión' : undefined}
             >
               {collapsed

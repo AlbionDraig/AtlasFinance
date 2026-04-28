@@ -232,7 +232,7 @@ body {
     border: 1px solid transparent;
     border-radius: 0.5rem;
     background: var(--af-accent);
-    color: #ffffff;
+    color: var(--af-surface);
     padding: 0.625rem 1rem;
     font-size: 0.875rem;
     font-weight: 600;
@@ -251,10 +251,10 @@ body {
 
   .app-btn-secondary {
     width: 100%;
-    border: 1px solid #ca0b0b;
+    border: 1px solid var(--af-accent);
     border-radius: 0.5rem;
-    background: #ffffff;
-    color: #ca0b0b;
+    background: var(--af-surface);
+    color: var(--af-accent);
     padding: 0.625rem 1rem;
     font-size: 0.875rem;
     font-weight: 600;
@@ -263,7 +263,7 @@ body {
   }
 
   .app-btn-secondary:hover {
-    background: #fce8e8;
+    background: var(--af-accent-soft);
   }
 
   .app-link {
@@ -273,7 +273,7 @@ body {
   }
 
   .app-link:hover {
-    color: color-mix(in srgb, var(--af-accent) 80%, #000000 20%);
+    color: color-mix(in srgb, var(--af-accent) 80%, var(--af-text) 20%);
   }
 
   .tone-positive {
@@ -374,7 +374,7 @@ body {
   /* Botón primario de marca */
   .btn-brand {
     background-color: var(--color-brand);
-    color: #ffffff;
+    color: var(--af-surface);
     border-radius: 0.5rem;
     border: 1px solid transparent;
     padding: 0.625rem 1rem;

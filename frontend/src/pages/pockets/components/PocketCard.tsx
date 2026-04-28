@@ -38,7 +38,7 @@ export default function PocketCard({ pocket, account, accountStyle, onEdit, onDe
   const cardStyle: CSSProperties | undefined = accountStyle
     ? {
         borderTopColor: accountStyle.accent,
-        background: `linear-gradient(180deg, ${accountStyle.softBg} 0%, #ffffff 36%)`,
+        background: `linear-gradient(180deg, ${accountStyle.softBg} 0%, white 36%)`,
       }
     : undefined
 
