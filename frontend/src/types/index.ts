@@ -50,9 +50,10 @@ export interface Transaction {
 export interface Pocket {
   id: number
   name: string
-  target_amount: number
-  current_amount: number
+  balance: number
   currency: string
+  account_id: number
+  created_at: string
 }
 
 // Metric

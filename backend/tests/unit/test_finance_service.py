@@ -8,6 +8,7 @@ from app.schemas.account import AccountCreate
 from app.schemas.bank import BankCreate
 from app.schemas.category import CategoryCreate
 from app.schemas.country import CountryCreate, CountryUpdate
+from app.schemas.pocket import PocketCreate, PocketUpdate
 from app.schemas.transaction import TransactionCreate
 from app.schemas.user import UserCreate
 from app.services.auth_service import create_user
@@ -16,20 +17,25 @@ from app.services.finance_service import (
     create_bank,
     create_category,
     create_country,
+    create_pocket,
     delete_account,
     delete_bank,
     delete_category,
     delete_country,
+    delete_pocket,
     delete_transaction,
+    get_pocket,
     get_dashboard_metrics,
     list_categories,
     list_countries,
+    list_pockets,
     list_transactions,
     register_transaction,
     update_account,
     update_bank,
     update_category,
     update_country,
+    update_pocket,
     update_transaction,
 )
 
@@ -90,6 +96,116 @@ def test_register_transaction_updates_balance_and_metrics(db_session, monkeypatc
     assert metrics.total_expenses == Decimal("200")
     assert metrics.cashflow == Decimal("300")
     assert metrics.net_worth == Decimal("300")
+
+
+def test_pockets_lifecycle_and_account_scope_rules(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="pockets@test.com", full_name="Pockets", password=TEST_PASSWORD),
+    )
+    other_user = create_user(
+        db_session,
+        UserCreate(email="pockets-other@test.com", full_name="Pockets Other", password=TEST_PASSWORD),
+    )
+
+    user_bank = create_bank(db_session, user.id, BankCreate(name="Banco Usuario", country_code="CO"))
+    other_bank = create_bank(db_session, other_user.id, BankCreate(name="Banco Otro", country_code="CO"))
+
+    user_account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Cuenta Usuario",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=user_bank.id,
+        ),
+    )
+    second_user_account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Cuenta Usuario 2",
+            account_type=AccountType.CHECKING,
+            currency=Currency.USD,
+            current_balance=Decimal("0"),
+            bank_id=user_bank.id,
+        ),
+    )
+    other_account = create_account(
+        db_session,
+        other_user.id,
+        AccountCreate(
+            name="Cuenta Otro",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=other_bank.id,
+        ),
+    )
+
+    pocket = create_pocket(
+        db_session,
+        user.id,
+        PocketCreate(name="Viajes", balance=Decimal("250"), currency=Currency.COP, account_id=user_account.id),
+    )
+
+    fetched_pocket = get_pocket(db_session, user.id, pocket.id)
+    assert fetched_pocket.id == pocket.id
+
+    pockets = list_pockets(db_session, user.id)
+    assert len(pockets) == 1
+    assert pockets[0].id == pocket.id
+
+    updated = update_pocket(
+        db_session,
+        user.id,
+        pocket.id,
+        PocketUpdate(
+            name="Viajes 2026",
+            balance=Decimal("300"),
+            currency=Currency.COP,
+            account_id=user_account.id,
+        ),
+    )
+    assert updated.name == "Viajes 2026"
+    assert updated.balance == Decimal("300")
+
+    with pytest.raises(ValueError, match="Pocket currency must match account currency"):
+        update_pocket(
+            db_session,
+            user.id,
+            pocket.id,
+            PocketUpdate(
+                name="Viajes USD",
+                balance=Decimal("100"),
+                currency=Currency.COP,
+                account_id=second_user_account.id,
+            ),
+        )
+
+    with pytest.raises(ValueError, match="Invalid account for user"):
+        create_pocket(
+            db_session,
+            user.id,
+            PocketCreate(name="No permitido", balance=Decimal("10"), currency=Currency.COP, account_id=other_account.id),
+        )
+
+    duplicate_name_payload = PocketCreate(
+        name="Viajes 2026",
+        balance=Decimal("50"),
+        currency=Currency.COP,
+        account_id=user_account.id,
+    )
+    with pytest.raises(ValueError, match="Pocket name already exists for account"):
+        create_pocket(db_session, user.id, duplicate_name_payload)
+
+    delete_pocket(db_session, user.id, pocket.id)
+    assert list_pockets(db_session, user.id) == []
+
+    with pytest.raises(ValueError, match="Pocket not found"):
+        get_pocket(db_session, user.id, pocket.id)
 
 
 def test_categories_are_global_and_reusable_across_users(db_session):

@@ -60,6 +60,23 @@ def test_api_main_flow(client, monkeypatch):
         headers=headers,
     )
     assert pocket_resp.status_code == 201
+    pocket_id = pocket_resp.json()["id"]
+
+    list_pockets_resp = client.get("/api/v1/pockets/", headers=headers)
+    assert list_pockets_resp.status_code == 200
+    assert any(item["id"] == pocket_id for item in list_pockets_resp.json())
+
+    get_pocket_resp = client.get(f"/api/v1/pockets/{pocket_id}", headers=headers)
+    assert get_pocket_resp.status_code == 200
+    assert get_pocket_resp.json()["name"] == "Viajes"
+
+    update_pocket_resp = client.put(
+        f"/api/v1/pockets/{pocket_id}",
+        json={"name": "Viajes 2026", "balance": 150, "currency": "COP", "account_id": account_id},
+        headers=headers,
+    )
+    assert update_pocket_resp.status_code == 200
+    assert update_pocket_resp.json()["balance"] == 150
 
     category_resp = client.post("/api/v1/categories/", json={"name": "transport"}, headers=headers)
     assert category_resp.status_code == 201
@@ -134,6 +151,12 @@ def test_api_main_flow(client, monkeypatch):
 
     delete_missing_resp = client.delete(f"/api/v1/transactions/{txn_id}", headers=headers)
     assert delete_missing_resp.status_code == 404
+
+    delete_pocket_resp = client.delete(f"/api/v1/pockets/{pocket_id}", headers=headers)
+    assert delete_pocket_resp.status_code == 204
+
+    pocket_not_found_resp = client.get(f"/api/v1/pockets/{pocket_id}", headers=headers)
+    assert pocket_not_found_resp.status_code == 404
 
     metrics_resp = client.get("/api/v1/metrics/dashboard?currency=COP", headers=headers)
     assert metrics_resp.status_code == 200
@@ -233,6 +256,101 @@ def test_management_endpoints_cover_update_and_delete_paths(client):
 
     delete_bank_resp = client.delete(f"/api/v1/banks/{bank_id}", headers=headers)
     assert delete_bank_resp.status_code == 204
+
+
+def test_pockets_enforce_account_ownership_and_currency(client):
+    owner_headers = _auth_headers(client, email="api-pocket-owner@test.com")
+    other_headers = _auth_headers(client, email="api-pocket-other@test.com")
+
+    owner_bank_resp = client.post(
+        "/api/v1/banks/",
+        json={"name": "Banco Owner", "country_code": "CO"},
+        headers=owner_headers,
+    )
+    assert owner_bank_resp.status_code == 201
+    owner_bank_id = owner_bank_resp.json()["id"]
+
+    owner_account_resp = client.post(
+        "/api/v1/accounts/",
+        json={
+            "name": "Cuenta Owner",
+            "account_type": "savings",
+            "currency": "COP",
+            "current_balance": 0,
+            "bank_id": owner_bank_id,
+        },
+        headers=owner_headers,
+    )
+    assert owner_account_resp.status_code == 201
+    owner_account_id = owner_account_resp.json()["id"]
+
+    usd_account_resp = client.post(
+        "/api/v1/accounts/",
+        json={
+            "name": "Cuenta Owner USD",
+            "account_type": "checking",
+            "currency": "USD",
+            "current_balance": 0,
+            "bank_id": owner_bank_id,
+        },
+        headers=owner_headers,
+    )
+    assert usd_account_resp.status_code == 201
+    usd_account_id = usd_account_resp.json()["id"]
+
+    other_bank_resp = client.post(
+        "/api/v1/banks/",
+        json={"name": "Banco Other", "country_code": "CO"},
+        headers=other_headers,
+    )
+    assert other_bank_resp.status_code == 201
+    other_bank_id = other_bank_resp.json()["id"]
+
+    other_account_resp = client.post(
+        "/api/v1/accounts/",
+        json={
+            "name": "Cuenta Other",
+            "account_type": "savings",
+            "currency": "COP",
+            "current_balance": 0,
+            "bank_id": other_bank_id,
+        },
+        headers=other_headers,
+    )
+    assert other_account_resp.status_code == 201
+    other_account_id = other_account_resp.json()["id"]
+
+    create_resp = client.post(
+        "/api/v1/pockets/",
+        json={"name": "Meta Hogar", "balance": 200, "currency": "COP", "account_id": owner_account_id},
+        headers=owner_headers,
+    )
+    assert create_resp.status_code == 201
+    pocket_id = create_resp.json()["id"]
+
+    duplicate_name_resp = client.post(
+        "/api/v1/pockets/",
+        json={"name": "Meta Hogar", "balance": 50, "currency": "COP", "account_id": owner_account_id},
+        headers=owner_headers,
+    )
+    assert duplicate_name_resp.status_code == 400
+
+    invalid_owner_resp = client.post(
+        "/api/v1/pockets/",
+        json={"name": "No Propio", "balance": 50, "currency": "COP", "account_id": other_account_id},
+        headers=owner_headers,
+    )
+    assert invalid_owner_resp.status_code == 400
+
+    invalid_currency_resp = client.put(
+        f"/api/v1/pockets/{pocket_id}",
+        json={"name": "Meta Hogar USD", "balance": 100, "currency": "COP", "account_id": usd_account_id},
+        headers=owner_headers,
+    )
+    assert invalid_currency_resp.status_code == 400
+
+    foreign_access_resp = client.get(f"/api/v1/pockets/{pocket_id}", headers=other_headers)
+    assert foreign_access_resp.status_code == 404
 
 
 def test_logout_revokes_access_token(client):

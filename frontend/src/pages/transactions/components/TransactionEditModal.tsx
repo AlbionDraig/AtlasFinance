@@ -1,3 +1,4 @@
+import type { Dispatch, FormEvent, SetStateAction } from 'react'
 import Modal from '@/components/ui/Modal'
 import TransactionFormCard from './TransactionFormCard'
 import type { Account } from '@/types'

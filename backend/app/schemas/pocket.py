@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -13,6 +14,14 @@ class PocketCreate(BaseModel):
     account_id: int
 
 
+class PocketUpdate(BaseModel):
+    """Payload used to update an existing pocket."""
+    name: str = Field(min_length=2, max_length=120)
+    balance: Decimal = Field(ge=0)
+    currency: Currency
+    account_id: int
+
+
 class PocketRead(BaseModel):
     """Serialized pocket response exposed by the API."""
     id: int
@@ -20,5 +29,6 @@ class PocketRead(BaseModel):
     balance: Decimal
     currency: Currency
     account_id: int
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True, json_encoders={Decimal: float})

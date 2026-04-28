@@ -8,6 +8,12 @@ interface TooltipProps {
   widthClassName?: string
 }
 
+function widthPxFromClass(widthClassName: string): number {
+  const match = /^w-(\d+)$/.exec(widthClassName.trim())
+  if (!match) return 176
+  return Number(match[1]) * 4
+}
+
 export default function Tooltip({
   content,
   children,
@@ -38,7 +44,8 @@ export default function Tooltip({
       const margin = 8
       const gap = 8
       const minMaxWidth = 140
-      const estimatedWidth = Math.min(176, tipRect.width || 176) // Asumir máximo 176px (w-44)
+      const widthFromClass = widthPxFromClass(widthClassName)
+      const estimatedWidth = Math.min(widthFromClass, tipRect.width || widthFromClass)
 
       // Primero, calcular el left centrado basado en el ancho estimado
       let left = triggerRect.left + triggerRect.width / 2 - estimatedWidth / 2
@@ -77,7 +84,7 @@ export default function Tooltip({
       window.removeEventListener('resize', updatePosition)
       window.removeEventListener('scroll', updatePosition, true)
     }
-  }, [open])
+  }, [open, widthClassName])
 
   return (
     <span

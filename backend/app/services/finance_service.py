@@ -20,7 +20,7 @@ from app.schemas.bank import BankCreate, BankUpdate
 from app.schemas.category import CategoryCreate, CategoryUpdate
 from app.schemas.country import CountryCreate, CountryUpdate
 from app.schemas.metric import DashboardMetrics
-from app.schemas.pocket import PocketCreate
+from app.schemas.pocket import PocketCreate, PocketUpdate
 from app.schemas.transaction import TransactionCreate
 from app.services.currency_service import convert_currency
 
@@ -186,6 +186,20 @@ def create_pocket(db: Session, user_id: int, payload: PocketCreate) -> Pocket:
     if not account or account.bank.user_id != user_id:
         raise ValueError("Invalid account for user")
 
+    if payload.currency != account.currency:
+        raise ValueError("Pocket currency must match account currency")
+
+    duplicated_name = db.scalar(
+        select(Pocket.id)
+        .where(
+            Pocket.account_id == payload.account_id,
+            func.lower(Pocket.name) == payload.name.lower(),
+        )
+        .limit(1)
+    )
+    if duplicated_name is not None:
+        raise ValueError("Pocket name already exists for account")
+
     pocket = Pocket(
         name=payload.name,
         balance=payload.balance,
@@ -193,6 +207,67 @@ def create_pocket(db: Session, user_id: int, payload: PocketCreate) -> Pocket:
         account_id=payload.account_id,
     )
     return _persist_and_refresh(db, pocket)
+
+
+def list_pockets(db: Session, user_id: int) -> list[Pocket]:
+    """List pockets that belong to the authenticated user."""
+    query = (
+        select(Pocket)
+        .join(Account)
+        .join(Bank)
+        .where(Bank.user_id == user_id)
+        .order_by(Pocket.created_at.desc())
+    )
+    return list(db.scalars(query).all())
+
+
+def get_pocket(db: Session, user_id: int, pocket_id: int) -> Pocket:
+    """Return a pocket owned by the authenticated user."""
+    pocket = db.get(Pocket, pocket_id)
+    if not pocket or pocket.account.bank.user_id != user_id:
+        raise ValueError("Pocket not found")
+    return pocket
+
+
+def update_pocket(db: Session, user_id: int, pocket_id: int, payload: PocketUpdate) -> Pocket:
+    """Update pocket metadata and target account when both belong to the user."""
+    pocket = db.get(Pocket, pocket_id)
+    if not pocket or pocket.account.bank.user_id != user_id:
+        raise ValueError("Pocket not found")
+
+    account = db.get(Account, payload.account_id)
+    if not account or account.bank.user_id != user_id:
+        raise ValueError("Invalid account for user")
+
+    if payload.currency != account.currency:
+        raise ValueError("Pocket currency must match account currency")
+
+    duplicated_name = db.scalar(
+        select(Pocket.id)
+        .where(
+            Pocket.account_id == payload.account_id,
+            func.lower(Pocket.name) == payload.name.lower(),
+            Pocket.id != pocket_id,
+        )
+        .limit(1)
+    )
+    if duplicated_name is not None:
+        raise ValueError("Pocket name already exists for account")
+
+    pocket.name = payload.name
+    pocket.balance = payload.balance
+    pocket.currency = payload.currency
+    pocket.account_id = payload.account_id
+    return _persist_and_refresh(db, pocket)
+
+
+def delete_pocket(db: Session, user_id: int, pocket_id: int) -> None:
+    """Delete a pocket owned by the authenticated user."""
+    pocket = db.get(Pocket, pocket_id)
+    if not pocket or pocket.account.bank.user_id != user_id:
+        raise ValueError("Pocket not found")
+    db.delete(pocket)
+    db.commit()
 
 
 def create_category(db: Session, payload: CategoryCreate) -> Category:

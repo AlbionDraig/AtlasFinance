@@ -262,7 +262,7 @@ export default function AccountsPage() {
         <ConfirmDeleteModal
           title="Eliminar cuenta"
           description={`¿Seguro que deseas eliminar la cuenta "${deletingAccount.name}"? Esta acción no se puede deshacer.`}
-          saving={savingAccount}
+          loading={savingAccount}
           onConfirm={handleDeleteAccount}
           onClose={() => setDeletingAccount(null)}
         />
