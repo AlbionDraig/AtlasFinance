@@ -8,6 +8,11 @@ export interface PocketPayload {
   account_id: number
 }
 
+export interface PocketUpdatePayload {
+  name: string
+  account_id: number
+}
+
 export interface PocketMovePayload {
   amount: number
   account_id: number
@@ -19,7 +24,7 @@ export const pocketsApi = {
   list: () => apiClient.get<Pocket[]>('/pockets'),
   get: (id: number) => apiClient.get<Pocket>(`/pockets/${id}`),
   create: (data: PocketPayload) => apiClient.post<Pocket>('/pockets', data),
-  update: (id: number, data: PocketPayload) =>
+  update: (id: number, data: PocketUpdatePayload) =>
     apiClient.put<Pocket>(`/pockets/${id}`, data),
   moveFunds: (data: PocketMovePayload) =>
     apiClient.post<Transaction>('/pockets/move-funds', data),

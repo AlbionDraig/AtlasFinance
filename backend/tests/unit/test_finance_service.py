@@ -166,23 +166,19 @@ def test_pockets_lifecycle_and_account_scope_rules(db_session):
         pocket.id,
         PocketUpdate(
             name="Viajes 2026",
-            balance=Decimal("300"),
-            currency=Currency.COP,
             account_id=user_account.id,
         ),
     )
     assert updated.name == "Viajes 2026"
-    assert updated.balance == Decimal("300")
+    assert updated.balance == Decimal("250")
 
-    with pytest.raises(ValueError, match="Pocket currency must match account currency"):
+    with pytest.raises(ValueError, match="Cannot move pocket to account with different currency"):
         update_pocket(
             db_session,
             user.id,
             pocket.id,
             PocketUpdate(
                 name="Viajes USD",
-                balance=Decimal("100"),
-                currency=Currency.COP,
                 account_id=second_user_account.id,
             ),
         )

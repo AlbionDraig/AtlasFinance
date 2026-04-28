@@ -17,8 +17,6 @@ class PocketCreate(BaseModel):
 class PocketUpdate(BaseModel):
     """Payload used to update an existing pocket."""
     name: str = Field(min_length=2, max_length=120)
-    balance: Decimal = Field(ge=0)
-    currency: Currency
     account_id: int
 
 

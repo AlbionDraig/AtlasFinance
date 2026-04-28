@@ -72,11 +72,11 @@ def test_api_main_flow(client, monkeypatch):
 
     update_pocket_resp = client.put(
         f"/api/v1/pockets/{pocket_id}",
-        json={"name": "Viajes 2026", "balance": 150, "currency": "COP", "account_id": account_id},
+        json={"name": "Viajes 2026", "account_id": account_id},
         headers=headers,
     )
     assert update_pocket_resp.status_code == 200
-    assert update_pocket_resp.json()["balance"] == 150
+    assert update_pocket_resp.json()["balance"] == 100
 
     category_resp = client.post("/api/v1/categories/", json={"name": "transport"}, headers=headers)
     assert category_resp.status_code == 201
@@ -344,7 +344,7 @@ def test_pockets_enforce_account_ownership_and_currency(client):
 
     invalid_currency_resp = client.put(
         f"/api/v1/pockets/{pocket_id}",
-        json={"name": "Meta Hogar USD", "balance": 100, "currency": "COP", "account_id": usd_account_id},
+        json={"name": "Meta Hogar USD", "account_id": usd_account_id},
         headers=owner_headers,
     )
     assert invalid_currency_resp.status_code == 400

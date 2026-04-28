@@ -239,8 +239,8 @@ def update_pocket(db: Session, user_id: int, pocket_id: int, payload: PocketUpda
     if not account or account.bank.user_id != user_id:
         raise ValueError("Invalid account for user")
 
-    if payload.currency != account.currency:
-        raise ValueError("Pocket currency must match account currency")
+    if account.currency != pocket.currency:
+        raise ValueError("Cannot move pocket to account with different currency")
 
     duplicated_name = db.scalar(
         select(Pocket.id)
@@ -255,8 +255,6 @@ def update_pocket(db: Session, user_id: int, pocket_id: int, payload: PocketUpda
         raise ValueError("Pocket name already exists for account")
 
     pocket.name = payload.name
-    pocket.balance = payload.balance
-    pocket.currency = payload.currency
     pocket.account_id = payload.account_id
     return _persist_and_refresh(db, pocket)
 

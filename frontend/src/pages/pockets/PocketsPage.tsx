@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type Dispatch, type F
 import { AxiosError } from 'axios'
 import { accountsApi } from '@/api/accounts'
 import { banksApi, type Bank } from '@/api/banks'
-import { pocketsApi, type PocketPayload } from '@/api/pockets'
+import { pocketsApi, type PocketPayload, type PocketUpdatePayload } from '@/api/pockets'
 import type { Account, Pocket } from '@/types'
 import { useToast } from '@/hooks/useToast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -13,6 +13,7 @@ import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 import Select from '@/components/ui/Select'
+import InlineAlert from '@/components/ui/InlineAlert'
 import PocketsFiltersCard, { type PocketFiltersState } from './components/PocketsFiltersCard'
 
 interface PocketFormState {
@@ -80,9 +81,12 @@ function buildAccountVisualStyle(_accountId: number, index: number): AccountVisu
 
 interface PocketModalProps {
   title: string
+  isEditing: boolean
   form: PocketFormState
   setForm: Dispatch<SetStateAction<PocketFormState>>
   accounts: Account[]
+  currentBalance?: number
+  currentCurrency?: string
   saving: boolean
   submitLabel: string
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
@@ -91,9 +95,12 @@ interface PocketModalProps {
 
 function PocketModal({
   title,
+  isEditing,
   form,
   setForm,
   accounts,
+  currentBalance,
+  currentCurrency,
   saving,
   submitLabel,
   onSubmit,
@@ -147,17 +154,29 @@ function PocketModal({
             />
           </FormField>
 
-          <FormField label="Saldo inicial">
-            <input
-              className="app-control"
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.balance}
-              onChange={event => setForm(current => ({ ...current, balance: event.target.value }))}
-              placeholder="0"
-            />
-          </FormField>
+          {!isEditing ? (
+            <FormField label="Saldo inicial">
+              <input
+                className="app-control"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.balance}
+                onChange={event => setForm(current => ({ ...current, balance: event.target.value }))}
+                placeholder="0"
+              />
+              <InlineAlert
+                className="mt-2"
+                message={<>El saldo inicial no se puede modificar después de crear el bolsillo. Usa <span className="font-medium">Mover a bolsillo</span> para actualizar el saldo.</>}
+              />
+            </FormField>
+          ) : (
+            <FormField label="Saldo actual">
+              <p className="app-control w-full min-h-10 flex items-center text-neutral-700">
+                {formatCurrency(currentBalance ?? 0, currentCurrency ?? selectedAccount?.currency ?? 'COP')}
+              </p>
+            </FormField>
+          )}
 
           <p className="text-xs text-neutral-400">
             Los bolsillos solo guardan dinero para propósitos específicos y usan la misma moneda de la cuenta:
@@ -312,7 +331,7 @@ export default function PocketsPage() {
     })
   }
 
-  function buildPayloadFromForm(): PocketPayload | null {
+  function buildCreatePayloadFromForm(): PocketPayload | null {
     const name = form.name.trim()
     const accountId = Number(form.account_id)
     const balance = Number(form.balance)
@@ -344,9 +363,34 @@ export default function PocketsPage() {
     }
   }
 
+  function buildUpdatePayloadFromForm(): PocketUpdatePayload | null {
+    const name = form.name.trim()
+    const accountId = Number(form.account_id)
+
+    if (name.length < 2) {
+      toast('El nombre del bolsillo debe tener al menos 2 caracteres.', 'error')
+      return null
+    }
+    if (!Number.isInteger(accountId) || accountId <= 0) {
+      toast('Selecciona una cuenta para el bolsillo.', 'error')
+      return null
+    }
+
+    const selectedAccount = accountById.get(accountId)
+    if (!selectedAccount) {
+      toast('La cuenta seleccionada no es válida.', 'error')
+      return null
+    }
+
+    return {
+      name,
+      account_id: accountId,
+    }
+  }
+
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const payload = buildPayloadFromForm()
+    const payload = buildCreatePayloadFromForm()
     if (!payload) return
 
     setSaving(true)
@@ -365,7 +409,7 @@ export default function PocketsPage() {
   async function handleUpdate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!editingPocket) return
-    const payload = buildPayloadFromForm()
+    const payload = buildUpdatePayloadFromForm()
     if (!payload) return
 
     setSaving(true)
@@ -417,6 +461,7 @@ export default function PocketsPage() {
       {createOpen && (
         <PocketModal
           title="Crear bolsillo"
+          isEditing={false}
           form={form}
           setForm={setForm}
           accounts={accounts}
@@ -430,9 +475,12 @@ export default function PocketsPage() {
       {editingPocket && (
         <PocketModal
           title="Editar bolsillo"
+          isEditing
           form={form}
           setForm={setForm}
           accounts={accounts}
+          currentBalance={editingPocket.balance}
+          currentCurrency={editingPocket.currency}
           saving={saving}
           submitLabel="Guardar cambios"
           onSubmit={handleUpdate}
