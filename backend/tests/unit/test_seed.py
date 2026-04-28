@@ -50,8 +50,15 @@ def test_run_seed_rolls_back_and_closes_session_on_failure(monkeypatch):
             self.rollback_called = False
             self.close_called = False
 
+        class _ScalarsResult:
+            def all(self):
+                return []
+
         def query(self, *_args, **_kwargs):
             return _QueryResult()
+
+        def scalars(self, *_args, **_kwargs):
+            return self._ScalarsResult()
 
         def add(self, *_args, **_kwargs):
             return None

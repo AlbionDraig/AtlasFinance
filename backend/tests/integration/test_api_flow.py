@@ -469,12 +469,12 @@ def test_countries_crud_endpoints(client):
 
     update_resp = client.put(
         f"/api/v1/countries/{created_country_id}",
-        json={"name": "México", "code": "MX"},
+        json={"name": "Chile", "code": "CL"},
         headers=headers,
     )
     assert update_resp.status_code == 200
-    assert update_resp.json()["name"] == "México"
-    assert update_resp.json()["code"] == "MX"
+    assert update_resp.json()["name"] == "Chile"
+    assert update_resp.json()["code"] == "CL"
 
     delete_resp = client.delete(f"/api/v1/countries/{created_country_id}", headers=headers)
     assert delete_resp.status_code == 204

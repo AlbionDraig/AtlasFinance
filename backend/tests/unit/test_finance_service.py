@@ -8,8 +8,8 @@ from app.schemas.account import AccountCreate
 from app.schemas.bank import BankCreate
 from app.schemas.category import CategoryCreate
 from app.schemas.country import CountryCreate, CountryUpdate
-from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
 from app.schemas.investment import InvestmentCreate, InvestmentUpdate
+from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
 from app.schemas.transaction import TransactionCreate
 from app.schemas.user import UserCreate
 from app.services.auth_service import create_user
@@ -27,9 +27,9 @@ from app.services.finance_service import (
     delete_investment,
     delete_pocket,
     delete_transaction,
+    get_dashboard_metrics,
     get_investment,
     get_pocket,
-    get_dashboard_metrics,
     list_accounts,
     list_categories,
     list_countries,
@@ -706,7 +706,7 @@ def test_register_transaction_rejects_second_initial_balance(db_session):
         ),
     )
 
-    with pytest.raises(ValueError, match="El saldo inicial solo se puede registrar una vez por cuenta\."):
+    with pytest.raises(ValueError, match=r"El saldo inicial solo se puede registrar una vez por cuenta\."):
         register_transaction(
             db_session,
             user.id,

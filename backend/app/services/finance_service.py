@@ -19,10 +19,10 @@ from app.schemas.account import AccountCreate, AccountUpdate
 from app.schemas.bank import BankCreate, BankUpdate
 from app.schemas.category import CategoryCreate, CategoryUpdate
 from app.schemas.country import CountryCreate, CountryUpdate
+from app.schemas.investment import InvestmentCreate, InvestmentUpdate
 from app.schemas.metric import DashboardMetrics
 from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
-from app.schemas.investment import InvestmentCreate, InvestmentUpdate
-from app.schemas.transaction import TransactionCreate, TransactionRead
+from app.schemas.transaction import TransactionCreate
 from app.services.currency_service import convert_currency
 
 # In-process cache for dashboard aggregates: {(user_id, currency) -> (metrics, expires_at)}
