@@ -13,6 +13,7 @@ import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 import Select from '@/components/ui/Select'
+import AmountInput from '@/components/ui/AmountInput'
 import InlineAlert from '@/components/ui/InlineAlert'
 import PocketsFiltersCard, { type PocketFiltersState } from './components/PocketsFiltersCard'
 
@@ -156,13 +157,11 @@ function PocketModal({
 
           {!isEditing ? (
             <FormField label="Saldo inicial">
-              <input
-                className="app-control"
-                type="number"
-                min="0"
-                step="0.01"
+              <AmountInput
                 value={form.balance}
-                onChange={event => setForm(current => ({ ...current, balance: event.target.value }))}
+                onChange={raw => setForm(current => ({ ...current, balance: raw }))}
+                currency={selectedAccount?.currency ?? 'COP'}
+                className="w-full"
                 placeholder="0"
               />
               <InlineAlert
