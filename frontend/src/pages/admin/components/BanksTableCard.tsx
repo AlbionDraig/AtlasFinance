@@ -29,12 +29,11 @@ export default function BanksTableCard({
   onPageSizeChange,
 }: BanksTableCardProps) {
   const countryCounts = filteredBanks.reduce<Record<string, number>>((accumulator, bank) => {
-    accumulator[bank.country_code] = (accumulator[bank.country_code] ?? 0) + 1
+    const countryCode = bank.country_code.trim().toUpperCase()
+    accumulator[countryCode] = (accumulator[countryCode] ?? 0) + 1
     return accumulator
   }, {})
   const uniqueCountries = Object.keys(countryCounts).length
-  const coCount = countryCounts.CO ?? 0
-  const otherCount = filteredBanks.length - coCount
   const metrics = [
     {
       key: 'count',
@@ -47,18 +46,6 @@ export default function BanksTableCard({
       variant: 'positive' as const,
       label: `${uniqueCountries} países`,
       help: 'Cantidad de códigos de país representados en los resultados filtrados.',
-    },
-    {
-      key: 'co',
-      variant: 'neutral' as const,
-      label: `CO ${coCount}`,
-      help: 'Bancos con código de país CO dentro del resultado actual.',
-    },
-    {
-      key: 'other',
-      variant: 'negative' as const,
-      label: `Otros ${otherCount}`,
-      help: 'Bancos con códigos de país distintos a CO dentro del resultado actual.',
     },
   ]
 
