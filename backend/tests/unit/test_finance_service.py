@@ -11,7 +11,7 @@ from app.schemas.country import CountryCreate, CountryUpdate
 from app.schemas.investment import InvestmentCreate, InvestmentUpdate
 from app.schemas.investment_entity import InvestmentEntityCreate, InvestmentEntityUpdate
 from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
-from app.schemas.transaction import TransactionCreate
+from app.schemas.transaction import TransactionCreate, TransferCreate
 from app.schemas.user import UserCreate
 from app.services.auth_service import create_user
 from app.services.finance_service import (
@@ -22,6 +22,7 @@ from app.services.finance_service import (
     create_investment,
     create_investment_entity,
     create_pocket,
+    create_transfer,
     delete_account,
     delete_bank,
     delete_category,
@@ -30,14 +31,15 @@ from app.services.finance_service import (
     delete_investment_entity,
     delete_pocket,
     delete_transaction,
+    get_dashboard_aggregates,
     get_dashboard_metrics,
     get_investment,
     get_pocket,
     list_accounts,
     list_categories,
     list_countries,
-    list_investments,
     list_investment_entities,
+    list_investments,
     list_pockets,
     list_transactions,
     move_amount_to_pocket,
@@ -353,7 +355,7 @@ def test_register_transaction_rejects_expense_when_funds_are_insufficient(db_ses
         ),
     )
 
-    with pytest.raises(ValueError, match="Fondos insuficientes en la cuenta seleccionada\\."):
+    with pytest.raises(ValueError, match="Insufficient funds in the selected account\\."):
         register_transaction(
             db_session,
             user.id,
@@ -437,7 +439,7 @@ def test_update_transaction_rejects_transfer_transactions(db_session):
         ),
     )
 
-    with pytest.raises(ValueError, match="Los movimientos de transferencia entre cuentas no se pueden editar\\."):
+    with pytest.raises(ValueError, match="Transfer transactions cannot be edited\\."):
         update_transaction(
             db_session,
             user.id,
@@ -711,7 +713,7 @@ def test_register_transaction_rejects_second_initial_balance(db_session):
         ),
     )
 
-    with pytest.raises(ValueError, match=r"El saldo inicial solo se puede registrar una vez por cuenta\."):
+    with pytest.raises(ValueError, match=r"Initial balance can only be registered once per account\."):
         register_transaction(
             db_session,
             user.id,
@@ -911,3 +913,280 @@ def test_investment_entities_crud_and_ownership_rules(db_session):
 
     delete_investment_entity(db_session, user.id, entity.id)
     assert list_investment_entities(db_session, user.id) == []
+
+
+def test_create_transfer_success_and_validation_rules(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="transfer-rules@test.com", full_name="Transfer Rules", password=TEST_PASSWORD),
+    )
+    other_user = create_user(
+        db_session,
+        UserCreate(email="transfer-rules-other@test.com", full_name="Transfer Rules Other", password=TEST_PASSWORD),
+    )
+
+    user_bank = create_bank(db_session, user.id, BankCreate(name="Banco Transfer", country_code="CO"))
+    other_bank = create_bank(db_session, other_user.id, BankCreate(name="Banco Otro", country_code="CO"))
+
+    source_account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Origen Transfer",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=user_bank.id,
+        ),
+    )
+    destination_account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Destino Transfer",
+            account_type=AccountType.CHECKING,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=user_bank.id,
+        ),
+    )
+    outsider_account = create_account(
+        db_session,
+        other_user.id,
+        AccountCreate(
+            name="Cuenta Externa",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=other_bank.id,
+        ),
+    )
+
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Fondeo",
+            amount=Decimal("700"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.INCOME,
+            occurred_at=datetime.now(timezone.utc),
+            account_id=source_account.id,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="Source and destination accounts must be different"):
+        create_transfer(
+            db_session,
+            user.id,
+            TransferCreate(
+                from_account_id=source_account.id,
+                to_account_id=source_account.id,
+                amount=Decimal("10"),
+                occurred_at=datetime.now(timezone.utc),
+            ),
+        )
+
+    with pytest.raises(ValueError, match="Destination account not found"):
+        create_transfer(
+            db_session,
+            user.id,
+            TransferCreate(
+                from_account_id=source_account.id,
+                to_account_id=outsider_account.id,
+                amount=Decimal("10"),
+                occurred_at=datetime.now(timezone.utc),
+            ),
+        )
+
+    with pytest.raises(ValueError, match="Insufficient funds in the selected account\\."):
+        create_transfer(
+            db_session,
+            user.id,
+            TransferCreate(
+                from_account_id=source_account.id,
+                to_account_id=destination_account.id,
+                amount=Decimal("900"),
+                occurred_at=datetime.now(timezone.utc),
+            ),
+        )
+
+    debit_txn, credit_txn = create_transfer(
+        db_session,
+        user.id,
+        TransferCreate(
+            from_account_id=source_account.id,
+            to_account_id=destination_account.id,
+            amount=Decimal("250"),
+            occurred_at=datetime(2026, 4, 15, tzinfo=timezone.utc),
+        ),
+    )
+
+    accounts = {item.id: item for item in list_accounts(db_session, user.id)}
+    assert debit_txn.transaction_type == TransactionType.EXPENSE
+    assert credit_txn.transaction_type == TransactionType.INCOME
+    assert debit_txn.description.startswith("Transferencia: ")
+    assert credit_txn.description == debit_txn.description
+    assert accounts[source_account.id].current_balance == Decimal("450")
+    assert accounts[destination_account.id].current_balance == Decimal("250")
+
+
+def test_get_dashboard_aggregates_builds_expected_series_and_totals(db_session, monkeypatch):
+    monkeypatch.setattr("app.services.finance_service.convert_currency", lambda amount, _f, _t: amount)
+
+    user = create_user(
+        db_session,
+        UserCreate(email="aggregates@test.com", full_name="Aggregates", password=TEST_PASSWORD),
+    )
+    bank = create_bank(db_session, user.id, BankCreate(name="Banco Aggregates", country_code="CO"))
+    account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Cuenta Aggregates",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=bank.id,
+        ),
+    )
+
+    fixed_category = create_category(
+        db_session,
+        CategoryCreate(name="Arriendo", description="Fijo", is_fixed=True),
+    )
+    variable_category = create_category(
+        db_session,
+        CategoryCreate(name="Comida", description="Variable", is_fixed=False),
+    )
+    extra_category = create_category(
+        db_session,
+        CategoryCreate(name="Ocio", description="Variable", is_fixed=False),
+    )
+
+    # Previous period
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Salario marzo",
+            amount=Decimal("900"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.INCOME,
+            occurred_at=datetime(2026, 3, 10, tzinfo=timezone.utc),
+            account_id=account.id,
+        ),
+    )
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Gasto marzo",
+            amount=Decimal("300"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.EXPENSE,
+            occurred_at=datetime(2026, 3, 12, tzinfo=timezone.utc),
+            account_id=account.id,
+            category_id=variable_category.id,
+        ),
+    )
+
+    # Current period
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Salario abril",
+            amount=Decimal("1000"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.INCOME,
+            occurred_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+            account_id=account.id,
+        ),
+    )
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Arriendo abril",
+            amount=Decimal("400"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.EXPENSE,
+            occurred_at=datetime(2026, 4, 2, tzinfo=timezone.utc),
+            account_id=account.id,
+            category_id=fixed_category.id,
+        ),
+    )
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Comida abril",
+            amount=Decimal("250"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.EXPENSE,
+            occurred_at=datetime(2026, 4, 3, tzinfo=timezone.utc),
+            account_id=account.id,
+            category_id=variable_category.id,
+        ),
+    )
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Ocio abril",
+            amount=Decimal("150"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.EXPENSE,
+            occurred_at=datetime(2026, 4, 4, tzinfo=timezone.utc),
+            account_id=account.id,
+            category_id=extra_category.id,
+        ),
+    )
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Sin categoria abril",
+            amount=Decimal("50"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.EXPENSE,
+            occurred_at=datetime(2026, 4, 5, tzinfo=timezone.utc),
+            account_id=account.id,
+        ),
+    )
+
+    aggregates = get_dashboard_aggregates(
+        db_session,
+        user_id=user.id,
+        start_date=datetime(2026, 4, 1, tzinfo=timezone.utc),
+        end_date=datetime(2026, 4, 30, tzinfo=timezone.utc),
+        target_currency="COP",
+        prev_start_date=datetime(2026, 3, 1, tzinfo=timezone.utc),
+        prev_end_date=datetime(2026, 3, 31, tzinfo=timezone.utc),
+        top_n=1,
+    )
+
+    assert aggregates.income == Decimal("1000")
+    assert aggregates.expenses == Decimal("850")
+    assert aggregates.transaction_count == 5
+    assert aggregates.prev_income == Decimal("900")
+    assert aggregates.prev_expenses == Decimal("300")
+    assert aggregates.fixed_total == Decimal("400")
+    assert aggregates.biggest_expense_amount == Decimal("400")
+    assert aggregates.biggest_expense_description == "Arriendo abril"
+
+    assert len(aggregates.monthly) == 1
+    assert aggregates.monthly[0].month == "2026-04"
+    assert aggregates.monthly[0].cashflow == Decimal("150")
+
+    assert len(aggregates.top_categories) == 1
+    assert aggregates.top_categories[0].name == "Arriendo"
+    assert aggregates.top_categories[0].is_fixed is True
+
+    assert "Arriendo" in aggregates.stacked_cats
+    assert "Otras" in aggregates.stacked_cats
+    assert len(aggregates.stacked) == 1
+    assert aggregates.stacked[0].month == "2026-04"
+    assert aggregates.stacked[0].categories["Arriendo"] == Decimal("400")
+    assert aggregates.stacked[0].categories["Otras"] == Decimal("450")

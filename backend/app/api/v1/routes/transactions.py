@@ -11,8 +11,8 @@ from app.api.error_handlers import (
     raise_not_found_from_value_error,
 )
 from app.db.base import get_db
-from app.models.user import User
 from app.models.enums import Currency, TransactionType
+from app.models.user import User
 from app.schemas.transaction import TransactionCreate, TransactionRead, TransferCreate
 from app.services.finance_service import (
     create_transfer,
