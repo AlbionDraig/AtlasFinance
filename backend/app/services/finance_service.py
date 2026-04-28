@@ -15,7 +15,7 @@ from app.models.pocket import Pocket
 from app.models.transaction import Transaction
 from app.models.user import User
 from app.schemas.account import AccountCreate
-from app.schemas.bank import BankCreate
+from app.schemas.bank import BankCreate, BankUpdate
 from app.schemas.category import CategoryCreate, CategoryUpdate
 from app.schemas.metric import DashboardMetrics
 from app.schemas.pocket import PocketCreate
@@ -94,6 +94,25 @@ def list_banks(db: Session, user_id: int) -> list[Bank]:
     """List user banks ordered by newest first."""
     query = select(Bank).where(Bank.user_id == user_id).order_by(Bank.created_at.desc())
     return list(db.scalars(query).all())
+
+
+def update_bank(db: Session, user_id: int, bank_id: int, payload: BankUpdate) -> Bank:
+    """Update name and country_code of a bank owned by the user."""
+    bank = db.get(Bank, bank_id)
+    if not bank or bank.user_id != user_id:
+        raise ValueError("Bank not found")
+    bank.name = payload.name
+    bank.country_code = payload.country_code.upper()
+    return _persist_and_refresh(db, bank)
+
+
+def delete_bank(db: Session, user_id: int, bank_id: int) -> None:
+    """Delete a bank owned by the user."""
+    bank = db.get(Bank, bank_id)
+    if not bank or bank.user_id != user_id:
+        raise ValueError("Bank not found")
+    db.delete(bank)
+    db.commit()
 
 
 def create_account(db: Session, user_id: int, payload: AccountCreate) -> Account:

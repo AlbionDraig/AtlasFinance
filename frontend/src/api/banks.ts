@@ -14,4 +14,6 @@ export interface BankCreatePayload {
 export const banksApi = {
   list: () => apiClient.get<Bank[]>('/banks'),
   create: (data: BankCreatePayload) => apiClient.post<Bank>('/banks', data),
+  update: (id: number, data: BankCreatePayload) => apiClient.put<Bank>(`/banks/${id}`, data),
+  delete: (id: number) => apiClient.delete(`/banks/${id}`),
 }

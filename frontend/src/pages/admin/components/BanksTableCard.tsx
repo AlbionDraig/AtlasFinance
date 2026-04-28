@@ -14,6 +14,8 @@ interface BanksTableCardProps {
   onPrevPage: () => void
   onNextPage: () => void
   onPageSizeChange: (size: number) => void
+  onEdit: (bank: Bank) => void
+  onDelete: (bank: Bank) => void
 }
 
 export default function BanksTableCard({
@@ -27,6 +29,8 @@ export default function BanksTableCard({
   onPrevPage,
   onNextPage,
   onPageSizeChange,
+  onEdit,
+  onDelete,
 }: BanksTableCardProps) {
   const countryCounts = filteredBanks.reduce<Record<string, number>>((accumulator, bank) => {
     const countryCode = bank.country_code.trim().toUpperCase()
@@ -91,13 +95,15 @@ export default function BanksTableCard({
         <div className="overflow-x-auto">
           <table className="min-w-full table-fixed border-separate border-spacing-0">
             <colgroup>
-              <col className="w-[28rem]" />
-              <col className="w-40" />
+              <col className="w-[24rem]" />
+              <col className="w-36" />
+              <col className="w-28" />
             </colgroup>
             <thead>
               <tr>
                 <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Banco</th>
                 <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Código país</th>
+                <th className="border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -112,6 +118,34 @@ export default function BanksTableCard({
                     <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700 whitespace-nowrap">
                       {bank.country_code}
                     </span>
+                  </td>
+                  <td className="border-b border-neutral-100 px-5 py-3.5 align-middle">
+                    <div className="flex items-center justify-center gap-2">
+                      <Tooltip content="Editar banco" ariaLabel="Editar banco">
+                        <button
+                          type="button"
+                          onClick={() => onEdit(bank)}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
+                          aria-label={`Editar ${bank.name}`}
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      </Tooltip>
+                      <Tooltip content="Eliminar banco" ariaLabel="Eliminar banco">
+                        <button
+                          type="button"
+                          onClick={() => onDelete(bank)}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-brand-light hover:text-brand-text"
+                          aria-label={`Eliminar ${bank.name}`}
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </Tooltip>
+                    </div>
                   </td>
                 </tr>
               ))}

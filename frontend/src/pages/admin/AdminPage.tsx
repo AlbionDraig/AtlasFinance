@@ -7,8 +7,10 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import CategoriesPage from '@/pages/categories/CategoriesPage'
 import { useToast } from '@/hooks/useToast'
 import BankCreateModal from './components/BankCreateModal'
+import BankEditModal from './components/BankEditModal'
 import BanksFiltersCard, { type BanksFiltersState } from './components/BanksFiltersCard'
 import BanksTableCard from './components/BanksTableCard'
+import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 
 type AdminTab = 'banks' | 'categories'
 
@@ -51,6 +53,8 @@ export default function AdminPage() {
   const [banks, setBanks] = useState<Bank[]>([])
   const [bankName, setBankName] = useState('')
   const [bankCreateOpen, setBankCreateOpen] = useState(false)
+  const [editingBank, setEditingBank] = useState<Bank | null>(null)
+  const [deletingBank, setDeletingBank] = useState<Bank | null>(null)
   const [bankPage, setBankPage] = useState(1)
   const [bankFilters, setBankFilters] = useState<BanksFiltersState>(() => buildDefaultBankFilters())
 
@@ -141,6 +145,35 @@ export default function AdminPage() {
     }
   }
 
+  async function handleEditBank(id: number, name: string, countryCode: string) {
+    setSavingBank(true)
+    try {
+      const response = await banksApi.update(id, { name, country_code: countryCode })
+      setBanks((current) => current.map((b) => (b.id === id ? response.data : b)))
+      setEditingBank(null)
+      toast('Banco actualizado con éxito.')
+    } catch (error) {
+      toast(getApiErrorMessage(error, 'No se pudo actualizar el banco.'), 'error')
+    } finally {
+      setSavingBank(false)
+    }
+  }
+
+  async function handleDeleteBank() {
+    if (!deletingBank) return
+    setSavingBank(true)
+    try {
+      await banksApi.delete(deletingBank.id)
+      setBanks((current) => current.filter((b) => b.id !== deletingBank.id))
+      setDeletingBank(null)
+      toast('Banco eliminado.')
+    } catch (error) {
+      toast(getApiErrorMessage(error, 'No se pudo eliminar el banco.'), 'error')
+    } finally {
+      setSavingBank(false)
+    }
+  }
+
   return (
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       <div>
@@ -186,6 +219,25 @@ export default function AdminPage() {
             />
           )}
 
+          {editingBank && (
+            <BankEditModal
+              bank={editingBank}
+              saving={savingBank}
+              onSubmit={handleEditBank}
+              onClose={() => setEditingBank(null)}
+            />
+          )}
+
+          {deletingBank && (
+            <ConfirmDeleteModal
+              title="Eliminar banco"
+              description={`¿Eliminar "${deletingBank.name}"? Las cuentas asociadas perderán la referencia al banco.`}
+              loading={savingBank}
+              onConfirm={handleDeleteBank}
+              onClose={() => setDeletingBank(null)}
+            />
+          )}
+
           <BanksFiltersCard
             filters={bankFilters}
             setFilters={setBankFilters}
@@ -210,6 +262,8 @@ export default function AdminPage() {
               onPrevPage={() => setBankPage((current) => Math.max(1, current - 1))}
               onNextPage={() => setBankPage((current) => Math.min(totalBankPages, current + 1))}
               onPageSizeChange={(size) => setBankFilters((current) => ({ ...current, pageSize: size }))}
+              onEdit={setEditingBank}
+              onDelete={setDeletingBank}
             />
           )}
 
