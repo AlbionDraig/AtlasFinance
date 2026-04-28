@@ -58,6 +58,7 @@ TEST_PASSWORD = "AtlasFinanceTestPwd123!"
 
 
 def test_register_transaction_updates_balance_and_metrics(db_session, monkeypatch):
+    # Validate that balance mutations and aggregate metrics stay consistent.
     monkeypatch.setattr("app.services.finance_service.convert_currency", lambda amount, _f, _t: amount)
 
     user = create_user(
@@ -114,6 +115,7 @@ def test_register_transaction_updates_balance_and_metrics(db_session, monkeypatc
 
 
 def test_pockets_lifecycle_and_account_scope_rules(db_session):
+    # Ensure pocket CRUD honors ownership and cross-account currency constraints.
     user = create_user(
         db_session,
         UserCreate(email="pockets@test.com", full_name="Pockets", password=TEST_PASSWORD),

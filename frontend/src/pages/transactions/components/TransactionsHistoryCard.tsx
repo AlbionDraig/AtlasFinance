@@ -61,6 +61,7 @@ export default function TransactionsHistoryCard({
     return transaction.description.startsWith('Transferencia: ')
   }
 
+  // Summary chips reflect totals for the full filtered set (not only current page).
   const netFlow = incomeTotal - expenseTotal
   const metrics: Array<{ key: string; variant: MetricVariant; label: string; help: string }> = [
     {
@@ -222,6 +223,7 @@ export default function TransactionsHistoryCard({
                     <td className="border-b border-r border-neutral-100 px-5 py-3.5 align-middle">
                       <div className="flex items-center justify-end gap-1.5">
                         {isTransfer ? (
+                          // Transfer rows cannot be edited, only removed as a pair operation.
                           <DeleteButton onClick={() => onDelete(transaction.id)} loading={deletingId === transaction.id} />
                         ) : (
                           <>

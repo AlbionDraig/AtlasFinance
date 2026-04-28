@@ -25,6 +25,7 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup_event() -> None:
+    """Initialize database and optional seed data during app startup."""
     init_db()
     if settings.seed_on_startup or settings.environment != "production":
         run_seed()
@@ -32,6 +33,7 @@ def startup_event() -> None:
 
 @app.get("/health", tags=["system"])
 def healthcheck() -> dict[str, str]:
+    """Return lightweight liveness payload for health probes."""
     return {"status": "ok"}
 
 

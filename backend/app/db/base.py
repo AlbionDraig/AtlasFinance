@@ -11,6 +11,7 @@ Base = declarative_base()
 
 
 def get_db():
+    """Yield SQLAlchemy session and guarantee close after request lifecycle."""
     db = SessionLocal()
     try:
         yield db

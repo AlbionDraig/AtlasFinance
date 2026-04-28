@@ -34,6 +34,7 @@ function fmtMonthLabel(yyyyMM: string): string {
 }
 function computeDates(period: Period, from: string, to: string): { dateFrom: Date; dateTo: Date } {
   const today = new Date()
+  // Predefined windows are resolved relative to current day for quick filtering.
   if (period === 'Año actual')
     return { dateFrom: new Date(today.getFullYear(), 0, 1), dateTo: new Date(today.getFullYear(), 11, 31) }
   if (period === 'Últimos 90 días')
@@ -48,6 +49,7 @@ function computePrevDates(period: Period, dateFrom: Date, dateTo: Date): { prevF
     return { prevFrom: new Date(y - 1, 0, 1), prevTo: new Date(y - 1, 11, 31) }
   }
   const days = Math.max(Math.round((dateTo.getTime() - dateFrom.getTime()) / 86400000) + 1, 1)
+  // Previous range is contiguous and has exactly the same duration.
   const prevTo = new Date(dateFrom.getTime() - 86400000)
   const prevFrom = new Date(prevTo.getTime() - (days - 1) * 86400000)
   return { prevFrom, prevTo }
@@ -70,6 +72,7 @@ function fmtShort(v: number): string {
   return String(Math.round(v))
 }
 function deltaBadge(curr: number, prev: number, inverse = false): { text: string; tone: Tone } {
+  // For first period there is no baseline, so percentage comparison is unavailable.
   if (prev === 0) return { text: curr === 0 ? '0%' : 'primer período', tone: 'flat' }
   const pct = ((curr - prev) / prev) * 100
   const isGood = inverse ? pct < 0 : pct > 0
@@ -77,11 +80,13 @@ function deltaBadge(curr: number, prev: number, inverse = false): { text: string
   return { text: `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`, tone }
 }
 function deltaPointsBadge(curr: number, prev: number, hasPrev: boolean): { text: string; tone: Tone } {
+  // Used for ratio deltas where percentage notation can be misleading.
   if (!hasPrev) return { text: 'primer período', tone: 'flat' }
   const d = curr - prev
   return { text: `${d > 0 ? '+' : ''}${d.toFixed(1)} pp`, tone: d === 0 ? 'flat' : d > 0 ? 'positive' : 'negative' }
 }
 function toneFn(v: number): Tone {
+  // Normalized semantic tone consumed by cards/chips.
   return v > 0 ? 'positive' : v < 0 ? 'negative' : 'flat'
 }
 

@@ -28,6 +28,7 @@ const EMPTY_ACCOUNT_FORM: AccountFormState = {
 }
 
 function buildDefaultFilters(): AccountsFiltersState {
+  // Conservative defaults to keep the first render lightweight and predictable.
   return {
     query: '',
     accountType: 'all',
@@ -84,7 +85,9 @@ export default function AccountsPage() {
   const currentPage = Math.min(page, totalPages)
   const startIndex = (currentPage - 1) * filters.pageSize
   const endIndex = Math.min(startIndex + filters.pageSize, accounts.length)
+  // Client-side pagination over already filtered server response.
   const paginatedAccounts = accounts.slice(startIndex, endIndex)
+  // Human-readable filter summary used by filter card chips.
   const activeFilters = [
     filters.query.trim() ? `Búsqueda: ${filters.query.trim()}` : null,
     filters.accountType !== 'all' ? `Tipo: ${filters.accountType === 'checking' ? 'Corriente' : 'Ahorros'}` : null,
@@ -111,6 +114,7 @@ export default function AccountsPage() {
   async function handleCreateAccount(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
+    // Keep validation in UI to provide immediate feedback before API call.
     if (accountForm.name.trim().length < 2) {
       toast('El nombre de la cuenta debe tener al menos 2 caracteres.', 'error')
       return

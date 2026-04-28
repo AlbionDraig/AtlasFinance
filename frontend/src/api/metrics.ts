@@ -1,6 +1,7 @@
 import apiClient from '@/lib/axios'
 import type { DashboardAggregates, DashboardMetrics } from '@/types'
 
+// Dashboard-specific endpoints (headline metrics + comparative aggregates).
 export const metricsApi = {
   dashboard: (currency = 'COP') =>
     apiClient.get<DashboardMetrics>('/metrics/dashboard', { params: { currency } }),

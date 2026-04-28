@@ -1,5 +1,6 @@
 import apiClient from '@/lib/axios'
 
+// Category resource consumed by transactions and configuration views.
 export interface Category {
   id: number
   name: string
@@ -15,6 +16,7 @@ export interface CategoryPayload {
   category_type?: 'income' | 'expense' | 'any'
 }
 
+// Centralized CRUD calls for categories catalog.
 export const categoriesApi = {
   list: () => apiClient.get<Category[]>('/categories'),
   create: (data: CategoryPayload) => apiClient.post<Category>('/categories', data),

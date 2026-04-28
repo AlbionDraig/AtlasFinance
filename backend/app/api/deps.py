@@ -16,6 +16,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.api_v1_prefix}/auth/lo
 
 
 def _credentials_exception() -> HTTPException:
+    """Build standardized unauthorized response used by auth dependencies."""
     return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -38,6 +39,7 @@ def get_current_user(
     token: Annotated[str, Depends(get_token_from_bearer_or_cookie)],
     db: Annotated[Session, Depends(get_db)],
 ) -> User:
+    """Resolve current authenticated user from JWT token and revocation checks."""
     credentials_exception = _credentials_exception()
 
     try:

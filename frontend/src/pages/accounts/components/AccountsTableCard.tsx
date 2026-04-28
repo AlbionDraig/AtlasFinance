@@ -39,6 +39,7 @@ export default function AccountsTableCard({
   onEdit,
   onDelete,
 }: AccountsTableCardProps) {
+  // KPIs summarize filtered dataset, independent from pagination window.
   const savingsCount = filteredAccounts.filter((account) => account.account_type === 'savings').length
   const checkingCount = filteredAccounts.filter((account) => account.account_type === 'checking').length
   const activeBanks = new Set(filteredAccounts.map((account) => account.bank_id)).size
@@ -139,6 +140,7 @@ export default function AccountsTableCard({
             <tbody>
               {paginatedAccounts.map((account) => {
                 const bank = banks.find((item) => item.id === account.bank_id)
+                // Backend may expose either current_balance or legacy balance field.
                 const balance = Number(account.current_balance ?? account.balance ?? 0)
                 return (
                   <tr key={account.id} className="group transition-colors hover:bg-brand-light/40 odd:bg-white even:bg-neutral-50/50">

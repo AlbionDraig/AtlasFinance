@@ -1,5 +1,6 @@
 import apiClient from '@/lib/axios'
 
+// Backend bank resource shape used by list and CRUD screens.
 export interface Bank {
   id: number
   name: string
@@ -11,6 +12,7 @@ export interface BankCreatePayload {
   country_code: string
 }
 
+// Thin wrapper that keeps endpoint paths and typing in one place.
 export const banksApi = {
   list: () => apiClient.get<Bank[]>('/banks'),
   create: (data: BankCreatePayload) => apiClient.post<Bank>('/banks', data),

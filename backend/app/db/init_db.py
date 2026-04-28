@@ -16,16 +16,24 @@ from app.models import (  # noqa: F401
 
 
 def _migrate_categories_to_global() -> None:
+    """Migrate legacy categories schema from user-scoped to global catalog.
+
+    Older versions stored ``user_id`` in ``categories``. New schema removes
+    that ownership and keeps categories globally available.
+    """
     inspector = inspect(engine)
     if "categories" not in inspector.get_table_names():
         return
 
     columns = {column["name"] for column in inspector.get_columns("categories")}
-    if "user_id" not in columns:
+    has_user_id = "user_id" in columns
+    has_category_type = "category_type" in columns
+    if not has_user_id and has_category_type:
         return
 
     with engine.begin() as connection:
         if connection.dialect.name == "sqlite":
+            # SQLite cannot drop/add constrained columns directly, so table rebuild is required.
             connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
             connection.exec_driver_sql(
                 """
@@ -34,14 +42,24 @@ def _migrate_categories_to_global() -> None:
                     name VARCHAR(120) NOT NULL,
                     description TEXT,
                     is_fixed BOOLEAN NOT NULL DEFAULT 0,
+                    category_type VARCHAR(20) NOT NULL DEFAULT 'any',
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
                 """
             )
             connection.exec_driver_sql(
                 """
-                INSERT INTO categories__tmp (id, name, description, is_fixed, created_at)
-                SELECT id, name, description, COALESCE(is_fixed, 0), created_at
+                INSERT INTO categories__tmp (id, name, description, is_fixed, category_type, created_at)
+                SELECT id, name, description, COALESCE(is_fixed, 0),
+                       CASE
+                           WHEN EXISTS (
+                               SELECT 1
+                               FROM pragma_table_info('categories')
+                               WHERE name = 'category_type'
+                           ) THEN COALESCE(category_type, 'any')
+                           ELSE 'any'
+                       END,
+                       created_at
                 FROM categories
                 """
             )
@@ -62,10 +80,18 @@ def _migrate_categories_to_global() -> None:
         if category_user_fk and category_user_fk.get("name"):
             connection.execute(text(f'ALTER TABLE categories DROP CONSTRAINT "{category_user_fk["name"]}"'))
 
-        connection.execute(text("ALTER TABLE categories DROP COLUMN user_id"))
+        if not has_category_type:
+            connection.execute(text("ALTER TABLE categories ADD COLUMN category_type VARCHAR(20) NOT NULL DEFAULT 'any'"))
+        if has_user_id:
+            connection.execute(text("ALTER TABLE categories DROP COLUMN user_id"))
 
 
 def _migrate_investments_to_entities() -> None:
+    """Backfill investment entities from bank-linked investments.
+
+    Legacy rows reference ``bank_id`` directly. This migration creates/links
+    ``investment_entity_id`` and keeps compatibility across dialects.
+    """
     inspector = inspect(engine)
     table_names = set(inspector.get_table_names())
     if "investments" not in table_names or "investment_entities" not in table_names:
@@ -135,6 +161,7 @@ def _migrate_investments_to_entities() -> None:
 
 
 def init_db() -> None:
+    """Create schema and execute idempotent compatibility migrations."""
     Base.metadata.create_all(bind=engine)
     _migrate_categories_to_global()
     _migrate_investments_to_entities()

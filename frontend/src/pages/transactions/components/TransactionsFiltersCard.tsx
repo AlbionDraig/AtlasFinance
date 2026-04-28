@@ -106,6 +106,7 @@ export default function TransactionsFiltersCard({
       {/* Rango personalizado — se inyecta como campo extra */}
       {filters.period === 'custom' && (
         <>
+          {/* Keep custom range bounded by dataset limits and from<=to constraints. */}
           <DatePicker
             label="Desde"
             value={derivedRange.from || datasetRange.min}

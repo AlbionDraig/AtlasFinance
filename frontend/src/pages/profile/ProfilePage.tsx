@@ -52,6 +52,7 @@ export default function ProfilePage() {
       return
     }
 
+    // Password rules are only enforced when user explicitly enables password change.
     if (changingPassword) {
       if (!form.current_password) {
         toast('Ingresa tu contraseña actual para cambiarla.', 'error')
@@ -84,6 +85,7 @@ export default function ProfilePage() {
       setForm((f) => ({ ...f, current_password: '', new_password: '', confirm_password: '' }))
       setChangingPassword(false)
     } catch (err: unknown) {
+      // Map backend/domain errors to user-friendly Spanish messages.
       const status = (err as { response?: { status?: number; data?: { detail?: unknown } } })?.response?.status
       const rawDetail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
       const detail = typeof rawDetail === 'string' ? rawDetail : undefined

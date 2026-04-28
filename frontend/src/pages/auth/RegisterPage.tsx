@@ -39,17 +39,22 @@ export default function RegisterPage() {
 
     setLoading(true)
     try {
+      // Registration is followed by immediate login to reduce friction.
+      const cleanEmail = email.trim()
+      const cleanPassword = password.trim()
+
       await authApi.register({
-        email,
+        email: cleanEmail,
         full_name: fullName.trim(),
-        password,
+        password: cleanPassword,
       })
 
-      await authApi.login({ email, password })
+      await authApi.login({ email: cleanEmail, password: cleanPassword })
       const { data: me } = await authApi.me()
       setUser(me)
       navigate('/dashboard', { replace: true })
     } catch (err: unknown) {
+      // Normalize backend error payload to readable messages.
       const res = (err as { response?: { status?: number; data?: { detail?: unknown } } })?.response
       const status = res?.status
       const rawDetail = res?.data?.detail

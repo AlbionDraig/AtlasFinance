@@ -71,6 +71,7 @@ def refresh_token(response: Response, db: Annotated[Session, Depends(get_db)],
                   token: Annotated[str, Cookie(alias="refresh_token")]) -> Token:
     """Validate refresh token and issue a new access token payload."""
     try:
+    # Refresh flow trusts HttpOnly cookie and rotates access token only.
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         user_id = payload.get("sub")
         if not user_id:
@@ -112,6 +113,7 @@ def logout(
         raise HTTPException(status_code=401, detail="Invalid token") from exc
 
     response.delete_cookie(key="access_token", path="/")
+    # refresh_token cookie is also cleared to force full re-authentication.
     response.delete_cookie(key="refresh_token", path="/")
     response.status_code = status.HTTP_204_NO_CONTENT
     return response

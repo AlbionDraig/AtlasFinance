@@ -34,6 +34,7 @@ function buildDefaultFilters(): FiltersState {
   const start = new Date(today)
   start.setDate(today.getDate() - 29)
 
+  // Default view loads a practical 30-day window with moderate pagination.
   return {
     query: '',
     transactionType: 'all',
@@ -47,6 +48,7 @@ function buildDefaultFilters(): FiltersState {
 }
 
 function buildDefaultForm(): FormState {
+  // Empty form baseline reused on create flow and after successful submit.
   return {
     description: '',
     amount: '',
@@ -87,6 +89,7 @@ function getPeriodLabel(period: PeriodFilter): string {
 
 function resolvePeriodRange(period: PeriodFilter, fallbackFrom: string, fallbackTo: string): { from: string; to: string } {
   const today = toDateInputValue(new Date())
+  // Preset periods override custom date inputs to avoid ambiguous filter combinations.
   if (period === 'all') return { from: '', to: '' }
   if (period === 'today') return { from: today, to: today }
   if (period === '7d') {
@@ -107,6 +110,7 @@ function resolvePeriodRange(period: PeriodFilter, fallbackFrom: string, fallback
 
 function buildTransactionParams(filters: FiltersState, query: string): TransactionFilters {
   const range = resolvePeriodRange(filters.period, filters.from, filters.to)
+  // Convert UI state into API contract expected by backend list endpoint.
   return {
     start_date: range.from ? `${range.from}T00:00:00` : undefined,
     end_date: range.to ? `${range.to}T23:59:59` : undefined,

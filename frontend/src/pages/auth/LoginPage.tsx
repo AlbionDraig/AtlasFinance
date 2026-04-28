@@ -26,7 +26,8 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      await authApi.login({ email, password })
+      // Login endpoint sets auth cookie; then /me hydrates app user state.
+      await authApi.login({ email: email.trim(), password: password.trim() })
       const { data: me } = await authApi.me()
       setUser(me)
       navigate('/dashboard')
@@ -34,7 +35,7 @@ export default function LoginPage() {
       const status = (err as { response?: { status?: number } })?.response?.status
       const rawDetail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
 
-      // FastAPI may return detail as a string or as an array of validation error objects
+      // FastAPI may return detail as a string or as an array of validation error objects.
       const detail =
         typeof rawDetail === 'string'
           ? rawDetail
@@ -43,7 +44,11 @@ export default function LoginPage() {
             : undefined
 
       if (status === 401 || status === 403) {
-        toast(detail ?? 'Credenciales inválidas. Verifica tu correo y contraseña.', 'error')
+        if (detail?.toLowerCase().includes('invalid credentials')) {
+          toast('Correo o contraseña incorrectos. Si tu usuario no existe, regístralo de nuevo.', 'error')
+        } else {
+          toast(detail ?? 'Credenciales inválidas. Verifica tu correo y contraseña.', 'error')
+        }
       } else if (status === 422) {
         toast('Credenciales incorrectas. Verifica tu correo y contraseña.', 'error')
       } else if (status && status >= 500) {

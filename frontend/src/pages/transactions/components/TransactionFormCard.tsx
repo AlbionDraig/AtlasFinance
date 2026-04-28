@@ -52,6 +52,7 @@ export default function TransactionFormCard({
 }: TransactionFormCardProps) {
   const submitLabel = saving ? 'Guardando...' : 'Guardar movimiento'
   const isEditing = editingId != null
+  // Visual treatment changes between create and edit to reduce user mistakes.
   const formAccentClass = isEditing
     ? 'border-t-4 border-t-warning'
     : 'border-t-4 border-t-brand'
@@ -102,6 +103,7 @@ export default function TransactionFormCard({
             onChange={(value) => setForm((current) => ({
               ...current,
               transactionType: value as TransactionType,
+              // Reset category because available options depend on transaction type.
               categoryId: 'none',
             }))}
             options={[

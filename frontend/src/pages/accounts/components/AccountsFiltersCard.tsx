@@ -29,6 +29,7 @@ export default function AccountsFiltersCard({
 }: AccountsFiltersCardProps) {
   return (
     <FilterCard sticky activeFilters={activeFilters} onReset={onResetFilters}>
+      {/* Search runs against server-side filters in parent container. */}
       <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
         <label className="app-label">Buscar</label>
         <SearchInput

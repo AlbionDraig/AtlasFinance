@@ -1,6 +1,7 @@
 import apiClient from '@/lib/axios'
 import type { Pocket, Transaction } from '@/types'
 
+// Payload used to create pockets linked to an account.
 export interface PocketPayload {
   name: string
   balance: number
@@ -20,6 +21,7 @@ export interface PocketMovePayload {
   occurred_at: string
 }
 
+// Endpoint wrapper for pockets operations and move-funds transaction.
 export const pocketsApi = {
   list: () => apiClient.get<Pocket[]>('/pockets'),
   get: (id: number) => apiClient.get<Pocket>(`/pockets/${id}`),

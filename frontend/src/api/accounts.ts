@@ -1,6 +1,7 @@
 import apiClient from '@/lib/axios'
 import type { Account } from '@/types'
 
+// Payload used when creating a new account from UI forms.
 export interface AccountCreatePayload {
   name: string
   account_type: 'savings' | 'checking'
@@ -16,6 +17,7 @@ export interface AccountFilters {
   bank_id?: number
 }
 
+// Centralized account endpoints with response typing.
 export const accountsApi = {
   list: (params?: AccountFilters) =>
     apiClient.get<Account[]>('/accounts', { params }),

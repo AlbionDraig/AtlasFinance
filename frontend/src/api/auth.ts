@@ -1,6 +1,7 @@
 import apiClient from '@/lib/axios'
 import type { LoginRequest, RegisterRequest, TokenResponse, User } from '@/types'
 
+// Optional fields supported by profile update endpoint.
 export interface UpdateProfileRequest {
   full_name?: string
   email?: string

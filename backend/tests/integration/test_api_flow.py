@@ -26,6 +26,7 @@ def _auth_headers(client, email: str = "api@test.com"):
 def test_api_main_flow(client, monkeypatch):
     monkeypatch.setattr("app.services.finance_service.convert_currency", lambda amount, _f, _t: amount)
 
+    # End-to-end smoke path: auth, setup catalog, transactions lifecycle and metrics.
     headers = _auth_headers(client)
 
     bank_resp = client.post("/api/v1/banks/", json={"name": "Nequi", "country_code": "CO"}, headers=headers)
@@ -165,6 +166,7 @@ def test_api_main_flow(client, monkeypatch):
 
 
 def test_management_endpoints_cover_update_and_delete_paths(client):
+    # Cover update/delete paths to ensure CRUD operations keep ownership rules.
     headers = _auth_headers(client, email="api-manage@test.com")
 
     bank_resp = client.post(

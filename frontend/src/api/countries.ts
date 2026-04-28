@@ -1,5 +1,6 @@
 import apiClient from '@/lib/axios'
 
+// Country catalog item used by banks and investment entities.
 export interface Country {
   id: number
   code: string
@@ -16,6 +17,7 @@ export interface CountryUpdatePayload {
   name?: string
 }
 
+// CRUD access for countries catalog.
 export const countriesApi = {
   list: () => apiClient.get<Country[]>('/countries'),
   create: (data: CountryCreatePayload) => apiClient.post<Country>('/countries', data),

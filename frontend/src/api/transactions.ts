@@ -1,6 +1,7 @@
 ﻿import apiClient from '@/lib/axios'
 import type { Transaction } from '@/types'
 
+// Query contract supported by backend transactions listing endpoint.
 export interface TransactionFilters {
   account_id?: number
   category_id?: number
@@ -20,6 +21,7 @@ export interface TransferPayload {
   occurred_at: string
 }
 
+// Thin API wrapper to centralize endpoint paths and response typing.
 export const transactionsApi = {
   list: (params?: TransactionFilters) =>
     apiClient.get<Transaction[]>('/transactions', { params }),

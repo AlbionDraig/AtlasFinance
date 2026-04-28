@@ -37,6 +37,7 @@ const DEFAULT_FILTERS: PocketFiltersState = {
 }
 
 function getApiErrorMessage(error: unknown, fallback: string): string {
+  // Align backend detail extraction with the rest of UI pages.
   if (error instanceof AxiosError) {
     const detail = error.response?.data?.detail
     if (typeof detail === 'string' && detail.trim()) return detail
@@ -67,6 +68,7 @@ const ACCOUNT_BASE_COLORS: Array<{ accent: string; softText: string; label: stri
 ]
 
 function buildAccountVisualStyle(_accountId: number, index: number): AccountVisualStyle {
+  // Deterministic color assignment keeps account visual identity stable.
   const base = ACCOUNT_BASE_COLORS[index % ACCOUNT_BASE_COLORS.length]
   const tier = Math.floor(index / ACCOUNT_BASE_COLORS.length)
   const tint = Math.min(14 + tier * 8, 46)
@@ -243,6 +245,7 @@ export default function PocketsPage() {
   }, [])
 
   const accountById = useMemo(() => {
+    // Precompute lookup maps to avoid repeated O(n) searches in render/filter logic.
     return new Map(accounts.map(account => [account.id, account]))
   }, [accounts])
 
@@ -257,6 +260,7 @@ export default function PocketsPage() {
 
   const filteredPockets = useMemo(() => {
     const normalizedQuery = filters.query.trim().toLowerCase()
+    // Apply text + structured filters in a single pass for predictable ordering.
     return pockets
       .filter((pocket) => {
         const accountName = accountById.get(pocket.account_id)?.name ?? ''
@@ -335,6 +339,7 @@ export default function PocketsPage() {
     const accountId = Number(form.account_id)
     const balance = Number(form.balance)
 
+    // Validate and normalize form state before calling API.
     if (name.length < 2) {
       toast('El nombre del bolsillo debe tener al menos 2 caracteres.', 'error')
       return null
@@ -366,6 +371,7 @@ export default function PocketsPage() {
     const name = form.name.trim()
     const accountId = Number(form.account_id)
 
+    // Update flow excludes balance because backend keeps it immutable here.
     if (name.length < 2) {
       toast('El nombre del bolsillo debe tener al menos 2 caracteres.', 'error')
       return null
@@ -530,6 +536,7 @@ export default function PocketsPage() {
           {filteredPockets.map((pocket) => {
             const account = accountById.get(pocket.account_id)
             const accountStyle = accountStyleById.get(pocket.account_id)
+            // Inline styles derive from account palette to reinforce visual grouping.
             const cardStyle: CSSProperties | undefined = accountStyle
               ? {
                   borderTopColor: accountStyle.accent,

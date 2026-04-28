@@ -110,6 +110,7 @@ export default function AccountCreateModal({
           </div>
 
           {!banks.length && (
+            // Account creation requires at least one bank configured by the user.
             <p className="text-sm text-warning-text bg-warning-bg rounded-lg px-3 py-2">
               No hay bancos disponibles. Crea bancos desde Administracion.
             </p>

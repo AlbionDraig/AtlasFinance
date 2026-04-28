@@ -24,6 +24,7 @@ export default function AccountEditModal({ account, banks, saving, onSubmit, onC
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    // Keep minimal client-side guard before delegating full validation to backend.
     if (name.trim().length < 2 || !bankId) return
     onSubmit(account.id, {
       name: name.trim(),

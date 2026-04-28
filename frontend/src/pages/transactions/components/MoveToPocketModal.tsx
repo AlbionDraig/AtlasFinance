@@ -48,6 +48,7 @@ export default function MoveToPocketModal({
   const account = accounts.find((item) => String(item.id) === form.accountId) ?? null
   const selectedPocket = pockets.find((item) => String(item.id) === form.pocketId) ?? null
   const accountPockets = useMemo(() => {
+    // Restrict destination options to pockets owned by selected account.
     if (!account) return []
     return pockets.filter((pocket) => pocket.account_id === account.id)
   }, [account, pockets])

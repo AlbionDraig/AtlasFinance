@@ -17,14 +17,21 @@ def hash_token(token: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Return True when plain password matches the stored hash."""
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
+    """Generate a password hash using the configured passlib context."""
     return pwd_context.hash(password)
 
 
 def create_access_token(subject: str | Any, expires_delta: timedelta | None = None, response: Response | None = None) -> str:
+    """Create JWT access token and optionally attach it as a secure cookie.
+
+    Uses environment-aware cookie flags so local development keeps working
+    while production enforces secure transport.
+    """
     settings = get_settings()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -34,7 +41,7 @@ def create_access_token(subject: str | Any, expires_delta: timedelta | None = No
     to_encode = {"exp": expire, "sub": str(subject)}
     token = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
-    # Set the token as a secure HttpOnly cookie
+    # Keep the cookie HttpOnly and strict to reduce XSS/CSRF attack surface.
     if response:
         is_production = settings.environment == "production"
         response.set_cookie(

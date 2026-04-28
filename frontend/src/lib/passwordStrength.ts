@@ -11,6 +11,7 @@ export interface PasswordStrength {
   color: string
 }
 
+/** Evaluate password against minimum policy checks shown in auth UI. */
 export function getPasswordChecks(password: string): PasswordChecks {
   return {
     minLength: password.length >= 8,
@@ -20,6 +21,7 @@ export function getPasswordChecks(password: string): PasswordChecks {
   }
 }
 
+/** Convert check pass-rate into score and semantic label/color for feedback bar. */
 export function getPasswordStrength(password: string): PasswordStrength {
   const checks = getPasswordChecks(password)
   const passed = Object.values(checks).filter(Boolean).length

@@ -47,6 +47,7 @@ export default function TransferModal({
   const toAccount = accounts.find((a) => String(a.id) === form.toAccountId) ?? null
   const currency = fromAccount?.currency ?? null
 
+  // Destination accounts must be different and share the origin currency.
   const eligibleDestinations = accounts.filter(
     (a) => String(a.id) !== form.fromAccountId && (!currency || a.currency === currency),
   )
@@ -59,6 +60,7 @@ export default function TransferModal({
     setForm((prev) => ({
       ...prev,
       fromAccountId: value,
+      // Reset destination if new origin makes current destination invalid by currency.
       toAccountId:
         prev.toAccountId && accounts.find((a) => String(a.id) === prev.toAccountId)?.currency !==
           accounts.find((a) => String(a.id) === value)?.currency

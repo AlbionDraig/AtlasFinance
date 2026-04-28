@@ -1,6 +1,7 @@
 import apiClient from '@/lib/axios'
 import type { Investment } from '@/types'
 
+// Display names used in investment instrument type selectors.
 export const INSTRUMENT_TYPES = ['Acciones', 'Fondos', 'Bonos', 'CDT', 'ETF', 'Cripto', 'Otro'] as const
 
 export interface InvestmentPayload {
@@ -21,6 +22,7 @@ export interface InvestmentUpdatePayload {
   started_at: string
 }
 
+// CRUD wrapper for investments endpoints.
 export const investmentsApi = {
   list: () => apiClient.get<Investment[]>('/investments'),
   get: (id: number) => apiClient.get<Investment>(`/investments/${id}`),

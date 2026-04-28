@@ -36,6 +36,7 @@ def list_categories_endpoint(
     db: Annotated[Session, Depends(get_db)],
 ) -> list[CategoryRead]:
     """Return all global categories (public catalog — no auth required)."""
+    # Read access is intentionally public because categories are global/shared.
     categories = list_categories(db)
     return [CategoryRead.model_validate(category) for category in categories]
 

@@ -17,6 +17,7 @@ import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
 
 function formatCurrency(value: number, currency: string): string {
+  // Reuse localized formatting to keep financial values consistent across cards.
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency,
@@ -58,6 +59,7 @@ interface InvestmentFormState {
 }
 
 function emptyForm(): InvestmentFormState {
+  // Default to current day and COP for faster data entry in local context.
   return {
     name: '',
     instrument_type: INSTRUMENT_TYPES[0],
@@ -273,6 +275,7 @@ export default function InvestmentsPage() {
   const entityById = useMemo(() => new Map(entities.map(entity => [entity.id, entity])), [entities])
 
   const filtered = useMemo(() => investments.filter(inv => {
+    // All selected filters are conjunctive (AND) to avoid ambiguous result sets.
     if (filterQuery) {
       const q = filterQuery.toLowerCase()
       const entity = entityById.get(inv.investment_entity_id)
@@ -288,6 +291,7 @@ export default function InvestmentsPage() {
     filtered.reduce((sum, inv) => sum + inv.amount_invested, 0), [filtered])
   const totalCurrent = useMemo(() =>
     filtered.reduce((sum, inv) => sum + inv.current_value, 0), [filtered])
+  // Derived KPIs shown in summary cards.
   const totalGain = totalCurrent - totalInvested
   const returnPct = totalInvested > 0 ? ((totalGain / totalInvested) * 100).toFixed(1) : '0.0'
   const gainPositive = totalGain >= 0
@@ -323,6 +327,7 @@ export default function InvestmentsPage() {
     const investmentEntityId = Number(form.investment_entity_id)
     const amountInvested = Number(form.amount_invested)
 
+    // Normalize user input into API payload and enforce business constraints.
     if (name.length < 2) { toast('El nombre debe tener al menos 2 caracteres.', 'error'); return null }
     if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) { toast('Selecciona una entidad.', 'error'); return null }
     if (!form.amount_invested || amountInvested <= 0) { toast('El monto invertido debe ser mayor a 0.', 'error'); return null }
@@ -344,6 +349,7 @@ export default function InvestmentsPage() {
     const investmentEntityId = Number(form.investment_entity_id)
     const currentValue = Number(form.current_value)
 
+    // Editing flow only updates mutable fields (not amount_invested/currency).
     if (name.length < 2) { toast('El nombre debe tener al menos 2 caracteres.', 'error'); return null }
     if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) { toast('Selecciona una entidad.', 'error'); return null }
     if (form.current_value === '' || currentValue < 0) { toast('El valor actual debe ser 0 o mayor.', 'error'); return null }
