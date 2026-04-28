@@ -26,7 +26,6 @@ class PocketMoveCreate(BaseModel):
     account_id: int
     pocket_id: int
     occurred_at: datetime
-    description: str | None = Field(default=None, min_length=2, max_length=255)
 
 
 class PocketRead(BaseModel):

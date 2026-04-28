@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
-import { AxiosError } from 'axios'
+import { useEffect, useState } from 'react'
 import { accountsApi } from '@/api/accounts'
 import { banksApi, type Bank } from '@/api/banks'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/hooks/useToast'
+import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import type { Account } from '@/types'
 import AccountCreateModal from './components/AccountCreateModal'
 import AccountEditModal from './components/AccountEditModal'
@@ -18,14 +18,6 @@ interface AccountFormState {
   accountType: 'savings' | 'checking' | ''
   currency: 'COP' | 'USD' | ''
   bankId: string
-}
-
-function getApiErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof AxiosError) {
-    const detail = error.response?.data?.detail
-    if (typeof detail === 'string' && detail.trim()) return detail
-  }
-  return fallback
 }
 
 const EMPTY_ACCOUNT_FORM: AccountFormState = {
@@ -45,14 +37,6 @@ function buildDefaultFilters(): AccountsFiltersState {
   }
 }
 
-function formatCurrency(value: number, currency: string): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
 export default function AccountsPage() {
   const { toast } = useToast()
 
@@ -68,66 +52,39 @@ export default function AccountsPage() {
   const [accountForm, setAccountForm] = useState<AccountFormState>(EMPTY_ACCOUNT_FORM)
   const [filters, setFilters] = useState<AccountsFiltersState>(() => buildDefaultFilters())
 
+  // Load banks once on mount
   useEffect(() => {
-    async function loadData() {
-      setLoading(true)
-      try {
-        const [accountsResponse, banksResponse] = await Promise.all([
-          accountsApi.list(),
-          banksApi.list(),
-        ])
-        setAccounts(accountsResponse.data)
-        setBanks(banksResponse.data)
-      } catch (error) {
-        toast(getApiErrorMessage(error, 'No se pudieron cargar las cuentas.'), 'error')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    void loadData()
+    banksApi.list()
+      .then((res) => setBanks(res.data))
+      .catch((error) => toast(getApiErrorMessage(error, 'No se pudieron cargar los bancos.'), 'error'))
   }, [])
 
+  // Reload accounts from server whenever filters change (debounce query text)
   useEffect(() => {
-    setPage(1)
-  }, [filters.query, filters.accountType, filters.currency, filters.bankId, filters.pageSize])
+    let cancelled = false
+    const delayMs = filters.query.trim() ? 350 : 0
 
-  const filteredAccounts = useMemo(() => {
-    return [...accounts]
-      .filter((account) => {
-        const bankName = banks.find((bank) => bank.id === account.bank_id)?.name ?? ''
-        const query = filters.query.trim().toLowerCase()
-
-        if (query) {
-          const haystack = [
-            account.name,
-            bankName,
-            account.account_type === 'checking' ? 'corriente' : 'ahorros',
-            account.currency,
-          ].join(' ').toLowerCase()
-          if (!haystack.includes(query)) return false
-        }
-
-        if (filters.accountType !== 'all' && account.account_type !== filters.accountType) {
-          return false
-        }
-        if (filters.currency !== 'all' && account.currency !== filters.currency) {
-          return false
-        }
-        if (filters.bankId !== 'all' && String(account.bank_id) !== filters.bankId) {
-          return false
-        }
-
-        return true
+    const timer = setTimeout(() => {
+      setLoading(true)
+      accountsApi.list({
+        search: filters.query.trim() || undefined,
+        account_type: filters.accountType !== 'all' ? (filters.accountType as 'savings' | 'checking') : undefined,
+        currency: filters.currency !== 'all' ? (filters.currency as 'COP' | 'USD') : undefined,
+        bank_id: filters.bankId !== 'all' ? Number(filters.bankId) : undefined,
       })
-      .sort((a, b) => String(a.name).localeCompare(String(b.name)))
-  }, [accounts, banks, filters.accountType, filters.bankId, filters.currency, filters.query])
+        .then((res) => { if (!cancelled) { setAccounts(res.data); setPage(1) } })
+        .catch((error) => { if (!cancelled) toast(getApiErrorMessage(error, 'No se pudieron cargar las cuentas.'), 'error') })
+        .finally(() => { if (!cancelled) setLoading(false) })
+    }, delayMs)
 
-  const totalPages = Math.max(1, Math.ceil(filteredAccounts.length / filters.pageSize))
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [filters.query, filters.accountType, filters.currency, filters.bankId])
+
+  const totalPages = Math.max(1, Math.ceil(accounts.length / filters.pageSize))
   const currentPage = Math.min(page, totalPages)
   const startIndex = (currentPage - 1) * filters.pageSize
-  const endIndex = Math.min(startIndex + filters.pageSize, filteredAccounts.length)
-  const paginatedAccounts = filteredAccounts.slice(startIndex, endIndex)
+  const endIndex = Math.min(startIndex + filters.pageSize, accounts.length)
+  const paginatedAccounts = accounts.slice(startIndex, endIndex)
   const activeFilters = [
     filters.query.trim() ? `Búsqueda: ${filters.query.trim()}` : null,
     filters.accountType !== 'all' ? `Tipo: ${filters.accountType === 'checking' ? 'Corriente' : 'Ahorros'}` : null,
@@ -277,7 +234,7 @@ export default function AccountsPage() {
       />
 
       <AccountsTableCard
-        filteredAccounts={filteredAccounts}
+        filteredAccounts={accounts}
         paginatedAccounts={paginatedAccounts}
         banks={banks}
         currentPage={currentPage}

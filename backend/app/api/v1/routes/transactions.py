@@ -13,8 +13,9 @@ from app.api.error_handlers import (
 from app.db.base import get_db
 from app.models.user import User
 from app.models.enums import Currency, TransactionType
-from app.schemas.transaction import TransactionCreate, TransactionRead
+from app.schemas.transaction import TransactionCreate, TransactionRead, TransferCreate
 from app.services.finance_service import (
+    create_transfer,
     delete_transaction,
     list_transactions,
     register_transaction,
@@ -33,6 +34,20 @@ def create_transaction_endpoint(
     """Create a transaction and update account balance accordingly."""
     try:
         return register_transaction(db, current_user.id, payload)
+    except ValueError as exc:
+        raise_bad_request_from_value_error(exc)
+
+
+@router.post("/transfer", status_code=status.HTTP_201_CREATED, responses={400: {"description": "Bad Request"}})
+def create_transfer_endpoint(
+    payload: TransferCreate,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> list[TransactionRead]:
+    """Create an atomic transfer between two accounts and return both transaction legs."""
+    try:
+        debit, credit = create_transfer(db, current_user.id, payload)
+        return [TransactionRead.model_validate(debit), TransactionRead.model_validate(credit)]
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 

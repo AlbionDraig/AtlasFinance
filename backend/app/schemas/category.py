@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -9,6 +11,7 @@ class CategoryCreate(BaseModel):
         description="Human-readable description shown in the UI to guide category selection.",
     )
     is_fixed: bool = False
+    category_type: Literal["income", "expense", "any"] = "any"
 
 
 class CategoryUpdate(BaseModel):
@@ -16,6 +19,7 @@ class CategoryUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=120)
     description: str | None = None
     is_fixed: bool | None = None
+    category_type: Literal["income", "expense", "any"] | None = None
 
 
 class CategoryRead(BaseModel):
@@ -24,5 +28,6 @@ class CategoryRead(BaseModel):
     name: str
     description: str | None = None
     is_fixed: bool = False
+    category_type: Literal["income", "expense", "any"] = "any"
 
     model_config = ConfigDict(from_attributes=True)

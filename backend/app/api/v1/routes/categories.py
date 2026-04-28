@@ -34,9 +34,8 @@ def create_category_endpoint(
 @router.get("/")
 def list_categories_endpoint(
     db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[CategoryRead]:
-    """Return all global categories."""
+    """Return all global categories (public catalog — no auth required)."""
     categories = list_categories(db)
     return [CategoryRead.model_validate(category) for category in categories]
 

@@ -5,12 +5,14 @@ export interface Category {
   name: string
   description: string | null
   is_fixed: boolean
+  category_type: 'income' | 'expense' | 'any'
 }
 
 export interface CategoryPayload {
   name: string
   is_fixed: boolean
   description?: string | null
+  category_type?: 'income' | 'expense' | 'any'
 }
 
 export const categoriesApi = {

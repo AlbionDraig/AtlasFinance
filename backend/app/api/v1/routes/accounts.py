@@ -1,11 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.api.error_handlers import raise_bad_request_from_value_error
 from app.db.base import get_db
+from app.models.enums import AccountType, Currency
 from app.models.user import User
 from app.schemas.account import AccountCreate, AccountRead, AccountUpdate
 from app.services.finance_service import (
@@ -35,9 +36,19 @@ def create_account_endpoint(
 def list_accounts_endpoint(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    search: Annotated[str | None, Query(max_length=255)] = None,
+    account_type: Annotated[AccountType | None, Query()] = None,
+    currency: Annotated[Currency | None, Query()] = None,
+    bank_id: Annotated[int | None, Query()] = None,
 ) -> list[AccountRead]:
     """Return all accounts that belong to the authenticated user."""
-    accounts = list_accounts(db, current_user.id)
+    accounts = list_accounts(
+        db, current_user.id,
+        search=search,
+        account_type=account_type,
+        currency=currency,
+        bank_id=bank_id,
+    )
     return [AccountRead.model_validate(account) for account in accounts]
 
 

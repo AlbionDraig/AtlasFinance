@@ -10,7 +10,7 @@ from app.models.account import Account
 from app.models.bank import Bank
 from app.models.category import Category
 from app.models.country import Country
-from app.models.enums import Currency, TransactionType
+from app.models.enums import AccountType, Currency, TransactionType
 from app.models.investment import Investment
 from app.models.investment_entity import InvestmentEntity
 from app.models.pocket import Pocket
@@ -24,7 +24,7 @@ from app.schemas.investment import InvestmentCreate, InvestmentUpdate
 from app.schemas.investment_entity import InvestmentEntityCreate, InvestmentEntityUpdate
 from app.schemas.metric import DashboardAggregates, DashboardMetrics
 from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
-from app.schemas.transaction import TransactionCreate
+from app.schemas.transaction import TransactionCreate, TransferCreate
 from app.services.currency_service import convert_currency
 
 # In-process cache for dashboard aggregates: {(user_id, currency) -> (metrics, expires_at)}
@@ -196,14 +196,32 @@ def create_account(db: Session, user_id: int, payload: AccountCreate) -> Account
     return _persist_and_refresh(db, account)
 
 
-def list_accounts(db: Session, user_id: int) -> list[Account]:
-    """List accounts that belong to the authenticated user."""
+def list_accounts(
+    db: Session,
+    user_id: int,
+    search: str | None = None,
+    account_type: AccountType | None = None,
+    currency: Currency | None = None,
+    bank_id: int | None = None,
+) -> list[Account]:
+    """List accounts that belong to the authenticated user with optional filters."""
     query = (
         select(Account)
         .join(Bank)
         .where(Bank.user_id == user_id)
-        .order_by(Account.created_at.desc())
     )
+    if search:
+        term = f"%{search}%"
+        query = query.where(
+            Account.name.ilike(term) | Bank.name.ilike(term)
+        )
+    if account_type is not None:
+        query = query.where(Account.account_type == account_type)
+    if currency is not None:
+        query = query.where(Account.currency == currency)
+    if bank_id is not None:
+        query = query.where(Account.bank_id == bank_id)
+    query = query.order_by(Account.created_at.desc())
     return list(db.scalars(query).all())
 
 
@@ -584,7 +602,7 @@ def _validate_transaction_payload(db: Session, user_id: int, payload: Transactio
 
 def _ensure_sufficient_funds(account: Account, transaction_type: TransactionType, amount: Decimal) -> None:
     if transaction_type == TransactionType.EXPENSE and amount > account.current_balance:
-        raise ValueError("Fondos insuficientes en la cuenta seleccionada.")
+        raise ValueError("Insufficient funds in the selected account.")
 
 
 def _is_transfer_transaction(db: Session, txn: Transaction) -> bool:
@@ -623,7 +641,7 @@ def register_transaction(db: Session, user_id: int, payload: TransactionCreate) 
         )
         if existing_tx is not None:
             raise ValueError(
-                "El saldo inicial solo se puede registrar una vez por cuenta."
+                "Initial balance can only be registered once per account."
             )
 
     _ensure_sufficient_funds(account, payload.transaction_type, payload.amount)
@@ -659,7 +677,7 @@ def update_transaction(
     if not txn or txn.user_id != user_id:
         raise ValueError("Transaction not found")
     if _is_transfer_transaction(db, txn):
-        raise ValueError("Los movimientos de transferencia entre cuentas no se pueden editar.")
+        raise ValueError("Transfer transactions cannot be edited.")
 
     old_account = txn.account
     _revert_transaction_effect(old_account, txn.transaction_type, txn.amount)
@@ -694,6 +712,61 @@ def delete_transaction(db: Session, user_id: int, transaction_id: int) -> None:
     db.delete(txn)
     db.commit()
     _invalidate_metrics_cache(user_id)
+
+
+def create_transfer(db: Session, user_id: int, payload: TransferCreate) -> tuple[Transaction, Transaction]:
+    """Atomically create a transfer between two accounts the user owns.
+
+    Returns a (debit_txn, credit_txn) tuple — both in a single DB commit.
+    """
+    from_account = db.get(Account, payload.from_account_id)
+    if not from_account or from_account.bank.user_id != user_id:
+        raise ValueError("Source account not found")
+
+    to_account = db.get(Account, payload.to_account_id)
+    if not to_account or to_account.bank.user_id != user_id:
+        raise ValueError("Destination account not found")
+
+    if from_account.id == to_account.id:
+        raise ValueError("Source and destination accounts must be different")
+
+    _ensure_sufficient_funds(from_account, TransactionType.EXPENSE, payload.amount)
+
+    description = f"Transferencia: {from_account.name} a {to_account.name}"
+
+    debit = Transaction(
+        description=description,
+        amount=payload.amount,
+        currency=from_account.currency,
+        transaction_type=TransactionType.EXPENSE,
+        occurred_at=payload.occurred_at,
+        user_id=user_id,
+        account_id=from_account.id,
+        category_id=None,
+        pocket_id=None,
+    )
+    credit = Transaction(
+        description=description,
+        amount=payload.amount,
+        currency=to_account.currency,
+        transaction_type=TransactionType.INCOME,
+        occurred_at=payload.occurred_at,
+        user_id=user_id,
+        account_id=to_account.id,
+        category_id=None,
+        pocket_id=None,
+    )
+    db.add(debit)
+    db.add(credit)
+
+    _apply_transaction_effect(from_account, TransactionType.EXPENSE, payload.amount)
+    _apply_transaction_effect(to_account, TransactionType.INCOME, payload.amount)
+
+    db.commit()
+    db.refresh(debit)
+    db.refresh(credit)
+    _invalidate_metrics_cache(user_id)
+    return debit, credit
 
 
 def list_transactions(

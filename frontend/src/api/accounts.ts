@@ -9,8 +9,16 @@ export interface AccountCreatePayload {
   bank_id: number
 }
 
+export interface AccountFilters {
+  search?: string
+  account_type?: 'savings' | 'checking'
+  currency?: 'COP' | 'USD'
+  bank_id?: number
+}
+
 export const accountsApi = {
-  list: () => apiClient.get<Account[]>('/accounts'),
+  list: (params?: AccountFilters) =>
+    apiClient.get<Account[]>('/accounts', { params }),
   get: (id: number) => apiClient.get<Account>(`/accounts/${id}`),
   create: (data: AccountCreatePayload) =>
     apiClient.post<Account>('/accounts', data),

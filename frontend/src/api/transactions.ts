@@ -13,6 +13,13 @@ export interface TransactionFilters {
   limit?: number
 }
 
+export interface TransferPayload {
+  from_account_id: number
+  to_account_id: number
+  amount: number
+  occurred_at: string
+}
+
 export const transactionsApi = {
   list: (params?: TransactionFilters) =>
     apiClient.get<Transaction[]>('/transactions', { params }),
@@ -22,4 +29,6 @@ export const transactionsApi = {
   update: (id: number, data: Partial<Transaction>) =>
     apiClient.put<Transaction>(`/transactions/${id}`, data),
   delete: (id: number) => apiClient.delete(`/transactions/${id}`),
+  transfer: (data: TransferPayload) =>
+    apiClient.post<Transaction[]>('/transactions/transfer', data),
 }

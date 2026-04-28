@@ -17,6 +17,12 @@ class Category(Base):
         server_default="false",
         default=False,
     )
+    category_type: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        server_default="any",
+        default="any",
+    )
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("CURRENT_TIMESTAMP"),

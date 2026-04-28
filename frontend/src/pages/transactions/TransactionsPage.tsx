@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AxiosError } from 'axios'
 import { accountsApi } from '@/api/accounts'
 import { categoriesApi, type Category } from '@/api/categories'
 import { pocketsApi } from '@/api/pockets'
@@ -14,23 +13,8 @@ import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/hooks/useToast'
+import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
-
-const INCOME_HINTS = [
-  'salario',
-  'sueldo',
-  'ingreso',
-  'venta',
-  'freelance',
-  'interes',
-  'interés',
-  'dividendo',
-  'bono',
-  'comision',
-  'comisión',
-  'reembolso',
-  'premio',
-]
 
 function toDateInputValue(value: Date): string {
   const year = value.getFullYear()
@@ -74,29 +58,8 @@ function buildDefaultForm(): FormState {
   }
 }
 
-function getApiErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof AxiosError) {
-    const detail = error.response?.data?.detail
-    if (typeof detail === 'string' && detail.trim()) return detail
-  }
-  return fallback
-}
-
-function isIncomeCategory(label: string): boolean {
-  const normalized = label.trim().toLowerCase()
-  return INCOME_HINTS.some((hint) => normalized.includes(hint))
-}
-
 function normalizeTransactionType(value: string | null | undefined): TransactionType {
   return String(value ?? '').toLowerCase() === 'income' ? 'INCOME' : 'EXPENSE'
-}
-
-function formatCurrency(value: number, currency: string): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value)
 }
 
 function getCategoryName(categoryId: number | null, categories: Category[]): string {
@@ -111,10 +74,6 @@ function getAccountName(accountId: number, accounts: Account[]): string {
 
 function getCompactAccountName(accountId: number, accounts: Account[]): string {
   return getAccountName(accountId, accounts).replace(/\s+\((COP|USD)\)$/, '')
-}
-
-function isTransferTransaction(transaction: Transaction): boolean {
-  return transaction.description.startsWith('Transferencia: ')
 }
 
 function getPeriodLabel(period: PeriodFilter): string {
@@ -244,7 +203,9 @@ export default function TransactionsPage() {
   const accountCurrency = selectedAccount?.currency ?? 'COP'
   const categoryOptions = useMemo(() => {
     const filtered = categories.filter((category) => (
-      form.transactionType === 'INCOME' ? isIncomeCategory(category.name) : !isIncomeCategory(category.name)
+      form.transactionType === 'INCOME'
+        ? category.category_type !== 'expense'
+        : category.category_type !== 'income'
     ))
     return filtered.length ? filtered : categories
   }, [categories, form.transactionType])
@@ -275,11 +236,6 @@ export default function TransactionsPage() {
   }
 
   function handleEdit(transaction: Transaction) {
-    if (isTransferTransaction(transaction)) {
-      toast('Los movimientos de transferencia entre cuentas no se pueden editar.', 'error')
-      return
-    }
-
     const occurredAt = new Date(transaction.occurred_at)
     setEditingId(transaction.id)
     setModalOpen(true)
@@ -369,43 +325,17 @@ export default function TransactionsPage() {
   }
 
   async function handleTransfer(form: { fromAccountId: string; toAccountId: string; amount: string; occurredDate: string; occurredTime: string }) {
-    const fromAccount = accounts.find((a) => String(a.id) === form.fromAccountId)
-    const toAccount = accounts.find((a) => String(a.id) === form.toAccountId)
-    if (!fromAccount || !toAccount) return
-
     const amount = Number(form.amount)
-    if (amount > Number(fromAccount.current_balance ?? fromAccount.balance ?? 0)) {
-      toast(`No hay fondos suficientes en la cuenta ${fromAccount.name} para pasar a la ${toAccount.name}.`, 'error')
-      return
-    }
-
-    const description = `Transferencia: ${fromAccount.name} a ${toAccount.name}`
     const occurredAt = `${form.occurredDate}T${form.occurredTime}:00`
 
     setSaving(true)
     try {
-      await Promise.all([
-        transactionsApi.create({
-          account_id: fromAccount.id,
-          amount,
-          description,
-          category_id: null,
-          pocket_id: null,
-          currency: fromAccount.currency,
-          transaction_type: 'expense' as Transaction['transaction_type'],
-          occurred_at: occurredAt,
-        } satisfies Omit<Transaction, 'id'>),
-        transactionsApi.create({
-          account_id: toAccount.id,
-          amount,
-          description,
-          category_id: null,
-          pocket_id: null,
-          currency: toAccount.currency,
-          transaction_type: 'income' as Transaction['transaction_type'],
-          occurred_at: occurredAt,
-        } satisfies Omit<Transaction, 'id'>),
-      ])
+      await transactionsApi.transfer({
+        from_account_id: Number(form.fromAccountId),
+        to_account_id: Number(form.toAccountId),
+        amount,
+        occurred_at: occurredAt,
+      })
       toast('Transferencia registrada con éxito.')
       setTransferOpen(false)
       await reloadTransactions()

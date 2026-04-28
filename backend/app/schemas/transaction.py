@@ -19,6 +19,14 @@ class TransactionCreate(BaseModel):
     is_initial_balance: bool = False
 
 
+class TransferCreate(BaseModel):
+    """Payload for creating an atomic transfer between two accounts."""
+    from_account_id: int
+    to_account_id: int
+    amount: Decimal = Field(gt=0)
+    occurred_at: datetime
+
+
 class TransactionRead(BaseModel):
     """Serialized transaction response exposed by the API."""
     id: int
