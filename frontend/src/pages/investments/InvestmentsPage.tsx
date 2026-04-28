@@ -13,7 +13,6 @@ import DeleteButton from '@/components/ui/DeleteButton'
 import Select from '@/components/ui/Select'
 import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
-import InlineAlert from '@/components/ui/InlineAlert'
 
 function formatCurrency(value: number, currency: string): string {
   return new Intl.NumberFormat('es-CO', {
@@ -154,40 +153,37 @@ function InvestmentModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="app-label">Monto invertido</label>
-              {isEditing ? (
+          {isEditing ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="app-label">Monto invertido</label>
                 <p className="app-control w-full min-h-10 flex items-center text-neutral-700">
                   {form.amount_invested ? formatCurrency(Number(form.amount_invested), form.currency) : '—'}
                 </p>
-              ) : (
-                <>
-                  <AmountInput
-                    value={form.amount_invested}
-                    onChange={raw => setForm(c => ({ ...c, amount_invested: raw }))}
-                    currency={form.currency || 'COP'}
-                    className="w-full"
-                    placeholder="0"
-                  />
-                  <InlineAlert
-                    className="mt-2"
-                    message="El monto invertido no se puede modificar después de registrar la inversión."
-                  />
-                </>
-              )}
+              </div>
+              <div className="space-y-1">
+                <label className="app-label">Valor actual</label>
+                <AmountInput
+                  value={form.current_value}
+                  onChange={raw => setForm(c => ({ ...c, current_value: raw }))}
+                  currency={form.currency || 'COP'}
+                  className="w-full"
+                  placeholder="0"
+                />
+              </div>
             </div>
+          ) : (
             <div className="space-y-1">
-              <label className="app-label">Valor actual</label>
+              <label className="app-label">Monto invertido</label>
               <AmountInput
-                value={form.current_value}
-                onChange={raw => setForm(c => ({ ...c, current_value: raw }))}
+                value={form.amount_invested}
+                onChange={raw => setForm(c => ({ ...c, amount_invested: raw }))}
                 currency={form.currency || 'COP'}
                 className="w-full"
                 placeholder="0"
               />
             </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
@@ -312,19 +308,17 @@ export default function InvestmentsPage() {
     const name = form.name.trim()
     const investmentEntityId = Number(form.investment_entity_id)
     const amountInvested = Number(form.amount_invested)
-    const currentValue = Number(form.current_value)
 
     if (name.length < 2) { toast('El nombre debe tener al menos 2 caracteres.', 'error'); return null }
     if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) { toast('Selecciona una entidad.', 'error'); return null }
     if (!form.amount_invested || amountInvested <= 0) { toast('El monto invertido debe ser mayor a 0.', 'error'); return null }
-    if (form.current_value === '' || currentValue < 0) { toast('El valor actual debe ser 0 o mayor.', 'error'); return null }
     if (!form.started_at) { toast('Selecciona una fecha de inicio.', 'error'); return null }
 
     return {
       name,
       instrument_type: form.instrument_type,
       amount_invested: amountInvested,
-      current_value: currentValue,
+      current_value: amountInvested,
       currency: form.currency as 'COP' | 'USD',
       investment_entity_id: investmentEntityId,
       started_at: new Date(form.started_at).toISOString(),

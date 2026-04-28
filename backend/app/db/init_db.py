@@ -105,6 +105,34 @@ def _migrate_investments_to_entities() -> None:
             """
         )
 
+        # Finalize schema: make investment_entity_id NOT NULL, bank_id nullable, add FK+index
+        cols = {column["name"] for column in inspector.get_columns("investments")}
+        if "investment_entity_id" in cols:
+            fks = {fk["referred_table"] for fk in inspector.get_foreign_keys("investments")}
+            indexes = {idx["name"] for idx in inspector.get_indexes("investments")}
+            # Use raw dialect-aware DDL via exec_driver_sql (SQLite-safe subset)
+            try:
+                connection.exec_driver_sql(
+                    "ALTER TABLE investments ALTER COLUMN investment_entity_id SET NOT NULL"
+                )
+            except Exception:
+                pass  # SQLite doesn't support this; schema is already correct there
+            if "investment_entities" not in fks:
+                try:
+                    connection.exec_driver_sql(
+                        "ALTER TABLE investments ADD CONSTRAINT investments_investment_entity_id_fkey "
+                        "FOREIGN KEY (investment_entity_id) REFERENCES investment_entities(id) ON DELETE CASCADE"
+                    )
+                except Exception:
+                    pass  # SQLite doesn't support ADD CONSTRAINT
+            if "ix_investments_investment_entity_id" not in indexes:
+                try:
+                    connection.exec_driver_sql(
+                        "CREATE INDEX ix_investments_investment_entity_id ON investments(investment_entity_id)"
+                    )
+                except Exception:
+                    pass
+
 
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
