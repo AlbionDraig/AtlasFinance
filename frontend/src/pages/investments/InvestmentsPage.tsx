@@ -6,6 +6,8 @@ import type { Investment } from '@/types'
 import { useToast } from '@/hooks/useToast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Modal from '@/components/ui/Modal'
+import FilterCard from '@/components/ui/FilterCard'
+import SearchInput from '@/components/ui/SearchInput'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import EditButton from '@/components/ui/EditButton'
@@ -253,6 +255,7 @@ export default function InvestmentsPage() {
   const [form, setForm] = useState<InvestmentFormState>(emptyForm())
 
   // Filters
+  const [filterQuery, setFilterQuery] = useState('')
   const [filterEntity, setFilterEntity] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filterCurrency, setFilterCurrency] = useState('')
@@ -270,11 +273,16 @@ export default function InvestmentsPage() {
   const entityById = useMemo(() => new Map(entities.map(entity => [entity.id, entity])), [entities])
 
   const filtered = useMemo(() => investments.filter(inv => {
+    if (filterQuery) {
+      const q = filterQuery.toLowerCase()
+      const entity = entityById.get(inv.investment_entity_id)
+      if (!inv.name.toLowerCase().includes(q) && !(entity?.name ?? '').toLowerCase().includes(q)) return false
+    }
     if (filterEntity && String(inv.investment_entity_id) !== filterEntity) return false
     if (filterType && inv.instrument_type !== filterType) return false
     if (filterCurrency && inv.currency !== filterCurrency) return false
     return true
-  }), [investments, filterEntity, filterType, filterCurrency])
+  }), [investments, filterQuery, filterEntity, filterType, filterCurrency, entityById])
 
   const totalInvested = useMemo(() =>
     filtered.reduce((sum, inv) => sum + inv.amount_invested, 0), [filtered])
@@ -284,7 +292,13 @@ export default function InvestmentsPage() {
   const returnPct = totalInvested > 0 ? ((totalGain / totalInvested) * 100).toFixed(1) : '0.0'
   const gainPositive = totalGain >= 0
 
-  const hasFilters = filterEntity || filterType || filterCurrency
+  const hasFilters = filterQuery || filterEntity || filterType || filterCurrency
+  const activeFilters = [
+    filterQuery && `"${filterQuery}"`,
+    filterEntity && (entityById.get(Number(filterEntity))?.name ?? ''),
+    filterType || '',
+    filterCurrency || '',
+  ].filter(Boolean) as string[]
 
   function openCreate() {
     setForm(emptyForm())
@@ -448,33 +462,50 @@ export default function InvestmentsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white border border-neutral-100 rounded-xl p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <FilterCard
+        sticky
+        activeFilters={activeFilters}
+        onReset={hasFilters ? () => { setFilterQuery(''); setFilterEntity(''); setFilterType(''); setFilterCurrency('') } : undefined}
+      >
+        <div className="flex min-w-[180px] flex-1 flex-col gap-1">
+          <label className="app-label">Buscar</label>
+          <SearchInput
+            value={filterQuery}
+            onChange={setFilterQuery}
+            placeholder="Inversión o entidad"
+          />
+        </div>
+        <div className="flex w-44 flex-col gap-1">
+          <label className="app-label">Entidad</label>
           <Select
             value={filterEntity}
             onChange={setFilterEntity}
             options={entityFilterOptions}
+            className="w-full"
+            active={!!filterEntity}
           />
+        </div>
+        <div className="flex w-40 flex-col gap-1">
+          <label className="app-label">Tipo</label>
           <Select
             value={filterType}
             onChange={setFilterType}
             options={typeFilterOptions}
+            className="w-full"
+            active={!!filterType}
           />
+        </div>
+        <div className="flex w-36 flex-col gap-1">
+          <label className="app-label">Moneda</label>
           <Select
             value={filterCurrency}
             onChange={setFilterCurrency}
             options={currencyFilterOptions}
+            className="w-full"
+            active={!!filterCurrency}
           />
         </div>
-        {hasFilters && (
-          <button
-            className="mt-3 text-xs text-brand hover:underline"
-            onClick={() => { setFilterEntity(''); setFilterType(''); setFilterCurrency('') }}
-          >
-            Limpiar filtros
-          </button>
-        )}
-      </div>
+      </FilterCard>
 
       {/* Cards grid */}
       {filtered.length === 0 ? (
