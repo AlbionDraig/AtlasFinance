@@ -254,7 +254,7 @@ def test_update_transaction_rejects_transfer_transactions(db_session):
         ),
     )
 
-    with pytest.raises(ValueError, match="Los movimientos de transferencia entre cuentas no se pueden editar ni eliminar\\."):
+    with pytest.raises(ValueError, match="Los movimientos de transferencia entre cuentas no se pueden editar\\."):
         update_transaction(
             db_session,
             user.id,
@@ -270,7 +270,7 @@ def test_update_transaction_rejects_transfer_transactions(db_session):
         )
 
 
-def test_delete_transaction_rejects_transfer_transactions(db_session):
+def test_delete_transaction_allows_transfer_transactions(db_session):
     user = create_user(
         db_session,
         UserCreate(email="transfer-delete@test.com", full_name="Transfer Delete", password=TEST_PASSWORD),
@@ -339,8 +339,10 @@ def test_delete_transaction_rejects_transfer_transactions(db_session):
         ),
     )
 
-    with pytest.raises(ValueError, match="Los movimientos de transferencia entre cuentas no se pueden editar ni eliminar\\."):
-        delete_transaction(db_session, user.id, transfer_income.id)
+    delete_transaction(db_session, user.id, transfer_income.id)
+
+    remaining_transactions = list_transactions(db_session, user.id)
+    assert all(item.id != transfer_income.id for item in remaining_transactions)
 
 
 def test_update_and_delete_bank_account_and_category(db_session):

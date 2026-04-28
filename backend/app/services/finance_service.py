@@ -434,7 +434,7 @@ def update_transaction(
     if not txn or txn.user_id != user_id:
         raise ValueError("Transaction not found")
     if _is_transfer_transaction(db, txn):
-        raise ValueError("Los movimientos de transferencia entre cuentas no se pueden editar ni eliminar.")
+        raise ValueError("Los movimientos de transferencia entre cuentas no se pueden editar.")
 
     old_account = txn.account
     _revert_transaction_effect(old_account, txn.transaction_type, txn.amount)
@@ -463,8 +463,6 @@ def delete_transaction(db: Session, user_id: int, transaction_id: int) -> None:
     txn = db.get(Transaction, transaction_id)
     if not txn or txn.user_id != user_id:
         raise ValueError("Transaction not found")
-    if _is_transfer_transaction(db, txn):
-        raise ValueError("Los movimientos de transferencia entre cuentas no se pueden editar ni eliminar.")
 
     account = txn.account
     _revert_transaction_effect(account, txn.transaction_type, txn.amount)

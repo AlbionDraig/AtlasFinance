@@ -283,7 +283,7 @@ export default function TransactionsPage() {
 
   function handleEdit(transaction: Transaction) {
     if (isTransferTransaction(transaction)) {
-      toast('Los movimientos de transferencia entre cuentas no se pueden editar ni eliminar.', 'error')
+      toast('Los movimientos de transferencia entre cuentas no se pueden editar.', 'error')
       return
     }
 
@@ -427,13 +427,6 @@ export default function TransactionsPage() {
   }
 
   async function handleDelete(transactionId: number) {
-    const target = transactions.find((transaction) => transaction.id === transactionId)
-    if (target && isTransferTransaction(target)) {
-      toast('Los movimientos de transferencia entre cuentas no se pueden editar ni eliminar.', 'error')
-      setPendingDeleteId(null)
-      return
-    }
-
     setDeletingId(transactionId)
     setPendingDeleteId(null)
 

@@ -222,9 +222,7 @@ export default function TransactionsHistoryCard({
                     <td className="border-b border-r border-neutral-100 px-5 py-3.5 align-middle">
                       <div className="flex items-center justify-end gap-1.5">
                         {isTransfer ? (
-                          <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700 whitespace-nowrap">
-                            Bloqueado
-                          </span>
+                          <DeleteButton onClick={() => onDelete(transaction.id)} loading={deletingId === transaction.id} />
                         ) : (
                           <>
                             {/* Editar */}
