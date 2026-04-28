@@ -12,7 +12,7 @@ from app.models.user import User
 from app.services.auth_service import is_access_token_revoked
 
 settings = get_settings()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.api_v1_prefix}/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.api_v1_prefix}/auth/login", auto_error=False)
 
 
 def _credentials_exception() -> HTTPException:
@@ -27,8 +27,8 @@ def get_token_from_bearer_or_cookie(
     bearer_token: Annotated[str | None, Depends(oauth2_scheme)] = None,
     cookie_token: Annotated[str | None, Cookie(alias="access_token")] = None,
 ) -> str:
-    """Return auth token from Authorization header or fallback auth cookie."""
-    token = bearer_token or cookie_token
+    """Return auth token from cookie or fallback Authorization header."""
+    token = cookie_token or bearer_token
     if not token:
         raise _credentials_exception()
     return token

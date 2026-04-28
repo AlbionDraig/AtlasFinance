@@ -9,7 +9,7 @@ import { getPasswordChecks, getPasswordStrength } from '@/lib/passwordStrength'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
-  const { setToken, setUser } = useAuthStore()
+  const { setUser } = useAuthStore()
   const { toast } = useToast()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -45,9 +45,7 @@ export default function RegisterPage() {
         password,
       })
 
-      const { data: tokenData } = await authApi.login({ email, password })
-      setToken(tokenData.access_token)
-
+      await authApi.login({ email, password })
       const { data: me } = await authApi.me()
       setUser(me)
       navigate('/dashboard', { replace: true })

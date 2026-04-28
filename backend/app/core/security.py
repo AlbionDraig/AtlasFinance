@@ -36,11 +36,12 @@ def create_access_token(subject: str | Any, expires_delta: timedelta | None = No
 
     # Set the token as a secure HttpOnly cookie
     if response:
+        is_production = settings.environment == "production"
         response.set_cookie(
             key="access_token",
             value=token,
             httponly=True,
-            secure=True,
+            secure=is_production,
             samesite="strict",
             max_age=settings.access_token_expire_minutes * 60
         )

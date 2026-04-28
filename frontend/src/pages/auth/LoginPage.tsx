@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/useToast'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { setToken, setUser } = useAuthStore()
+  const { setUser } = useAuthStore()
   const { toast } = useToast()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -26,8 +26,7 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      const { data } = await authApi.login({ email, password })
-      setToken(data.access_token)
+      await authApi.login({ email, password })
       const { data: me } = await authApi.me()
       setUser(me)
       navigate('/dashboard')

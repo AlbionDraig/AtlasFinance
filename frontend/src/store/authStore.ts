@@ -3,9 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { User } from '@/types'
 
 interface AuthState {
-  token: string | null
   user: User | null
-  setToken: (token: string) => void
   setUser: (user: User) => void
   logout: () => void
 }
@@ -13,17 +11,9 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      token: null,
       user: null,
-      setToken: (token) => {
-        localStorage.setItem('access_token', token)
-        set({ token })
-      },
       setUser: (user) => set({ user }),
-      logout: () => {
-        localStorage.removeItem('access_token')
-        set({ token: null, user: null })
-      },
+      logout: () => set({ user: null }),
     }),
     { name: 'atlas-auth' },
   ),

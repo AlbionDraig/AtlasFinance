@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
+import { authApi } from '@/api/auth'
 
 const navItems = [
   {
@@ -77,6 +78,7 @@ const navItems = [
 
 export default function AppLayout() {
   const { logout, user } = useAuthStore()
+  const navigate = useNavigate()
   const [expanded, setExpanded] = useState(false)
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -120,6 +122,16 @@ export default function AppLayout() {
   }
 
   useEffect(() => clearTimers, [])
+
+  async function handleLogout() {
+    try {
+      await authApi.logout()
+    } catch {
+      // Even if the server call fails, clear local state and redirect
+    }
+    logout()
+    navigate('/login', { replace: true })
+  }
 
   const collapsed = !expanded
 
@@ -220,7 +232,7 @@ export default function AppLayout() {
               </NavLink>
             )}
             <button
-              onClick={logout}
+              onClick={handleLogout}
               className={`w-full flex items-center ${collapsed ? 'justify-center h-9 w-9 mx-auto px-0' : 'px-3 py-2'} rounded-lg text-sm font-medium text-[#b0aeab] hover:text-[#f7f7f6] hover:bg-white/10 transition-colors`}
               title={collapsed ? 'Cerrar sesión' : undefined}
             >
