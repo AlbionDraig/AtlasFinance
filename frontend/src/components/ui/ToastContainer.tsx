@@ -34,7 +34,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
     }
   }, [])
 
-  const accentColor = isError ? '#ca0b0b' : '#0f7a55'
+  const accentColor = isError ? 'var(--af-accent)' : 'var(--af-positive)'
 
   return (
     <div
@@ -54,7 +54,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
         {/* Icon badge */}
         <div
           className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-          style={{ backgroundColor: isError ? '#fce8e8' : '#e6f4ef' }}
+          style={{ backgroundColor: isError ? 'var(--af-accent-soft)' : 'var(--af-positive-soft)' }}
         >
           {isError ? (
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke={accentColor} strokeWidth={2.5}>

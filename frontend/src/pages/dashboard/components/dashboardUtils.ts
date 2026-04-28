@@ -1,3 +1,15 @@
+import {
+  CHART_PALETTE,
+  CHART_INCOME,
+  CHART_EXPENSE,
+  CHART_SAVINGS,
+  CHART_NEUTRAL,
+  CHART_TICK,
+  CHART_GRID,
+  CHART_LEGEND,
+  CHART_TOOLTIP_STYLE,
+} from '@/lib/chartTheme'
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type Period = 'Año actual' | 'Últimos 90 días' | 'Últimos 30 días' | 'Personalizado'
 export type Tone = 'positive' | 'negative' | 'flat' | 'neutral'
@@ -44,11 +56,8 @@ export function computePrevDates(period: Period, dateFrom: Date, dateTo: Date): 
 }
 
 // ─── Number / format helpers ──────────────────────────────────────────────────
-export const PALETTE = ['#ca0b0b', '#5f0404', '#0f7a55', '#c47a00', '#8a0808', '#4a4845', '#b0aeab', '#1c1b1a']
-export const CHART_INCOME = '#0f7a55'
-export const CHART_EXPENSE = '#c47a00'
-export const CHART_SAVINGS = '#ca0b0b'
-export const CHART_NEUTRAL = '#b0aeab'
+export const PALETTE = CHART_PALETTE
+export { CHART_INCOME, CHART_EXPENSE, CHART_SAVINGS, CHART_NEUTRAL }
 
 export function fmt(v: number, currency = 'COP'): string {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency, maximumFractionDigits: 0 }).format(v)
@@ -98,16 +107,5 @@ export const fmtTTPair = (
   item: { payload?: { name?: string } },
 ): [string, string] => [fmtShort(Number(v ?? 0)), item.payload?.name ?? String(name ?? 'Monto')]
 
-export const CHART_TICK = 'var(--af-text-muted)'
-export const CHART_GRID = 'var(--af-border)'
-export const CHART_LEGEND = 'var(--af-text-muted)'
-export const TTStyle = {
-  contentStyle: {
-    background: 'var(--af-surface)',
-    border: '1px solid var(--af-border)',
-    borderRadius: '0.5rem',
-    color: 'var(--af-text)',
-    fontSize: 12,
-    boxShadow: 'var(--af-shadow-md)',
-  },
-}
+export { CHART_TICK, CHART_GRID, CHART_LEGEND }
+export const TTStyle = CHART_TOOLTIP_STYLE

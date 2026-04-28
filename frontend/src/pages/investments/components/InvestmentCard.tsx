@@ -1,18 +1,9 @@
 import type { Investment } from '@/types'
 import type { InvestmentEntity } from '@/api/investmentEntities'
+import { INSTRUMENT_COLORS } from '@/lib/chartTheme'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 import { formatCurrency } from '@/lib/utils'
-
-const INSTRUMENT_COLORS: Record<string, { bg: string; text: string }> = {
-  Acciones: { bg: 'bg-brand-light', text: 'text-brand-text' },
-  Fondos:   { bg: 'bg-success-bg', text: 'text-success-text' },
-  Bonos:    { bg: 'bg-warning-bg', text: 'text-warning-text' },
-  CDT:      { bg: 'bg-neutral-100', text: 'text-neutral-700' },
-  ETF:      { bg: 'bg-brand-light', text: 'text-brand-text' },
-  Cripto:   { bg: 'bg-warning-bg', text: 'text-warning-text' },
-  Otro:     { bg: 'bg-neutral-100', text: 'text-neutral-700' },
-}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })

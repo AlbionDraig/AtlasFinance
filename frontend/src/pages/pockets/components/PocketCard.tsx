@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import type { Account, Pocket } from '@/types'
 import { formatCurrency } from '@/lib/utils'
+import { ACCOUNT_BASE_COLORS } from '@/lib/chartTheme'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 
@@ -10,13 +11,6 @@ export interface AccountVisualStyle {
   softBorder: string
   softText: string
 }
-
-const ACCOUNT_BASE_COLORS: Array<{ accent: string; softText: string }> = [
-  { accent: 'var(--af-accent)', softText: 'var(--af-accent-soft-text)' },
-  { accent: 'var(--af-positive)', softText: 'var(--af-positive-soft-text)' },
-  { accent: 'var(--af-warning)', softText: 'var(--af-negative-soft-text)' },
-  { accent: 'var(--af-accent-deep)', softText: 'var(--af-accent-deep)' },
-]
 
 export function buildAccountVisualStyle(_accountId: number, index: number): AccountVisualStyle {
   const base = ACCOUNT_BASE_COLORS[index % ACCOUNT_BASE_COLORS.length]
