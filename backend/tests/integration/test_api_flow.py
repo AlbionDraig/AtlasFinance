@@ -259,3 +259,41 @@ def test_categories_are_global_across_authenticated_users(client):
     list_resp = client.get("/api/v1/categories/", headers=second_headers)
     assert list_resp.status_code == 200
     assert any(category["id"] == created_id for category in list_resp.json())
+
+
+def test_countries_crud_endpoints(client):
+    headers = _auth_headers(client, email="api-countries@test.com")
+
+    create_resp = client.post(
+        "/api/v1/countries/",
+        json={"code": "AR", "name": "Argentina"},
+        headers=headers,
+    )
+    assert create_resp.status_code == 201
+    created_country_id = create_resp.json()["id"]
+
+    duplicate_code_resp = client.post(
+        "/api/v1/countries/",
+        json={"code": "ar", "name": "Canadá"},
+        headers=headers,
+    )
+    assert duplicate_code_resp.status_code == 400
+
+    list_resp = client.get("/api/v1/countries/", headers=headers)
+    assert list_resp.status_code == 200
+    assert any(item["code"] == "AR" for item in list_resp.json())
+
+    update_resp = client.put(
+        f"/api/v1/countries/{created_country_id}",
+        json={"name": "México", "code": "MX"},
+        headers=headers,
+    )
+    assert update_resp.status_code == 200
+    assert update_resp.json()["name"] == "México"
+    assert update_resp.json()["code"] == "MX"
+
+    delete_resp = client.delete(f"/api/v1/countries/{created_country_id}", headers=headers)
+    assert delete_resp.status_code == 204
+
+    delete_missing_resp = client.delete(f"/api/v1/countries/{created_country_id}", headers=headers)
+    assert delete_missing_resp.status_code == 404

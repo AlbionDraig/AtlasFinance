@@ -1,28 +1,24 @@
-import type { FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import Modal from '@/components/ui/Modal'
-import Select from '@/components/ui/Select'
 
-interface BankCreateModalProps {
-  name: string
-  countryCode: string
-  countryOptions: Array<{ value: string; label: string }>
-  setName: (value: string) => void
-  setCountryCode: (value: string) => void
+interface CountryCreateModalProps {
   saving: boolean
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  onSubmit: (name: string, code: string) => void
   onClose: () => void
 }
 
-export default function BankCreateModal({
-  name,
-  countryCode,
-  countryOptions,
-  setName,
-  setCountryCode,
-  saving,
-  onSubmit,
-  onClose,
-}: BankCreateModalProps) {
+export default function CountryCreateModal({ saving, onSubmit, onClose }: CountryCreateModalProps) {
+  const [name, setName] = useState('')
+  const [code, setCode] = useState('')
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const normalizedName = name.trim()
+    const normalizedCode = code.trim().toUpperCase()
+    if (normalizedName.length < 2 || normalizedCode.length < 2) return
+    onSubmit(normalizedName, normalizedCode)
+  }
+
   return (
     <Modal onClose={onClose} maxWidth="max-w-xl">
       <div className="w-full rounded-2xl border border-neutral-100 border-t-4 border-t-brand bg-white shadow-xl overflow-visible">
@@ -33,8 +29,8 @@ export default function BankCreateModal({
             </svg>
           </div>
           <div>
-            <h2 className="app-section-title text-brand-text">Crear banco</h2>
-            <p className="mt-0.5 text-sm text-neutral-700">Agrega un banco disponible para asociar nuevas cuentas.</p>
+            <h2 className="app-section-title text-brand-text">Crear país</h2>
+            <p className="mt-0.5 text-sm text-neutral-700">Agrega un nuevo país para el catálogo administrativo.</p>
           </div>
           <button
             type="button"
@@ -48,34 +44,39 @@ export default function BankCreateModal({
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4 p-6">
+        <form onSubmit={handleSubmit} className="space-y-4 p-6">
           <div className="space-y-1">
-            <label className="app-label">Nombre del banco</label>
+            <label className="app-label">Nombre</label>
             <input
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
               className="app-control w-full"
-              placeholder="Ej: Bancolombia"
+              placeholder="Ej: Colombia"
               autoFocus
+              maxLength={120}
             />
           </div>
 
           <div className="space-y-1">
-            <label className="app-label">País</label>
-            <Select
-              value={countryCode}
-              onChange={setCountryCode}
-              options={countryOptions}
-              className="w-full"
-              active
-              disabled={!countryOptions.length}
+            <label className="app-label">Código</label>
+            <input
+              type="text"
+              value={code}
+              onChange={(event) => setCode(event.target.value.toUpperCase())}
+              className="app-control w-full"
+              placeholder="Ej: CO"
+              maxLength={3}
             />
           </div>
 
           <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
-            <button type="submit" className="app-btn-primary" disabled={saving}>
-              {saving ? 'Creando banco...' : 'Crear banco'}
+            <button
+              type="submit"
+              className="app-btn-primary"
+              disabled={saving || name.trim().length < 2 || code.trim().length < 2}
+            >
+              {saving ? 'Creando país...' : 'Crear país'}
             </button>
             <button type="button" className="app-btn-secondary" onClick={onClose}>
               Cancelar

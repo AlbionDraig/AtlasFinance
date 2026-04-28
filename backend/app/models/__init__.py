@@ -1,6 +1,7 @@
 from app.models.account import Account
 from app.models.bank import Bank
 from app.models.category import Category
+from app.models.country import Country
 from app.models.investment import Investment
 from app.models.pocket import Pocket
 from app.models.revoked_token import RevokedToken
@@ -14,6 +15,7 @@ __all__ = [
     "Pocket",
     "Transaction",
     "Category",
+    "Country",
     "Investment",
     "RevokedToken",
 ]

@@ -19,6 +19,7 @@ from app.db.base import SessionLocal
 from app.models.account import Account
 from app.models.bank import Bank
 from app.models.category import Category
+from app.models.country import Country
 from app.models.enums import AccountType, Currency, TransactionType
 from app.models.pocket import Pocket
 from app.models.transaction import Transaction
@@ -45,6 +46,22 @@ def run_seed() -> None:
             return
 
         logger.info("Seed: creando usuario demo '%s' ...", DEMO_EMAIL)
+
+        # ── Países (catálogo global) ─────────────────────────────────────
+        country_data = [
+            ("CO", "Colombia"),
+            ("US", "United States"),
+            ("MX", "Mexico"),
+        ]
+        existing_countries = {
+            country.code: country
+            for country in db.scalars(select(Country).where(Country.code.in_([code for code, _ in country_data]))).all()
+        }
+        for code, name in country_data:
+            if code in existing_countries:
+                continue
+            db.add(Country(code=code, name=name))
+        db.flush()
 
         # ── Usuario ────────────────────────────────────────────────────────
         user = User(

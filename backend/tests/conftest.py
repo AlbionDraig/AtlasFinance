@@ -12,6 +12,7 @@ from sqlalchemy.pool import StaticPool
 from app import models  # noqa: F401
 from app.db.base import Base, get_db
 from app.main import app
+from app.models.country import Country
 
 
 @pytest.fixture
@@ -26,6 +27,14 @@ def db_session():
 
     db = TestingSessionLocal()
     try:
+        db.add_all(
+            [
+                Country(code="CO", name="Colombia"),
+                Country(code="US", name="United States"),
+                Country(code="MX", name="Mexico"),
+            ]
+        )
+        db.commit()
         yield db
     finally:
         db.close()

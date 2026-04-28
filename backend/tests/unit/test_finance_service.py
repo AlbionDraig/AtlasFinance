@@ -7,6 +7,7 @@ from app.models.enums import AccountType, Currency, TransactionType
 from app.schemas.account import AccountCreate
 from app.schemas.bank import BankCreate
 from app.schemas.category import CategoryCreate
+from app.schemas.country import CountryCreate, CountryUpdate
 from app.schemas.transaction import TransactionCreate
 from app.schemas.user import UserCreate
 from app.services.auth_service import create_user
@@ -14,17 +15,21 @@ from app.services.finance_service import (
     create_account,
     create_bank,
     create_category,
+    create_country,
     delete_account,
     delete_bank,
     delete_category,
+    delete_country,
     delete_transaction,
     get_dashboard_metrics,
     list_categories,
+    list_countries,
     list_transactions,
     register_transaction,
     update_account,
     update_bank,
     update_category,
+    update_country,
     update_transaction,
 )
 
@@ -535,3 +540,64 @@ def test_register_transaction_rejects_second_initial_balance(db_session):
                 is_initial_balance=True,
             ),
         )
+
+
+def test_country_crud_lifecycle(db_session):
+    created = create_country(db_session, CountryCreate(code="ar", name="Argentina"))
+    assert created.code == "AR"
+    assert created.name == "Argentina"
+
+    listed = list_countries(db_session)
+    assert any(country.id == created.id for country in listed)
+
+    updated = update_country(
+        db_session,
+        created.id,
+        CountryUpdate(code="uy", name="Uruguay"),
+    )
+    assert updated.code == "UY"
+    assert updated.name == "Uruguay"
+
+    delete_country(db_session, created.id)
+    assert all(country.id != created.id for country in list_countries(db_session))
+
+
+def test_country_rejects_duplicate_code_and_name(db_session):
+    with pytest.raises(ValueError, match="Country code already exists"):
+        create_country(db_session, CountryCreate(code="co", name="Canadá"))
+
+    with pytest.raises(ValueError, match="Country name already exists"):
+        create_country(db_session, CountryCreate(code="CA", name="Colombia"))
+
+    with pytest.raises(ValueError, match="Country name already exists"):
+        create_country(db_session, CountryCreate(code="BR", name="colombia"))
+
+
+def test_country_update_validation_and_not_found(db_session):
+    country = create_country(db_session, CountryCreate(code="CL", name="Chile"))
+    create_country(db_session, CountryCreate(code="PE", name="Perú"))
+
+    with pytest.raises(ValueError, match="At least one country field must be provided"):
+        update_country(db_session, country.id, CountryUpdate())
+
+    with pytest.raises(ValueError, match="Country code already exists"):
+        update_country(db_session, country.id, CountryUpdate(code="PE"))
+
+    with pytest.raises(ValueError, match="Country name already exists"):
+        update_country(db_session, country.id, CountryUpdate(name="Perú"))
+
+    with pytest.raises(ValueError, match="Country 9999 not found"):
+        update_country(db_session, 9999, CountryUpdate(name="Inexistente"))
+
+    with pytest.raises(ValueError, match="Country 9999 not found"):
+        delete_country(db_session, 9999)
+
+
+def test_create_bank_rejects_unknown_country_code(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="bank-country@test.com", full_name="Bank Country", password=TEST_PASSWORD),
+    )
+
+    with pytest.raises(ValueError, match="Country code is not registered in countries catalog"):
+        create_bank(db_session, user.id, BankCreate(name="Banco Inválido", country_code="ZZ"))

@@ -5,6 +5,7 @@ from app.models import (  # noqa: F401
     account,
     bank,
     category,
+    country,
     investment,
     pocket,
     revoked_token,

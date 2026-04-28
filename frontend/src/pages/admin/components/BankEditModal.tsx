@@ -1,15 +1,17 @@
 import { useState, type FormEvent } from 'react'
 import Modal from '@/components/ui/Modal'
 import type { Bank } from '@/api/banks'
+import Select from '@/components/ui/Select'
 
 interface BankEditModalProps {
   bank: Bank
+  countryOptions: Array<{ value: string; label: string }>
   saving: boolean
   onSubmit: (id: number, name: string, countryCode: string) => void
   onClose: () => void
 }
 
-export default function BankEditModal({ bank, saving, onSubmit, onClose }: BankEditModalProps) {
+export default function BankEditModal({ bank, countryOptions, saving, onSubmit, onClose }: BankEditModalProps) {
   const [name, setName] = useState(bank.name)
   const [countryCode, setCountryCode] = useState(bank.country_code)
 
@@ -60,13 +62,13 @@ export default function BankEditModal({ bank, saving, onSubmit, onClose }: BankE
 
           <div className="space-y-1">
             <label className="app-label">Código de país</label>
-            <input
-              type="text"
+            <Select
               value={countryCode}
-              onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
-              className="app-control w-full"
-              placeholder="Ej: CO"
-              maxLength={3}
+              onChange={setCountryCode}
+              options={countryOptions}
+              className="w-full"
+              active
+              disabled={!countryOptions.length}
             />
           </div>
 

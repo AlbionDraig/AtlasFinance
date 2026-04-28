@@ -3,12 +3,13 @@ from datetime import datetime
 from decimal import Decimal
 from time import monotonic
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.account import Account
 from app.models.bank import Bank
 from app.models.category import Category
+from app.models.country import Country
 from app.models.enums import TransactionType
 from app.models.investment import Investment
 from app.models.pocket import Pocket
@@ -17,6 +18,7 @@ from app.models.user import User
 from app.schemas.account import AccountCreate, AccountUpdate
 from app.schemas.bank import BankCreate, BankUpdate
 from app.schemas.category import CategoryCreate, CategoryUpdate
+from app.schemas.country import CountryCreate, CountryUpdate
 from app.schemas.metric import DashboardMetrics
 from app.schemas.pocket import PocketCreate
 from app.schemas.transaction import TransactionCreate
@@ -68,7 +70,16 @@ def _get_user(db: Session, user_id: int) -> User:
     return user
 
 
-def _persist_and_refresh(db: Session, instance: Bank | Account | Pocket | Category | Transaction):
+def _ensure_country_code_exists(db: Session, country_code: str) -> str:
+    """Validate country code against the global countries catalog."""
+    normalized_code = country_code.strip().upper()
+    country_id = db.scalar(select(Country.id).where(Country.code == normalized_code).limit(1))
+    if country_id is None:
+        raise ValueError("Country code is not registered in countries catalog")
+    return normalized_code
+
+
+def _persist_and_refresh(db: Session, instance: Bank | Account | Pocket | Category | Country | Transaction):
     """Persist a new instance and return it refreshed from the DB."""
     db.add(instance)
     db.commit()
@@ -86,7 +97,8 @@ def _commit_and_refresh(db: Session, instance: Transaction) -> Transaction:
 def create_bank(db: Session, user_id: int, payload: BankCreate) -> Bank:
     """Create a bank owned by the authenticated user."""
     _get_user(db, user_id)
-    bank = Bank(name=payload.name, country_code=payload.country_code.upper(), user_id=user_id)
+    normalized_code = _ensure_country_code_exists(db, payload.country_code)
+    bank = Bank(name=payload.name, country_code=normalized_code, user_id=user_id)
     return _persist_and_refresh(db, bank)
 
 
@@ -101,8 +113,9 @@ def update_bank(db: Session, user_id: int, bank_id: int, payload: BankUpdate) ->
     bank = db.get(Bank, bank_id)
     if not bank or bank.user_id != user_id:
         raise ValueError("Bank not found")
+    normalized_code = _ensure_country_code_exists(db, payload.country_code)
     bank.name = payload.name
-    bank.country_code = payload.country_code.upper()
+    bank.country_code = normalized_code
     return _persist_and_refresh(db, bank)
 
 
@@ -221,6 +234,84 @@ def list_categories(db: Session) -> list[Category]:
     """List all global categories."""
     query = select(Category).order_by(Category.created_at.desc())
     return list(db.scalars(query).all())
+
+
+def create_country(db: Session, payload: CountryCreate) -> Country:
+    """Create a global country entry."""
+    normalized_code = payload.code.strip().upper()
+    normalized_name = payload.name.strip()
+
+    existing_by_code = db.scalar(select(Country.id).where(Country.code == normalized_code).limit(1))
+    if existing_by_code is not None:
+        raise ValueError("Country code already exists")
+
+    existing_by_name = db.scalar(
+        select(Country.id)
+        .where(func.lower(Country.name) == normalized_name.lower())
+        .limit(1)
+    )
+    if existing_by_name is not None:
+        raise ValueError("Country name already exists")
+
+    country = Country(code=normalized_code, name=normalized_name)
+    return _persist_and_refresh(db, country)
+
+
+def list_countries(db: Session) -> list[Country]:
+    """List all global countries ordered by name."""
+    query = select(Country).order_by(Country.name.asc())
+    return list(db.scalars(query).all())
+
+
+def update_country(db: Session, country_id: int, payload: CountryUpdate) -> Country:
+    """Update code and/or name of a global country entry."""
+    country = db.get(Country, country_id)
+    if not country:
+        raise ValueError(f"Country {country_id} not found")
+
+    if payload.code is None and payload.name is None:
+        raise ValueError("At least one country field must be provided")
+
+    if payload.code is not None:
+        old_code = country.code
+        normalized_code = payload.code.strip().upper()
+        duplicated_code = db.scalar(
+            select(Country.id)
+            .where(Country.code == normalized_code, Country.id != country_id)
+            .limit(1)
+        )
+        if duplicated_code is not None:
+            raise ValueError("Country code already exists")
+        if old_code != normalized_code:
+            banks_using_country = db.scalars(select(Bank).where(Bank.country_code == old_code)).all()
+            for bank in banks_using_country:
+                bank.country_code = normalized_code
+        country.code = normalized_code
+
+    if payload.name is not None:
+        normalized_name = payload.name.strip()
+        duplicated_name = db.scalar(
+            select(Country.id)
+            .where(func.lower(Country.name) == normalized_name.lower(), Country.id != country_id)
+            .limit(1)
+        )
+        if duplicated_name is not None:
+            raise ValueError("Country name already exists")
+        country.name = normalized_name
+
+    return _persist_and_refresh(db, country)
+
+
+def delete_country(db: Session, country_id: int) -> None:
+    """Delete a global country entry."""
+    country = db.get(Country, country_id)
+    if not country:
+        raise ValueError(f"Country {country_id} not found")
+    linked_bank_id = db.scalar(select(Bank.id).where(Bank.country_code == country.code).limit(1))
+    if linked_bank_id is not None:
+        raise ValueError("Country is in use by one or more banks")
+    db.delete(country)
+    db.commit()
 
 
 def _apply_transaction_effect(
