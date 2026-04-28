@@ -56,6 +56,18 @@ export interface Pocket {
   created_at: string
 }
 
+// Investment
+export interface Investment {
+  id: number
+  name: string
+  instrument_type: string
+  amount_invested: number
+  current_value: number
+  currency: string
+  bank_id: number
+  started_at: string
+}
+
 // Metric
 export interface DashboardMetrics {
   net_worth: number

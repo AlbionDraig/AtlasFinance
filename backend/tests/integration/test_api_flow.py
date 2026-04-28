@@ -481,3 +481,59 @@ def test_countries_crud_endpoints(client):
 
     delete_missing_resp = client.delete(f"/api/v1/countries/{created_country_id}", headers=headers)
     assert delete_missing_resp.status_code == 404
+
+
+def test_investments_crud_endpoints(client):
+    headers = _auth_headers(client, email="investments@test.com")
+
+    bank_resp = client.post("/api/v1/banks/", json={"name": "Fiducia", "country_code": "CO"}, headers=headers)
+    assert bank_resp.status_code == 201
+    bank_id = bank_resp.json()["id"]
+
+    create_resp = client.post(
+        "/api/v1/investments/",
+        json={
+            "name": "Fondo CDT",
+            "instrument_type": "CDT",
+            "amount_invested": 5000000,
+            "current_value": 5250000,
+            "currency": "COP",
+            "bank_id": bank_id,
+            "started_at": "2026-01-01T00:00:00Z",
+        },
+        headers=headers,
+    )
+    assert create_resp.status_code == 201
+    inv_id = create_resp.json()["id"]
+    assert create_resp.json()["amount_invested"] == 5000000
+    assert create_resp.json()["current_value"] == 5250000
+
+    list_resp = client.get("/api/v1/investments/", headers=headers)
+    assert list_resp.status_code == 200
+    assert any(item["id"] == inv_id for item in list_resp.json())
+
+    get_resp = client.get(f"/api/v1/investments/{inv_id}", headers=headers)
+    assert get_resp.status_code == 200
+    assert get_resp.json()["name"] == "Fondo CDT"
+
+    update_resp = client.put(
+        f"/api/v1/investments/{inv_id}",
+        json={
+            "name": "Fondo CDT Actualizado",
+            "instrument_type": "CDT",
+            "current_value": 5500000,
+            "bank_id": bank_id,
+            "started_at": "2026-01-01T00:00:00Z",
+        },
+        headers=headers,
+    )
+    assert update_resp.status_code == 200
+    assert update_resp.json()["name"] == "Fondo CDT Actualizado"
+    assert update_resp.json()["current_value"] == 5500000
+    assert update_resp.json()["amount_invested"] == 5000000
+
+    delete_resp = client.delete(f"/api/v1/investments/{inv_id}", headers=headers)
+    assert delete_resp.status_code == 204
+
+    get_deleted_resp = client.get(f"/api/v1/investments/{inv_id}", headers=headers)
+    assert get_deleted_resp.status_code == 404

@@ -9,6 +9,7 @@ from app.schemas.bank import BankCreate
 from app.schemas.category import CategoryCreate
 from app.schemas.country import CountryCreate, CountryUpdate
 from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
+from app.schemas.investment import InvestmentCreate, InvestmentUpdate
 from app.schemas.transaction import TransactionCreate
 from app.schemas.user import UserCreate
 from app.services.auth_service import create_user
@@ -17,18 +18,22 @@ from app.services.finance_service import (
     create_bank,
     create_category,
     create_country,
+    create_investment,
     create_pocket,
     delete_account,
     delete_bank,
     delete_category,
     delete_country,
+    delete_investment,
     delete_pocket,
     delete_transaction,
+    get_investment,
     get_pocket,
     get_dashboard_metrics,
     list_accounts,
     list_categories,
     list_countries,
+    list_investments,
     list_pockets,
     list_transactions,
     move_amount_to_pocket,
@@ -37,6 +42,7 @@ from app.services.finance_service import (
     update_bank,
     update_category,
     update_country,
+    update_investment,
     update_pocket,
     update_transaction,
 )
@@ -775,3 +781,78 @@ def test_create_bank_rejects_unknown_country_code(db_session):
 
     with pytest.raises(ValueError, match="Country code is not registered in countries catalog"):
         create_bank(db_session, user.id, BankCreate(name="Banco Inválido", country_code="ZZ"))
+
+
+def test_investments_lifecycle_and_ownership_rules(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="invest@test.com", full_name="Investor", password=TEST_PASSWORD),
+    )
+    other_user = create_user(
+        db_session,
+        UserCreate(email="invest-other@test.com", full_name="Other", password=TEST_PASSWORD),
+    )
+    bank = create_bank(db_session, user.id, BankCreate(name="Banco Inversion", country_code="CO"))
+    other_bank = create_bank(db_session, other_user.id, BankCreate(name="Banco Otro", country_code="CO"))
+
+    now = datetime.now(timezone.utc)
+
+    inv = create_investment(
+        db_session,
+        user.id,
+        InvestmentCreate(
+            name="Fondo Renta",
+            instrument_type="Fondos",
+            amount_invested=Decimal("1000000"),
+            current_value=Decimal("1100000"),
+            currency=Currency.COP,
+            bank_id=bank.id,
+            started_at=now,
+        ),
+    )
+    assert inv.id is not None
+    assert inv.amount_invested == Decimal("1000000")
+    assert inv.current_value == Decimal("1100000")
+
+    fetched = get_investment(db_session, user.id, inv.id)
+    assert fetched.id == inv.id
+
+    investments = list_investments(db_session, user.id)
+    assert len(investments) == 1
+
+    updated = update_investment(
+        db_session,
+        user.id,
+        inv.id,
+        InvestmentUpdate(
+            name="Fondo Renta Actualizado",
+            instrument_type="Fondos",
+            current_value=Decimal("1200000"),
+            bank_id=bank.id,
+            started_at=now,
+        ),
+    )
+    assert updated.name == "Fondo Renta Actualizado"
+    assert updated.current_value == Decimal("1200000")
+    assert updated.amount_invested == Decimal("1000000")
+
+    with pytest.raises(ValueError, match="Invalid bank for user"):
+        create_investment(
+            db_session,
+            user.id,
+            InvestmentCreate(
+                name="Inversion no autorizada",
+                instrument_type="Acciones",
+                amount_invested=Decimal("500"),
+                current_value=Decimal("500"),
+                currency=Currency.COP,
+                bank_id=other_bank.id,
+                started_at=now,
+            ),
+        )
+
+    with pytest.raises(ValueError, match="Investment not found"):
+        get_investment(db_session, other_user.id, inv.id)
+
+    delete_investment(db_session, user.id, inv.id)
+    assert list_investments(db_session, user.id) == []

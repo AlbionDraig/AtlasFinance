@@ -44,6 +44,16 @@ const navItems = [
     ),
   },
   {
+    to: '/investments',
+    label: 'Inversiones',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-4 4 4 4-6 4-4" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21H3" />
+      </svg>
+    ),
+  },
+  {
     to: '/admin',
     label: 'Administración',
     icon: (

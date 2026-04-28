@@ -7,6 +7,7 @@ import DashboardPage from '@/pages/dashboard/DashboardPage'
 import TransactionsPage from '@/pages/transactions/TransactionsPage'
 import AccountsPage from '@/pages/accounts/AccountsPage'
 import PocketsPage from '@/pages/pockets/PocketsPage'
+import InvestmentsPage from '@/pages/investments/InvestmentsPage'
 import ProfilePage from '@/pages/profile/ProfilePage'
 import AdminPage from '@/pages/admin/AdminPage'
 import ManagementPage from '@/pages/management/ManagementPage'
@@ -26,6 +27,7 @@ export default function App() {
               <Route path="/transactions" element={<TransactionsPage />} />
               <Route path="/accounts" element={<AccountsPage />} />
               <Route path="/pockets" element={<PocketsPage />} />
+              <Route path="/investments" element={<InvestmentsPage />} />
               <Route path="/categories" element={<Navigate to="/admin?tab=categories" replace />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/management" element={<ManagementPage />} />

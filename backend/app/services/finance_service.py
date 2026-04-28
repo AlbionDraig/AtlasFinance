@@ -21,6 +21,7 @@ from app.schemas.category import CategoryCreate, CategoryUpdate
 from app.schemas.country import CountryCreate, CountryUpdate
 from app.schemas.metric import DashboardMetrics
 from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
+from app.schemas.investment import InvestmentCreate, InvestmentUpdate
 from app.schemas.transaction import TransactionCreate, TransactionRead
 from app.services.currency_service import convert_currency
 
@@ -306,8 +307,71 @@ def move_amount_to_pocket(db: Session, user_id: int, payload: PocketMoveCreate) 
     return created_txn
 
 
+def create_investment(db: Session, user_id: int, payload: InvestmentCreate) -> Investment:
+    """Register a new investment linked to a bank owned by the user."""
+    bank = db.get(Bank, payload.bank_id)
+    if not bank or bank.user_id != user_id:
+        raise ValueError("Invalid bank for user")
+
+    investment = Investment(
+        name=payload.name,
+        instrument_type=payload.instrument_type,
+        amount_invested=payload.amount_invested,
+        current_value=payload.current_value,
+        currency=payload.currency,
+        bank_id=payload.bank_id,
+        started_at=payload.started_at,
+        user_id=user_id,
+    )
+    return _persist_and_refresh(db, investment)
+
+
+def list_investments(db: Session, user_id: int) -> list[Investment]:
+    """List all investments belonging to the authenticated user."""
+    query = (
+        select(Investment)
+        .where(Investment.user_id == user_id)
+        .order_by(Investment.started_at.desc())
+    )
+    return list(db.scalars(query).all())
+
+
+def get_investment(db: Session, user_id: int, investment_id: int) -> Investment:
+    """Return a single investment owned by the authenticated user."""
+    investment = db.get(Investment, investment_id)
+    if not investment or investment.user_id != user_id:
+        raise ValueError("Investment not found")
+    return investment
+
+
+def update_investment(db: Session, user_id: int, investment_id: int, payload: InvestmentUpdate) -> Investment:
+    """Update investment metadata for one owned by the authenticated user."""
+    investment = db.get(Investment, investment_id)
+    if not investment or investment.user_id != user_id:
+        raise ValueError("Investment not found")
+
+    bank = db.get(Bank, payload.bank_id)
+    if not bank or bank.user_id != user_id:
+        raise ValueError("Invalid bank for user")
+
+    investment.name = payload.name
+    investment.instrument_type = payload.instrument_type
+    investment.current_value = payload.current_value
+    investment.bank_id = payload.bank_id
+    investment.started_at = payload.started_at
+    return _persist_and_refresh(db, investment)
+
+
+def delete_investment(db: Session, user_id: int, investment_id: int) -> None:
+    """Delete an investment owned by the authenticated user."""
+    investment = db.get(Investment, investment_id)
+    if not investment or investment.user_id != user_id:
+        raise ValueError("Investment not found")
+    db.delete(investment)
+    db.commit()
+
+
 def create_category(db: Session, payload: CategoryCreate) -> Category:
-    """Create a global category."""
     category = Category(
         name=payload.name,
         description=payload.description,
