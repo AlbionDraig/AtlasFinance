@@ -14,7 +14,7 @@ from app.models.investment import Investment
 from app.models.pocket import Pocket
 from app.models.transaction import Transaction
 from app.models.user import User
-from app.schemas.account import AccountCreate
+from app.schemas.account import AccountCreate, AccountUpdate
 from app.schemas.bank import BankCreate, BankUpdate
 from app.schemas.category import CategoryCreate, CategoryUpdate
 from app.schemas.metric import DashboardMetrics
@@ -141,6 +141,30 @@ def list_accounts(db: Session, user_id: int) -> list[Account]:
         .order_by(Account.created_at.desc())
     )
     return list(db.scalars(query).all())
+
+
+def update_account(db: Session, user_id: int, account_id: int, payload: AccountUpdate) -> Account:
+    """Update an account owned by the user."""
+    account = db.get(Account, account_id)
+    if not account or account.bank.user_id != user_id:
+        raise ValueError("Account not found")
+    bank = db.get(Bank, payload.bank_id)
+    if not bank or bank.user_id != user_id:
+        raise ValueError("Invalid bank for user")
+    account.name = payload.name
+    account.account_type = payload.account_type
+    account.currency = payload.currency
+    account.bank_id = payload.bank_id
+    return _persist_and_refresh(db, account)
+
+
+def delete_account(db: Session, user_id: int, account_id: int) -> None:
+    """Delete an account owned by the user."""
+    account = db.get(Account, account_id)
+    if not account or account.bank.user_id != user_id:
+        raise ValueError("Account not found")
+    db.delete(account)
+    db.commit()
 
 
 def create_pocket(db: Session, user_id: int, payload: PocketCreate) -> Pocket:

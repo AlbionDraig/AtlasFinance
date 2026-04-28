@@ -7,8 +7,8 @@ from app.api.deps import get_current_user
 from app.api.error_handlers import raise_bad_request_from_value_error
 from app.db.base import get_db
 from app.models.user import User
-from app.schemas.account import AccountCreate, AccountRead
-from app.services.finance_service import create_account, list_accounts
+from app.schemas.account import AccountCreate, AccountRead, AccountUpdate
+from app.services.finance_service import create_account, list_accounts, update_account, delete_account
 
 router = APIRouter()
 
@@ -34,3 +34,30 @@ def list_accounts_endpoint(
     """Return all accounts that belong to the authenticated user."""
     accounts = list_accounts(db, current_user.id)
     return [AccountRead.model_validate(account) for account in accounts]
+
+
+@router.put("/{account_id}", responses={400: {"description": "Bad Request"}})
+def update_account_endpoint(
+    account_id: int,
+    payload: AccountUpdate,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> AccountRead:
+    """Update an account owned by the authenticated user."""
+    try:
+        return update_account(db, current_user.id, account_id, payload)
+    except ValueError as exc:
+        raise_bad_request_from_value_error(exc)
+
+
+@router.delete("/{account_id}", status_code=status.HTTP_204_NO_CONTENT, responses={400: {"description": "Bad Request"}})
+def delete_account_endpoint(
+    account_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> None:
+    """Delete an account owned by the authenticated user."""
+    try:
+        delete_account(db, current_user.id, account_id)
+    except ValueError as exc:
+        raise_bad_request_from_value_error(exc)

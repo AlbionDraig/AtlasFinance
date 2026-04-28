@@ -17,6 +17,8 @@ interface AccountsTableCardProps {
   onNextPage: () => void
   onPageSizeChange: (size: number) => void
   formatCurrency: (value: number, currency: string) => string
+  onEdit: (account: Account) => void
+  onDelete: (account: Account) => void
 }
 
 export default function AccountsTableCard({
@@ -32,6 +34,8 @@ export default function AccountsTableCard({
   onNextPage,
   onPageSizeChange,
   formatCurrency,
+  onEdit,
+  onDelete,
 }: AccountsTableCardProps) {
   const savingsCount = filteredAccounts.filter((account) => account.account_type === 'savings').length
   const checkingCount = filteredAccounts.filter((account) => account.account_type === 'checking').length
@@ -118,6 +122,7 @@ export default function AccountsTableCard({
               <col className="w-28" />
               <col className="w-52" />
               <col className="w-40" />
+              <col className="w-28" />
             </colgroup>
             <thead>
               <tr>
@@ -126,6 +131,7 @@ export default function AccountsTableCard({
                 <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Moneda</th>
                 <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Banco</th>
                 <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Saldo actual</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -156,6 +162,34 @@ export default function AccountsTableCard({
                       <span className="tabular-nums text-sm font-medium text-brand-deep">
                         {formatCurrency(balance, account.currency)}
                       </span>
+                    </td>
+                    <td className="border-b border-r border-neutral-100 px-3 py-2.5 align-middle">
+                      <div className="flex items-center justify-center gap-1">
+                        <Tooltip content="Editar cuenta" ariaLabel="Editar cuenta">
+                          <button
+                            type="button"
+                            onClick={() => onEdit(account)}
+                            className="flex h-7 w-7 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+                            aria-label={`Editar ${account.name}`}
+                          >
+                            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-3.5 w-3.5">
+                              <path d="M11.5 2.5a1.414 1.414 0 012 2L5 13l-3 1 1-3 8.5-8.5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </button>
+                        </Tooltip>
+                        <Tooltip content="Eliminar cuenta" ariaLabel="Eliminar cuenta">
+                          <button
+                            type="button"
+                            onClick={() => onDelete(account)}
+                            className="flex h-7 w-7 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-brand-light hover:text-brand-text"
+                            aria-label={`Eliminar ${account.name}`}
+                          >
+                            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-3.5 w-3.5">
+                              <path d="M3 4h10M6 4V2.5h4V4M5 4v8.5h6V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </button>
+                        </Tooltip>
+                      </div>
                     </td>
                   </tr>
                 )

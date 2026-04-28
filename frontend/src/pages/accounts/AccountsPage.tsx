@@ -7,8 +7,11 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/hooks/useToast'
 import type { Account } from '@/types'
 import AccountCreateModal from './components/AccountCreateModal'
+import AccountEditModal from './components/AccountEditModal'
 import AccountsFiltersCard, { type AccountsFiltersState } from './components/AccountsFiltersCard'
 import AccountsTableCard from './components/AccountsTableCard'
+
+import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 
 interface AccountFormState {
   name: string
@@ -58,6 +61,8 @@ export default function AccountsPage() {
   const [loading, setLoading] = useState(true)
   const [savingAccount, setSavingAccount] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null)
+  const [deletingAccount, setDeletingAccount] = useState<Account | null>(null)
   const [page, setPage] = useState(1)
 
   const [accountForm, setAccountForm] = useState<AccountFormState>(EMPTY_ACCOUNT_FORM)
@@ -185,6 +190,38 @@ export default function AccountsPage() {
     }
   }
 
+  async function handleEditAccount(
+    id: number,
+    data: { name: string; account_type: 'savings' | 'checking'; currency: 'COP' | 'USD'; bank_id: number },
+  ) {
+    setSavingAccount(true)
+    try {
+      const response = await accountsApi.update(id, data)
+      setAccounts((current) => current.map((acc) => (acc.id === id ? response.data : acc)))
+      setEditingAccount(null)
+      toast('Cuenta actualizada con éxito.')
+    } catch (error) {
+      toast(getApiErrorMessage(error, 'No se pudo actualizar la cuenta.'), 'error')
+    } finally {
+      setSavingAccount(false)
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!deletingAccount) return
+    setSavingAccount(true)
+    try {
+      await accountsApi.delete(deletingAccount.id)
+      setAccounts((current) => current.filter((acc) => acc.id !== deletingAccount.id))
+      setDeletingAccount(null)
+      toast('Cuenta eliminada.')
+    } catch (error) {
+      toast(getApiErrorMessage(error, 'No se pudo eliminar la cuenta.'), 'error')
+    } finally {
+      setSavingAccount(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="app-panel p-6 flex min-h-72 items-center justify-center">
@@ -211,6 +248,26 @@ export default function AccountsPage() {
         />
       )}
 
+      {editingAccount && (
+        <AccountEditModal
+          account={editingAccount}
+          banks={banks}
+          saving={savingAccount}
+          onSubmit={handleEditAccount}
+          onClose={() => setEditingAccount(null)}
+        />
+      )}
+
+      {deletingAccount && (
+        <ConfirmDeleteModal
+          title="Eliminar cuenta"
+          description={`¿Seguro que deseas eliminar la cuenta "${deletingAccount.name}"? Esta acción no se puede deshacer.`}
+          saving={savingAccount}
+          onConfirm={handleDeleteAccount}
+          onClose={() => setDeletingAccount(null)}
+        />
+      )}
+
       <AccountsFiltersCard
         filters={filters}
         setFilters={setFilters}
@@ -232,6 +289,8 @@ export default function AccountsPage() {
         onNextPage={() => setPage((current) => Math.min(totalPages, current + 1))}
         onPageSizeChange={(size) => setFilters((current) => ({ ...current, pageSize: size }))}
         formatCurrency={formatCurrency}
+        onEdit={setEditingAccount}
+        onDelete={setDeletingAccount}
       />
 
       <FloatingActionMenu

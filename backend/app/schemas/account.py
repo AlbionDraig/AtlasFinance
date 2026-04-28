@@ -14,6 +14,14 @@ class AccountCreate(BaseModel):
     bank_id: int
 
 
+class AccountUpdate(BaseModel):
+    """Payload used to update a bank account."""
+    name: str = Field(min_length=2, max_length=120)
+    account_type: AccountType
+    currency: Currency
+    bank_id: int
+
+
 class AccountRead(BaseModel):
     """Serialized account response exposed by the API."""
     id: int
