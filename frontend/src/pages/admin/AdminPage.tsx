@@ -1,22 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AxiosError } from 'axios'
-import { useSearchParams } from 'react-router-dom'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { banksApi, type Bank } from '@/api/banks'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import CategoriesPage from '@/pages/categories/CategoriesPage'
 import { useToast } from '@/hooks/useToast'
-import { useAuthStore } from '@/store/authStore'
 import BankCreateModal from './components/BankCreateModal'
 import BanksFiltersCard, { type BanksFiltersState } from './components/BanksFiltersCard'
 import BanksTableCard from './components/BanksTableCard'
 
-type AdminTab = 'banks' | 'categories' | 'users' | 'general'
+type AdminTab = 'banks' | 'categories'
 
 function normalizeTab(value: string | null): AdminTab {
-  if (value === 'banks' || value === 'categories' || value === 'users' || value === 'general') {
+  if (value === 'banks' || value === 'categories') {
     return value
   }
+
   return 'banks'
 }
 
@@ -38,8 +38,12 @@ function buildDefaultBankFilters(): BanksFiltersState {
 
 export default function AdminPage() {
   const { toast } = useToast()
-  const { user } = useAuthStore()
   const [searchParams, setSearchParams] = useSearchParams()
+  const legacyTab = searchParams.get('tab')
+
+  if (legacyTab === 'management' || legacyTab === 'users' || legacyTab === 'general') {
+    return <Navigate to="/management" replace />
+  }
 
   const [activeTab, setActiveTab] = useState<AdminTab>(() => normalizeTab(searchParams.get('tab')))
   const [loadingBanks, setLoadingBanks] = useState(true)
@@ -145,7 +149,7 @@ export default function AdminPage() {
       </div>
 
       <div className="app-card p-2">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => handleTabChange('banks')}
@@ -159,20 +163,6 @@ export default function AdminPage() {
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'categories' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
             Categorías
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('users')}
-            className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'users' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
-          >
-            Usuarios
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('general')}
-            className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'general' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
-          >
-            General
           </button>
         </div>
       </div>
@@ -240,26 +230,6 @@ export default function AdminPage() {
         </>
       )}
 
-      {activeTab === 'users' && (
-        <section className="app-card p-5 border-t-4 border-t-warning">
-          <h2 className="app-section-title text-warning-text">Usuarios</h2>
-          <p className="text-sm text-neutral-700 mt-1">Módulo preparado. Aquí podrás administrar usuarios cuando habilitemos endpoints de listado y gestión.</p>
-          {user && (
-            <div className="mt-4 rounded-xl border border-neutral-100 bg-neutral-50 p-4">
-              <p className="text-xs font-medium tracking-widest uppercase text-neutral-700">Sesión actual</p>
-              <p className="text-sm text-neutral-900 mt-1">{user.full_name}</p>
-              <p className="text-xs text-neutral-400">{user.email}</p>
-            </div>
-          )}
-        </section>
-      )}
-
-      {activeTab === 'general' && (
-        <section className="app-card p-5 border-t-4 border-t-brand-deep">
-          <h2 className="app-section-title text-brand-deep">General</h2>
-          <p className="text-sm text-neutral-700 mt-1">Espacio listo para configuraciones globales del sistema.</p>
-        </section>
-      )}
     </div>
   )
 }

@@ -9,6 +9,7 @@ import AccountsPage from '@/pages/accounts/AccountsPage'
 import PocketsPage from '@/pages/pockets/PocketsPage'
 import ProfilePage from '@/pages/profile/ProfilePage'
 import AdminPage from '@/pages/admin/AdminPage'
+import ManagementPage from '@/pages/management/ManagementPage'
 import { ToastProvider } from '@/hooks/useToast'
 import ToastContainer from '@/components/ui/ToastContainer'
 
@@ -27,6 +28,7 @@ export default function App() {
               <Route path="/pockets" element={<PocketsPage />} />
               <Route path="/categories" element={<Navigate to="/admin?tab=categories" replace />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/management" element={<ManagementPage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Route>
