@@ -7,12 +7,14 @@ from app.api.deps import get_current_user
 from app.api.error_handlers import raise_bad_request_from_value_error, raise_domain_value_error
 from app.db.base import get_db
 from app.models.user import User
-from app.schemas.pocket import PocketCreate, PocketRead, PocketUpdate
+from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketRead, PocketUpdate
+from app.schemas.transaction import TransactionRead
 from app.services.finance_service import (
     create_pocket,
     delete_pocket,
     get_pocket,
     list_pockets,
+    move_amount_to_pocket,
     update_pocket,
 )
 
@@ -40,6 +42,19 @@ def list_pockets_endpoint(
     """Return all pockets that belong to the authenticated user."""
     pockets = list_pockets(db, current_user.id)
     return [PocketRead.model_validate(pocket) for pocket in pockets]
+
+
+@router.post("/move-funds", status_code=status.HTTP_201_CREATED, responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}})
+def move_funds_to_pocket_endpoint(
+    payload: PocketMoveCreate,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> TransactionRead:
+    """Move funds from a user account into a pocket and register expense transaction."""
+    try:
+        return move_amount_to_pocket(db, current_user.id, payload)
+    except ValueError as exc:
+        raise_domain_value_error(exc, not_found_messages={"Pocket not found"})
 
 
 @router.get("/{pocket_id}", responses={404: {"description": "Not Found"}})

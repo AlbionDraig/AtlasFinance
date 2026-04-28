@@ -353,6 +353,72 @@ def test_pockets_enforce_account_ownership_and_currency(client):
     assert foreign_access_resp.status_code == 404
 
 
+def test_move_funds_to_pocket_endpoint(client):
+    headers = _auth_headers(client, email="api-pocket-move@test.com")
+
+    bank_resp = client.post(
+        "/api/v1/banks/",
+        json={"name": "Banco Movimiento", "country_code": "CO"},
+        headers=headers,
+    )
+    assert bank_resp.status_code == 201
+    bank_id = bank_resp.json()["id"]
+
+    account_resp = client.post(
+        "/api/v1/accounts/",
+        json={
+            "name": "Cuenta Operativa",
+            "account_type": "savings",
+            "currency": "COP",
+            "current_balance": 0,
+            "bank_id": bank_id,
+        },
+        headers=headers,
+    )
+    assert account_resp.status_code == 201
+    account_id = account_resp.json()["id"]
+
+    pocket_resp = client.post(
+        "/api/v1/pockets/",
+        json={"name": "Hogar", "balance": 0, "currency": "COP", "account_id": account_id},
+        headers=headers,
+    )
+    assert pocket_resp.status_code == 201
+    pocket_id = pocket_resp.json()["id"]
+
+    funding_resp = client.post(
+        "/api/v1/transactions/",
+        json={
+            "description": "Fondeo",
+            "amount": 500,
+            "currency": "COP",
+            "transaction_type": "income",
+            "occurred_at": "2026-04-01T08:00:00Z",
+            "account_id": account_id,
+        },
+        headers=headers,
+    )
+    assert funding_resp.status_code == 201
+
+    move_resp = client.post(
+        "/api/v1/pockets/move-funds",
+        json={
+            "amount": 200,
+            "account_id": account_id,
+            "pocket_id": pocket_id,
+            "occurred_at": "2026-04-02T08:00:00Z",
+        },
+        headers=headers,
+    )
+    assert move_resp.status_code == 201
+    assert move_resp.json()["pocket_id"] == pocket_id
+    assert move_resp.json()["description"] == "Movimiento a Bolsillo Hogar"
+
+    pocket_after_resp = client.get(f"/api/v1/pockets/{pocket_id}", headers=headers)
+    assert pocket_after_resp.status_code == 200
+    assert pocket_after_resp.json()["balance"] == 200
+
+
 def test_logout_revokes_access_token(client):
     headers = _auth_headers(client)
 

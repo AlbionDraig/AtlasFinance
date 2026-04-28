@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { AxiosError } from 'axios'
 import { accountsApi } from '@/api/accounts'
 import { categoriesApi, type Category } from '@/api/categories'
+import { pocketsApi } from '@/api/pockets'
 import { transactionsApi } from '@/api/transactions'
-import type { Account, Transaction } from '@/types'
+import type { Account, Pocket, Transaction } from '@/types'
 import TransactionEditModal from './components/TransactionEditModal'
+import MoveToPocketModal from './components/MoveToPocketModal'
 import TransactionsFiltersCard from './components/TransactionsFiltersCard'
 import TransactionsHistoryCard from './components/TransactionsHistoryCard'
 import TransferModal from './components/TransferModal'
@@ -164,6 +166,7 @@ export default function TransactionsPage() {
   const { toast } = useToast()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [pockets, setPockets] = useState<Pocket[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [form, setForm] = useState<FormState>(() => buildDefaultForm())
   const [filters, setFilters] = useState<FiltersState>(() => buildDefaultFilters())
@@ -175,6 +178,7 @@ export default function TransactionsPage() {
   const [page, setPage] = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
+  const [moveToPocketOpen, setMoveToPocketOpen] = useState(false)
 
   useEffect(() => {
     async function loadData() {
@@ -191,6 +195,14 @@ export default function TransactionsPage() {
         setCategories(categoriesResponse.data)
         setTransactions(transactionsResponse.data)
         setForm((current) => current.accountId ? current : buildDefaultForm())
+
+        try {
+          const pocketsResponse = await pocketsApi.list()
+          setPockets(pocketsResponse.data)
+        } catch {
+          // Keep transactions usable even if pockets endpoint is unavailable.
+          setPockets([])
+        }
       } catch (loadError) {
         toast(getApiErrorMessage(loadError, 'No se pudieron cargar los movimientos.'), 'error')
       } finally {
@@ -426,6 +438,42 @@ export default function TransactionsPage() {
     }
   }
 
+  async function handleMoveToPocket(form: {
+    accountId: string
+    pocketId: string
+    amount: string
+    occurredDate: string
+    occurredTime: string
+  }) {
+    const account = accounts.find((item) => String(item.id) === form.accountId)
+    const pocket = pockets.find((item) => String(item.id) === form.pocketId)
+    if (!account || !pocket) return
+
+    const amount = Number(form.amount)
+    if (amount > Number(account.current_balance ?? account.balance ?? 0)) {
+      toast(`No hay fondos suficientes en la cuenta ${account.name} para mover a ${pocket.name}.`, 'error')
+      return
+    }
+
+    const occurredAt = `${form.occurredDate}T${form.occurredTime}:00`
+    setSaving(true)
+    try {
+      const response = await pocketsApi.moveFunds({
+        amount,
+        account_id: account.id,
+        pocket_id: pocket.id,
+        occurred_at: occurredAt,
+      })
+      setTransactions((current) => [response.data, ...current])
+      setMoveToPocketOpen(false)
+      toast('Monto movido al bolsillo con éxito.')
+    } catch (moveError) {
+      toast(getApiErrorMessage(moveError, 'No se pudo mover el monto al bolsillo.'), 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function handleDelete(transactionId: number) {
     setDeletingId(transactionId)
     setPendingDeleteId(null)
@@ -483,6 +531,17 @@ export default function TransactionsPage() {
         />
       )}
 
+      {moveToPocketOpen && (
+        <MoveToPocketModal
+          accounts={accounts}
+          pockets={pockets}
+          saving={saving}
+          maxDate={toDateInputValue(new Date())}
+          onSubmit={handleMoveToPocket}
+          onClose={() => setMoveToPocketOpen(false)}
+        />
+      )}
+
       {pendingDeleteId !== null && (
         <ConfirmDeleteModal
           loading={deletingId === pendingDeleteId}
@@ -531,9 +590,21 @@ export default function TransactionsPage() {
       />
 
       <FloatingActionMenu
-        hidden={modalOpen || transferOpen || pendingDeleteId !== null}
+        hidden={modalOpen || transferOpen || moveToPocketOpen || pendingDeleteId !== null}
         ariaLabel="Abrir acciones de movimientos"
         items={[
+          {
+            key: 'move-to-pocket',
+            label: 'Mover a bolsillo',
+            onClick: () => setMoveToPocketOpen(true),
+            icon: (
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+                <path d="M4 10h12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                <path d="M11 7l3 3-3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M4 6h5M4 14h5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.75" />
+              </svg>
+            ),
+          },
           {
             key: 'transfer',
             label: 'Mover dinero entre cuentas',

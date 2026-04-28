@@ -20,8 +20,8 @@ from app.schemas.bank import BankCreate, BankUpdate
 from app.schemas.category import CategoryCreate, CategoryUpdate
 from app.schemas.country import CountryCreate, CountryUpdate
 from app.schemas.metric import DashboardMetrics
-from app.schemas.pocket import PocketCreate, PocketUpdate
-from app.schemas.transaction import TransactionCreate
+from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
+from app.schemas.transaction import TransactionCreate, TransactionRead
 from app.services.currency_service import convert_currency
 
 # In-process cache for dashboard aggregates: {(user_id, currency) -> (metrics, expires_at)}
@@ -268,6 +268,44 @@ def delete_pocket(db: Session, user_id: int, pocket_id: int) -> None:
         raise ValueError("Pocket not found")
     db.delete(pocket)
     db.commit()
+
+
+def move_amount_to_pocket(db: Session, user_id: int, payload: PocketMoveCreate) -> Transaction:
+    """Move funds from an account into a pocket and register it as an expense transaction."""
+    account = db.get(Account, payload.account_id)
+    if not account or account.bank.user_id != user_id:
+        raise ValueError("Invalid account for user")
+
+    pocket = db.get(Pocket, payload.pocket_id)
+    if not pocket or pocket.account.bank.user_id != user_id:
+        raise ValueError("Pocket not found")
+    if pocket.account_id != payload.account_id:
+        raise ValueError("Pocket does not belong to account")
+    if pocket.currency != account.currency:
+        raise ValueError("Pocket currency must match account currency")
+
+    _ensure_sufficient_funds(account, TransactionType.EXPENSE, payload.amount)
+
+    description = f"Movimiento a Bolsillo {pocket.name}"
+    txn = Transaction(
+        description=description,
+        amount=payload.amount,
+        currency=account.currency,
+        transaction_type=TransactionType.EXPENSE,
+        occurred_at=payload.occurred_at,
+        user_id=user_id,
+        account_id=payload.account_id,
+        category_id=None,
+        pocket_id=payload.pocket_id,
+    )
+    db.add(txn)
+
+    _apply_transaction_effect(account, TransactionType.EXPENSE, payload.amount)
+    pocket.balance += payload.amount
+
+    created_txn = _commit_and_refresh(db, txn)
+    _invalidate_metrics_cache(user_id)
+    return created_txn
 
 
 def create_category(db: Session, payload: CategoryCreate) -> Category:

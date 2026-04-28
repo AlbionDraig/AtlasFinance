@@ -8,7 +8,7 @@ from app.schemas.account import AccountCreate
 from app.schemas.bank import BankCreate
 from app.schemas.category import CategoryCreate
 from app.schemas.country import CountryCreate, CountryUpdate
-from app.schemas.pocket import PocketCreate, PocketUpdate
+from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
 from app.schemas.transaction import TransactionCreate
 from app.schemas.user import UserCreate
 from app.services.auth_service import create_user
@@ -26,10 +26,12 @@ from app.services.finance_service import (
     delete_transaction,
     get_pocket,
     get_dashboard_metrics,
+    list_accounts,
     list_categories,
     list_countries,
     list_pockets,
     list_transactions,
+    move_amount_to_pocket,
     register_transaction,
     update_account,
     update_bank,
@@ -206,6 +208,64 @@ def test_pockets_lifecycle_and_account_scope_rules(db_session):
 
     with pytest.raises(ValueError, match="Pocket not found"):
         get_pocket(db_session, user.id, pocket.id)
+
+
+def test_move_amount_to_pocket_updates_pocket_and_account_balance(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="pocket-move@test.com", full_name="Pocket Move", password=TEST_PASSWORD),
+    )
+    bank = create_bank(db_session, user.id, BankCreate(name="Banco Mover", country_code="CO"))
+    account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Cuenta Operativa",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=bank.id,
+        ),
+    )
+
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Fondeo",
+            amount=Decimal("500"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.INCOME,
+            occurred_at=datetime.now(timezone.utc),
+            account_id=account.id,
+        ),
+    )
+
+    pocket = create_pocket(
+        db_session,
+        user.id,
+        PocketCreate(name="Vacaciones", balance=Decimal("0"), currency=Currency.COP, account_id=account.id),
+    )
+
+    txn = move_amount_to_pocket(
+        db_session,
+        user.id,
+        PocketMoveCreate(
+            amount=Decimal("120"),
+            account_id=account.id,
+            pocket_id=pocket.id,
+            occurred_at=datetime.now(timezone.utc),
+        ),
+    )
+
+    refreshed_pocket = get_pocket(db_session, user.id, pocket.id)
+    refreshed_account = next(item for item in list_accounts(db_session, user.id) if item.id == account.id)
+
+    assert txn.pocket_id == pocket.id
+    assert txn.transaction_type == TransactionType.EXPENSE
+    assert txn.description == "Movimiento a Bolsillo Vacaciones"
+    assert refreshed_pocket.balance == Decimal("120")
+    assert refreshed_account.current_balance == Decimal("380")
 
 
 def test_categories_are_global_and_reusable_across_users(db_session):

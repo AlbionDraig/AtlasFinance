@@ -1,5 +1,5 @@
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -20,6 +20,15 @@ class PocketUpdate(BaseModel):
     balance: Decimal = Field(ge=0)
     currency: Currency
     account_id: int
+
+
+class PocketMoveCreate(BaseModel):
+    """Payload used to move funds from account balance into a pocket."""
+    amount: Decimal = Field(gt=0)
+    account_id: int
+    pocket_id: int
+    occurred_at: datetime
+    description: str | None = Field(default=None, min_length=2, max_length=255)
 
 
 class PocketRead(BaseModel):

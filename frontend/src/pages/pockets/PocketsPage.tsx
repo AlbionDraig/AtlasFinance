@@ -64,7 +64,7 @@ const ACCOUNT_BASE_COLORS: Array<{ accent: string; softText: string; label: stri
   { accent: 'var(--af-accent-deep)', softText: 'var(--af-accent-deep)', label: 'Profundo' },
 ]
 
-function buildAccountVisualStyle(accountId: number, index: number): AccountVisualStyle {
+function buildAccountVisualStyle(_accountId: number, index: number): AccountVisualStyle {
   const base = ACCOUNT_BASE_COLORS[index % ACCOUNT_BASE_COLORS.length]
   const tier = Math.floor(index / ACCOUNT_BASE_COLORS.length)
   const tint = Math.min(14 + tier * 8, 46)
