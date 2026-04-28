@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { useAuthStore } from '@/store/authStore'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '/api/v1',
@@ -11,6 +12,7 @@ apiClient.interceptors.response.use(
   (err) => {
     const isAuthEndpoint = err.config?.url?.includes('/auth/')
     if (err.response?.status === 401 && !isAuthEndpoint) {
+      useAuthStore.getState().logout()
       sessionStorage.setItem('session_expired', '1')
       window.location.href = '/login'
     }
