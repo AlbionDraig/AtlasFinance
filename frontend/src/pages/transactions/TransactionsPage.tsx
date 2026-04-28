@@ -353,23 +353,14 @@ export default function TransactionsPage() {
     occurredDate: string
     occurredTime: string
   }) {
-    const account = accounts.find((item) => String(item.id) === form.accountId)
-    const pocket = pockets.find((item) => String(item.id) === form.pocketId)
-    if (!account || !pocket) return
-
     const amount = Number(form.amount)
-    if (amount > Number(account.current_balance ?? account.balance ?? 0)) {
-      toast(`No hay fondos suficientes en la cuenta ${account.name} para mover a ${pocket.name}.`, 'error')
-      return
-    }
-
     const occurredAt = `${form.occurredDate}T${form.occurredTime}:00`
     setSaving(true)
     try {
       await pocketsApi.moveFunds({
         amount,
-        account_id: account.id,
-        pocket_id: pocket.id,
+        account_id: Number(form.accountId),
+        pocket_id: Number(form.pocketId),
         occurred_at: occurredAt,
       })
       setMoveToPocketOpen(false)
