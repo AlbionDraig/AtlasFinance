@@ -1,15 +1,17 @@
-from sqlalchemy import DateTime, ForeignKey, Integer, String, text
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.enums import InvestmentEntityType
 
 
-class Bank(Base):
-    """Financial institution container for user accounts and investments."""
-    __tablename__ = "banks"
+class InvestmentEntity(Base):
+    """Institution that can host investments (bank, broker, exchange, etc.)."""
+    __tablename__ = "investment_entities"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    entity_type: Mapped[InvestmentEntityType] = mapped_column(Enum(InvestmentEntityType), nullable=False)
     country_code: Mapped[str] = mapped_column(String(3), nullable=False, default="CO")
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -21,5 +23,5 @@ class Bank(Base):
         type_=DateTime(timezone=True),
     )
 
-    user = relationship("User", back_populates="banks")
-    accounts = relationship("Account", back_populates="bank", cascade="all, delete-orphan")
+    user = relationship("User", back_populates="investment_entities")
+    investments = relationship("Investment", back_populates="investment_entity", cascade="all, delete-orphan")

@@ -12,6 +12,7 @@ from app.models.category import Category
 from app.models.country import Country
 from app.models.enums import TransactionType
 from app.models.investment import Investment
+from app.models.investment_entity import InvestmentEntity
 from app.models.pocket import Pocket
 from app.models.transaction import Transaction
 from app.models.user import User
@@ -20,6 +21,7 @@ from app.schemas.bank import BankCreate, BankUpdate
 from app.schemas.category import CategoryCreate, CategoryUpdate
 from app.schemas.country import CountryCreate, CountryUpdate
 from app.schemas.investment import InvestmentCreate, InvestmentUpdate
+from app.schemas.investment_entity import InvestmentEntityCreate, InvestmentEntityUpdate
 from app.schemas.metric import DashboardMetrics
 from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
 from app.schemas.transaction import TransactionCreate
@@ -80,7 +82,10 @@ def _ensure_country_code_exists(db: Session, country_code: str) -> str:
     return normalized_code
 
 
-def _persist_and_refresh(db: Session, instance: Bank | Account | Pocket | Category | Country | Transaction):
+def _persist_and_refresh(
+    db: Session,
+    instance: Bank | Account | Pocket | Category | Country | Transaction | Investment | InvestmentEntity,
+):
     """Persist a new instance and return it refreshed from the DB."""
     db.add(instance)
     db.commit()
@@ -126,6 +131,51 @@ def delete_bank(db: Session, user_id: int, bank_id: int) -> None:
     if not bank or bank.user_id != user_id:
         raise ValueError("Bank not found")
     db.delete(bank)
+    db.commit()
+
+
+def create_investment_entity(db: Session, user_id: int, payload: InvestmentEntityCreate) -> InvestmentEntity:
+    """Create an investment entity owned by the authenticated user."""
+    _get_user(db, user_id)
+    normalized_code = _ensure_country_code_exists(db, payload.country_code)
+    entity = InvestmentEntity(
+        name=payload.name,
+        entity_type=payload.entity_type,
+        country_code=normalized_code,
+        user_id=user_id,
+    )
+    return _persist_and_refresh(db, entity)
+
+
+def list_investment_entities(db: Session, user_id: int) -> list[InvestmentEntity]:
+    """List investment entities for the authenticated user ordered by newest first."""
+    query = select(InvestmentEntity).where(InvestmentEntity.user_id == user_id).order_by(InvestmentEntity.created_at.desc())
+    return list(db.scalars(query).all())
+
+
+def update_investment_entity(
+    db: Session,
+    user_id: int,
+    investment_entity_id: int,
+    payload: InvestmentEntityUpdate,
+) -> InvestmentEntity:
+    """Update an investment entity owned by the authenticated user."""
+    entity = db.get(InvestmentEntity, investment_entity_id)
+    if not entity or entity.user_id != user_id:
+        raise ValueError("Investment entity not found")
+    normalized_code = _ensure_country_code_exists(db, payload.country_code)
+    entity.name = payload.name
+    entity.entity_type = payload.entity_type
+    entity.country_code = normalized_code
+    return _persist_and_refresh(db, entity)
+
+
+def delete_investment_entity(db: Session, user_id: int, investment_entity_id: int) -> None:
+    """Delete an investment entity owned by the authenticated user."""
+    entity = db.get(InvestmentEntity, investment_entity_id)
+    if not entity or entity.user_id != user_id:
+        raise ValueError("Investment entity not found")
+    db.delete(entity)
     db.commit()
 
 
@@ -308,10 +358,10 @@ def move_amount_to_pocket(db: Session, user_id: int, payload: PocketMoveCreate) 
 
 
 def create_investment(db: Session, user_id: int, payload: InvestmentCreate) -> Investment:
-    """Register a new investment linked to a bank owned by the user."""
-    bank = db.get(Bank, payload.bank_id)
-    if not bank or bank.user_id != user_id:
-        raise ValueError("Invalid bank for user")
+    """Register a new investment linked to an investment entity owned by the user."""
+    entity = db.get(InvestmentEntity, payload.investment_entity_id)
+    if not entity or entity.user_id != user_id:
+        raise ValueError("Invalid investment entity for user")
 
     investment = Investment(
         name=payload.name,
@@ -319,7 +369,7 @@ def create_investment(db: Session, user_id: int, payload: InvestmentCreate) -> I
         amount_invested=payload.amount_invested,
         current_value=payload.current_value,
         currency=payload.currency,
-        bank_id=payload.bank_id,
+        investment_entity_id=payload.investment_entity_id,
         started_at=payload.started_at,
         user_id=user_id,
     )
@@ -350,14 +400,14 @@ def update_investment(db: Session, user_id: int, investment_id: int, payload: In
     if not investment or investment.user_id != user_id:
         raise ValueError("Investment not found")
 
-    bank = db.get(Bank, payload.bank_id)
-    if not bank or bank.user_id != user_id:
-        raise ValueError("Invalid bank for user")
+    entity = db.get(InvestmentEntity, payload.investment_entity_id)
+    if not entity or entity.user_id != user_id:
+        raise ValueError("Invalid investment entity for user")
 
     investment.name = payload.name
     investment.instrument_type = payload.instrument_type
     investment.current_value = payload.current_value
-    investment.bank_id = payload.bank_id
+    investment.investment_entity_id = payload.investment_entity_id
     investment.started_at = payload.started_at
     return _persist_and_refresh(db, investment)
 

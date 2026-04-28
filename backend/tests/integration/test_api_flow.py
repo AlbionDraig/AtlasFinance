@@ -486,9 +486,13 @@ def test_countries_crud_endpoints(client):
 def test_investments_crud_endpoints(client):
     headers = _auth_headers(client, email="investments@test.com")
 
-    bank_resp = client.post("/api/v1/banks/", json={"name": "Fiducia", "country_code": "CO"}, headers=headers)
-    assert bank_resp.status_code == 201
-    bank_id = bank_resp.json()["id"]
+    entity_resp = client.post(
+        "/api/v1/investment-entities/",
+        json={"name": "Fiducia", "entity_type": "fund_manager", "country_code": "CO"},
+        headers=headers,
+    )
+    assert entity_resp.status_code == 201
+    entity_id = entity_resp.json()["id"]
 
     create_resp = client.post(
         "/api/v1/investments/",
@@ -498,7 +502,7 @@ def test_investments_crud_endpoints(client):
             "amount_invested": 5000000,
             "current_value": 5250000,
             "currency": "COP",
-            "bank_id": bank_id,
+            "investment_entity_id": entity_id,
             "started_at": "2026-01-01T00:00:00Z",
         },
         headers=headers,
@@ -522,7 +526,7 @@ def test_investments_crud_endpoints(client):
             "name": "Fondo CDT Actualizado",
             "instrument_type": "CDT",
             "current_value": 5500000,
-            "bank_id": bank_id,
+            "investment_entity_id": entity_id,
             "started_at": "2026-01-01T00:00:00Z",
         },
         headers=headers,
@@ -537,3 +541,33 @@ def test_investments_crud_endpoints(client):
 
     get_deleted_resp = client.get(f"/api/v1/investments/{inv_id}", headers=headers)
     assert get_deleted_resp.status_code == 404
+
+
+def test_investment_entities_crud_endpoints(client):
+    headers = _auth_headers(client, email="investment-entities@test.com")
+
+    create_resp = client.post(
+        "/api/v1/investment-entities/",
+        json={"name": "Interactive Brokers", "entity_type": "broker", "country_code": "US"},
+        headers=headers,
+    )
+    assert create_resp.status_code == 201
+    entity_id = create_resp.json()["id"]
+
+    list_resp = client.get("/api/v1/investment-entities/", headers=headers)
+    assert list_resp.status_code == 200
+    assert any(item["id"] == entity_id for item in list_resp.json())
+
+    update_resp = client.put(
+        f"/api/v1/investment-entities/{entity_id}",
+        json={"name": "IBKR", "entity_type": "broker", "country_code": "US"},
+        headers=headers,
+    )
+    assert update_resp.status_code == 200
+    assert update_resp.json()["name"] == "IBKR"
+
+    delete_resp = client.delete(f"/api/v1/investment-entities/{entity_id}", headers=headers)
+    assert delete_resp.status_code == 204
+
+    delete_missing_resp = client.delete(f"/api/v1/investment-entities/{entity_id}", headers=headers)
+    assert delete_missing_resp.status_code == 400

@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 import { AxiosError } from 'axios'
-import { banksApi, type Bank } from '@/api/banks'
+import { investmentEntitiesApi, type InvestmentEntity } from '@/api/investmentEntities'
 import { investmentsApi, INSTRUMENT_TYPES, type InvestmentPayload, type InvestmentUpdatePayload } from '@/api/investments'
 import type { Investment } from '@/types'
 import { useToast } from '@/hooks/useToast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
-import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
@@ -13,6 +12,7 @@ import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 import Select from '@/components/ui/Select'
 import AmountInput from '@/components/ui/AmountInput'
+import DatePicker from '@/components/ui/DatePicker'
 import InlineAlert from '@/components/ui/InlineAlert'
 
 function formatCurrency(value: number, currency: string): string {
@@ -52,7 +52,7 @@ interface InvestmentFormState {
   amount_invested: string
   current_value: string
   currency: string
-  bank_id: string
+  investment_entity_id: string
   started_at: string
 }
 
@@ -63,7 +63,7 @@ function emptyForm(): InvestmentFormState {
     amount_invested: '',
     current_value: '',
     currency: 'COP',
-    bank_id: '',
+    investment_entity_id: '',
     started_at: new Date().toISOString().slice(0, 10),
   }
 }
@@ -73,7 +73,7 @@ interface InvestmentModalProps {
   isEditing: boolean
   form: InvestmentFormState
   setForm: Dispatch<SetStateAction<InvestmentFormState>>
-  banks: Bank[]
+  entities: InvestmentEntity[]
   saving: boolean
   submitLabel: string
   onSubmit: (e: FormEvent<HTMLFormElement>) => void
@@ -81,11 +81,11 @@ interface InvestmentModalProps {
 }
 
 function InvestmentModal({
-  title, isEditing, form, setForm, banks, saving, submitLabel, onSubmit, onClose,
+  title, isEditing, form, setForm, entities, saving, submitLabel, onSubmit, onClose,
 }: InvestmentModalProps) {
-  const bankOptions = [
+  const entityOptions = [
     { value: '', label: 'Selecciona una entidad' },
-    ...banks.map(b => ({ value: String(b.id), label: b.name })),
+    ...entities.map(entity => ({ value: String(entity.id), label: entity.name })),
   ]
   const instrumentOptions = INSTRUMENT_TYPES.map(t => ({ value: t, label: t }))
   const currencyOptions = [
@@ -94,106 +94,131 @@ function InvestmentModal({
   ]
 
   return (
-    <Modal onClose={onClose}>
-      <div className="bg-white border border-neutral-100 rounded-2xl shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
-          <h2 className="text-base font-medium text-neutral-900">{title}</h2>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-700 text-lg leading-none">&times;</button>
-        </div>
-        <div className="px-5 py-4">
-          <form onSubmit={onSubmit} className="space-y-4">
-        <FormField label="Nombre">
-          <input
-            className="app-control"
-            type="text"
-            value={form.name}
-            onChange={e => setForm(c => ({ ...c, name: e.target.value }))}
-            placeholder="Ej: Fondo de acciones EEUU"
-          />
-        </FormField>
-
-        <div className="grid grid-cols-2 gap-4">
-          <FormField label="Tipo de instrumento">
-            <Select
-              value={form.instrument_type}
-              onChange={v => setForm(c => ({ ...c, instrument_type: v }))}
-              options={instrumentOptions}
-            />
-          </FormField>
-          <FormField label="Entidad / Banco">
-            <Select
-              value={form.bank_id}
-              onChange={v => setForm(c => ({ ...c, bank_id: v }))}
-              options={bankOptions}
-            />
-          </FormField>
+    <Modal onClose={onClose} maxWidth="max-w-xl">
+      <div className="w-full rounded-2xl border border-neutral-100 border-t-4 border-t-brand bg-white shadow-xl overflow-visible">
+        <div className="flex items-start gap-3 border-b border-brand/10 bg-brand-light px-6 py-4">
+          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white shadow-[0_0_0_5px_rgba(202,11,11,0.10)]">
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
+              <path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="app-section-title text-brand-text">{title}</h2>
+            <p className="mt-0.5 text-sm text-neutral-700">
+              {isEditing ? 'Edita los datos de la inversión.' : 'Registra una nueva inversión en tu portafolio.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label="Cerrar"
+            className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+            onClick={onClose}
+          >
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-4 w-4">
+              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField label="Monto invertido">
-            {isEditing ? (
-              <p className="app-control w-full min-h-10 flex items-center text-neutral-700">
-                {form.amount_invested ? formatCurrency(Number(form.amount_invested), form.currency) : '—'}
-              </p>
-            ) : (
-              <>
-                <AmountInput
-                  value={form.amount_invested}
-                  onChange={raw => setForm(c => ({ ...c, amount_invested: raw }))}
-                  currency={form.currency || 'COP'}
-                  className="w-full"
-                  placeholder="0"
-                />
-                <InlineAlert
-                  className="mt-2"
-                  message="El monto invertido no se puede modificar después de registrar la inversión."
-                />
-              </>
-            )}
-          </FormField>
-          <FormField label="Valor actual">
-            <AmountInput
-              value={form.current_value}
-              onChange={raw => setForm(c => ({ ...c, current_value: raw }))}
-              currency={form.currency || 'COP'}
-              className="w-full"
-              placeholder="0"
-            />
-          </FormField>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <FormField label="Moneda">
-            {isEditing ? (
-              <p className="app-control w-full min-h-10 flex items-center text-neutral-700">{form.currency}</p>
-            ) : (
-              <Select
-                value={form.currency}
-                onChange={v => setForm(c => ({ ...c, currency: v }))}
-                options={currencyOptions}
-              />
-            )}
-          </FormField>
-          <FormField label="Fecha de inicio">
+        <form onSubmit={onSubmit} className="space-y-4 p-6">
+          <div className="space-y-1">
+            <label className="app-label">Nombre</label>
             <input
-              className="app-control"
-              type="date"
-              value={form.started_at}
-              onChange={e => setForm(c => ({ ...c, started_at: e.target.value }))}
+              type="text"
+              value={form.name}
+              onChange={e => setForm(c => ({ ...c, name: e.target.value }))}
+              className="app-control w-full"
+              placeholder="Ej: Fondo de acciones EEUU"
+              autoFocus
             />
-          </FormField>
-        </div>
+          </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="btn-secondary">
-            Cancelar
-          </button>
-          <button type="submit" disabled={saving} className="btn-primary">
-            {saving ? 'Guardando…' : submitLabel}
-          </button>
-        </div>
-          </form>
-        </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="app-label">Tipo de instrumento</label>
+              <Select
+                value={form.instrument_type}
+                onChange={v => setForm(c => ({ ...c, instrument_type: v }))}
+                options={instrumentOptions}
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="app-label">Entidad de inversión</label>
+              <Select
+                value={form.investment_entity_id}
+                onChange={v => setForm(c => ({ ...c, investment_entity_id: v }))}
+                options={entityOptions}
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="app-label">Monto invertido</label>
+              {isEditing ? (
+                <p className="app-control w-full min-h-10 flex items-center text-neutral-700">
+                  {form.amount_invested ? formatCurrency(Number(form.amount_invested), form.currency) : '—'}
+                </p>
+              ) : (
+                <>
+                  <AmountInput
+                    value={form.amount_invested}
+                    onChange={raw => setForm(c => ({ ...c, amount_invested: raw }))}
+                    currency={form.currency || 'COP'}
+                    className="w-full"
+                    placeholder="0"
+                  />
+                  <InlineAlert
+                    className="mt-2"
+                    message="El monto invertido no se puede modificar después de registrar la inversión."
+                  />
+                </>
+              )}
+            </div>
+            <div className="space-y-1">
+              <label className="app-label">Valor actual</label>
+              <AmountInput
+                value={form.current_value}
+                onChange={raw => setForm(c => ({ ...c, current_value: raw }))}
+                currency={form.currency || 'COP'}
+                className="w-full"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="app-label">Moneda</label>
+              {isEditing ? (
+                <p className="app-control w-full min-h-10 flex items-center text-neutral-700">{form.currency}</p>
+              ) : (
+                <Select
+                  value={form.currency}
+                  onChange={v => setForm(c => ({ ...c, currency: v }))}
+                  options={currencyOptions}
+                  className="w-full"
+                />
+              )}
+            </div>
+            <DatePicker
+              label="Fecha de inicio"
+              value={form.started_at}
+              onChange={v => setForm(c => ({ ...c, started_at: v }))}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
+            <button type="submit" className="app-btn-primary" disabled={saving}>
+              {saving ? 'Guardando…' : submitLabel}
+            </button>
+            <button type="button" className="app-btn-secondary" onClick={onClose}>
+              Cancelar
+            </button>
+          </div>
+        </form>
       </div>
     </Modal>
   )
@@ -222,7 +247,7 @@ export default function InvestmentsPage() {
   const { toast } = useToast()
 
   const [investments, setInvestments] = useState<Investment[]>([])
-  const [banks, setBanks] = useState<Bank[]>([])
+  const [entities, setEntities] = useState<InvestmentEntity[]>([])
   const [loading, setLoading] = useState(true)
 
   const [createOpen, setCreateOpen] = useState(false)
@@ -232,28 +257,28 @@ export default function InvestmentsPage() {
   const [form, setForm] = useState<InvestmentFormState>(emptyForm())
 
   // Filters
-  const [filterBank, setFilterBank] = useState('')
+  const [filterEntity, setFilterEntity] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filterCurrency, setFilterCurrency] = useState('')
 
   useEffect(() => {
-    Promise.all([investmentsApi.list(), banksApi.list()])
-      .then(([invRes, bankRes]) => {
+    Promise.all([investmentsApi.list(), investmentEntitiesApi.list()])
+      .then(([invRes, entityRes]) => {
         setInvestments(invRes.data)
-        setBanks(bankRes.data)
+        setEntities(entityRes.data)
       })
       .catch(() => toast('Error al cargar inversiones.', 'error'))
       .finally(() => setLoading(false))
   }, [])
 
-  const bankById = useMemo(() => new Map(banks.map(b => [b.id, b])), [banks])
+  const entityById = useMemo(() => new Map(entities.map(entity => [entity.id, entity])), [entities])
 
   const filtered = useMemo(() => investments.filter(inv => {
-    if (filterBank && String(inv.bank_id) !== filterBank) return false
+    if (filterEntity && String(inv.investment_entity_id) !== filterEntity) return false
     if (filterType && inv.instrument_type !== filterType) return false
     if (filterCurrency && inv.currency !== filterCurrency) return false
     return true
-  }), [investments, filterBank, filterType, filterCurrency])
+  }), [investments, filterEntity, filterType, filterCurrency])
 
   const totalInvested = useMemo(() =>
     filtered.reduce((sum, inv) => sum + inv.amount_invested, 0), [filtered])
@@ -263,7 +288,7 @@ export default function InvestmentsPage() {
   const returnPct = totalInvested > 0 ? ((totalGain / totalInvested) * 100).toFixed(1) : '0.0'
   const gainPositive = totalGain >= 0
 
-  const hasFilters = filterBank || filterType || filterCurrency
+  const hasFilters = filterEntity || filterType || filterCurrency
 
   function openCreate() {
     setForm(emptyForm())
@@ -277,7 +302,7 @@ export default function InvestmentsPage() {
       amount_invested: String(inv.amount_invested),
       current_value: String(inv.current_value),
       currency: inv.currency,
-      bank_id: String(inv.bank_id),
+      investment_entity_id: String(inv.investment_entity_id),
       started_at: inv.started_at.slice(0, 10),
     })
     setEditingInvestment(inv)
@@ -285,12 +310,12 @@ export default function InvestmentsPage() {
 
   function buildCreatePayload(): InvestmentPayload | null {
     const name = form.name.trim()
-    const bankId = Number(form.bank_id)
+    const investmentEntityId = Number(form.investment_entity_id)
     const amountInvested = Number(form.amount_invested)
     const currentValue = Number(form.current_value)
 
     if (name.length < 2) { toast('El nombre debe tener al menos 2 caracteres.', 'error'); return null }
-    if (!Number.isInteger(bankId) || bankId <= 0) { toast('Selecciona una entidad.', 'error'); return null }
+    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) { toast('Selecciona una entidad.', 'error'); return null }
     if (!form.amount_invested || amountInvested <= 0) { toast('El monto invertido debe ser mayor a 0.', 'error'); return null }
     if (form.current_value === '' || currentValue < 0) { toast('El valor actual debe ser 0 o mayor.', 'error'); return null }
     if (!form.started_at) { toast('Selecciona una fecha de inicio.', 'error'); return null }
@@ -301,18 +326,18 @@ export default function InvestmentsPage() {
       amount_invested: amountInvested,
       current_value: currentValue,
       currency: form.currency as 'COP' | 'USD',
-      bank_id: bankId,
+      investment_entity_id: investmentEntityId,
       started_at: new Date(form.started_at).toISOString(),
     }
   }
 
   function buildUpdatePayload(): InvestmentUpdatePayload | null {
     const name = form.name.trim()
-    const bankId = Number(form.bank_id)
+    const investmentEntityId = Number(form.investment_entity_id)
     const currentValue = Number(form.current_value)
 
     if (name.length < 2) { toast('El nombre debe tener al menos 2 caracteres.', 'error'); return null }
-    if (!Number.isInteger(bankId) || bankId <= 0) { toast('Selecciona una entidad.', 'error'); return null }
+    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) { toast('Selecciona una entidad.', 'error'); return null }
     if (form.current_value === '' || currentValue < 0) { toast('El valor actual debe ser 0 o mayor.', 'error'); return null }
     if (!form.started_at) { toast('Selecciona una fecha de inicio.', 'error'); return null }
 
@@ -320,7 +345,7 @@ export default function InvestmentsPage() {
       name,
       instrument_type: form.instrument_type,
       current_value: currentValue,
-      bank_id: bankId,
+      investment_entity_id: investmentEntityId,
       started_at: new Date(form.started_at).toISOString(),
     }
   }
@@ -377,9 +402,9 @@ export default function InvestmentsPage() {
     }
   }
 
-  const bankFilterOptions = [
+  const entityFilterOptions = [
     { value: '', label: 'Todas las entidades' },
-    ...banks.map(b => ({ value: String(b.id), label: b.name })),
+    ...entities.map(entity => ({ value: String(entity.id), label: entity.name })),
   ]
   const typeFilterOptions = [
     { value: '', label: 'Todos los tipos' },
@@ -432,9 +457,9 @@ export default function InvestmentsPage() {
       <div className="bg-white border border-neutral-100 rounded-xl p-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Select
-            value={filterBank}
-            onChange={setFilterBank}
-            options={bankFilterOptions}
+            value={filterEntity}
+            onChange={setFilterEntity}
+            options={entityFilterOptions}
           />
           <Select
             value={filterType}
@@ -450,7 +475,7 @@ export default function InvestmentsPage() {
         {hasFilters && (
           <button
             className="mt-3 text-xs text-brand hover:underline"
-            onClick={() => { setFilterBank(''); setFilterType(''); setFilterCurrency('') }}
+            onClick={() => { setFilterEntity(''); setFilterType(''); setFilterCurrency('') }}
           >
             Limpiar filtros
           </button>
@@ -470,7 +495,7 @@ export default function InvestmentsPage() {
             const gain = inv.current_value - inv.amount_invested
             const pct = inv.amount_invested > 0 ? ((gain / inv.amount_invested) * 100).toFixed(1) : '0.0'
             const positive = gain >= 0
-            const bank = bankById.get(inv.bank_id)
+            const entity = entityById.get(inv.investment_entity_id)
 
             return (
               <div
@@ -481,7 +506,7 @@ export default function InvestmentsPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-neutral-900 truncate">{inv.name}</p>
-                    <p className="text-xs text-neutral-400 truncate">{bank?.name ?? '—'}</p>
+                    <p className="text-xs text-neutral-400 truncate">{entity?.name ?? '—'}</p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <EditButton onClick={() => openEdit(inv)} />
@@ -541,7 +566,7 @@ export default function InvestmentsPage() {
           isEditing={false}
           form={form}
           setForm={setForm}
-          banks={banks}
+          entities={entities}
           saving={saving}
           submitLabel="Registrar"
           onSubmit={handleCreate}
@@ -556,7 +581,7 @@ export default function InvestmentsPage() {
           isEditing
           form={form}
           setForm={setForm}
-          banks={banks}
+          entities={entities}
           saving={saving}
           submitLabel="Guardar cambios"
           onSubmit={handleUpdate}

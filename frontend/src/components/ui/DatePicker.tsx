@@ -117,7 +117,7 @@ export default function DatePicker({ label, value, onChange, min, max, className
             return !prev
           })
         }}
-        className={`app-control w-36 text-left text-xs [transform:translateZ(0)] [backface-visibility:hidden] ${disabled ? 'cursor-not-allowed bg-neutral-50 border-neutral-100 text-neutral-700' : ''}`}
+        className={`app-control w-full text-left text-xs [transform:translateZ(0)] [backface-visibility:hidden] ${disabled ? 'cursor-not-allowed bg-neutral-50 border-neutral-100 text-neutral-700' : ''}`}
       >
         <span className="inline-flex w-full items-center gap-2 whitespace-nowrap">
           <svg className="h-3.5 w-3.5 app-subtitle" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

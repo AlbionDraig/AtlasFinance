@@ -22,3 +22,4 @@ class User(Base):
     banks = relationship("Bank", back_populates="user", cascade=CASCADE_DELETE)
     transactions = relationship("Transaction", back_populates="user", cascade=CASCADE_DELETE)
     investments = relationship("Investment", back_populates="user", cascade=CASCADE_DELETE)
+    investment_entities = relationship("InvestmentEntity", back_populates="user", cascade=CASCADE_DELETE)

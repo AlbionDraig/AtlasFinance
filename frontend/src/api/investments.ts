@@ -9,7 +9,7 @@ export interface InvestmentPayload {
   amount_invested: number
   current_value: number
   currency: 'COP' | 'USD'
-  bank_id: number
+  investment_entity_id: number
   started_at: string
 }
 
@@ -17,7 +17,7 @@ export interface InvestmentUpdatePayload {
   name: string
   instrument_type: string
   current_value: number
-  bank_id: number
+  investment_entity_id: number
   started_at: string
 }
 

@@ -9,7 +9,7 @@ from app.models.enums import Currency
 
 
 class Investment(Base):
-    """Investment position linked to a user and a financial institution."""
+    """Investment position linked to a user and an investment entity."""
     __tablename__ = "investments"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -25,11 +25,11 @@ class Investment(Base):
         nullable=False,
         index=True,
     )
-    bank_id: Mapped[int] = mapped_column(
-        ForeignKey("banks.id", ondelete="CASCADE"),
+    investment_entity_id: Mapped[int] = mapped_column(
+        ForeignKey("investment_entities.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
 
     user = relationship("User", back_populates="investments")
-    bank = relationship("Bank", back_populates="investments")
+    investment_entity = relationship("InvestmentEntity", back_populates="investments")

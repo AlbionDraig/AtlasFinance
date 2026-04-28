@@ -64,7 +64,7 @@ export interface Investment {
   amount_invested: number
   current_value: number
   currency: string
-  bank_id: number
+  investment_entity_id: number
   started_at: string
 }
 

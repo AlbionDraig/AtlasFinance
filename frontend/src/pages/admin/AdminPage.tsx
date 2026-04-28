@@ -3,6 +3,12 @@ import { AxiosError } from 'axios'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { banksApi, type Bank } from '@/api/banks'
 import { countriesApi, type Country } from '@/api/countries'
+import {
+  investmentEntitiesApi,
+  INVESTMENT_ENTITY_TYPE_OPTIONS,
+  type InvestmentEntity,
+  type InvestmentEntityType,
+} from '@/api/investmentEntities'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import CategoriesPage from '@/pages/categories/CategoriesPage'
@@ -16,11 +22,15 @@ import CountriesFiltersCard, { type CountriesFiltersState } from './components/C
 import CountriesTableCard from './components/CountriesTableCard'
 import CountryCreateModal from './components/CountryCreateModal'
 import CountryEditModal from './components/CountryEditModal'
+import InvestmentEntitiesFiltersCard, { type InvestmentEntitiesFiltersState } from './components/InvestmentEntitiesFiltersCard'
+import InvestmentEntitiesTableCard from './components/InvestmentEntitiesTableCard'
+import InvestmentEntityCreateModal from './components/InvestmentEntityCreateModal'
+import InvestmentEntityEditModal from './components/InvestmentEntityEditModal'
 
-type AdminTab = 'banks' | 'countries' | 'categories'
+type AdminTab = 'banks' | 'investment-entities' | 'countries' | 'categories'
 
 function normalizeTab(value: string | null): AdminTab {
-  if (value === 'banks' || value === 'countries' || value === 'categories') {
+  if (value === 'banks' || value === 'investment-entities' || value === 'countries' || value === 'categories') {
     return value
   }
 
@@ -50,6 +60,15 @@ function buildDefaultCountryFilters(): CountriesFiltersState {
   }
 }
 
+function buildDefaultInvestmentEntityFilters(): InvestmentEntitiesFiltersState {
+  return {
+    query: '',
+    countryCode: 'all',
+    entityType: 'all',
+    pageSize: 10,
+  }
+}
+
 export default function AdminPage() {
   const { toast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -61,22 +80,33 @@ export default function AdminPage() {
 
   const [activeTab, setActiveTab] = useState<AdminTab>(() => normalizeTab(searchParams.get('tab')))
   const [loadingBanks, setLoadingBanks] = useState(true)
+  const [loadingInvestmentEntities, setLoadingInvestmentEntities] = useState(true)
   const [loadingCountries, setLoadingCountries] = useState(true)
   const [savingBank, setSavingBank] = useState(false)
+  const [savingInvestmentEntity, setSavingInvestmentEntity] = useState(false)
   const [savingCountry, setSavingCountry] = useState(false)
   const [banks, setBanks] = useState<Bank[]>([])
+  const [investmentEntities, setInvestmentEntities] = useState<InvestmentEntity[]>([])
   const [countries, setCountries] = useState<Country[]>([])
   const [bankName, setBankName] = useState('')
   const [bankCountryCode, setBankCountryCode] = useState('')
   const [bankCreateOpen, setBankCreateOpen] = useState(false)
   const [editingBank, setEditingBank] = useState<Bank | null>(null)
   const [deletingBank, setDeletingBank] = useState<Bank | null>(null)
+  const [investmentEntityName, setInvestmentEntityName] = useState('')
+  const [investmentEntityType, setInvestmentEntityType] = useState<InvestmentEntityType>('broker')
+  const [investmentEntityCountryCode, setInvestmentEntityCountryCode] = useState('')
+  const [investmentEntityCreateOpen, setInvestmentEntityCreateOpen] = useState(false)
+  const [editingInvestmentEntity, setEditingInvestmentEntity] = useState<InvestmentEntity | null>(null)
+  const [deletingInvestmentEntity, setDeletingInvestmentEntity] = useState<InvestmentEntity | null>(null)
   const [countryCreateOpen, setCountryCreateOpen] = useState(false)
   const [editingCountry, setEditingCountry] = useState<Country | null>(null)
   const [deletingCountry, setDeletingCountry] = useState<Country | null>(null)
   const [bankPage, setBankPage] = useState(1)
+  const [investmentEntityPage, setInvestmentEntityPage] = useState(1)
   const [countryPage, setCountryPage] = useState(1)
   const [bankFilters, setBankFilters] = useState<BanksFiltersState>(() => buildDefaultBankFilters())
+  const [investmentEntityFilters, setInvestmentEntityFilters] = useState<InvestmentEntitiesFiltersState>(() => buildDefaultInvestmentEntityFilters())
   const [countryFilters, setCountryFilters] = useState<CountriesFiltersState>(() => buildDefaultCountryFilters())
 
   useEffect(() => {
@@ -93,6 +123,22 @@ export default function AdminPage() {
     }
 
     void loadBanks()
+  }, [])
+
+  useEffect(() => {
+    async function loadInvestmentEntities() {
+      setLoadingInvestmentEntities(true)
+      try {
+        const response = await investmentEntitiesApi.list()
+        setInvestmentEntities(response.data)
+      } catch (error) {
+        toast(getApiErrorMessage(error, 'No se pudieron cargar las entidades de inversión.'), 'error')
+      } finally {
+        setLoadingInvestmentEntities(false)
+      }
+    }
+
+    void loadInvestmentEntities()
   }, [])
 
   useEffect(() => {
@@ -119,6 +165,10 @@ export default function AdminPage() {
     setCountryPage(1)
   }, [countryFilters.pageSize, countryFilters.query])
 
+  useEffect(() => {
+    setInvestmentEntityPage(1)
+  }, [investmentEntityFilters.countryCode, investmentEntityFilters.entityType, investmentEntityFilters.pageSize, investmentEntityFilters.query])
+
   const countryOptions = useMemo(() => {
     const values = Array.from(new Set(banks.map((bank) => bank.country_code))).sort()
     return [
@@ -136,6 +186,26 @@ export default function AdminPage() {
       }))
   }, [countries])
 
+  const investmentEntityCountryOptions = useMemo(() => {
+    const values = Array.from(new Set(investmentEntities.map((entity) => entity.country_code))).sort()
+    return [
+      { value: 'all', label: 'Todos' },
+      ...values.map((value) => ({ value, label: value })),
+    ]
+  }, [investmentEntities])
+
+  const investmentEntityTypeOptions = useMemo(() => {
+    return [
+      { value: 'all', label: 'Todos' },
+      ...INVESTMENT_ENTITY_TYPE_OPTIONS,
+    ]
+  }, [])
+
+  const investmentEntityTypeLabelByValue = useMemo(
+    () => Object.fromEntries(INVESTMENT_ENTITY_TYPE_OPTIONS.map((option) => [option.value, option.label])),
+    [],
+  )
+
   useEffect(() => {
     if (!countryCatalogOptions.length) {
       setBankCountryCode('')
@@ -146,6 +216,17 @@ export default function AdminPage() {
       setBankCountryCode(countryCatalogOptions[0].value)
     }
   }, [countryCatalogOptions, bankCountryCode])
+
+  useEffect(() => {
+    if (!countryCatalogOptions.length) {
+      setInvestmentEntityCountryCode('')
+      return
+    }
+    const selectedStillValid = countryCatalogOptions.some((option) => option.value === investmentEntityCountryCode)
+    if (!selectedStillValid) {
+      setInvestmentEntityCountryCode(countryCatalogOptions[0].value)
+    }
+  }, [countryCatalogOptions, investmentEntityCountryCode])
 
   const filteredBanks = useMemo(() => {
     return [...banks]
@@ -171,6 +252,41 @@ export default function AdminPage() {
   const activeBankFilters = [
     bankFilters.query.trim() ? `Búsqueda: ${bankFilters.query.trim()}` : null,
     bankFilters.countryCode !== 'all' ? `País: ${bankFilters.countryCode}` : null,
+  ].filter(Boolean) as string[]
+
+  const filteredInvestmentEntities = useMemo(() => {
+    return [...investmentEntities]
+      .filter((entity) => {
+        const query = investmentEntityFilters.query.trim().toLowerCase()
+        if (query) {
+          const haystack = `${entity.name} ${entity.country_code}`.toLowerCase()
+          if (!haystack.includes(query)) return false
+        }
+        if (investmentEntityFilters.countryCode !== 'all' && entity.country_code !== investmentEntityFilters.countryCode) {
+          return false
+        }
+        if (investmentEntityFilters.entityType !== 'all' && entity.entity_type !== investmentEntityFilters.entityType) {
+          return false
+        }
+        return true
+      })
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [investmentEntityFilters.countryCode, investmentEntityFilters.entityType, investmentEntityFilters.query, investmentEntities])
+
+  const totalInvestmentEntityPages = Math.max(1, Math.ceil(filteredInvestmentEntities.length / investmentEntityFilters.pageSize))
+  const currentInvestmentEntityPage = Math.min(investmentEntityPage, totalInvestmentEntityPages)
+  const investmentEntityStartIndex = (currentInvestmentEntityPage - 1) * investmentEntityFilters.pageSize
+  const investmentEntityEndIndex = Math.min(
+    investmentEntityStartIndex + investmentEntityFilters.pageSize,
+    filteredInvestmentEntities.length,
+  )
+  const paginatedInvestmentEntities = filteredInvestmentEntities.slice(investmentEntityStartIndex, investmentEntityEndIndex)
+  const activeInvestmentEntityFilters = [
+    investmentEntityFilters.query.trim() ? `Búsqueda: ${investmentEntityFilters.query.trim()}` : null,
+    investmentEntityFilters.entityType !== 'all'
+      ? `Tipo: ${investmentEntityTypeLabelByValue[investmentEntityFilters.entityType] ?? investmentEntityFilters.entityType}`
+      : null,
+    investmentEntityFilters.countryCode !== 'all' ? `País: ${investmentEntityFilters.countryCode}` : null,
   ].filter(Boolean) as string[]
 
   const filteredCountries = useMemo(() => {
@@ -261,6 +377,69 @@ export default function AdminPage() {
     }
   }
 
+  async function handleCreateInvestmentEntity(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (investmentEntityName.trim().length < 2) {
+      toast('El nombre de la entidad debe tener al menos 2 caracteres.', 'error')
+      return
+    }
+    if (!investmentEntityCountryCode) {
+      toast('Debes crear y seleccionar un país antes de crear entidades.', 'error')
+      return
+    }
+
+    setSavingInvestmentEntity(true)
+    try {
+      const response = await investmentEntitiesApi.create({
+        name: investmentEntityName.trim(),
+        entity_type: investmentEntityType,
+        country_code: investmentEntityCountryCode,
+      })
+      setInvestmentEntities((current) => [response.data, ...current])
+      setInvestmentEntityName('')
+      setInvestmentEntityType('broker')
+      setInvestmentEntityCountryCode(countryCatalogOptions[0]?.value ?? '')
+      setInvestmentEntityCreateOpen(false)
+      toast('Entidad de inversión creada con éxito.')
+    } catch (error) {
+      toast(getApiErrorMessage(error, 'No se pudo crear la entidad de inversión.'), 'error')
+    } finally {
+      setSavingInvestmentEntity(false)
+    }
+  }
+
+  async function handleEditInvestmentEntity(
+    id: number,
+    data: { name: string; entity_type: InvestmentEntityType; country_code: string },
+  ) {
+    setSavingInvestmentEntity(true)
+    try {
+      const response = await investmentEntitiesApi.update(id, data)
+      setInvestmentEntities((current) => current.map((entity) => (entity.id === id ? response.data : entity)))
+      setEditingInvestmentEntity(null)
+      toast('Entidad de inversión actualizada con éxito.')
+    } catch (error) {
+      toast(getApiErrorMessage(error, 'No se pudo actualizar la entidad de inversión.'), 'error')
+    } finally {
+      setSavingInvestmentEntity(false)
+    }
+  }
+
+  async function handleDeleteInvestmentEntity() {
+    if (!deletingInvestmentEntity) return
+    setSavingInvestmentEntity(true)
+    try {
+      await investmentEntitiesApi.delete(deletingInvestmentEntity.id)
+      setInvestmentEntities((current) => current.filter((entity) => entity.id !== deletingInvestmentEntity.id))
+      setDeletingInvestmentEntity(null)
+      toast('Entidad de inversión eliminada.')
+    } catch (error) {
+      toast(getApiErrorMessage(error, 'No se pudo eliminar la entidad de inversión.'), 'error')
+    } finally {
+      setSavingInvestmentEntity(false)
+    }
+  }
+
   async function handleCreateCountry(name: string, code: string) {
     setSavingCountry(true)
     try {
@@ -308,17 +487,24 @@ export default function AdminPage() {
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       <div>
         <h1 className="app-title text-xl">Administración</h1>
-        <p className="app-subtitle text-sm mt-0.5">Administra los catálogos base del sistema, como bancos, países y categorías.</p>
+        <p className="app-subtitle text-sm mt-0.5">Administra los catálogos base del sistema, como bancos, entidades de inversión, países y categorías.</p>
       </div>
 
       <div className="app-card p-2">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
           <button
             type="button"
             onClick={() => handleTabChange('banks')}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'banks' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
             Bancos
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange('investment-entities')}
+            className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'investment-entities' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
+          >
+            Entidades inversión
           </button>
           <button
             type="button"
@@ -424,6 +610,104 @@ export default function AdminPage() {
                   setBankName('')
                   setBankCountryCode(countryCatalogOptions[0]?.value ?? '')
                   setBankCreateOpen(true)
+                },
+              },
+            ]}
+          />
+        </>
+      )}
+
+      {activeTab === 'investment-entities' && (
+        <>
+          {investmentEntityCreateOpen && (
+            <InvestmentEntityCreateModal
+              name={investmentEntityName}
+              entityType={investmentEntityType}
+              countryCode={investmentEntityCountryCode}
+              countryOptions={countryCatalogOptions}
+              typeOptions={INVESTMENT_ENTITY_TYPE_OPTIONS}
+              setName={setInvestmentEntityName}
+              setEntityType={setInvestmentEntityType}
+              setCountryCode={setInvestmentEntityCountryCode}
+              saving={savingInvestmentEntity}
+              onSubmit={handleCreateInvestmentEntity}
+              onClose={() => {
+                setInvestmentEntityCreateOpen(false)
+                setInvestmentEntityName('')
+                setInvestmentEntityType('broker')
+                setInvestmentEntityCountryCode(countryCatalogOptions[0]?.value ?? '')
+              }}
+            />
+          )}
+
+          {editingInvestmentEntity && (
+            <InvestmentEntityEditModal
+              entity={editingInvestmentEntity}
+              countryOptions={countryCatalogOptions}
+              typeOptions={INVESTMENT_ENTITY_TYPE_OPTIONS}
+              saving={savingInvestmentEntity}
+              onSubmit={handleEditInvestmentEntity}
+              onClose={() => setEditingInvestmentEntity(null)}
+            />
+          )}
+
+          {deletingInvestmentEntity && (
+            <ConfirmDeleteModal
+              title="Eliminar entidad de inversión"
+              description={`¿Eliminar "${deletingInvestmentEntity.name}"? Las inversiones asociadas también se eliminarán.`}
+              loading={savingInvestmentEntity}
+              onConfirm={handleDeleteInvestmentEntity}
+              onClose={() => setDeletingInvestmentEntity(null)}
+            />
+          )}
+
+          <InvestmentEntitiesFiltersCard
+            filters={investmentEntityFilters}
+            setFilters={setInvestmentEntityFilters}
+            activeFilters={activeInvestmentEntityFilters}
+            countryOptions={investmentEntityCountryOptions}
+            entityTypeOptions={investmentEntityTypeOptions}
+            onResetFilters={() => setInvestmentEntityFilters(buildDefaultInvestmentEntityFilters())}
+          />
+
+          {loadingInvestmentEntities ? (
+            <section className="app-card p-6">
+              <LoadingSpinner text="Cargando entidades de inversión..." />
+            </section>
+          ) : (
+            <InvestmentEntitiesTableCard
+              filteredEntities={filteredInvestmentEntities}
+              paginatedEntities={paginatedInvestmentEntities}
+              currentPage={currentInvestmentEntityPage}
+              totalPages={totalInvestmentEntityPages}
+              startIndex={investmentEntityStartIndex}
+              endIndex={investmentEntityEndIndex}
+              pageSize={investmentEntityFilters.pageSize}
+              typeLabelByValue={investmentEntityTypeLabelByValue}
+              onPrevPage={() => setInvestmentEntityPage((current) => Math.max(1, current - 1))}
+              onNextPage={() => setInvestmentEntityPage((current) => Math.min(totalInvestmentEntityPages, current + 1))}
+              onPageSizeChange={(size) => setInvestmentEntityFilters((current) => ({ ...current, pageSize: size }))}
+              onEdit={setEditingInvestmentEntity}
+              onDelete={setDeletingInvestmentEntity}
+            />
+          )}
+
+          <FloatingActionMenu
+            hidden={false}
+            ariaLabel="Abrir acciones de entidades de inversión"
+            items={[
+              {
+                key: 'create-investment-entity',
+                label: 'Crear entidad inversión',
+                onClick: () => {
+                  if (!countryCatalogOptions.length) {
+                    toast('Crea al menos un país para poder registrar entidades.', 'error')
+                    return
+                  }
+                  setInvestmentEntityName('')
+                  setInvestmentEntityType('broker')
+                  setInvestmentEntityCountryCode(countryCatalogOptions[0]?.value ?? '')
+                  setInvestmentEntityCreateOpen(true)
                 },
               },
             ]}

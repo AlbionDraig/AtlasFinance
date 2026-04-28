@@ -9,6 +9,7 @@ from app.schemas.bank import BankCreate
 from app.schemas.category import CategoryCreate
 from app.schemas.country import CountryCreate, CountryUpdate
 from app.schemas.investment import InvestmentCreate, InvestmentUpdate
+from app.schemas.investment_entity import InvestmentEntityCreate, InvestmentEntityUpdate
 from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
 from app.schemas.transaction import TransactionCreate
 from app.schemas.user import UserCreate
@@ -19,12 +20,14 @@ from app.services.finance_service import (
     create_category,
     create_country,
     create_investment,
+    create_investment_entity,
     create_pocket,
     delete_account,
     delete_bank,
     delete_category,
     delete_country,
     delete_investment,
+    delete_investment_entity,
     delete_pocket,
     delete_transaction,
     get_dashboard_metrics,
@@ -34,6 +37,7 @@ from app.services.finance_service import (
     list_categories,
     list_countries,
     list_investments,
+    list_investment_entities,
     list_pockets,
     list_transactions,
     move_amount_to_pocket,
@@ -43,6 +47,7 @@ from app.services.finance_service import (
     update_category,
     update_country,
     update_investment,
+    update_investment_entity,
     update_pocket,
     update_transaction,
 )
@@ -792,8 +797,16 @@ def test_investments_lifecycle_and_ownership_rules(db_session):
         db_session,
         UserCreate(email="invest-other@test.com", full_name="Other", password=TEST_PASSWORD),
     )
-    bank = create_bank(db_session, user.id, BankCreate(name="Banco Inversion", country_code="CO"))
-    other_bank = create_bank(db_session, other_user.id, BankCreate(name="Banco Otro", country_code="CO"))
+    entity = create_investment_entity(
+        db_session,
+        user.id,
+        InvestmentEntityCreate(name="Broker Principal", entity_type="broker", country_code="CO"),
+    )
+    other_entity = create_investment_entity(
+        db_session,
+        other_user.id,
+        InvestmentEntityCreate(name="Broker Otro", entity_type="broker", country_code="CO"),
+    )
 
     now = datetime.now(timezone.utc)
 
@@ -806,7 +819,7 @@ def test_investments_lifecycle_and_ownership_rules(db_session):
             amount_invested=Decimal("1000000"),
             current_value=Decimal("1100000"),
             currency=Currency.COP,
-            bank_id=bank.id,
+            investment_entity_id=entity.id,
             started_at=now,
         ),
     )
@@ -828,7 +841,7 @@ def test_investments_lifecycle_and_ownership_rules(db_session):
             name="Fondo Renta Actualizado",
             instrument_type="Fondos",
             current_value=Decimal("1200000"),
-            bank_id=bank.id,
+            investment_entity_id=entity.id,
             started_at=now,
         ),
     )
@@ -836,7 +849,7 @@ def test_investments_lifecycle_and_ownership_rules(db_session):
     assert updated.current_value == Decimal("1200000")
     assert updated.amount_invested == Decimal("1000000")
 
-    with pytest.raises(ValueError, match="Invalid bank for user"):
+    with pytest.raises(ValueError, match="Invalid investment entity for user"):
         create_investment(
             db_session,
             user.id,
@@ -846,7 +859,7 @@ def test_investments_lifecycle_and_ownership_rules(db_session):
                 amount_invested=Decimal("500"),
                 current_value=Decimal("500"),
                 currency=Currency.COP,
-                bank_id=other_bank.id,
+                investment_entity_id=other_entity.id,
                 started_at=now,
             ),
         )
@@ -856,3 +869,45 @@ def test_investments_lifecycle_and_ownership_rules(db_session):
 
     delete_investment(db_session, user.id, inv.id)
     assert list_investments(db_session, user.id) == []
+
+
+def test_investment_entities_crud_and_ownership_rules(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="entities@test.com", full_name="Entities", password=TEST_PASSWORD),
+    )
+    other_user = create_user(
+        db_session,
+        UserCreate(email="entities-other@test.com", full_name="Other Entities", password=TEST_PASSWORD),
+    )
+
+    entity = create_investment_entity(
+        db_session,
+        user.id,
+        InvestmentEntityCreate(name="Interactive Brokers", entity_type="broker", country_code="US"),
+    )
+    assert entity.id is not None
+    assert entity.country_code == "US"
+
+    entities = list_investment_entities(db_session, user.id)
+    assert len(entities) == 1
+    assert entities[0].id == entity.id
+
+    updated_entity = update_investment_entity(
+        db_session,
+        user.id,
+        entity.id,
+        InvestmentEntityUpdate(name="IBKR", entity_type="broker", country_code="US"),
+    )
+    assert updated_entity.name == "IBKR"
+
+    with pytest.raises(ValueError, match="Investment entity not found"):
+        update_investment_entity(
+            db_session,
+            other_user.id,
+            entity.id,
+            InvestmentEntityUpdate(name="Hack", entity_type="other", country_code="US"),
+        )
+
+    delete_investment_entity(db_session, user.id, entity.id)
+    assert list_investment_entities(db_session, user.id) == []

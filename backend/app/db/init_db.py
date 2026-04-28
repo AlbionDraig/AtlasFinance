@@ -7,6 +7,7 @@ from app.models import (  # noqa: F401
     category,
     country,
     investment,
+    investment_entity,
     pocket,
     revoked_token,
     transaction,
@@ -64,6 +65,48 @@ def _migrate_categories_to_global() -> None:
         connection.execute(text("ALTER TABLE categories DROP COLUMN user_id"))
 
 
+def _migrate_investments_to_entities() -> None:
+    inspector = inspect(engine)
+    table_names = set(inspector.get_table_names())
+    if "investments" not in table_names or "investment_entities" not in table_names:
+        return
+
+    investment_columns = {column["name"] for column in inspector.get_columns("investments")}
+    if "bank_id" not in investment_columns:
+        return
+
+    with engine.begin() as connection:
+        if "investment_entity_id" not in investment_columns:
+            connection.exec_driver_sql("ALTER TABLE investments ADD COLUMN investment_entity_id INTEGER")
+
+        connection.exec_driver_sql(
+            """
+            INSERT INTO investment_entities (name, entity_type, country_code, user_id)
+            SELECT b.name, 'BANK', b.country_code, b.user_id
+            FROM banks b
+            WHERE b.id IN (SELECT DISTINCT i.bank_id FROM investments i WHERE i.bank_id IS NOT NULL)
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            UPDATE investments
+            SET investment_entity_id = (
+                SELECT ie.id
+                FROM investment_entities ie
+                JOIN banks b ON b.id = investments.bank_id
+                WHERE ie.user_id = b.user_id
+                  AND ie.name = b.name
+                  AND ie.country_code = b.country_code
+                  AND ie.entity_type = 'BANK'
+                ORDER BY ie.id
+                LIMIT 1
+            )
+            WHERE investment_entity_id IS NULL
+            """
+        )
+
+
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
     _migrate_categories_to_global()
+    _migrate_investments_to_entities()
