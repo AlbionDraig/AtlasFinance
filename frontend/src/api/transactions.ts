@@ -7,6 +7,8 @@ export interface TransactionFilters {
   start_date?: string
   end_date?: string
   currency?: string
+  transaction_type?: string
+  search?: string
   skip?: number
   limit?: number
 }

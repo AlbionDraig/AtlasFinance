@@ -3,7 +3,7 @@ import { AxiosError } from 'axios'
 import { accountsApi } from '@/api/accounts'
 import { categoriesApi, type Category } from '@/api/categories'
 import { pocketsApi } from '@/api/pockets'
-import { transactionsApi } from '@/api/transactions'
+import { transactionsApi, type TransactionFilters } from '@/api/transactions'
 import type { Account, Pocket, Transaction } from '@/types'
 import TransactionEditModal from './components/TransactionEditModal'
 import MoveToPocketModal from './components/MoveToPocketModal'
@@ -117,19 +117,6 @@ function isTransferTransaction(transaction: Transaction): boolean {
   return transaction.description.startsWith('Transferencia: ')
 }
 
-function getDatasetRange(transactions: Transaction[]): { min: string; max: string } {
-  if (!transactions.length) {
-    const today = toDateInputValue(new Date())
-    return { min: today, max: today }
-  }
-
-  const dates = transactions
-    .map((transaction) => transaction.occurred_at.slice(0, 10))
-    .sort((left, right) => left.localeCompare(right))
-
-  return { min: dates[0], max: dates[dates.length - 1] }
-}
-
 function getPeriodLabel(period: PeriodFilter): string {
   if (period === 'today') return 'Hoy'
   if (period === '7d') return 'Últimos 7 días'
@@ -139,27 +126,36 @@ function getPeriodLabel(period: PeriodFilter): string {
   return 'Todos'
 }
 
-function resolvePeriodRange(period: PeriodFilter, fallbackFrom: string, fallbackTo: string, maxDate: string): { from: string; to: string } {
-  const today = new Date()
-  const max = maxDate || toDateInputValue(today)
-  const maxAsDate = new Date(`${max}T00:00:00`)
-
+function resolvePeriodRange(period: PeriodFilter, fallbackFrom: string, fallbackTo: string): { from: string; to: string } {
+  const today = toDateInputValue(new Date())
   if (period === 'all') return { from: '', to: '' }
-  if (period === 'today') return { from: max, to: max }
+  if (period === 'today') return { from: today, to: today }
   if (period === '7d') {
-    const start = new Date(maxAsDate)
+    const start = new Date()
     start.setDate(start.getDate() - 6)
-    return { from: toDateInputValue(start), to: max }
+    return { from: toDateInputValue(start), to: today }
   }
   if (period === '30d') {
-    const start = new Date(maxAsDate)
+    const start = new Date()
     start.setDate(start.getDate() - 29)
-    return { from: toDateInputValue(start), to: max }
+    return { from: toDateInputValue(start), to: today }
   }
   if (period === 'month') {
-    return { from: `${max.slice(0, 7)}-01`, to: max }
+    return { from: `${today.slice(0, 7)}-01`, to: today }
   }
   return { from: fallbackFrom, to: fallbackTo }
+}
+
+function buildTransactionParams(filters: FiltersState, query: string): TransactionFilters {
+  const range = resolvePeriodRange(filters.period, filters.from, filters.to)
+  return {
+    start_date: range.from ? `${range.from}T00:00:00` : undefined,
+    end_date: range.to ? `${range.to}T23:59:59` : undefined,
+    account_id: filters.accountId !== 'all' ? Number(filters.accountId) : undefined,
+    transaction_type: filters.transactionType !== 'all' ? filters.transactionType.toLowerCase() : undefined,
+    currency: filters.currency !== 'all' ? filters.currency : undefined,
+    search: query.trim() || undefined,
+  }
 }
 
 export default function TransactionsPage() {
@@ -170,7 +166,9 @@ export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [form, setForm] = useState<FormState>(() => buildDefaultForm())
   const [filters, setFilters] = useState<FiltersState>(() => buildDefaultFilters())
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [loading, setLoading] = useState(true)
+  const [txnLoading, setTxnLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
@@ -185,15 +183,13 @@ export default function TransactionsPage() {
       setLoading(true)
 
       try {
-        const [accountsResponse, categoriesResponse, transactionsResponse] = await Promise.all([
+        const [accountsResponse, categoriesResponse] = await Promise.all([
           accountsApi.list(),
           categoriesApi.list(),
-          transactionsApi.list(),
         ])
 
         setAccounts(accountsResponse.data)
         setCategories(categoriesResponse.data)
-        setTransactions(transactionsResponse.data)
         setForm((current) => current.accountId ? current : buildDefaultForm())
 
         try {
@@ -204,7 +200,7 @@ export default function TransactionsPage() {
           setPockets([])
         }
       } catch (loadError) {
-        toast(getApiErrorMessage(loadError, 'No se pudieron cargar los movimientos.'), 'error')
+        toast(getApiErrorMessage(loadError, 'No se pudieron cargar los datos.'), 'error')
       } finally {
         setLoading(false)
       }
@@ -214,8 +210,27 @@ export default function TransactionsPage() {
   }, [])
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(filters.query), 400)
+    return () => clearTimeout(timer)
+  }, [filters.query])
+
+  async function reloadTransactions() {
+    setTxnLoading(true)
+    try {
+      const response = await transactionsApi.list(buildTransactionParams(filters, debouncedQuery))
+      setTransactions(response.data)
+    } catch (error) {
+      toast(getApiErrorMessage(error, 'No se pudieron cargar los movimientos.'), 'error')
+    } finally {
+      setTxnLoading(false)
+    }
+  }
+
+  useEffect(() => {
     setPage(1)
-  }, [filters.query, filters.transactionType, filters.currency, filters.accountId, filters.period, filters.from, filters.to, filters.pageSize])
+    void reloadTransactions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery, filters.transactionType, filters.currency, filters.accountId, filters.period, filters.from, filters.to])
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -224,8 +239,7 @@ export default function TransactionsPage() {
     })
   }, [page])
 
-  const datasetRange = getDatasetRange(transactions)
-  const derivedRange = resolvePeriodRange(filters.period, filters.from, filters.to, datasetRange.max)
+  const derivedRange = resolvePeriodRange(filters.period, filters.from, filters.to)
   const selectedAccount = accounts.find((account) => String(account.id) === form.accountId) ?? null
   const accountCurrency = selectedAccount?.currency ?? 'COP'
   const categoryOptions = useMemo(() => {
@@ -235,50 +249,17 @@ export default function TransactionsPage() {
     return filtered.length ? filtered : categories
   }, [categories, form.transactionType])
 
-  const filteredTransactions = useMemo(() => {
-    return [...transactions]
-      .filter((transaction) => {
-        const query = filters.query.trim().toLowerCase()
-        const description = transaction.description.toLowerCase()
-        const categoryName = getCategoryName(transaction.category_id, categories).toLowerCase()
-        const accountName = getAccountName(transaction.account_id, accounts).toLowerCase()
-        const occurredDate = transaction.occurred_at.slice(0, 10)
-
-        if (query && !description.includes(query) && !categoryName.includes(query) && !accountName.includes(query)) {
-          return false
-        }
-        const txType = normalizeTransactionType(String(transaction.transaction_type))
-        if (filters.transactionType !== 'all' && txType !== filters.transactionType) {
-          return false
-        }
-        if (filters.currency !== 'all' && transaction.currency !== filters.currency) {
-          return false
-        }
-        if (filters.accountId !== 'all' && String(transaction.account_id) !== filters.accountId) {
-          return false
-        }
-        if (derivedRange.from && occurredDate < derivedRange.from) {
-          return false
-        }
-        if (derivedRange.to && occurredDate > derivedRange.to) {
-          return false
-        }
-        return true
-      })
-      .sort((left, right) => right.occurred_at.localeCompare(left.occurred_at))
-  }, [accounts, categories, derivedRange.from, derivedRange.to, filters.accountId, filters.currency, filters.query, filters.transactionType, transactions])
-
-  const incomeTotal = filteredTransactions
+  const incomeTotal = transactions
     .filter((transaction) => normalizeTransactionType(String(transaction.transaction_type)) === 'INCOME')
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0)
-  const expenseTotal = filteredTransactions
+  const expenseTotal = transactions
     .filter((transaction) => normalizeTransactionType(String(transaction.transaction_type)) === 'EXPENSE')
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0)
-  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / filters.pageSize))
+  const totalPages = Math.max(1, Math.ceil(transactions.length / filters.pageSize))
   const currentPage = Math.min(page, totalPages)
   const startIndex = (currentPage - 1) * filters.pageSize
-  const endIndex = Math.min(startIndex + filters.pageSize, filteredTransactions.length)
-  const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex)
+  const endIndex = Math.min(startIndex + filters.pageSize, transactions.length)
+  const paginatedTransactions = transactions.slice(startIndex, endIndex)
   const activeFilters = [
     filters.transactionType !== 'all' ? `Tipo: ${filters.transactionType === 'INCOME' ? 'Ingresos' : 'Gastos'}` : null,
     filters.currency !== 'all' ? `Moneda: ${filters.currency}` : null,
@@ -372,17 +353,14 @@ export default function TransactionsPage() {
     setSaving(true)
     try {
       if (editingId != null) {
-        const response = await transactionsApi.update(editingId, payload)
-        setTransactions((current) => current.map((transaction) => (
-          transaction.id === editingId ? response.data : transaction
-        )))
+        await transactionsApi.update(editingId, payload)
         toast('Movimiento actualizado con éxito.')
       } else {
-        const response = await transactionsApi.create(payload)
-        setTransactions((current) => [response.data, ...current])
+        await transactionsApi.create(payload)
         toast('Movimiento guardado con éxito.')
       }
       resetForm()
+      await reloadTransactions()
     } catch (submitError) {
       toast(getApiErrorMessage(submitError, 'No se pudo guardar el movimiento.'), 'error')
     } finally {
@@ -406,7 +384,7 @@ export default function TransactionsPage() {
 
     setSaving(true)
     try {
-      const [expenseRes, incomeRes] = await Promise.all([
+      await Promise.all([
         transactionsApi.create({
           account_id: fromAccount.id,
           amount,
@@ -428,9 +406,9 @@ export default function TransactionsPage() {
           occurred_at: occurredAt,
         } satisfies Omit<Transaction, 'id'>),
       ])
-      setTransactions((current) => [incomeRes.data, expenseRes.data, ...current])
       toast('Transferencia registrada con éxito.')
       setTransferOpen(false)
+      await reloadTransactions()
     } catch (transferError) {
       toast(getApiErrorMessage(transferError, 'No se pudo registrar la transferencia.'), 'error')
     } finally {
@@ -458,15 +436,15 @@ export default function TransactionsPage() {
     const occurredAt = `${form.occurredDate}T${form.occurredTime}:00`
     setSaving(true)
     try {
-      const response = await pocketsApi.moveFunds({
+      await pocketsApi.moveFunds({
         amount,
         account_id: account.id,
         pocket_id: pocket.id,
         occurred_at: occurredAt,
       })
-      setTransactions((current) => [response.data, ...current])
       setMoveToPocketOpen(false)
       toast('Monto movido al bolsillo con éxito.')
+      await reloadTransactions()
     } catch (moveError) {
       toast(getApiErrorMessage(moveError, 'No se pudo mover el monto al bolsillo.'), 'error')
     } finally {
@@ -480,9 +458,9 @@ export default function TransactionsPage() {
 
     try {
       await transactionsApi.delete(transactionId)
-      setTransactions((current) => current.filter((transaction) => transaction.id !== transactionId))
       if (editingId === transactionId) resetForm()
       toast('Movimiento eliminado con éxito.')
+      await reloadTransactions()
     } catch (deleteError) {
       toast(getApiErrorMessage(deleteError, 'No se pudo eliminar el movimiento.'), 'error')
     } finally {
@@ -556,14 +534,14 @@ export default function TransactionsPage() {
         setFilters={setFilters}
         accounts={accounts}
         activeFilters={activeFilters}
-        datasetRange={datasetRange}
+        datasetRange={{ min: '2000-01-01', max: toDateInputValue(new Date()) }}
         derivedRange={derivedRange}
         onResetFilters={() => setFilters(buildDefaultFilters())}
       />
 
       {/* Transactions table */}
       <TransactionsHistoryCard
-        filteredTransactions={filteredTransactions}
+        filteredTransactions={transactions}
         paginatedTransactions={paginatedTransactions}
         currentPage={currentPage}
         totalPages={totalPages}

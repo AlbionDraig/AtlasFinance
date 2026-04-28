@@ -10,7 +10,7 @@ from app.models.account import Account
 from app.models.bank import Bank
 from app.models.category import Category
 from app.models.country import Country
-from app.models.enums import TransactionType
+from app.models.enums import Currency, TransactionType
 from app.models.investment import Investment
 from app.models.investment_entity import InvestmentEntity
 from app.models.pocket import Pocket
@@ -701,14 +701,28 @@ def list_transactions(
     user_id: int,
     start_date: datetime | None = None,
     end_date: datetime | None = None,
+    account_id: int | None = None,
+    transaction_type: TransactionType | None = None,
+    currency: Currency | None = None,
+    search: str | None = None,
+    skip: int = 0,
+    limit: int = 500,
 ) -> list[Transaction]:
-    """Return user transactions optionally filtered by date range."""
+    """Return user transactions filtered by optional criteria."""
     query = select(Transaction).where(Transaction.user_id == user_id)
     if start_date:
         query = query.where(Transaction.occurred_at >= start_date)
     if end_date:
         query = query.where(Transaction.occurred_at <= end_date)
-    query = query.order_by(Transaction.occurred_at.desc())
+    if account_id is not None:
+        query = query.where(Transaction.account_id == account_id)
+    if transaction_type is not None:
+        query = query.where(Transaction.transaction_type == transaction_type)
+    if currency is not None:
+        query = query.where(Transaction.currency == currency)
+    if search:
+        query = query.where(Transaction.description.ilike(f"%{search}%"))
+    query = query.order_by(Transaction.occurred_at.desc()).offset(skip).limit(limit)
     return list(db.scalars(query).all())
 
 

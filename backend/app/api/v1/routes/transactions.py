@@ -12,6 +12,7 @@ from app.api.error_handlers import (
 )
 from app.db.base import get_db
 from app.models.user import User
+from app.models.enums import Currency, TransactionType
 from app.schemas.transaction import TransactionCreate, TransactionRead
 from app.services.finance_service import (
     delete_transaction,
@@ -42,9 +43,25 @@ def list_transactions_endpoint(
     current_user: Annotated[User, Depends(get_current_user)],
     start_date: Annotated[datetime | None, Query()] = None,
     end_date: Annotated[datetime | None, Query()] = None,
+    account_id: Annotated[int | None, Query()] = None,
+    transaction_type: Annotated[TransactionType | None, Query()] = None,
+    currency: Annotated[Currency | None, Query()] = None,
+    search: Annotated[str | None, Query(max_length=255)] = None,
+    skip: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 500,
 ) -> list[TransactionRead]:
-    """List user transactions with optional date range filtering."""
-    transactions = list_transactions(db, current_user.id, start_date=start_date, end_date=end_date)
+    """List user transactions with optional filtering by date, account, type, currency and text search."""
+    transactions = list_transactions(
+        db, current_user.id,
+        start_date=start_date,
+        end_date=end_date,
+        account_id=account_id,
+        transaction_type=transaction_type,
+        currency=currency,
+        search=search,
+        skip=skip,
+        limit=limit,
+    )
     return [TransactionRead.model_validate(t) for t in transactions]
 
 
