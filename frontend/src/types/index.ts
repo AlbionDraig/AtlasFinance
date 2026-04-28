@@ -76,3 +76,37 @@ export interface DashboardMetrics {
   savings_rate: number
   cashflow: number
 }
+
+export interface MonthlyBreakdown {
+  month: string
+  income: number
+  expense: number
+  cashflow: number
+  cumulative: number
+}
+
+export interface CategoryExpenseRow {
+  name: string
+  value: number
+  is_fixed: boolean
+}
+
+export interface StackedMonthRow {
+  month: string
+  categories: Record<string, number>
+}
+
+export interface DashboardAggregates {
+  income: number
+  expenses: number
+  transaction_count: number
+  monthly: MonthlyBreakdown[]
+  top_categories: CategoryExpenseRow[]
+  stacked: StackedMonthRow[]
+  stacked_cats: string[]
+  fixed_total: number
+  biggest_expense_amount: number | null
+  biggest_expense_description: string | null
+  prev_income: number
+  prev_expenses: number
+}

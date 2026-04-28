@@ -5,16 +5,13 @@ import {
   LineChart, Line,
 } from 'recharts'
 import { metricsApi } from '@/api/metrics'
-import { accountsApi } from '@/api/accounts'
-import { transactionsApi } from '@/api/transactions'
-import { categoriesApi, type Category } from '@/api/categories'
 import Select from '@/components/ui/Select'
 import DatePicker from '@/components/ui/DatePicker'
 import FilterCard from '@/components/ui/FilterCard'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import AppTooltip from '@/components/ui/Tooltip'
 import { useToast } from '@/hooks/useToast'
-import type { Transaction, Account } from '@/types'
+import type { DashboardAggregates, DashboardMetrics } from '@/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Period = 'Año actual' | 'Últimos 90 días' | 'Últimos 30 días' | 'Personalizado'
@@ -72,17 +69,6 @@ function fmtShort(v: number): string {
   if (abs >= 1_000) return `${(v / 1_000).toFixed(0)}K`
   return String(Math.round(v))
 }
-function txType(tx: Transaction): 'INCOME' | 'EXPENSE' {
-  return String(tx.transaction_type ?? '').toUpperCase() === 'INCOME' ? 'INCOME' : 'EXPENSE'
-}
-function filterTxByCurrency(rows: Transaction[], currency: string): Transaction[] {
-  const code = String(currency ?? '').toUpperCase()
-  if (!code) return rows
-  return rows.filter(tx => String(tx.currency ?? '').toUpperCase() === code)
-}
-function sumByType(txs: Transaction[], type: 'INCOME' | 'EXPENSE'): number {
-  return txs.filter(t => txType(t) === type).reduce((s, t) => s + Number(t.amount), 0)
-}
 function deltaBadge(curr: number, prev: number, inverse = false): { text: string; tone: Tone } {
   if (prev === 0) return { text: curr === 0 ? '0%' : 'primer período', tone: 'flat' }
   const pct = ((curr - prev) / prev) * 100
@@ -99,82 +85,10 @@ function toneFn(v: number): Tone {
   return v > 0 ? 'positive' : v < 0 ? 'negative' : 'flat'
 }
 
-// ─── Category helpers ─────────────────────────────────────────────────────────
-const FIXED_KW = ['arriendo','alquiler','servicio','suscrip','internet','celular','seguro','educaci','colegio','universidad','hipoteca']
-function classifyExpense(name: string): 'Gasto fijo' | 'Gasto variable' {
-  const l = name.toLowerCase()
-  return FIXED_KW.some(k => l.includes(k)) ? 'Gasto fijo' : 'Gasto variable'
-}
-function resolveCatName(rawId: number | null, lookup: Map<number, string>): string {
-  if (rawId == null) return 'Sin categoría'
-  return lookup.get(rawId) ?? 'Sin categoría'
-}
-
 function toneToVariant(tone: Tone, fallback: BadgeVariant = 'neutral'): BadgeVariant {
   if (tone === 'positive') return 'success'
   if (tone === 'negative') return 'brand'
   return fallback
-}
-
-// ─── Build aggregates ─────────────────────────────────────────────────────────
-type MonthlyRow = { month: string; income: number; expense: number; cashflow: number; cumulative: number }
-function buildMonthly(txs: Transaction[]): MonthlyRow[] {
-  const map = new Map<string, { income: number; expense: number }>()
-  for (const tx of txs) {
-    const key = tx.occurred_at.slice(0, 7)
-    if (!map.has(key)) map.set(key, { income: 0, expense: 0 })
-    const r = map.get(key)!
-    if (txType(tx) === 'INCOME') r.income += Number(tx.amount)
-    else r.expense += Number(tx.amount)
-  }
-  const rows = Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => ({
-    month: fmtMonthLabel(k),
-    income: v.income,
-    expense: v.expense,
-    cashflow: v.income - v.expense,
-    cumulative: 0,
-  }))
-  let cum = 0
-  for (const r of rows) { cum += r.cashflow; r.cumulative = cum }
-  return rows
-}
-type CatRow = { name: string; value: number; bucket: string }
-function buildCategoryRows(txs: Transaction[], lookup: Map<number, string>): CatRow[] {
-  const map = new Map<string, number>()
-  for (const tx of txs.filter(t => txType(t) === 'EXPENSE')) {
-    const name = resolveCatName(tx.category_id, lookup)
-    map.set(name, (map.get(name) ?? 0) + Number(tx.amount))
-  }
-  return Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([name, value]) => ({
-    name, value, bucket: classifyExpense(name),
-  }))
-}
-type StackedRow = { month: string; [cat: string]: number | string }
-function buildStacked(txs: Transaction[], lookup: Map<number, string>): { rows: StackedRow[]; cats: string[] } {
-  const expTxs = txs.filter(t => txType(t) === 'EXPENSE')
-  const monthCatMap = new Map<string, Map<string, number>>()
-  const catTotals = new Map<string, number>()
-  for (const tx of expTxs) {
-    const month = tx.occurred_at.slice(0, 7)
-    const cat = resolveCatName(tx.category_id, lookup)
-    if (!monthCatMap.has(month)) monthCatMap.set(month, new Map())
-    const m = monthCatMap.get(month)!
-    m.set(cat, (m.get(cat) ?? 0) + Number(tx.amount))
-    catTotals.set(cat, (catTotals.get(cat) ?? 0) + Number(tx.amount))
-  }
-  const top5 = Array.from(catTotals.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([n]) => n)
-  const cats = [...top5, 'Otras']
-  const rows: StackedRow[] = Array.from(monthCatMap.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([m, cmap]) => {
-    const row: StackedRow = { month: fmtMonthLabel(m) }
-    let otras = 0
-    for (const [cat, v] of cmap.entries()) {
-      if (top5.includes(cat)) row[cat] = (row[cat] as number ?? 0) + v
-      else otras += v
-    }
-    if (otras > 0) row['Otras'] = otras
-    return row
-  })
-  return { rows, cats }
 }
 
 // ─── Recharts tooltip style ────────────────────────────────────────────────────
@@ -318,40 +232,17 @@ export default function DashboardPage() {
   const [currency, setCurrency] = useState('COP')
   const [customFrom, setCustomFrom] = useState(yearStart)
   const [customTo, setCustomTo] = useState(todayStr)
-  const [dataBounds, setDataBounds] = useState({ min: yearStart, max: todayStr })
+  const dataBounds = { min: '2000-01-01', max: todayStr }
   const [chartType, setChartType] = useState<ChartType>('Ingresos vs gastos')
 
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [txs, setTxs] = useState<Transaction[]>([])
-  const [prevTxs, setPrevTxs] = useState<Transaction[]>([])
-  const [catLookup, setCatLookup] = useState<Map<number, string>>(new Map())
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
+  const [aggregates, setAggregates] = useState<DashboardAggregates | null>(null)
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
   // Compute date ranges
   const { dateFrom, dateTo } = useMemo(() => computeDates(period, customFrom, customTo), [period, customFrom, customTo])
   const { prevFrom, prevTo } = useMemo(() => computePrevDates(period, dateFrom, dateTo), [period, dateFrom, dateTo])
-
-  // Fetch allowed custom-date bounds from real data for selected currency
-  useEffect(() => {
-    transactionsApi.list()
-      .then(resp => {
-        const rows = resp.data.filter(tx => String(tx.currency ?? '').toUpperCase() === currency)
-        if (rows.length === 0) {
-          setDataBounds({ min: yearStart, max: todayStr })
-          return
-        }
-
-        const dates = rows
-          .map(tx => tx.occurred_at.slice(0, 10))
-          .sort((a, b) => a.localeCompare(b))
-
-        setDataBounds({ min: dates[0], max: dates[dates.length - 1] })
-      })
-      .catch(() => {
-        setDataBounds({ min: yearStart, max: todayStr })
-      })
-  }, [currency, yearStart, todayStr])
 
   // Clamp custom period to valid bounds and preserve from <= to
   useEffect(() => {
@@ -366,7 +257,7 @@ export default function DashboardPage() {
 
     if (clampedFrom !== customFrom) setCustomFrom(clampedFrom)
     if (clampedTo !== customTo) setCustomTo(clampedTo)
-  }, [customFrom, customTo, dataBounds])
+  }, [customFrom, customTo])
 
   // Fetch data
   useEffect(() => {
@@ -377,43 +268,47 @@ export default function DashboardPage() {
     const ptStr = toISODate(prevTo) + 'T23:59:59'
     Promise.all([
       metricsApi.dashboard(currency),
-      accountsApi.list(),
-      transactionsApi.list({ start_date: dfStr, end_date: dtStr, currency }),
-      transactionsApi.list({ start_date: pfStr, end_date: ptStr, currency }),
-      categoriesApi.list(),
+      metricsApi.aggregates({ currency, start_date: dfStr, end_date: dtStr, prev_start_date: pfStr, prev_end_date: ptStr }),
     ])
-      .then(([, a, t, pt, c]) => {
-        const currentTxs = filterTxByCurrency(t.data, currency)
-        const previousTxs = filterTxByCurrency(pt.data, currency)
-        setAccounts(a.data)
-        setTxs(currentTxs)
-        setPrevTxs(previousTxs)
-        const lookup = new Map<number, string>(c.data.map((cat: Category) => [cat.id, cat.name]))
-        setCatLookup(lookup)
+      .then(([m, agg]) => {
+        setMetrics(m.data)
+        setAggregates(agg.data)
       })
       .catch(() => toast('No se pudieron cargar los datos del dashboard.', 'error'))
       .finally(() => setLoading(false))
   }, [currency, dateFrom.getTime(), dateTo.getTime()])
 
   // ── Derived metrics ──────────────────────────────────────────────────────────
-  const netWorth = useMemo(
-    () => accounts.filter(a => a.currency.toUpperCase() === currency).reduce((s, a) => s + Number(a.current_balance ?? a.balance ?? 0), 0),
-    [accounts, currency],
-  )
-  const income = useMemo(() => sumByType(txs, 'INCOME'), [txs])
-  const expense = useMemo(() => sumByType(txs, 'EXPENSE'), [txs])
+  const netWorth = metrics ? Number(metrics.net_worth) : 0
+  const income = aggregates ? Number(aggregates.income) : 0
+  const expense = aggregates ? Number(aggregates.expenses) : 0
   const cashflow = income - expense
   const savingsRate = income > 0 ? (cashflow / income) * 100 : 0
-  const prevIncome = useMemo(() => sumByType(prevTxs, 'INCOME'), [prevTxs])
-  const prevExpense = useMemo(() => sumByType(prevTxs, 'EXPENSE'), [prevTxs])
+  const prevIncome = aggregates ? Number(aggregates.prev_income) : 0
+  const prevExpense = aggregates ? Number(aggregates.prev_expenses) : 0
   const prevCashflow = prevIncome - prevExpense
   const prevSavings = prevIncome > 0 ? (prevCashflow / prevIncome) * 100 : 0
-  const hasPrev = prevTxs.length > 0
+  const hasPrev = prevIncome > 0 || prevExpense > 0
 
-  const monthly = useMemo(() => buildMonthly(txs), [txs])
-  const catRows = useMemo(() => buildCategoryRows(txs, catLookup), [txs, catLookup])
-  const expTxs = useMemo(() => txs.filter(t => txType(t) === 'EXPENSE'), [txs])
-  const { rows: stackedRows, cats: stackedCats } = useMemo(() => buildStacked(txs, catLookup), [txs, catLookup])
+  const monthly = useMemo(() => (aggregates?.monthly ?? []).map(r => ({
+    month: fmtMonthLabel(r.month),
+    income: Number(r.income),
+    expense: Number(r.expense),
+    cashflow: Number(r.cashflow),
+    cumulative: Number(r.cumulative),
+  })), [aggregates])
+
+  const catRows = useMemo(() => (aggregates?.top_categories ?? []).map(r => ({
+    name: r.name,
+    value: Number(r.value),
+    is_fixed: r.is_fixed,
+  })), [aggregates])
+
+  const stackedRows = useMemo(() => (aggregates?.stacked ?? []).map(r => ({
+    month: fmtMonthLabel(r.month),
+    ...Object.fromEntries(Object.entries(r.categories).map(([k, v]) => [k, Number(v)])),
+  })), [aggregates])
+  const stackedCats = aggregates?.stacked_cats ?? []
 
   // Insight calcs
   const balance = income - expense
@@ -422,13 +317,11 @@ export default function DashboardPage() {
   const cashCoverage = avgMonthlyExp > 0 && netWorth > 0 ? netWorth / avgMonthlyExp : null
   const topCat = catRows[0] ?? null
   const topCatShare = topCat && expense > 0 ? (topCat.value / expense) * 100 : 0
-  const biggestTx = expTxs.length > 0 ? expTxs.reduce((a, b) => Number(a.amount) > Number(b.amount) ? a : b) : null
+  const biggestExpAmount = aggregates?.biggest_expense_amount != null ? Number(aggregates.biggest_expense_amount) : null
+  const biggestExpDescription = aggregates?.biggest_expense_description ?? null
   const highestMonth = monthly.length > 0 ? monthly.reduce((a, b) => a.expense > b.expense ? a : b) : null
   const expVariation = prevExpense > 0 ? ((expense - prevExpense) / prevExpense) * 100 : null
-  const fixedTotal = expTxs.reduce((s, tx) => {
-    const name = resolveCatName(tx.category_id, catLookup)
-    return s + (classifyExpense(name) === 'Gasto fijo' ? Number(tx.amount) : 0)
-  }, 0)
+  const fixedTotal = aggregates ? Number(aggregates.fixed_total) : 0
   const fixedShare = expense > 0 ? (fixedTotal / expense) * 100 : null
 
   // Fixed vs variable data for chart
@@ -516,7 +409,7 @@ export default function DashboardPage() {
         <SectionTitle>Análisis del período</SectionTitle>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <InsightCard label="Balance del período" value={fmt(balance, currency)} sub={balance > 0 ? 'Saldo positivo ✓' : balance < 0 ? 'Gastos superan ingresos' : 'Equilibrado'} tone={toneFn(balance)} help={INSIGHT_HELP['Balance del período']} />
-          <InsightCard label="Movimientos" value={`${txs.length.toLocaleString('es-CO')}`} sub="Transacciones en el período" tone="neutral" help={INSIGHT_HELP['Movimientos']} />
+          <InsightCard label="Movimientos" value={`${(aggregates?.transaction_count ?? 0).toLocaleString('es-CO')}`} sub="Transacciones en el período" tone="neutral" help={INSIGHT_HELP['Movimientos']} />
           <InsightCard
             label="Relación gastos/ingresos"
             value={expRatio != null ? `${expRatio.toFixed(1)}%` : 'Sin datos'}
@@ -525,7 +418,7 @@ export default function DashboardPage() {
             help={INSIGHT_HELP['Relación gastos/ingresos']}
           />
           <InsightCard label="Mayor impacto" value={topCat?.name ?? 'Sin gastos'} sub={topCat ? `${topCatShare.toFixed(1)}% del gasto · ${fmt(topCat.value, currency)}` : 'No hay egresos suficientes'} tone="neutral" help={INSIGHT_HELP['Mayor impacto']} />
-          <InsightCard label="Mayor gasto individual" value={biggestTx ? fmt(Number(biggestTx.amount), currency) : 'Sin gastos'} sub={biggestTx?.description ?? 'No hay egresos registrados'} tone="negative" help={INSIGHT_HELP['Mayor gasto individual']} />
+          <InsightCard label="Mayor gasto individual" value={biggestExpAmount != null ? fmt(biggestExpAmount, currency) : 'Sin gastos'} sub={biggestExpDescription ?? 'No hay egresos registrados'} tone="negative" help={INSIGHT_HELP['Mayor gasto individual']} />
           <InsightCard
             label="Cobertura de efectivo"
             value={cashCoverage != null ? `${cashCoverage.toFixed(1)} meses` : netWorth <= 0 ? fmt(netWorth, currency) : 'Sin referencia'}
@@ -695,7 +588,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {txs.length === 0 && (
+      {(aggregates?.transaction_count ?? 0) === 0 && (
         <div className="app-card p-10 text-center app-subtitle">
           <p className="text-lg mb-1">Sin transacciones en este período</p>
           <p className="text-sm">Ajusta el filtro de fechas o importa movimientos.</p>

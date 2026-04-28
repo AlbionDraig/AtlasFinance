@@ -22,7 +22,7 @@ from app.schemas.category import CategoryCreate, CategoryUpdate
 from app.schemas.country import CountryCreate, CountryUpdate
 from app.schemas.investment import InvestmentCreate, InvestmentUpdate
 from app.schemas.investment_entity import InvestmentEntityCreate, InvestmentEntityUpdate
-from app.schemas.metric import DashboardMetrics
+from app.schemas.metric import DashboardAggregates, DashboardMetrics
 from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
 from app.schemas.transaction import TransactionCreate
 from app.services.currency_service import convert_currency
@@ -788,3 +788,134 @@ def get_dashboard_metrics(  # pylint: disable=too-many-locals
         cashflow=cashflow,
     )
     return _set_cached_metrics(user_id, target_currency, metrics)
+
+
+def get_dashboard_aggregates(  # pylint: disable=too-many-locals
+    db: Session,
+    user_id: int,
+    start_date: datetime,
+    end_date: datetime,
+    target_currency: str,
+    prev_start_date: datetime,
+    prev_end_date: datetime,
+    top_n: int = 10,
+) -> DashboardAggregates:
+    """Compute chart data and period totals for the dashboard in the target currency."""
+    cur_txns = list_transactions(db, user_id, start_date=start_date, end_date=end_date, limit=10_000)
+    prev_txns = list_transactions(db, user_id, start_date=prev_start_date, end_date=prev_end_date, limit=10_000)
+
+    # Resolve category metadata (name + is_fixed) for all relevant transactions.
+    all_cat_ids = {tx.category_id for tx in cur_txns + prev_txns if tx.category_id is not None}
+    if all_cat_ids:
+        cat_objs = db.scalars(select(Category).where(Category.id.in_(all_cat_ids))).all()
+        cat_map: dict[int, Category] = {c.id: c for c in cat_objs}
+    else:
+        cat_map = {}
+
+    def _cat_info(tx: Transaction) -> tuple[str, bool]:
+        if tx.category_id is None or tx.category_id not in cat_map:
+            return "Sin categoría", False
+        cat = cat_map[tx.category_id]
+        return cat.name, cat.is_fixed
+
+    def _convert(tx: Transaction) -> Decimal:
+        return convert_currency(tx.amount, tx.currency.value, target_currency)
+
+    # ── Monthly breakdown ──────────────────────────────────────────────────────
+    month_income: dict[str, Decimal] = defaultdict(Decimal)
+    month_expense: dict[str, Decimal] = defaultdict(Decimal)
+    for tx in cur_txns:
+        month_key = tx.occurred_at.strftime("%Y-%m")
+        converted = _convert(tx)
+        if tx.transaction_type == TransactionType.INCOME:
+            month_income[month_key] += converted
+        else:
+            month_expense[month_key] += converted
+
+    all_months = sorted(set(month_income) | set(month_expense))
+    monthly = []
+    cumulative = Decimal("0")
+    for m in all_months:
+        inc = month_income.get(m, Decimal("0"))
+        exp = month_expense.get(m, Decimal("0"))
+        cf = inc - exp
+        cumulative += cf
+        monthly.append(
+            {"month": m, "income": inc, "expense": exp, "cashflow": cf, "cumulative": cumulative}
+        )
+
+    # ── Top categories by expense ──────────────────────────────────────────────
+    cat_totals: dict[str, Decimal] = defaultdict(Decimal)
+    cat_is_fixed: dict[str, bool] = {}
+    for tx in cur_txns:
+        if tx.transaction_type == TransactionType.EXPENSE:
+            name, is_fixed = _cat_info(tx)
+            cat_totals[name] += _convert(tx)
+            cat_is_fixed[name] = is_fixed
+
+    sorted_cats = sorted(cat_totals.items(), key=lambda x: x[1], reverse=True)
+    top_categories = [
+        {"name": name, "value": val, "is_fixed": cat_is_fixed.get(name, False)}
+        for name, val in sorted_cats[:top_n]
+    ]
+    top5_names = [c["name"] for c in top_categories[:5]]
+
+    # ── Stacked by month (top-5 + "Otras") ────────────────────────────────────
+    month_cat: dict[str, dict[str, Decimal]] = defaultdict(lambda: defaultdict(Decimal))
+    for tx in cur_txns:
+        if tx.transaction_type == TransactionType.EXPENSE:
+            name, _ = _cat_info(tx)
+            month_key = tx.occurred_at.strftime("%Y-%m")
+            month_cat[month_key][name] += _convert(tx)
+
+    has_otras = False
+    stacked = []
+    for m in sorted(month_cat.keys()):
+        cats = month_cat[m]
+        row_cats: dict[str, Decimal] = {}
+        otras = Decimal("0")
+        for cat_name, val in cats.items():
+            if cat_name in top5_names:
+                row_cats[cat_name] = val
+            else:
+                otras += val
+        if otras > 0:
+            row_cats["Otras"] = otras
+            has_otras = True
+        stacked.append({"month": m, "categories": row_cats})
+
+    stacked_cats = top5_names + (["Otras"] if has_otras else [])
+
+    # ── Derived scalars ────────────────────────────────────────────────────────
+    fixed_total = sum(
+        (_convert(tx) for tx in cur_txns if tx.transaction_type == TransactionType.EXPENSE and _cat_info(tx)[1]),
+        Decimal("0"),
+    )
+
+    expense_txns = [tx for tx in cur_txns if tx.transaction_type == TransactionType.EXPENSE]
+    biggest: Transaction | None = max(expense_txns, key=lambda t: _convert(t)) if expense_txns else None
+
+    total_income = sum((_convert(tx) for tx in cur_txns if tx.transaction_type == TransactionType.INCOME), Decimal("0"))
+    total_expenses = sum((_convert(tx) for tx in cur_txns if tx.transaction_type == TransactionType.EXPENSE), Decimal("0"))
+
+    prev_income = sum((_convert(tx) for tx in prev_txns if tx.transaction_type == TransactionType.INCOME), Decimal("0"))
+    prev_expenses = sum((_convert(tx) for tx in prev_txns if tx.transaction_type == TransactionType.EXPENSE), Decimal("0"))
+
+    return DashboardAggregates(
+        income=total_income,
+        expenses=total_expenses,
+        transaction_count=len(cur_txns),
+        monthly=[
+            {"month": r["month"], "income": r["income"], "expense": r["expense"],
+             "cashflow": r["cashflow"], "cumulative": r["cumulative"]}
+            for r in monthly
+        ],
+        top_categories=top_categories,
+        stacked=[{"month": r["month"], "categories": r["categories"]} for r in stacked],
+        stacked_cats=stacked_cats,
+        fixed_total=fixed_total,
+        biggest_expense_amount=_convert(biggest) if biggest else None,
+        biggest_expense_description=biggest.description if biggest else None,
+        prev_income=prev_income,
+        prev_expenses=prev_expenses,
+    )
