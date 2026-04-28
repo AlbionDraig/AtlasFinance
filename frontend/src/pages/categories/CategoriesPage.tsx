@@ -130,7 +130,7 @@ function CategoryModal({ initial, loading, title, onSubmit, onClose }: CategoryM
 }
 
 // ─── Página ──────────────────────────────────────────────────────────────────
-export default function CategoriesPage() {
+export default function CategoriesPage({ embedded = false }: { embedded?: boolean }) {
   const { toast } = useToast()
 
   const [categories, setCategories] = useState<Category[]>([])
@@ -222,8 +222,8 @@ export default function CategoriesPage() {
     )
   }
 
-  return (
-    <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
+  const content = (
+    <>
       {/* Buscador */}
       <FilterCard sticky activeFilters={activeFilters}>
         <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
@@ -336,6 +336,14 @@ export default function CategoriesPage() {
           Nueva categoría
         </button>
       )}
+    </>
+  )
+
+  if (embedded) return content
+
+  return (
+    <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
+      {content}
     </div>
   )
 }

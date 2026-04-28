@@ -168,7 +168,7 @@ export default function AdminPage() {
       </div>
 
       {activeTab === 'categories' && (
-        <CategoriesPage />
+        <CategoriesPage embedded />
       )}
 
       {activeTab === 'banks' && (
