@@ -2,10 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { AxiosError } from 'axios'
 import { useSearchParams } from 'react-router-dom'
 import { banksApi, type Bank } from '@/api/banks'
+import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import CategoriesPage from '@/pages/categories/CategoriesPage'
 import { useToast } from '@/hooks/useToast'
 import { useAuthStore } from '@/store/authStore'
+import BankCreateModal from './components/BankCreateModal'
+import BanksFiltersCard, { type BanksFiltersState } from './components/BanksFiltersCard'
+import BanksTableCard from './components/BanksTableCard'
 
 type AdminTab = 'banks' | 'categories' | 'users' | 'general'
 
@@ -24,6 +28,14 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
   return fallback
 }
 
+function buildDefaultBankFilters(): BanksFiltersState {
+  return {
+    query: '',
+    countryCode: 'all',
+    pageSize: 10,
+  }
+}
+
 export default function AdminPage() {
   const { toast } = useToast()
   const { user } = useAuthStore()
@@ -34,6 +46,9 @@ export default function AdminPage() {
   const [savingBank, setSavingBank] = useState(false)
   const [banks, setBanks] = useState<Bank[]>([])
   const [bankName, setBankName] = useState('')
+  const [bankCreateOpen, setBankCreateOpen] = useState(false)
+  const [bankPage, setBankPage] = useState(1)
+  const [bankFilters, setBankFilters] = useState<BanksFiltersState>(() => buildDefaultBankFilters())
 
   useEffect(() => {
     async function loadBanks() {
@@ -51,10 +66,43 @@ export default function AdminPage() {
     void loadBanks()
   }, [])
 
-  const sortedBanks = useMemo(
-    () => [...banks].sort((a, b) => a.name.localeCompare(b.name)),
-    [banks],
-  )
+  useEffect(() => {
+    setBankPage(1)
+  }, [bankFilters.countryCode, bankFilters.pageSize, bankFilters.query])
+
+  const countryOptions = useMemo(() => {
+    const values = Array.from(new Set(banks.map((bank) => bank.country_code))).sort()
+    return [
+      { value: 'all', label: 'Todos' },
+      ...values.map((value) => ({ value, label: value })),
+    ]
+  }, [banks])
+
+  const filteredBanks = useMemo(() => {
+    return [...banks]
+      .filter((bank) => {
+        const query = bankFilters.query.trim().toLowerCase()
+        if (query) {
+          const haystack = `${bank.name} ${bank.country_code}`.toLowerCase()
+          if (!haystack.includes(query)) return false
+        }
+        if (bankFilters.countryCode !== 'all' && bank.country_code !== bankFilters.countryCode) {
+          return false
+        }
+        return true
+      })
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [bankFilters.countryCode, bankFilters.query, banks])
+
+  const totalBankPages = Math.max(1, Math.ceil(filteredBanks.length / bankFilters.pageSize))
+  const currentBankPage = Math.min(bankPage, totalBankPages)
+  const bankStartIndex = (currentBankPage - 1) * bankFilters.pageSize
+  const bankEndIndex = Math.min(bankStartIndex + bankFilters.pageSize, filteredBanks.length)
+  const paginatedBanks = filteredBanks.slice(bankStartIndex, bankEndIndex)
+  const activeBankFilters = [
+    bankFilters.query.trim() ? `Búsqueda: ${bankFilters.query.trim()}` : null,
+    bankFilters.countryCode !== 'all' ? `País: ${bankFilters.countryCode}` : null,
+  ].filter(Boolean) as string[]
 
   useEffect(() => {
     const tabFromUrl = normalizeTab(searchParams.get('tab'))
@@ -80,6 +128,7 @@ export default function AdminPage() {
       const response = await banksApi.create({ name: bankName.trim(), country_code: 'CO' })
       setBanks((current) => [response.data, ...current])
       setBankName('')
+      setBankCreateOpen(false)
       toast('Banco creado con éxito.')
     } catch (error) {
       toast(getApiErrorMessage(error, 'No se pudo crear el banco.'), 'error')
@@ -133,77 +182,62 @@ export default function AdminPage() {
       )}
 
       {activeTab === 'banks' && (
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_1.2fr] gap-6 items-start">
-          <section className="app-card p-5 border-t-4 border-t-brand">
-            <h2 className="app-section-title text-brand-text">Crear banco</h2>
-            <p className="text-sm text-neutral-700 mt-1 mb-4">Agrega bancos disponibles para asociar nuevas cuentas.</p>
+        <>
+          {bankCreateOpen && (
+            <BankCreateModal
+              name={bankName}
+              setName={setBankName}
+              saving={savingBank}
+              onSubmit={handleCreateBank}
+              onClose={() => {
+                setBankCreateOpen(false)
+                setBankName('')
+              }}
+            />
+          )}
 
-            <form onSubmit={handleCreateBank} className="space-y-4">
-              <div className="space-y-1">
-                <label className="app-label">Nombre del banco</label>
-                <input
-                  type="text"
-                  value={bankName}
-                  onChange={(event) => setBankName(event.target.value)}
-                  className="app-control w-full"
-                  placeholder="Ej: Bancolombia"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="app-label">País</label>
-                <input
-                  type="text"
-                  value="CO"
-                  readOnly
-                  className="app-control w-full bg-neutral-50 text-neutral-700"
-                />
-              </div>
-              <div className="flex justify-end">
-                <button type="submit" className="app-btn-primary" disabled={savingBank}>
-                  {savingBank ? 'Guardando...' : 'Crear banco'}
-                </button>
-              </div>
-            </form>
-          </section>
+          <BanksFiltersCard
+            filters={bankFilters}
+            setFilters={setBankFilters}
+            activeFilters={activeBankFilters}
+            countryOptions={countryOptions}
+            onResetFilters={() => setBankFilters(buildDefaultBankFilters())}
+          />
 
-          <section className="app-card overflow-hidden">
-            <div className="flex items-center justify-between gap-4 border-b border-neutral-100 bg-neutral-50 px-6 py-4">
-              <div>
-                <h2 className="text-sm font-medium text-neutral-900">Bancos registrados</h2>
-                <p className="text-xs text-neutral-400">{sortedBanks.length} banco(s)</p>
-              </div>
-            </div>
+          {loadingBanks ? (
+            <section className="app-card p-6">
+              <LoadingSpinner text="Cargando bancos..." />
+            </section>
+          ) : (
+            <BanksTableCard
+              filteredBanks={filteredBanks}
+              paginatedBanks={paginatedBanks}
+              currentPage={currentBankPage}
+              totalPages={totalBankPages}
+              startIndex={bankStartIndex}
+              endIndex={bankEndIndex}
+              pageSize={bankFilters.pageSize}
+              onPrevPage={() => setBankPage((current) => Math.max(1, current - 1))}
+              onNextPage={() => setBankPage((current) => Math.min(totalBankPages, current + 1))}
+              onPageSizeChange={(size) => setBankFilters((current) => ({ ...current, pageSize: size }))}
+            />
+          )}
 
-            {loadingBanks ? (
-              <div className="p-6">
-                <LoadingSpinner text="Cargando bancos..." />
-              </div>
-            ) : !sortedBanks.length ? (
-              <div className="px-6 py-12 text-center">
-                <p className="text-sm text-neutral-700">Aún no hay bancos registrados.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full border-separate border-spacing-0">
-                  <thead>
-                    <tr>
-                      <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-left text-xs font-medium tracking-widest uppercase text-neutral-700">Banco</th>
-                      <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-left text-xs font-medium tracking-widest uppercase text-neutral-700">Código país</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedBanks.map((bank) => (
-                      <tr key={bank.id} className="odd:bg-white even:bg-neutral-50/50">
-                        <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-sm text-neutral-900">{bank.name}</td>
-                        <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-sm text-neutral-700">{bank.country_code}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        </div>
+          <FloatingActionMenu
+            hidden={false}
+            ariaLabel="Abrir acciones de bancos"
+            items={[
+              {
+                key: 'create-bank',
+                label: 'Crear banco',
+                onClick: () => {
+                  setBankName('')
+                  setBankCreateOpen(true)
+                },
+              },
+            ]}
+          />
+        </>
       )}
 
       {activeTab === 'users' && (
