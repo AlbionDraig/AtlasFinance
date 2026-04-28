@@ -62,7 +62,7 @@ def update_user(db: Session, user: User, payload: UserUpdate) -> User:
 def revoke_access_token(db: Session, token: str, expires_at: datetime) -> None:
     """Store a token hash in denylist until expiration."""
     if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
+        expires_at = expires_at.astimezone().astimezone(timezone.utc)
 
     token_hash = hash_token(token)
     existing = db.scalar(select(RevokedToken).where(RevokedToken.token_hash == token_hash))
@@ -77,7 +77,11 @@ def is_access_token_revoked(db: Session, token: str) -> bool:
     """Return True when token hash exists in denylist and is not expired."""
     now = datetime.now(timezone.utc)
     # Opportunistic cleanup keeps table small without scheduler dependency.
-    db.execute(delete(RevokedToken).where(RevokedToken.expires_at < now))
+    db.execute(
+        delete(RevokedToken)
+        .where(RevokedToken.expires_at < now)
+        .execution_options(synchronize_session=False)
+    )
     db.commit()
 
     token_hash = hash_token(token)

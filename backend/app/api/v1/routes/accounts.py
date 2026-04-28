@@ -8,7 +8,12 @@ from app.api.error_handlers import raise_bad_request_from_value_error
 from app.db.base import get_db
 from app.models.user import User
 from app.schemas.account import AccountCreate, AccountRead, AccountUpdate
-from app.services.finance_service import create_account, list_accounts, update_account, delete_account
+from app.services.finance_service import (
+    create_account,
+    delete_account,
+    list_accounts,
+    update_account,
+)
 
 router = APIRouter()
 

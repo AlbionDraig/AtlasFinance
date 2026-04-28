@@ -14,10 +14,17 @@ from app.services.finance_service import (
     create_account,
     create_bank,
     create_category,
+    delete_account,
+    delete_bank,
+    delete_category,
     delete_transaction,
     get_dashboard_metrics,
     list_categories,
+    list_transactions,
     register_transaction,
+    update_account,
+    update_bank,
+    update_category,
     update_transaction,
 )
 
@@ -329,3 +336,202 @@ def test_delete_transaction_rejects_transfer_transactions(db_session):
 
     with pytest.raises(ValueError, match="Los movimientos de transferencia entre cuentas no se pueden editar ni eliminar\\."):
         delete_transaction(db_session, user.id, transfer_income.id)
+
+
+def test_update_and_delete_bank_account_and_category(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="entity-manage@test.com", full_name="Entity Manage", password=TEST_PASSWORD),
+    )
+    bank = create_bank(db_session, user.id, BankCreate(name="Banco Inicial", country_code="co"))
+    second_bank = create_bank(db_session, user.id, BankCreate(name="Banco Secundario", country_code="us"))
+
+    updated_bank = update_bank(
+        db_session,
+        user.id,
+        second_bank.id,
+        BankCreate(name="Banco Editado", country_code="mx"),
+    )
+    assert updated_bank.name == "Banco Editado"
+    assert updated_bank.country_code == "MX"
+
+    account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Cuenta Inicial",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=bank.id,
+        ),
+    )
+    removable_account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Cuenta Borrar",
+            account_type=AccountType.CHECKING,
+            currency=Currency.USD,
+            current_balance=Decimal("0"),
+            bank_id=second_bank.id,
+        ),
+    )
+
+    updated_account = update_account(
+        db_session,
+        user.id,
+        account.id,
+        AccountCreate(
+            name="Cuenta Editada",
+            account_type=AccountType.CHECKING,
+            currency=Currency.USD,
+            current_balance=Decimal("999"),
+            bank_id=second_bank.id,
+        ),
+    )
+    assert updated_account.name == "Cuenta Editada"
+    assert updated_account.bank_id == second_bank.id
+
+    delete_account(db_session, user.id, removable_account.id)
+    delete_bank(db_session, user.id, bank.id)
+
+    category = create_category(
+        db_session,
+        CategoryCreate(name="categoria-inicial", description="base", is_fixed=False),
+    )
+    updated_category = update_category(
+        db_session,
+        category.id,
+        CategoryCreate(name="categoria-editada", description="nueva", is_fixed=True),
+    )
+    assert updated_category.name == "categoria-editada"
+    assert updated_category.is_fixed is True
+
+    delete_category(db_session, category.id)
+    assert all(item.id != category.id for item in list_categories(db_session))
+
+
+def test_transaction_listing_update_and_delete_success_paths(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="txn-manage@test.com", full_name="Txn Manage", password=TEST_PASSWORD),
+    )
+    bank = create_bank(db_session, user.id, BankCreate(name="Banco Txn", country_code="CO"))
+    account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Cuenta Txn",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=bank.id,
+        ),
+    )
+    category = create_category(db_session, CategoryCreate(name="movimientos"))
+
+    opening_txn = register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Saldo inicial",
+            amount=Decimal("1000"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.INCOME,
+            occurred_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+            account_id=account.id,
+            is_initial_balance=True,
+        ),
+    )
+
+    expense_txn = register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Compra",
+            amount=Decimal("200"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.EXPENSE,
+            occurred_at=datetime(2026, 4, 2, tzinfo=timezone.utc),
+            account_id=account.id,
+            category_id=category.id,
+        ),
+    )
+
+    updated_txn = update_transaction(
+        db_session,
+        user.id,
+        expense_txn.id,
+        TransactionCreate(
+            description="Compra ajustada",
+            amount=Decimal("150"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.EXPENSE,
+            occurred_at=datetime(2026, 4, 3, tzinfo=timezone.utc),
+            account_id=account.id,
+            category_id=category.id,
+        ),
+    )
+    assert updated_txn.description == "Compra ajustada"
+
+    filtered_transactions = list_transactions(
+        db_session,
+        user.id,
+        start_date=datetime(2026, 4, 2, tzinfo=timezone.utc),
+        end_date=datetime(2026, 4, 3, tzinfo=timezone.utc),
+    )
+    assert [txn.id for txn in filtered_transactions] == [updated_txn.id]
+
+    delete_transaction(db_session, user.id, updated_txn.id)
+
+    remaining_transactions = list_transactions(db_session, user.id)
+    assert [txn.id for txn in remaining_transactions] == [opening_txn.id]
+
+
+def test_register_transaction_rejects_second_initial_balance(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="initial-balance@test.com", full_name="Initial Balance", password=TEST_PASSWORD),
+    )
+    bank = create_bank(db_session, user.id, BankCreate(name="Banco Inicial", country_code="CO"))
+    account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Cuenta Inicial",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=bank.id,
+        ),
+    )
+
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Saldo inicial",
+            amount=Decimal("500"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.INCOME,
+            occurred_at=datetime.now(timezone.utc),
+            account_id=account.id,
+            is_initial_balance=True,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="El saldo inicial solo se puede registrar una vez por cuenta\."):
+        register_transaction(
+            db_session,
+            user.id,
+            TransactionCreate(
+                description="Segundo saldo inicial",
+                amount=Decimal("100"),
+                currency=Currency.COP,
+                transaction_type=TransactionType.INCOME,
+                occurred_at=datetime.now(timezone.utc),
+                account_id=account.id,
+                is_initial_balance=True,
+            ),
+        )

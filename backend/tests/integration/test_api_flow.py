@@ -69,6 +69,22 @@ def test_api_main_flow(client, monkeypatch):
     assert category_list_resp.status_code == 200
     assert len(category_list_resp.json()) == 1
 
+    funding_resp = client.post(
+        "/api/v1/transactions/",
+        json={
+            "description": "Saldo inicial",
+            "amount": 1000,
+            "currency": "COP",
+            "transaction_type": "income",
+            "occurred_at": "2026-04-01T07:00:00Z",
+            "account_id": account_id,
+            "is_initial_balance": True,
+        },
+        headers=headers,
+    )
+    assert funding_resp.status_code == 201
+    funding_txn_id = funding_resp.json()["id"]
+
     txn_resp = client.post(
         "/api/v1/transactions/",
         json={
@@ -103,11 +119,14 @@ def test_api_main_flow(client, monkeypatch):
 
     list_resp = client.get("/api/v1/transactions/", headers=headers)
     assert list_resp.status_code == 200
-    assert len(list_resp.json()) == 1
-    assert list_resp.json()[0]["amount"] == 75
+    assert len(list_resp.json()) == 2
+    assert any(item["amount"] == 75 for item in list_resp.json())
 
     delete_txn_resp = client.delete(f"/api/v1/transactions/{txn_id}", headers=headers)
     assert delete_txn_resp.status_code == 204
+
+    delete_funding_resp = client.delete(f"/api/v1/transactions/{funding_txn_id}", headers=headers)
+    assert delete_funding_resp.status_code == 204
 
     list_after_delete_resp = client.get("/api/v1/transactions/", headers=headers)
     assert list_after_delete_resp.status_code == 200
@@ -120,6 +139,100 @@ def test_api_main_flow(client, monkeypatch):
     assert metrics_resp.status_code == 200
     body = metrics_resp.json()
     assert body["total_expenses"] == 0
+
+
+def test_management_endpoints_cover_update_and_delete_paths(client):
+    headers = _auth_headers(client, email="api-manage@test.com")
+
+    bank_resp = client.post(
+        "/api/v1/banks/",
+        json={"name": "Banco Uno", "country_code": "CO"},
+        headers=headers,
+    )
+    assert bank_resp.status_code == 201
+    bank_id = bank_resp.json()["id"]
+
+    second_bank_resp = client.post(
+        "/api/v1/banks/",
+        json={"name": "Banco Dos", "country_code": "US"},
+        headers=headers,
+    )
+    assert second_bank_resp.status_code == 201
+    second_bank_id = second_bank_resp.json()["id"]
+
+    update_bank_resp = client.put(
+        f"/api/v1/banks/{second_bank_id}",
+        json={"name": "Banco Dos Editado", "country_code": "MX"},
+        headers=headers,
+    )
+    assert update_bank_resp.status_code == 200
+    assert update_bank_resp.json()["country_code"] == "MX"
+
+    account_resp = client.post(
+        "/api/v1/accounts/",
+        json={
+            "name": "Cuenta Uno",
+            "account_type": "savings",
+            "currency": "COP",
+            "current_balance": 0,
+            "bank_id": bank_id,
+        },
+        headers=headers,
+    )
+    assert account_resp.status_code == 201
+    account_id = account_resp.json()["id"]
+
+    removable_account_resp = client.post(
+        "/api/v1/accounts/",
+        json={
+            "name": "Cuenta Borrar",
+            "account_type": "checking",
+            "currency": "USD",
+            "current_balance": 0,
+            "bank_id": second_bank_id,
+        },
+        headers=headers,
+    )
+    assert removable_account_resp.status_code == 201
+    removable_account_id = removable_account_resp.json()["id"]
+
+    update_account_resp = client.put(
+        f"/api/v1/accounts/{account_id}",
+        json={
+            "name": "Cuenta Uno Editada",
+            "account_type": "checking",
+            "currency": "USD",
+            "bank_id": second_bank_id,
+        },
+        headers=headers,
+    )
+    assert update_account_resp.status_code == 200
+    assert update_account_resp.json()["name"] == "Cuenta Uno Editada"
+
+    delete_account_resp = client.delete(f"/api/v1/accounts/{removable_account_id}", headers=headers)
+    assert delete_account_resp.status_code == 204
+
+    category_resp = client.post(
+        "/api/v1/categories/",
+        json={"name": "editar-categoria", "description": "original"},
+        headers=headers,
+    )
+    assert category_resp.status_code == 201
+    category_id = category_resp.json()["id"]
+
+    update_category_resp = client.put(
+        f"/api/v1/categories/{category_id}",
+        json={"name": "categoria-editada", "description": "actualizada", "is_fixed": True},
+        headers=headers,
+    )
+    assert update_category_resp.status_code == 200
+    assert update_category_resp.json()["is_fixed"] is True
+
+    delete_category_resp = client.delete(f"/api/v1/categories/{category_id}", headers=headers)
+    assert delete_category_resp.status_code == 204
+
+    delete_bank_resp = client.delete(f"/api/v1/banks/{bank_id}", headers=headers)
+    assert delete_bank_resp.status_code == 204
 
 
 def test_logout_revokes_access_token(client):
