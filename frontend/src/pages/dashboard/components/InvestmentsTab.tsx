@@ -514,7 +514,7 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
                     </Pie>
                     <Tooltip
                       {...TTStyle}
-                      formatter={(value) => [fmt(Number(value ?? 0), currency), t('dashboard.inv_dist_tooltip_label')]}
+                      formatter={(value, name) => [fmt(Number(value ?? 0), currency), name]}
                     />
                     <Legend
                       layout="vertical"
