@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { countriesApi, type Country } from '@/api/countries'
 import CategoriesPage from '@/pages/categories/CategoriesPage'
 import { useToast } from '@/hooks/useToast'
@@ -20,6 +21,7 @@ function normalizeTab(value: string | null): AdminTab {
 
 export default function AdminPage() {
   const { toast } = useToast()
+  const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const legacyTab = searchParams.get('tab')
 
@@ -36,7 +38,7 @@ export default function AdminPage() {
         const response = await countriesApi.list()
         setCountries(response.data)
       } catch (error) {
-        toast(getApiErrorMessage(error, 'No se pudieron cargar los paises.'), 'error')
+        toast(getApiErrorMessage(error, t('admin.error_load_countries')), 'error')
       }
     }
 
@@ -67,8 +69,8 @@ export default function AdminPage() {
   return (
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       <div>
-        <h1 className="app-title text-xl">Administracion</h1>
-        <p className="app-subtitle text-sm mt-0.5">Administra los catalogos base del sistema, como bancos, entidades de inversion, paises y categorias.</p>
+        <h1 className="app-title text-xl">{t('admin.title')}</h1>
+        <p className="app-subtitle text-sm mt-0.5">{t('admin.subtitle')}</p>
       </div>
 
       <div className="app-card p-2">
@@ -78,28 +80,28 @@ export default function AdminPage() {
             onClick={() => handleTabChange('banks')}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'banks' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
-            Bancos
+            {t('admin.banks.tab')}
           </button>
           <button
             type="button"
             onClick={() => handleTabChange('investment-entities')}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'investment-entities' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
-            Entidades inversion
+            {t('admin.entities.tab')}
           </button>
           <button
             type="button"
             onClick={() => handleTabChange('countries')}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'countries' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
-            Paises
+            {t('admin.countries.tab')}
           </button>
           <button
             type="button"
             onClick={() => handleTabChange('categories')}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'categories' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
-            Categorias
+            {t('admin.categories.tab')}
           </button>
         </div>
       </div>

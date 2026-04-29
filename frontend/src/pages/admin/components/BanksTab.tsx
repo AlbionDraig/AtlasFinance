@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { banksApi, type Bank } from '@/api/banks'
 import { useToast } from '@/hooks/useToast'
 import { getApiErrorMessage } from '@/lib/utils'
@@ -23,6 +24,7 @@ interface BanksTabProps {
 }
 
 export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
+  const { t } = useTranslation()
   const { toast } = useToast()
 
   const [loadingBanks, setLoadingBanks] = useState(true)
@@ -43,7 +45,7 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
         const response = await banksApi.list()
         setBanks(response.data)
       } catch (error) {
-        toast(getApiErrorMessage(error, 'No se pudieron cargar los bancos.'), 'error')
+        toast(getApiErrorMessage(error, t('admin.banks.toast_load_error')), 'error')
       } finally {
         setLoadingBanks(false)
       }
@@ -94,18 +96,18 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
   const bankEndIndex = Math.min(bankStartIndex + bankFilters.pageSize, filteredBanks.length)
   const paginatedBanks = filteredBanks.slice(bankStartIndex, bankEndIndex)
   const activeBankFilters = [
-    bankFilters.query.trim() ? `Busqueda: ${bankFilters.query.trim()}` : null,
-    bankFilters.countryCode !== 'all' ? `Pais: ${bankFilters.countryCode}` : null,
+    bankFilters.query.trim() ? t('admin.banks.chip_search', { value: bankFilters.query.trim() }) : null,
+    bankFilters.countryCode !== 'all' ? t('admin.banks.chip_country', { value: bankFilters.countryCode }) : null,
   ].filter(Boolean) as string[]
 
   async function handleCreateBank(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (bankName.trim().length < 2) {
-      toast('El nombre del banco debe tener al menos 2 caracteres.', 'error')
+      toast(t('admin.banks.toast_name_short'), 'error')
       return
     }
     if (!bankCountryCode) {
-      toast('Debes crear y seleccionar un pais antes de crear bancos.', 'error')
+      toast(t('admin.banks.toast_no_country'), 'error')
       return
     }
 
@@ -116,9 +118,9 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
       setBankName('')
       setBankCountryCode(countryCatalogOptions[0]?.value ?? '')
       setBankCreateOpen(false)
-      toast('Banco creado con exito.')
+      toast(t('admin.banks.toast_created'))
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo crear el banco.'), 'error')
+      toast(getApiErrorMessage(error, t('admin.banks.toast_create_error')), 'error')
     } finally {
       setSavingBank(false)
     }
@@ -130,9 +132,9 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
       const response = await banksApi.update(id, { name, country_code: countryCode })
       setBanks((current) => current.map((b) => (b.id === id ? response.data : b)))
       setEditingBank(null)
-      toast('Banco actualizado con exito.')
+      toast(t('admin.banks.toast_updated'))
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo actualizar el banco.'), 'error')
+      toast(getApiErrorMessage(error, t('admin.banks.toast_update_error')), 'error')
     } finally {
       setSavingBank(false)
     }
@@ -145,9 +147,9 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
       await banksApi.delete(deletingBank.id)
       setBanks((current) => current.filter((b) => b.id !== deletingBank.id))
       setDeletingBank(null)
-      toast('Banco eliminado.')
+      toast(t('admin.banks.toast_deleted'))
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo eliminar el banco.'), 'error')
+      toast(getApiErrorMessage(error, t('admin.banks.toast_delete_error')), 'error')
     } finally {
       setSavingBank(false)
     }
@@ -184,8 +186,8 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
 
       {deletingBank && (
         <ConfirmDeleteModal
-          title="Eliminar banco"
-          description={`¿Eliminar "${deletingBank.name}"? Las cuentas asociadas perderan la referencia al banco.`}
+          title={t('admin.banks.delete_title')}
+          description={t('admin.banks.delete_desc', { name: deletingBank.name })}
           loading={savingBank}
           onConfirm={handleDeleteBank}
           onClose={() => setDeletingBank(null)}
@@ -202,7 +204,7 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
 
       {loadingBanks ? (
         <section className="app-card p-6">
-          <LoadingSpinner text="Cargando bancos..." />
+          <LoadingSpinner text={t('admin.banks.loading')} />
         </section>
       ) : (
         <BanksTableCard
@@ -223,14 +225,14 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
 
       <FloatingActionMenu
         hidden={false}
-        ariaLabel="Abrir acciones de bancos"
+        ariaLabel={t('admin.banks.fab_menu_label')}
         items={[
           {
             key: 'create-bank',
-            label: 'Crear banco',
+            label: t('admin.banks.fab_create'),
             onClick: () => {
               if (!countryCatalogOptions.length) {
-                toast('Crea al menos un pais para poder registrar bancos.', 'error')
+                toast(t('admin.banks.toast_no_country_hint'), 'error')
                 return
               }
               setBankName('')

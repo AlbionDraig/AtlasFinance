@@ -44,12 +44,12 @@ export default function InvestmentEntityEditModal({
             </svg>
           </div>
           <div>
-            <h2 className="app-section-title text-brand-text">Editar entidad de inversión</h2>
-            <p className="mt-0.5 text-sm text-neutral-700">Modifica nombre, tipo o país de la entidad.</p>
+            <h2 className="app-section-title text-brand-text">{t('admin.entities.edit_title')}</h2>
+            <p className="mt-0.5 text-sm text-neutral-700">{t('admin.entities.edit_desc')}</p>
           </div>
           <button
             type="button"
-            aria-label="Cerrar"
+            aria-label={t('common.close')}
             className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
             onClick={onClose}
           >
@@ -61,20 +61,20 @@ export default function InvestmentEntityEditModal({
 
         <form onSubmit={handleSubmit} className="space-y-4 p-6">
           <div className="space-y-1">
-            <label className="app-label">Nombre de la entidad</label>
+            <label className="app-label">{t('admin.entities.field_name')}</label>
             <input
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
               className="app-control w-full"
-              placeholder="Ej: Interactive Brokers"
+              placeholder={t('admin.entities.field_name_placeholder')}
               autoFocus
               maxLength={120}
             />
           </div>
 
           <div className="space-y-1">
-            <label className="app-label">Tipo de entidad</label>
+            <label className="app-label">{t('admin.entities.field_type')}</label>
             <Select
               value={entityType}
               onChange={(value) => setEntityType(value as InvestmentEntityType)}
@@ -85,7 +85,7 @@ export default function InvestmentEntityEditModal({
           </div>
 
           <div className="space-y-1">
-            <label className="app-label">Código de país</label>
+            <label className="app-label">{t('admin.entities.field_country_code')}</label>
             <Select
               value={countryCode}
               onChange={setCountryCode}
@@ -98,10 +98,10 @@ export default function InvestmentEntityEditModal({
 
           <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
             <button type="submit" className="app-btn-primary" disabled={saving || name.trim().length < 2}>
-              {saving ? 'Guardando...' : 'Guardar cambios'}
+              {saving ? t('common.saving') : t('common.save')}
             </button>
             <button type="button" className="app-btn-secondary" onClick={onClose}>
-              Cancelar
+              {t('common.cancel')}
             </button>
           </div>
         </form>

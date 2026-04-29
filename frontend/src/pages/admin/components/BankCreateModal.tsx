@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
 
@@ -23,6 +24,7 @@ export default function BankCreateModal({
   onSubmit,
   onClose,
 }: BankCreateModalProps) {
+  const { t } = useTranslation()
   return (
     <Modal onClose={onClose} maxWidth="max-w-xl">
       <div className="w-full rounded-2xl border border-neutral-100 border-t-4 border-t-brand bg-white shadow-xl overflow-visible">
@@ -33,12 +35,12 @@ export default function BankCreateModal({
             </svg>
           </div>
           <div>
-            <h2 className="app-section-title text-brand-text">Crear banco</h2>
-            <p className="mt-0.5 text-sm text-neutral-700">Agrega un banco disponible para asociar nuevas cuentas.</p>
+            <h2 className="app-section-title text-brand-text">{t('admin.banks.create_title')}</h2>
+            <p className="mt-0.5 text-sm text-neutral-700">{t('admin.banks.create_desc')}</p>
           </div>
           <button
             type="button"
-            aria-label="Cerrar"
+            aria-label={t('common.close')}
             className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
             onClick={onClose}
           >
@@ -50,19 +52,19 @@ export default function BankCreateModal({
 
         <form onSubmit={onSubmit} className="space-y-4 p-6">
           <div className="space-y-1">
-            <label className="app-label">Nombre del banco</label>
+            <label className="app-label">{t('admin.banks.field_name')}</label>
             <input
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
               className="app-control w-full"
-              placeholder="Ej: Bancolombia"
+              placeholder={t('admin.banks.field_name_placeholder')}
               autoFocus
             />
           </div>
 
           <div className="space-y-1">
-            <label className="app-label">País</label>
+            <label className="app-label">{t('admin.banks.field_country')}</label>
             <Select
               value={countryCode}
               onChange={setCountryCode}
@@ -75,10 +77,10 @@ export default function BankCreateModal({
 
           <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
             <button type="submit" className="app-btn-primary" disabled={saving}>
-              {saving ? 'Creando banco...' : 'Crear banco'}
+              {saving ? t('admin.banks.submit_creating') : t('admin.banks.submit_create')}
             </button>
             <button type="button" className="app-btn-secondary" onClick={onClose}>
-              Cancelar
+              {t('common.cancel')}
             </button>
           </div>
         </form>

@@ -3,6 +3,7 @@ import DeleteButton from '@/components/ui/DeleteButton'
 import EditButton from '@/components/ui/EditButton'
 import Pagination from '@/components/ui/Pagination'
 import Tooltip from '@/components/ui/Tooltip'
+import { useTranslation } from 'react-i18next'
 import type { Country } from '@/api/countries'
 
 interface CountriesTableCardProps {
@@ -34,12 +35,13 @@ export default function CountriesTableCard({
   onEdit,
   onDelete,
 }: CountriesTableCardProps) {
+  const { t } = useTranslation()
   const metrics = [
     {
       key: 'count',
       variant: 'neutral' as const,
-      label: `${filteredCountries.length} países`,
-      help: 'Total de países que cumplen los filtros actuales.',
+      label: t('admin.countries.metric_total', { count: filteredCountries.length }),
+      help: t('admin.countries.metric_total_help'),
     },
   ]
 
@@ -53,9 +55,9 @@ export default function CountriesTableCard({
             </svg>
           </div>
           <div>
-            <h2 className="text-sm font-medium text-neutral-900">Tabla de países</h2>
+            <h2 className="text-sm font-medium text-neutral-900">{t('admin.countries.table_title')}</h2>
             <p className="text-xs text-neutral-400">
-              {filteredCountries.length ? `${startIndex + 1}-${endIndex} de ${filteredCountries.length} países` : 'Sin resultados'}
+              {filteredCountries.length ? `${startIndex + 1}-${endIndex} de ${filteredCountries.length} ${t('admin.countries.metric_total', { count: filteredCountries.length })}` : t('common.no_results')}
             </p>
           </div>
         </div>
@@ -77,8 +79,8 @@ export default function CountriesTableCard({
             </svg>
           </div>
           <div>
-            <p className="text-sm font-medium text-neutral-900">No hay países</p>
-            <p className="mt-1 text-xs text-neutral-400">Ajusta los filtros o crea un nuevo país.</p>
+            <p className="text-sm font-medium text-neutral-900">{t('admin.countries.table_empty_title')}</p>
+            <p className="mt-1 text-xs text-neutral-400">{t('admin.countries.table_empty_desc')}</p>
           </div>
         </div>
       ) : (
@@ -91,9 +93,9 @@ export default function CountriesTableCard({
             </colgroup>
             <thead>
               <tr>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Código</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">País</th>
-                <th className="border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Acciones</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('admin.countries.table_col_code')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('admin.countries.table_col_country')}</th>
+                <th className="border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('admin.countries.table_col_actions')}</th>
               </tr>
             </thead>
             <tbody>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   investmentEntitiesApi,
   INVESTMENT_ENTITY_TYPE_OPTIONS,
@@ -29,6 +30,7 @@ interface InvestmentEntitiesTabProps {
 }
 
 export default function InvestmentEntitiesTab({ countryCatalogOptions }: InvestmentEntitiesTabProps) {
+  const { t } = useTranslation()
   const { toast } = useToast()
 
   const [loadingInvestmentEntities, setLoadingInvestmentEntities] = useState(true)
@@ -52,7 +54,7 @@ export default function InvestmentEntitiesTab({ countryCatalogOptions }: Investm
         const response = await investmentEntitiesApi.list()
         setInvestmentEntities(response.data)
       } catch (error) {
-        toast(getApiErrorMessage(error, 'No se pudieron cargar las entidades de inversion.'), 'error')
+        toast(getApiErrorMessage(error, t('admin.entities.toast_load_error')), 'error')
       } finally {
         setLoadingInvestmentEntities(false)
       }
@@ -119,21 +121,21 @@ export default function InvestmentEntitiesTab({ countryCatalogOptions }: Investm
   )
   const paginatedInvestmentEntities = filteredInvestmentEntities.slice(investmentEntityStartIndex, investmentEntityEndIndex)
   const activeInvestmentEntityFilters = [
-    investmentEntityFilters.query.trim() ? `Busqueda: ${investmentEntityFilters.query.trim()}` : null,
+    investmentEntityFilters.query.trim() ? t('admin.entities.chip_search', { value: investmentEntityFilters.query.trim() }) : null,
     investmentEntityFilters.entityType !== 'all'
-      ? `Tipo: ${investmentEntityTypeLabelByValue[investmentEntityFilters.entityType] ?? investmentEntityFilters.entityType}`
+      ? t('admin.entities.chip_type', { value: investmentEntityTypeLabelByValue[investmentEntityFilters.entityType] ?? investmentEntityFilters.entityType })
       : null,
-    investmentEntityFilters.countryCode !== 'all' ? `Pais: ${investmentEntityFilters.countryCode}` : null,
+    investmentEntityFilters.countryCode !== 'all' ? t('admin.entities.chip_country', { value: investmentEntityFilters.countryCode }) : null,
   ].filter(Boolean) as string[]
 
   async function handleCreateInvestmentEntity(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (investmentEntityName.trim().length < 2) {
-      toast('El nombre de la entidad debe tener al menos 2 caracteres.', 'error')
+      toast(t('admin.entities.toast_name_short'), 'error')
       return
     }
     if (!investmentEntityCountryCode) {
-      toast('Debes crear y seleccionar un pais antes de crear entidades.', 'error')
+      toast(t('admin.entities.toast_no_country'), 'error')
       return
     }
 
@@ -149,9 +151,9 @@ export default function InvestmentEntitiesTab({ countryCatalogOptions }: Investm
       setInvestmentEntityType('broker')
       setInvestmentEntityCountryCode(countryCatalogOptions[0]?.value ?? '')
       setInvestmentEntityCreateOpen(false)
-      toast('Entidad de inversion creada con exito.')
+      toast(t('admin.entities.toast_created'))
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo crear la entidad de inversion.'), 'error')
+      toast(getApiErrorMessage(error, t('admin.entities.toast_create_error')), 'error')
     } finally {
       setSavingInvestmentEntity(false)
     }
@@ -166,9 +168,9 @@ export default function InvestmentEntitiesTab({ countryCatalogOptions }: Investm
       const response = await investmentEntitiesApi.update(id, data)
       setInvestmentEntities((current) => current.map((entity) => (entity.id === id ? response.data : entity)))
       setEditingInvestmentEntity(null)
-      toast('Entidad de inversion actualizada con exito.')
+      toast(t('admin.entities.toast_updated'))
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo actualizar la entidad de inversion.'), 'error')
+      toast(getApiErrorMessage(error, t('admin.entities.toast_update_error')), 'error')
     } finally {
       setSavingInvestmentEntity(false)
     }
@@ -181,9 +183,9 @@ export default function InvestmentEntitiesTab({ countryCatalogOptions }: Investm
       await investmentEntitiesApi.delete(deletingInvestmentEntity.id)
       setInvestmentEntities((current) => current.filter((entity) => entity.id !== deletingInvestmentEntity.id))
       setDeletingInvestmentEntity(null)
-      toast('Entidad de inversion eliminada.')
+      toast(t('admin.entities.toast_deleted'))
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo eliminar la entidad de inversion.'), 'error')
+      toast(getApiErrorMessage(error, t('admin.entities.toast_delete_error')), 'error')
     } finally {
       setSavingInvestmentEntity(false)
     }
@@ -225,8 +227,8 @@ export default function InvestmentEntitiesTab({ countryCatalogOptions }: Investm
 
       {deletingInvestmentEntity && (
         <ConfirmDeleteModal
-          title="Eliminar entidad de inversion"
-          description={`¿Eliminar "${deletingInvestmentEntity.name}"? Las inversiones asociadas tambien se eliminaran.`}
+          title={t('admin.entities.delete_title')}
+          description={t('admin.entities.delete_desc', { name: deletingInvestmentEntity.name })}
           loading={savingInvestmentEntity}
           onConfirm={handleDeleteInvestmentEntity}
           onClose={() => setDeletingInvestmentEntity(null)}
@@ -244,7 +246,7 @@ export default function InvestmentEntitiesTab({ countryCatalogOptions }: Investm
 
       {loadingInvestmentEntities ? (
         <section className="app-card p-6">
-          <LoadingSpinner text="Cargando entidades de inversion..." />
+          <LoadingSpinner text={t('admin.entities.loading')} />
         </section>
       ) : (
         <InvestmentEntitiesTableCard
@@ -266,14 +268,14 @@ export default function InvestmentEntitiesTab({ countryCatalogOptions }: Investm
 
       <FloatingActionMenu
         hidden={false}
-        ariaLabel="Abrir acciones de entidades de inversion"
+        ariaLabel={t('admin.entities.fab_menu_label')}
         items={[
           {
             key: 'create-investment-entity',
-            label: 'Crear entidad inversion',
+            label: t('admin.entities.fab_create'),
             onClick: () => {
               if (!countryCatalogOptions.length) {
-                toast('Crea al menos un pais para poder registrar entidades.', 'error')
+                toast(t('admin.entities.toast_no_country_hint'), 'error')
                 return
               }
               setInvestmentEntityName('')

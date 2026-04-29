@@ -1,4 +1,5 @@
 import Badge from '@/components/ui/Badge'
+import { useTranslation } from 'react-i18next'
 import DeleteButton from '@/components/ui/DeleteButton'
 import EditButton from '@/components/ui/EditButton'
 import Pagination from '@/components/ui/Pagination'
@@ -39,6 +40,7 @@ export default function AccountsTableCard({
   onEdit,
   onDelete,
 }: AccountsTableCardProps) {
+  const { t } = useTranslation()
   // KPIs summarize filtered dataset, independent from pagination window.
   const savingsCount = filteredAccounts.filter((account) => account.account_type === 'savings').length
   const checkingCount = filteredAccounts.filter((account) => account.account_type === 'checking').length
@@ -47,26 +49,26 @@ export default function AccountsTableCard({
     {
       key: 'count',
       variant: 'neutral' as const,
-      label: `${filteredAccounts.length} cuentas`,
-      help: 'Total de cuentas que cumplen los filtros actuales.',
+      label: t('accounts.metric_total', { count: filteredAccounts.length }),
+      help: t('accounts.metric_total_help'),
     },
     {
       key: 'savings',
       variant: 'positive' as const,
-      label: `Ahorros ${savingsCount}`,
-      help: 'Cantidad de cuentas de ahorro dentro del filtro activo.',
+      label: t('accounts.metric_savings', { count: savingsCount }),
+      help: t('accounts.metric_savings_help'),
     },
     {
       key: 'checking',
       variant: 'negative' as const,
-      label: `Corriente ${checkingCount}`,
-      help: 'Cantidad de cuentas corrientes dentro del filtro activo.',
+      label: t('accounts.metric_checking', { count: checkingCount }),
+      help: t('accounts.metric_checking_help'),
     },
     {
       key: 'banks',
       variant: 'neutral' as const,
-      label: `Bancos ${activeBanks}`,
-      help: 'Cantidad de bancos representados en las cuentas filtradas.',
+      label: t('accounts.metric_banks', { count: activeBanks }),
+      help: t('accounts.metric_banks_help'),
     },
   ]
 
@@ -81,11 +83,11 @@ export default function AccountsTableCard({
             </svg>
           </div>
           <div>
-            <h2 className="text-sm font-medium text-neutral-900">Historial de cuentas</h2>
+            <h2 className="text-sm font-medium text-neutral-900">{t('accounts.table_title')}</h2>
             <p className="text-xs text-neutral-400">
               {filteredAccounts.length
-                ? `${startIndex + 1}-${endIndex} de ${filteredAccounts.length} cuentas`
-                : 'Sin resultados'}
+                ? `${startIndex + 1}-${endIndex} ${t('common.of')} ${filteredAccounts.length} ${t('accounts.filter_bank_all')}`
+                : t('common.noResults')}
             </p>
           </div>
         </div>
@@ -112,8 +114,8 @@ export default function AccountsTableCard({
             </svg>
           </div>
           <div>
-            <p className="text-sm font-medium text-neutral-900">No hay cuentas</p>
-            <p className="mt-1 text-xs text-neutral-400">Ajusta los filtros o crea una nueva cuenta.</p>
+            <p className="text-sm font-medium text-neutral-900">{t('accounts.table_empty_title')}</p>
+            <p className="mt-1 text-xs text-neutral-400">{t('accounts.table_empty_desc')}</p>
           </div>
         </div>
       ) : (
@@ -129,12 +131,12 @@ export default function AccountsTableCard({
             </colgroup>
             <thead>
               <tr>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Cuenta</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Tipo</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Moneda</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Banco</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Saldo actual</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Acciones</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_account')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_type')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_currency')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_bank')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_balance')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -150,7 +152,7 @@ export default function AccountsTableCard({
                       </span>
                     </td>
                     <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-sm text-neutral-700 align-middle">
-                      {account.account_type === 'checking' ? 'Corriente' : 'Ahorros'}
+                      {account.account_type === 'checking' ? t('accounts.type_checking') : t('accounts.type_savings')}
                     </td>
                     <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-sm text-neutral-700 align-middle">
                       <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700 whitespace-nowrap">
@@ -169,8 +171,8 @@ export default function AccountsTableCard({
                     </td>
                     <td className="border-b border-r border-neutral-100 px-5 py-3.5 align-middle">
                       <div className="flex items-center justify-end gap-1.5">
-                        <EditButton onClick={() => onEdit(account)} label={`Editar ${account.name}`} />
-                        <DeleteButton onClick={() => onDelete(account)} label={`Eliminar ${account.name}`} />
+                        <EditButton onClick={() => onEdit(account)} label={t('common.edit_item', { name: account.name })} />
+                        <DeleteButton onClick={() => onDelete(account)} label={t('common.delete_item', { name: account.name })} />
                       </div>
                     </td>
                   </tr>

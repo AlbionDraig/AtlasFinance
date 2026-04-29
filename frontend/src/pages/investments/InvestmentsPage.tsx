@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
 import { investmentEntitiesApi, type InvestmentEntity } from '@/api/investmentEntities'
 import { investmentsApi, INSTRUMENT_TYPES, type InvestmentPayload, type InvestmentUpdatePayload } from '@/api/investments'
@@ -86,11 +87,12 @@ interface InvestmentModalProps {
 function InvestmentModal({
   title, isEditing, form, setForm, entities, saving, submitLabel, onSubmit, onClose,
 }: InvestmentModalProps) {
+  const { t } = useTranslation()
   const entityOptions = [
-    { value: '', label: 'Selecciona una entidad' },
+    { value: '', label: t('investments.field_entity_select') },
     ...entities.map(entity => ({ value: String(entity.id), label: entity.name })),
   ]
-  const instrumentOptions = INSTRUMENT_TYPES.map(t => ({ value: t, label: t }))
+  const instrumentOptions = INSTRUMENT_TYPES.map(type => ({ value: type, label: type }))
   const currencyOptions = [
     { value: 'COP', label: 'COP' },
     { value: 'USD', label: 'USD' },
@@ -108,12 +110,12 @@ function InvestmentModal({
           <div>
             <h2 className="app-section-title text-brand-text">{title}</h2>
             <p className="mt-0.5 text-sm text-neutral-700">
-              {isEditing ? 'Edita los datos de la inversión.' : 'Registra una nueva inversión en tu portafolio.'}
+              {isEditing ? t('investments.edit_desc') : t('investments.create_desc')}
             </p>
           </div>
           <button
             type="button"
-            aria-label="Cerrar"
+            aria-label={t('common.close')}
             className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
             onClick={onClose}
           >
@@ -125,20 +127,20 @@ function InvestmentModal({
 
         <form onSubmit={onSubmit} className="space-y-4 p-6">
           <div className="space-y-1">
-            <label className="app-label">Nombre</label>
+            <label className="app-label">{t('investments.field_name')}</label>
             <input
               type="text"
               value={form.name}
               onChange={e => setForm(c => ({ ...c, name: e.target.value }))}
               className="app-control w-full"
-              placeholder="Ej: Fondo de acciones EEUU"
+              placeholder={t('investments.field_name_placeholder')}
               autoFocus
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="app-label">Tipo de instrumento</label>
+              <label className="app-label">{t('investments.field_instrument')}</label>
               <Select
                 value={form.instrument_type}
                 onChange={v => setForm(c => ({ ...c, instrument_type: v }))}
@@ -147,7 +149,7 @@ function InvestmentModal({
               />
             </div>
             <div className="space-y-1">
-              <label className="app-label">Entidad de inversión</label>
+              <label className="app-label">{t('investments.field_entity')}</label>
               <Select
                 value={form.investment_entity_id}
                 onChange={v => setForm(c => ({ ...c, investment_entity_id: v }))}
@@ -160,13 +162,13 @@ function InvestmentModal({
           {isEditing ? (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="app-label">Monto invertido</label>
+                <label className="app-label">{t('investments.field_invested')}</label>
                 <p className="app-control w-full min-h-10 flex items-center text-neutral-700">
                   {form.amount_invested ? formatCurrency(Number(form.amount_invested), form.currency) : '—'}
                 </p>
               </div>
               <div className="space-y-1">
-                <label className="app-label">Valor actual</label>
+                <label className="app-label">{t('investments.field_current_value')}</label>
                 <AmountInput
                   value={form.current_value}
                   onChange={raw => setForm(c => ({ ...c, current_value: raw }))}
@@ -178,7 +180,7 @@ function InvestmentModal({
             </div>
           ) : (
             <div className="space-y-1">
-              <label className="app-label">Monto invertido</label>
+              <label className="app-label">{t('investments.field_invested')}</label>
               <AmountInput
                 value={form.amount_invested}
                 onChange={raw => setForm(c => ({ ...c, amount_invested: raw }))}
@@ -191,7 +193,7 @@ function InvestmentModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="app-label">Moneda</label>
+              <label className="app-label">{t('investments.field_currency')}</label>
               {isEditing ? (
                 <p className="app-control w-full min-h-10 flex items-center text-neutral-700">{form.currency}</p>
               ) : (
@@ -204,7 +206,7 @@ function InvestmentModal({
               )}
             </div>
             <DatePicker
-              label="Fecha de inicio"
+              label={t('investments.field_start_date')}
               value={form.started_at}
               onChange={v => setForm(c => ({ ...c, started_at: v }))}
             />
@@ -212,10 +214,10 @@ function InvestmentModal({
 
           <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
             <button type="submit" className="app-btn-primary" disabled={saving}>
-              {saving ? 'Guardando…' : submitLabel}
+              {saving ? t('common.saving') : submitLabel}
             </button>
             <button type="button" className="app-btn-secondary" onClick={onClose}>
-              Cancelar
+              {t('common.cancel')}
             </button>
           </div>
         </form>
@@ -244,6 +246,7 @@ function KpiCard({ label, value, accent, sub, subColor }: KpiCardProps) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function InvestmentsPage() {
+  const { t } = useTranslation()
   const { toast } = useToast()
 
   const [investments, setInvestments] = useState<Investment[]>([])
@@ -268,7 +271,7 @@ export default function InvestmentsPage() {
         setInvestments(invRes.data)
         setEntities(entityRes.data)
       })
-      .catch(() => toast('Error al cargar inversiones.', 'error'))
+      .catch(() => toast(t('investments.toast_load_error'), 'error'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -328,10 +331,10 @@ export default function InvestmentsPage() {
     const amountInvested = Number(form.amount_invested)
 
     // Normalize user input into API payload and enforce business constraints.
-    if (name.length < 2) { toast('El nombre debe tener al menos 2 caracteres.', 'error'); return null }
-    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) { toast('Selecciona una entidad.', 'error'); return null }
-    if (!form.amount_invested || amountInvested <= 0) { toast('El monto invertido debe ser mayor a 0.', 'error'); return null }
-    if (!form.started_at) { toast('Selecciona una fecha de inicio.', 'error'); return null }
+    if (name.length < 2) { toast(t('investments.toast_name_short'), 'error'); return null }
+    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) { toast(t('investments.toast_select_entity'), 'error'); return null }
+    if (!form.amount_invested || amountInvested <= 0) { toast(t('investments.toast_amount_zero'), 'error'); return null }
+    if (!form.started_at) { toast(t('investments.toast_select_date'), 'error'); return null }
 
     return {
       name,
@@ -350,10 +353,10 @@ export default function InvestmentsPage() {
     const currentValue = Number(form.current_value)
 
     // Editing flow only updates mutable fields (not amount_invested/currency).
-    if (name.length < 2) { toast('El nombre debe tener al menos 2 caracteres.', 'error'); return null }
-    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) { toast('Selecciona una entidad.', 'error'); return null }
-    if (form.current_value === '' || currentValue < 0) { toast('El valor actual debe ser 0 o mayor.', 'error'); return null }
-    if (!form.started_at) { toast('Selecciona una fecha de inicio.', 'error'); return null }
+    if (name.length < 2) { toast(t('investments.toast_name_short'), 'error'); return null }
+    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) { toast(t('investments.toast_select_entity'), 'error'); return null }
+    if (form.current_value === '' || currentValue < 0) { toast(t('investments.toast_value_negative'), 'error'); return null }
+    if (!form.started_at) { toast(t('investments.toast_select_date'), 'error'); return null }
 
     return {
       name,
@@ -373,10 +376,10 @@ export default function InvestmentsPage() {
       const res = await investmentsApi.create(payload)
       setInvestments(prev => [res.data, ...prev])
       setCreateOpen(false)
-      toast('Inversión registrada.', 'success')
+      toast(t('investments.toast_created'), 'success')
     } catch (err) {
       const msg = err instanceof AxiosError ? err.response?.data?.detail : null
-      toast(msg ?? 'Error al crear la inversión.', 'error')
+      toast(msg ?? t('investments.toast_create_error'), 'error')
     } finally {
       setSaving(false)
     }
@@ -392,10 +395,10 @@ export default function InvestmentsPage() {
       const res = await investmentsApi.update(editingInvestment.id, payload)
       setInvestments(prev => prev.map(inv => inv.id === editingInvestment.id ? res.data : inv))
       setEditingInvestment(null)
-      toast('Inversión actualizada.', 'success')
+      toast(t('investments.toast_updated'), 'success')
     } catch (err) {
       const msg = err instanceof AxiosError ? err.response?.data?.detail : null
-      toast(msg ?? 'Error al actualizar la inversión.', 'error')
+      toast(msg ?? t('investments.toast_update_error'), 'error')
     } finally {
       setSaving(false)
     }
@@ -408,24 +411,24 @@ export default function InvestmentsPage() {
       await investmentsApi.delete(deletingInvestment.id)
       setInvestments(prev => prev.filter(inv => inv.id !== deletingInvestment.id))
       setDeletingInvestment(null)
-      toast('Inversión eliminada.', 'success')
+      toast(t('investments.toast_deleted'), 'success')
     } catch {
-      toast('Error al eliminar la inversión.', 'error')
+      toast(t('investments.toast_delete_error'), 'error')
     } finally {
       setSaving(false)
     }
   }
 
   const entityFilterOptions = [
-    { value: '', label: 'Todas las entidades' },
+    { value: '', label: t('investments.filter_entity_all') },
     ...entities.map(entity => ({ value: String(entity.id), label: entity.name })),
   ]
   const typeFilterOptions = [
-    { value: '', label: 'Todos los tipos' },
-    ...INSTRUMENT_TYPES.map(t => ({ value: t, label: t })),
+    { value: '', label: t('investments.filter_type_all') },
+    ...INSTRUMENT_TYPES.map(type => ({ value: type, label: type })),
   ]
   const currencyFilterOptions = [
-    { value: '', label: 'Todas las monedas' },
+    { value: '', label: t('investments.filter_currency_all') },
     { value: 'COP', label: 'COP' },
     { value: 'USD', label: 'USD' },
   ]
@@ -442,27 +445,27 @@ export default function InvestmentsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-medium text-neutral-900">Inversiones</h1>
-        <p className="text-sm text-neutral-700 mt-0.5">Seguimiento de tus posiciones de inversión.</p>
+        <h1 className="text-xl font-medium text-neutral-900">{t('investments.title')}</h1>
+        <p className="text-sm text-neutral-700 mt-0.5">{t('investments.subtitle')}</p>
       </div>
 
       {/* KPI summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <KpiCard
-          label="Total invertido"
+          label={t('investments.kpi_invested')}
           value={formatCurrency(totalInvested, 'COP')}
           accent="border-t-2 border-t-brand"
         />
         <KpiCard
-          label="Valor actual"
+          label={t('investments.kpi_current')}
           value={formatCurrency(totalCurrent, 'COP')}
           accent="border-t-2 border-t-success"
         />
         <KpiCard
-          label="Ganancia / Pérdida"
+          label={t('investments.kpi_gain')}
           value={`${gainPositive ? '+' : ''}${formatCurrency(totalGain, 'COP')}`}
           accent={gainPositive ? 'border-t-2 border-t-success' : 'border-t-2 border-t-warning'}
-          sub={`${gainPositive ? '+' : ''}${returnPct}% retorno`}
+          sub={t('investments.kpi_return', { sign: gainPositive ? '+' : '', pct: returnPct })}
           subColor={gainPositive ? 'text-success' : 'text-warning'}
         />
       </div>
@@ -474,15 +477,15 @@ export default function InvestmentsPage() {
         onReset={hasFilters ? () => { setFilterQuery(''); setFilterEntity(''); setFilterType(''); setFilterCurrency('') } : undefined}
       >
         <div className="flex min-w-[180px] flex-1 flex-col gap-1">
-          <label className="app-label">Buscar</label>
+          <label className="app-label">{t('common.search')}</label>
           <SearchInput
             value={filterQuery}
             onChange={setFilterQuery}
-            placeholder="Inversión o entidad"
+            placeholder={t('investments.filter_search_placeholder')}
           />
         </div>
         <div className="flex w-44 flex-col gap-1">
-          <label className="app-label">Entidad</label>
+          <label className="app-label">{t('common.entity')}</label>
           <Select
             value={filterEntity}
             onChange={setFilterEntity}
@@ -492,7 +495,7 @@ export default function InvestmentsPage() {
           />
         </div>
         <div className="flex w-40 flex-col gap-1">
-          <label className="app-label">Tipo</label>
+          <label className="app-label">{t('common.type')}</label>
           <Select
             value={filterType}
             onChange={setFilterType}
@@ -502,7 +505,7 @@ export default function InvestmentsPage() {
           />
         </div>
         <div className="flex w-36 flex-col gap-1">
-          <label className="app-label">Moneda</label>
+          <label className="app-label">{t('common.currency')}</label>
           <Select
             value={filterCurrency}
             onChange={setFilterCurrency}
@@ -517,8 +520,8 @@ export default function InvestmentsPage() {
       {filtered.length === 0 ? (
         <div className="bg-white border border-neutral-100 rounded-xl p-10 text-center text-neutral-400">
           {investments.length === 0
-            ? 'Aún no tienes inversiones registradas. Crea una con el botón +.'
-            : 'No hay inversiones que coincidan con los filtros.'}
+            ? t('investments.empty_no_investments')
+            : t('investments.empty_no_results')}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -556,13 +559,13 @@ export default function InvestmentsPage() {
                 {/* Values */}
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    <p className="text-neutral-400 uppercase tracking-wide">Invertido</p>
+                    <p className="text-neutral-400 uppercase tracking-wide">{t('investments.card_invested')}</p>
                     <p className="text-neutral-900 font-medium mt-0.5">
                       {formatCurrency(inv.amount_invested, inv.currency)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-neutral-400 uppercase tracking-wide">Valor actual</p>
+                    <p className="text-neutral-400 uppercase tracking-wide">{t('investments.card_current')}</p>
                     <p className="text-neutral-900 font-medium mt-0.5">
                       {formatCurrency(inv.current_value, inv.currency)}
                     </p>
@@ -578,7 +581,7 @@ export default function InvestmentsPage() {
                 </div>
 
                 {/* Date */}
-                <p className="text-xs text-neutral-400">Desde {formatDate(inv.started_at)}</p>
+                <p className="text-xs text-neutral-400">{t('investments.card_since', { date: formatDate(inv.started_at) })}</p>
               </div>
             )
           })}
@@ -587,19 +590,19 @@ export default function InvestmentsPage() {
 
       {/* FAB */}
       <FloatingActionMenu
-        items={[{ key: 'new', label: 'Nueva inversión', onClick: openCreate }]}
+        items={[{ key: 'new', label: t('investments.fab_create'), onClick: openCreate }]}
       />
 
       {/* Create modal */}
       {createOpen && (
         <InvestmentModal
-          title="Registrar inversión"
+          title={t('investments.create_title')}
           isEditing={false}
           form={form}
           setForm={setForm}
           entities={entities}
           saving={saving}
-          submitLabel="Registrar"
+          submitLabel={t('investments.submit_create')}
           onSubmit={handleCreate}
           onClose={() => setCreateOpen(false)}
         />
@@ -608,13 +611,13 @@ export default function InvestmentsPage() {
       {/* Edit modal */}
       {editingInvestment && (
         <InvestmentModal
-          title="Editar inversión"
+          title={t('investments.edit_title')}
           isEditing
           form={form}
           setForm={setForm}
           entities={entities}
           saving={saving}
-          submitLabel="Guardar cambios"
+          submitLabel={t('investments.submit_edit')}
           onSubmit={handleUpdate}
           onClose={() => setEditingInvestment(null)}
         />
@@ -623,8 +626,8 @@ export default function InvestmentsPage() {
       {/* Delete confirmation */}
       {deletingInvestment && (
         <ConfirmDeleteModal
-          title="Eliminar inversión"
-          description={`¿Eliminar la inversión "${deletingInvestment.name}"? Esta acción no se puede deshacer.`}
+          title={t('investments.delete_title')}
+          description={t('investments.delete_desc', { name: deletingInvestment.name })}
           loading={saving}
           onConfirm={handleDelete}
           onClose={() => setDeletingInvestment(null)}

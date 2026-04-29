@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '@/components/ui/Modal'
 import type { Country } from '@/api/countries'
 
@@ -10,6 +11,7 @@ interface CountryEditModalProps {
 }
 
 export default function CountryEditModal({ country, saving, onSubmit, onClose }: CountryEditModalProps) {
+  const { t } = useTranslation()
   const [name, setName] = useState(country.name)
   const [code, setCode] = useState(country.code)
 
@@ -31,12 +33,12 @@ export default function CountryEditModal({ country, saving, onSubmit, onClose }:
             </svg>
           </div>
           <div>
-            <h2 className="app-section-title text-brand-text">Editar país</h2>
-            <p className="mt-0.5 text-sm text-neutral-700">Actualiza el nombre o código del país seleccionado.</p>
+            <h2 className="app-section-title text-brand-text">{t('admin.countries.edit_title')}</h2>
+            <p className="mt-0.5 text-sm text-neutral-700">{t('admin.countries.edit_desc')}</p>
           </div>
           <button
             type="button"
-            aria-label="Cerrar"
+            aria-label={t('common.close')}
             className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
             onClick={onClose}
           >
@@ -48,26 +50,26 @@ export default function CountryEditModal({ country, saving, onSubmit, onClose }:
 
         <form onSubmit={handleSubmit} className="space-y-4 p-6">
           <div className="space-y-1">
-            <label className="app-label">Nombre</label>
+            <label className="app-label">{t('admin.countries.field_name')}</label>
             <input
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
               className="app-control w-full"
-              placeholder="Ej: Colombia"
+              placeholder={t('admin.countries.field_name_placeholder')}
               autoFocus
               maxLength={120}
             />
           </div>
 
           <div className="space-y-1">
-            <label className="app-label">Código</label>
+            <label className="app-label">{t('admin.countries.field_code')}</label>
             <input
               type="text"
               value={code}
               onChange={(event) => setCode(event.target.value.toUpperCase())}
               className="app-control w-full"
-              placeholder="Ej: CO"
+              placeholder={t('admin.countries.field_code_placeholder')}
               maxLength={3}
             />
           </div>
@@ -78,10 +80,10 @@ export default function CountryEditModal({ country, saving, onSubmit, onClose }:
               className="app-btn-primary"
               disabled={saving || name.trim().length < 2 || code.trim().length < 2}
             >
-              {saving ? 'Guardando...' : 'Guardar cambios'}
+              {saving ? t('common.saving') : t('common.save')}
             </button>
             <button type="button" className="app-btn-secondary" onClick={onClose}>
-              Cancelar
+              {t('common.cancel')}
             </button>
           </div>
         </form>

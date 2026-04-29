@@ -1,4 +1,5 @@
 import type { Dispatch, FormEvent, SetStateAction } from 'react'
+import { useTranslation } from 'react-i18next'
 import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
 import Select from '@/components/ui/Select'
@@ -50,7 +51,8 @@ export default function TransactionFormCard({
   onSubmit,
   onReset,
 }: TransactionFormCardProps) {
-  const submitLabel = saving ? 'Guardando...' : 'Guardar movimiento'
+  const { t } = useTranslation()
+  const submitLabel = saving ? t('transactions.submitting') : t('transactions.submit')
   const isEditing = editingId != null
   // Visual treatment changes between create and edit to reduce user mistakes.
   const formAccentClass = isEditing
@@ -74,10 +76,10 @@ export default function TransactionFormCard({
             </div>
             <div className="space-y-1">
               <h2 className={`app-section-title ${modeTitleClass}`}>
-                {isEditing ? 'Editar movimiento' : 'Registrar movimiento'}
+                {isEditing ? t('transactions.form_edit_title') : t('transactions.form_register_title')}
               </h2>
               <p className="text-sm text-neutral-700">
-                {isEditing ? 'Estas actualizando un movimiento existente.' : 'Completa los datos para registrar un nuevo movimiento.'}
+                {isEditing ? t('transactions.form_edit_desc') : t('transactions.form_register_desc')}
               </p>
             </div>
           </div>
@@ -85,19 +87,19 @@ export default function TransactionFormCard({
       </div>
 
       <div className="space-y-1">
-        <label className="app-label">Descripcion</label>
+        <label className="app-label">{t('transactions.field_description')}</label>
         <input
           type="text"
           value={form.description}
           onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
           className="app-control w-full"
-          placeholder="Ej: Supermercado, salario, gasolina"
+          placeholder={t('transactions.field_description_placeholder')}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
-          <label className="app-label">Tipo</label>
+          <label className="app-label">{t('transactions.field_type')}</label>
           <Select
             value={form.transactionType}
             onChange={(value) => setForm((current) => ({
@@ -107,16 +109,16 @@ export default function TransactionFormCard({
               categoryId: 'none',
             }))}
             options={[
-              { value: '', label: 'Selecciona un tipo' },
-              { value: 'EXPENSE', label: 'Gasto' },
-              { value: 'INCOME', label: 'Ingreso' },
+              { value: '', label: t('transactions.select_type') },
+              { value: 'EXPENSE', label: t('transactions.type_expense') },
+              { value: 'INCOME', label: t('transactions.type_income') },
             ]}
             className="w-full"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="app-label">Monto</label>
+          <label className="app-label">{t('transactions.field_amount')}</label>
           <AmountInput
             value={form.amount}
             onChange={(raw) => setForm((current) => ({ ...current, amount: raw }))}
@@ -128,12 +130,12 @@ export default function TransactionFormCard({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
-          <label className="app-label">Cuenta</label>
+          <label className="app-label">{t('transactions.field_account')}</label>
           <Select
             value={form.accountId}
             onChange={(value) => setForm((current) => ({ ...current, accountId: value }))}
             options={[
-              { value: '', label: 'Selecciona una cuenta' },
+              { value: '', label: t('transactions.select_account') },
               ...accounts.map((account) => ({ value: String(account.id), label: `${account.name} (${account.currency})` })),
             ]}
             className="w-full"
@@ -142,12 +144,12 @@ export default function TransactionFormCard({
         </div>
 
         <div className="space-y-1">
-          <label className="app-label">Categoria</label>
+          <label className="app-label">{t('transactions.field_category')}</label>
           <Select
             value={form.categoryId}
             onChange={(value) => setForm((current) => ({ ...current, categoryId: value }))}
             options={[
-              { value: 'none', label: 'Sin categoria' },
+              { value: 'none', label: t('transactions.no_category') },
               ...categoryOptions.map((category) => ({ value: String(category.id), label: category.name })),
             ]}
             className="w-full"
@@ -157,14 +159,14 @@ export default function TransactionFormCard({
 
       <div className="grid grid-cols-2 gap-4">
         <DatePicker
-          label="Fecha"
+          label={t('transactions.field_date')}
           value={form.occurredDate}
           onChange={(value) => setForm((current) => ({ ...current, occurredDate: value }))}
           max={maxDate}
           className="w-full"
         />
         <TimePicker
-          label="Hora"
+          label={t('transactions.field_time')}
           value={form.occurredTime}
           onChange={(value) => setForm((current) => ({ ...current, occurredTime: value }))}
           className="w-full"
@@ -176,7 +178,7 @@ export default function TransactionFormCard({
           {submitLabel}
         </button>
         <button type="button" className="app-btn-secondary order-last sm:order-none" onClick={onReset}>
-          Cancelar
+          {t('common.cancel')}
         </button>
       </div>
     </form>

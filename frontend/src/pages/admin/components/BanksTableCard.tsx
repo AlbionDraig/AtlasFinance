@@ -3,6 +3,7 @@ import DeleteButton from '@/components/ui/DeleteButton'
 import EditButton from '@/components/ui/EditButton'
 import Pagination from '@/components/ui/Pagination'
 import Tooltip from '@/components/ui/Tooltip'
+import { useTranslation } from 'react-i18next'
 import type { Bank } from '@/api/banks'
 
 interface BanksTableCardProps {
@@ -34,6 +35,7 @@ export default function BanksTableCard({
   onEdit,
   onDelete,
 }: BanksTableCardProps) {
+  const { t } = useTranslation()
   const countryCounts = filteredBanks.reduce<Record<string, number>>((accumulator, bank) => {
     const countryCode = bank.country_code.trim().toUpperCase()
     accumulator[countryCode] = (accumulator[countryCode] ?? 0) + 1
@@ -44,14 +46,14 @@ export default function BanksTableCard({
     {
       key: 'count',
       variant: 'neutral' as const,
-      label: `${filteredBanks.length} bancos`,
-      help: 'Total de bancos que cumplen los filtros actuales.',
+      label: t('admin.banks.metric_total', { count: filteredBanks.length }),
+      help: t('admin.banks.metric_total_help'),
     },
     {
       key: 'countries',
       variant: 'positive' as const,
-      label: `${uniqueCountries} países`,
-      help: 'Cantidad de códigos de país representados en los resultados filtrados.',
+      label: t('admin.banks.metric_countries', { count: uniqueCountries }),
+      help: t('admin.banks.metric_countries_help'),
     },
   ]
 
@@ -65,9 +67,9 @@ export default function BanksTableCard({
             </svg>
           </div>
           <div>
-            <h2 className="text-sm font-medium text-neutral-900">Historial de bancos</h2>
+            <h2 className="text-sm font-medium text-neutral-900">{t('admin.banks.table_title')}</h2>
             <p className="text-xs text-neutral-400">
-              {filteredBanks.length ? `${startIndex + 1}-${endIndex} de ${filteredBanks.length} bancos` : 'Sin resultados'}
+              {filteredBanks.length ? `${startIndex + 1}-${endIndex} de ${filteredBanks.length} ${t('admin.banks.metric_total', { count: filteredBanks.length })}` : t('common.no_results')}
             </p>
           </div>
         </div>
@@ -89,8 +91,8 @@ export default function BanksTableCard({
             </svg>
           </div>
           <div>
-            <p className="text-sm font-medium text-neutral-900">No hay bancos</p>
-            <p className="mt-1 text-xs text-neutral-400">Ajusta los filtros o crea un nuevo banco.</p>
+            <p className="text-sm font-medium text-neutral-900">{t('admin.banks.table_empty_title')}</p>
+            <p className="mt-1 text-xs text-neutral-400">{t('admin.banks.table_empty_desc')}</p>
           </div>
         </div>
       ) : (
@@ -103,9 +105,9 @@ export default function BanksTableCard({
             </colgroup>
             <thead>
               <tr>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Banco</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Código país</th>
-                <th className="border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Acciones</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('common.bank')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('common.country_code')}</th>
+                <th className="border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>

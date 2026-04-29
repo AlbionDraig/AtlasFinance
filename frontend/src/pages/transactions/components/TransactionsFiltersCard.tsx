@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react'
+import { useTranslation } from 'react-i18next'
 import DatePicker from '@/components/ui/DatePicker'
 import Select from '@/components/ui/Select'
 import FilterCard from '@/components/ui/FilterCard'
@@ -25,28 +26,29 @@ export default function TransactionsFiltersCard({
   derivedRange,
   onResetFilters,
 }: TransactionsFiltersCardProps) {
+  const { t } = useTranslation()
   return (
     <FilterCard sticky activeFilters={activeFilters} onReset={onResetFilters}>
       {/* Buscar */}
       <div className="flex flex-col gap-1 flex-1 min-w-[160px]">
-        <label className="app-label">Buscar</label>
+        <label className="app-label">{t('common.search')}</label>
         <SearchInput
           value={filters.query}
           onChange={(value) => setFilters((current) => ({ ...current, query: value }))}
-          placeholder="Descripcion, cuenta o categoria"
+          placeholder={t('transactions.filter_search_placeholder')}
         />
       </div>
 
       {/* Tipo */}
       <div className="flex flex-col gap-1 w-36">
-        <label className="app-label">Tipo</label>
+        <label className="app-label">{t('common.type')}</label>
         <Select
           value={filters.transactionType}
           onChange={(value) => setFilters((current) => ({ ...current, transactionType: value as FiltersState['transactionType'] }))}
           options={[
-            { value: 'all', label: 'Todos' },
-            { value: 'INCOME', label: 'Ingresos' },
-            { value: 'EXPENSE', label: 'Gastos' },
+            { value: 'all', label: t('transactions.filter_type_all') },
+            { value: 'INCOME', label: t('transactions.filter_type_income') },
+            { value: 'EXPENSE', label: t('transactions.filter_type_expense') },
           ]}
           className="w-full"
           active={filters.transactionType !== 'all'}
@@ -55,12 +57,12 @@ export default function TransactionsFiltersCard({
 
       {/* Moneda */}
       <div className="flex flex-col gap-1 w-28">
-        <label className="app-label">Moneda</label>
+        <label className="app-label">{t('common.currency')}</label>
         <Select
           value={filters.currency}
           onChange={(value) => setFilters((current) => ({ ...current, currency: value as FiltersState['currency'] }))}
           options={[
-            { value: 'all', label: 'Todas' },
+            { value: 'all', label: t('common.allFem') },
             { value: 'COP', label: 'COP' },
             { value: 'USD', label: 'USD' },
           ]}
@@ -71,12 +73,12 @@ export default function TransactionsFiltersCard({
 
       {/* Cuenta */}
       <div className="flex flex-col gap-1 w-44">
-        <label className="app-label">Cuenta</label>
+        <label className="app-label">{t('common.bank')}</label>
         <Select
           value={filters.accountId}
           onChange={(value) => setFilters((current) => ({ ...current, accountId: value }))}
           options={[
-            { value: 'all', label: 'Todas' },
+            { value: 'all', label: t('transactions.filter_account_all') },
             ...accounts.map((account) => ({ value: String(account.id), label: account.name })),
           ]}
           className="w-full"
@@ -86,17 +88,17 @@ export default function TransactionsFiltersCard({
 
       {/* Periodo */}
       <div className="flex flex-col gap-1 w-44">
-        <label className="app-label">Periodo</label>
+        <label className="app-label">{t('transactions.filter_period_label')}</label>
         <Select
           value={filters.period}
           onChange={(value) => setFilters((current) => ({ ...current, period: value as PeriodFilter }))}
           options={[
-            { value: 'today', label: 'Hoy' },
-            { value: '7d', label: 'Ultimos 7 dias' },
-            { value: '30d', label: 'Ultimos 30 dias' },
-            { value: 'month', label: 'Mes actual' },
-            { value: 'custom', label: 'Personalizado' },
-            { value: 'all', label: 'Todos' },
+            { value: 'today', label: t('transactions.filter_period_today') },
+            { value: '7d', label: t('transactions.filter_period_7d') },
+            { value: '30d', label: t('transactions.filter_period_30d') },
+            { value: 'month', label: t('transactions.filter_period_month') },
+            { value: 'custom', label: t('transactions.filter_period_custom') },
+            { value: 'all', label: t('transactions.filter_period_all') },
           ]}
           active={filters.period !== 'all'}
           className="w-full"
@@ -108,14 +110,14 @@ export default function TransactionsFiltersCard({
         <>
           {/* Keep custom range bounded by dataset limits and from<=to constraints. */}
           <DatePicker
-            label="Desde"
+            label={t('common.from')}
             value={derivedRange.from || datasetRange.min}
             onChange={(value) => setFilters((current) => ({ ...current, from: value }))}
             min={datasetRange.min}
             max={derivedRange.to || datasetRange.max}
           />
           <DatePicker
-            label="Hasta"
+            label={t('common.until')}
             value={derivedRange.to || datasetRange.max}
             onChange={(value) => setFilters((current) => ({ ...current, to: value }))}
             min={derivedRange.from || datasetRange.min}

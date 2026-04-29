@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '@/components/ui/Modal'
 import FormField from '@/components/ui/FormField'
 
@@ -17,13 +18,14 @@ interface CategoryModalProps {
 }
 
 export default function CategoryModal({ initial, loading, title, onSubmit, onClose }: CategoryModalProps) {
+  const { t } = useTranslation()
   const [form, setForm] = useState<FormState>(initial)
   const [error, setError] = useState<string | null>(null)
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!form.name.trim()) {
-      setError('El nombre es obligatorio.')
+      setError(t('categories.field_name_error'))
       return
     }
     setError(null)
@@ -39,7 +41,7 @@ export default function CategoryModal({ initial, loading, title, onSubmit, onClo
             type="button"
             onClick={onClose}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-            aria-label="Cerrar"
+            aria-label={t('common.close')}
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -48,25 +50,25 @@ export default function CategoryModal({ initial, loading, title, onSubmit, onClo
         </div>
 
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
-          <FormField label="Nombre" error={error}>
+          <FormField label={t('categories.field_name')} error={error}>
             <input
               className="app-control"
               type="text"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Ej: Servicios publicos"
+              placeholder={t('categories.field_name_placeholder')}
               maxLength={120}
               autoFocus
             />
           </FormField>
 
-          <FormField label="¿Cuando usarla? (opcional)">
+          <FormField label={t('categories.field_description_label')}>
             <textarea
               className="app-control h-auto py-2 resize-none"
               rows={2}
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder="Ej: pagos mensuales, recibos, facturas fijas..."
+              placeholder={t('categories.field_description_placeholder')}
               maxLength={300}
             />
           </FormField>
@@ -86,8 +88,8 @@ export default function CategoryModal({ initial, loading, title, onSubmit, onClo
                 }`}
               />
             </div>
-            <span className="text-sm text-neutral-700">Gasto fijo</span>
-            <span className="text-xs text-neutral-400">(arriendo, servicios, suscripciones...)</span>
+            <span className="text-sm text-neutral-700">{t('categories.toggle_fixed')}</span>
+            <span className="text-xs text-neutral-400">{t('categories.toggle_fixed_hint')}</span>
           </label>
 
           <div className="flex justify-end gap-2 pt-1">
@@ -96,14 +98,14 @@ export default function CategoryModal({ initial, loading, title, onSubmit, onClo
               disabled={loading}
               className="px-4 py-2 text-sm rounded-lg bg-brand text-white hover:bg-brand-hover disabled:opacity-50 transition-colors"
             >
-              {loading ? 'Guardando...' : 'Guardar'}
+              {loading ? t('categories.submitting') : t('categories.submit_save')}
             </button>
             <button
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-sm rounded-lg border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand transition-colors"
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
           </div>
         </form>

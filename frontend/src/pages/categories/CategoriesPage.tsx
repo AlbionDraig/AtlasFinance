@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { categoriesApi, type Category, type CategoryPayload } from '@/api/categories'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -11,6 +12,7 @@ import CategoryGroup from './components/CategoryGroup'
 const EMPTY_FORM: FormState = { name: '', is_fixed: false, description: '' }
 
 export default function CategoriesPage({ embedded = false }: { embedded?: boolean }) {
+  const { t } = useTranslation()
   const { toast } = useToast()
 
   const [categories, setCategories] = useState<Category[]>([])
@@ -26,7 +28,7 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
     categoriesApi
       .list()
       .then((r) => setCategories(r.data))
-      .catch(() => toast('No se pudieron cargar las categorias.', 'error'))
+      .catch(() => toast(t('categories.toast_load_error'), 'error'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -37,9 +39,9 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
       const r = await categoriesApi.create(payload)
       setCategories((prev) => [r.data, ...prev])
       setShowCreate(false)
-      toast('Categoria creada.', 'success')
+      toast(t('categories.toast_created'), 'success')
     } catch {
-      toast('No se pudo crear la categoria.', 'error')
+      toast(t('categories.toast_create_error'), 'error')
     } finally {
       setSaving(false)
     }
@@ -53,9 +55,9 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
       const r = await categoriesApi.update(editing.id, payload)
       setCategories((prev) => prev.map((c) => (c.id === editing.id ? r.data : c)))
       setEditing(null)
-      toast('Categoria actualizada.', 'success')
+      toast(t('categories.toast_updated'), 'success')
     } catch {
-      toast('No se pudo actualizar la categoria.', 'error')
+      toast(t('categories.toast_update_error'), 'error')
     } finally {
       setSaving(false)
     }
@@ -68,9 +70,9 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
       await categoriesApi.delete(deleting.id)
       setCategories((prev) => prev.filter((c) => c.id !== deleting.id))
       setDeleting(null)
-      toast('Categoria eliminada.', 'success')
+      toast(t('categories.toast_deleted'), 'success')
     } catch {
-      toast('No se pudo eliminar la categoria.', 'error')
+      toast(t('categories.toast_delete_error'), 'error')
     } finally {
       setSaving(false)
     }
@@ -88,7 +90,7 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
 
   const activeFilters = useMemo(() => {
     const q = query.trim()
-    return q ? [`Busqueda: ${q}`] : []
+    return q ? [t('categories.chip_search', { value: q })] : []
   }, [query])
 
   const fixed = filtered.filter((c) => c.is_fixed)
@@ -97,7 +99,7 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
   if (loading) {
     return (
       <div className="app-panel p-6 flex min-h-72 items-center justify-center">
-        <LoadingSpinner text="Cargando categorias..." />
+        <LoadingSpinner text={t('categories.loading')} />
       </div>
     )
   }
@@ -106,8 +108,8 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
     <>
       <FilterCard sticky activeFilters={activeFilters}>
         <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
-          <label className="app-label">Buscar</label>
-          <SearchInput value={query} onChange={setQuery} placeholder="Buscar por nombre de categoria..." />
+          <label className="app-label">{t('common.search')}</label>
+          <SearchInput value={query} onChange={setQuery} placeholder={t('categories.search_placeholder')} />
         </div>
       </FilterCard>
 
@@ -118,22 +120,22 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
               <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M11 7h6M7 12h.01M11 12h6M7 17h.01M11 17h6" />
             </svg>
           </div>
-          <p className="text-sm text-neutral-700">No tienes categorias todavia.</p>
-          <p className="text-xs text-neutral-400">Crea tu primera categoria usando el boton de abajo.</p>
+          <p className="text-sm text-neutral-700">{t('categories.empty_title')}</p>
+          <p className="text-xs text-neutral-400">{t('categories.empty_desc')}</p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="app-card flex flex-col items-center gap-3 p-10">
           <svg className="h-8 w-8 text-neutral-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
           </svg>
-          <p className="text-sm text-neutral-700">Sin resultados para <span className="font-medium">"{query}"</span></p>
-          <button type="button" onClick={() => setQuery('')} className="text-xs text-brand hover:underline">Limpiar busqueda</button>
+          <p className="text-sm text-neutral-700">{t('categories.empty_search_title', { query })}</p>
+          <button type="button" onClick={() => setQuery('')} className="text-xs text-brand hover:underline">{t('categories.empty_search_clear')}</button>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-6">
           <CategoryGroup
-            title="Gastos fijos"
-            subtitle="Montos constantes mes a mes"
+            title={t('categories.group_fixed_title')}
+            subtitle={t('categories.group_fixed_subtitle')}
             accentClass="border-t-brand"
             headerBg="[background:var(--af-accent-soft)]"
             titleColor="[color:var(--af-accent-soft-text)]"
@@ -148,8 +150,8 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
             onDelete={setDeleting}
           />
           <CategoryGroup
-            title="Variables / Ingresos"
-            subtitle="Gastos fluctuantes e ingresos"
+            title={t('categories.group_variable_title')}
+            subtitle={t('categories.group_variable_subtitle')}
             accentClass="border-t-success"
             headerBg="[background:var(--af-positive-soft)]"
             titleColor="[color:var(--af-positive-soft-text)]"
@@ -168,7 +170,7 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
 
       {showCreate && (
         <CategoryModal
-          title="Nueva categoria"
+          title={t('categories.create_title')}
           initial={EMPTY_FORM}
           loading={saving}
           onSubmit={handleCreate}
@@ -178,7 +180,7 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
 
       {editing && (
         <CategoryModal
-          title="Editar categoria"
+          title={t('categories.edit_title')}
           initial={{ name: editing.name, is_fixed: editing.is_fixed, description: editing.description ?? '' }}
           loading={saving}
           onSubmit={handleUpdate}
@@ -188,8 +190,8 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
 
       {deleting && (
         <ConfirmDeleteModal
-          title="Eliminar categoria"
-          description={`¿Eliminar "${deleting.name}"? Las transacciones asociadas quedaran sin categoria.`}
+          title={t('categories.delete_title')}
+          description={t('categories.delete_desc', { name: deleting.name })}
           loading={saving}
           onConfirm={handleDelete}
           onClose={() => setDeleting(null)}
@@ -205,7 +207,7 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
-          Nueva categoria
+          {t('categories.fab_create')}
         </button>
       )}
     </>

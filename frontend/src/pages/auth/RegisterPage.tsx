@@ -1,5 +1,6 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { authApi } from '@/api/auth'
 import AuthLoadingOverlay from '@/components/ui/AuthLoadingOverlay'
 import FormField from '@/components/ui/FormField'
@@ -11,6 +12,7 @@ export default function RegisterPage() {
   const navigate = useNavigate()
   const { setUser } = useAuthStore()
   const { toast } = useToast()
+  const { t } = useTranslation()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -23,17 +25,17 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (fullName.trim().length < 2) {
-      toast('El nombre completo debe tener al menos 2 caracteres.', 'error')
+      toast(t('auth.register.error_name_short'), 'error')
       return
     }
 
     if (password.length < 8) {
-      toast('La contraseña debe tener al menos 8 caracteres.', 'error')
+      toast(t('auth.register.error_password_short'), 'error')
       return
     }
 
     if (password !== confirmPassword) {
-      toast('Las contraseñas no coinciden.', 'error')
+      toast(t('auth.register.error_passwords_mismatch'), 'error')
       return
     }
 
@@ -66,15 +68,15 @@ export default function RegisterPage() {
             : undefined
 
       if (status === 409 || (typeof detail === 'string' && detail.toLowerCase().includes('already'))) {
-        toast('Ya existe una cuenta con ese correo. Inicia sesión o usa otro email.', 'error')
+        toast(t('auth.register.error_email_taken'), 'error')
       } else if (status === 422) {
-        toast('Algunos datos no son válidos. Revisa el formulario e intenta de nuevo.', 'error')
+        toast(t('auth.register.error_invalid_data'), 'error')
       } else if (status && status >= 500) {
-        toast('El servidor no respondió. Intenta de nuevo en unos segundos.', 'error')
+        toast(t('auth.register.error_server'), 'error')
       } else if (!status) {
-        toast('No se pudo conectar con el servidor. Revisa tu conexión.', 'error')
+        toast(t('auth.register.error_network'), 'error')
       } else {
-        toast(detail ?? 'No se pudo crear la cuenta. Intenta de nuevo.', 'error')
+        toast(detail ?? t('auth.register.error_generic'), 'error')
       }
     } finally {
       setLoading(false)
@@ -89,8 +91,8 @@ export default function RegisterPage() {
 
       {loading && (
         <AuthLoadingOverlay
-          title="Configurando tu cuenta"
-          subtitle="Creando usuario e iniciando sesión..."
+          title={t('auth.register.loading_title')}
+          subtitle={t('auth.register.loading_subtitle')}
         />
       )}
 
@@ -105,34 +107,34 @@ export default function RegisterPage() {
         </div>
 
         <h1 className="app-title text-2xl text-center mb-1 tracking-tight">
-          Atlas Finance
+          {t('common.atlasFinance')}
         </h1>
         <p className="app-subtitle text-sm text-center mb-6">
-          Crea tu cuenta
+          {t('auth.register.subtitle')}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <FormField
-            label="Nombre completo"
+            label={t('auth.register.fullname_label')}
             type="text"
             required
             autoComplete="name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            placeholder="Ej: Sebastian Gutierrez Betancourt"
+            placeholder={t('auth.register.fullname_placeholder')}
           />
 
           <FormField
-            label="Email"
+            label={t('auth.register.email_label')}
             type="email"
             required
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu_correo@ejemplo.com"
+            placeholder={t('auth.register.email_placeholder')}
           />
 
-          <FormField label="Contraseña">
+          <FormField label={t('auth.register.password_label')}>
             <input
               type="password"
               required
@@ -140,14 +142,14 @@ export default function RegisterPage() {
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mínimo 8 caracteres"
+              placeholder={t('auth.register.password_placeholder')}
               className="app-control"
             />
 
             <div className="mt-2">
               <div className="flex items-center justify-between text-xs app-subtitle mb-1">
-                <span>Fortaleza de contraseña</span>
-                <span className="font-medium">{password ? strength.label : 'Sin definir'}</span>
+                <span>{t('auth.register.password_strength')}</span>
+                <span className="font-medium">{password ? strength.label : t('auth.register.password_undefined')}</span>
               </div>
               <div className="h-1.5 w-full bg-[var(--af-bg-soft)] rounded-full overflow-hidden">
                 <div
@@ -159,23 +161,23 @@ export default function RegisterPage() {
 
             <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs">
               <li className={checks.minLength ? 'tone-positive' : 'app-subtitle'}>
-                {checks.minLength ? '✓' : '•'} Mínimo 8 caracteres
+                {checks.minLength ? 'âœ“' : 'â€¢'} {t('auth.register.req_length')}
               </li>
               <li className={checks.hasUpper ? 'tone-positive' : 'app-subtitle'}>
-                {checks.hasUpper ? '✓' : '•'} Al menos una mayúscula
+                {checks.hasUpper ? 'âœ“' : 'â€¢'} {t('auth.register.req_uppercase')}
               </li>
               <li className={checks.hasNumber ? 'tone-positive' : 'app-subtitle'}>
-                {checks.hasNumber ? '✓' : '•'} Al menos un número
+                {checks.hasNumber ? 'âœ“' : 'â€¢'} {t('auth.register.req_number')}
               </li>
               <li className={checks.hasSymbol ? 'tone-positive' : 'app-subtitle'}>
-                {checks.hasSymbol ? '✓' : '•'} Al menos un símbolo
+                {checks.hasSymbol ? 'âœ“' : 'â€¢'} {t('auth.register.req_symbol')}
               </li>
             </ul>
           </FormField>
 
           <FormField
-            label="Confirmar contraseña"
-            error={confirmPassword && password !== confirmPassword ? 'Las contraseñas no coinciden.' : undefined}
+            label={t('auth.register.confirm_label')}
+            error={confirmPassword && password !== confirmPassword ? t('auth.register.confirm_error') : undefined}
           >
             <input
               type="password"
@@ -184,7 +186,7 @@ export default function RegisterPage() {
               autoComplete="new-password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Repite tu contraseña"
+              placeholder={t('auth.register.confirm_placeholder')}
               className="app-control"
             />
           </FormField>
@@ -194,13 +196,13 @@ export default function RegisterPage() {
             disabled={loading}
             className="app-btn-primary"
           >
-            {loading ? 'Creando cuenta…' : 'Crear cuenta'}
+            {loading ? t('auth.register.submitting') : t('auth.register.submit')}
           </button>
 
           <p className="text-center text-sm app-subtitle">
-            ¿Ya tienes cuenta?{' '}
+            {t('auth.register.has_account')}{' '}
             <Link to="/login" className="app-link">
-              Inicia sesión
+              {t('auth.register.sign_in')}
             </Link>
           </p>
         </form>

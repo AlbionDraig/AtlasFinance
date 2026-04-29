@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/store/authStore'
 import { authApi } from '@/api/auth'
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
 
 const navItems = [
   {
     to: '/dashboard',
-    label: 'Dashboard',
+    labelKey: 'nav.dashboard',
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 11.5L12 4l9 7.5" />
@@ -16,7 +18,7 @@ const navItems = [
   },
   {
     to: '/transactions',
-    label: 'Movimientos',
+    labelKey: 'nav.transactions',
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M4 12h10M4 17h16" />
@@ -26,7 +28,7 @@ const navItems = [
   },
   {
     to: '/accounts',
-    label: 'Cuentas',
+    labelKey: 'nav.accounts',
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <rect x="3" y="6" width="18" height="12" rx="2" ry="2" />
@@ -36,7 +38,7 @@ const navItems = [
   },
   {
     to: '/pockets',
-    label: 'Bolsillos',
+    labelKey: 'nav.pockets',
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16v9a2 2 0 01-2 2H6a2 2 0 01-2-2V8z" />
@@ -46,7 +48,7 @@ const navItems = [
   },
   {
     to: '/investments',
-    label: 'Inversiones',
+    labelKey: 'nav.investments',
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-4 4 4 4-6 4-4" />
@@ -56,7 +58,7 @@ const navItems = [
   },
   {
     to: '/admin',
-    label: 'Administración',
+    labelKey: 'nav.admin',
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9M10.5 12h9M10.5 18h9" />
@@ -66,7 +68,7 @@ const navItems = [
   },
   {
     to: '/management',
-    label: 'Gestión',
+    labelKey: 'nav.management',
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M4 12h16M4 17h8" />
@@ -79,6 +81,7 @@ const navItems = [
 export default function AppLayout() {
   const { logout, user } = useAuthStore()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -162,12 +165,12 @@ export default function AppLayout() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V17a1 1 0 11-2 0v-.07A7.003 7.003 0 015 10h1a6 6 0 0012 0h1a7.003 7.003 0 01-6 6.93z" />
               </svg>
             </div>
-            {!collapsed && <span className="text-base font-bold tracking-tight text-neutral-50">Atlas Finance</span>}
+            {!collapsed && <span className="text-base font-bold tracking-tight text-neutral-50">{t('common.atlasFinance')}</span>}
           </div>
 
           {/* Nav */}
           <nav className={`${collapsed ? 'px-2' : 'px-3'} flex-1 py-4 space-y-1`}>
-            {navItems.map(({ to, label, icon }) => (
+            {navItems.map(({ to, labelKey, icon }) => (
               <NavLink
                 key={to}
                 to={to}
@@ -178,14 +181,14 @@ export default function AppLayout() {
                       : 'text-neutral-400 hover:text-neutral-50 hover:bg-white/10'
                   }`
                 }
-                title={collapsed ? label : undefined}
+                title={collapsed ? t(labelKey) : undefined}
               >
                 {collapsed
                   ? icon
                   : (
                       <>
                         <span className="mr-2">{icon}</span>
-                        <span>{label}</span>
+                        <span>{t(labelKey)}</span>
                       </>
                     )}
               </NavLink>
@@ -219,7 +222,7 @@ export default function AppLayout() {
             {collapsed && user && (
               <NavLink
                 to="/profile"
-                title="Mi perfil"
+                title={t('nav.myProfile')}
                 className={({ isActive }) =>
                   `flex items-center justify-center h-9 w-9 mx-auto rounded-lg transition-colors ${
                     isActive ? 'bg-brand' : 'text-neutral-400 hover:text-neutral-50 hover:bg-white/10'
@@ -234,7 +237,7 @@ export default function AppLayout() {
             <button
               onClick={handleLogout}
               className={`w-full flex items-center ${collapsed ? 'justify-center h-9 w-9 mx-auto px-0' : 'px-3 py-2'} rounded-lg text-sm font-medium text-neutral-400 hover:text-neutral-50 hover:bg-white/10 transition-colors`}
-              title={collapsed ? 'Cerrar sesión' : undefined}
+              title={collapsed ? t('nav.logout') : undefined}
             >
               {collapsed
                 ? (
@@ -251,10 +254,15 @@ export default function AppLayout() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 12H9" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 19H6a2 2 0 01-2-2V7a2 2 0 012-2h6" />
                       </svg>
-                      <span>Cerrar sesión</span>
+                      <span>{t('nav.logout')}</span>
                     </>
                   )}
             </button>
+            {!collapsed && (
+              <div className="px-3 pt-1">
+                <LanguageSwitcher />
+              </div>
+            )}
           </div>
         </div>
       </aside>

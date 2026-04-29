@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
 import { useToast } from '@/hooks/useToast'
@@ -15,6 +16,7 @@ interface FormState {
 export default function ProfilePage() {
   const { user, setUser } = useAuthStore()
   const { toast } = useToast()
+  const { t } = useTranslation()
 
   const [form, setForm] = useState<FormState>({
     full_name: user?.full_name ?? '',
@@ -44,26 +46,26 @@ export default function ProfilePage() {
     e.preventDefault()
 
     if (form.full_name.trim().length < 2) {
-      toast('El nombre debe tener al menos 2 caracteres.', 'error')
+      toast(t('profile.toast_name_short'), 'error')
       return
     }
     if (!form.email.trim()) {
-      toast('El correo es obligatorio.', 'error')
+      toast(t('profile.toast_email_required'), 'error')
       return
     }
 
     // Password rules are only enforced when user explicitly enables password change.
     if (changingPassword) {
       if (!form.current_password) {
-        toast('Ingresa tu contraseña actual para cambiarla.', 'error')
+        toast(t('profile.toast_current_password_required'), 'error')
         return
       }
       if (form.new_password.length < 8) {
-        toast('La nueva contraseña debe tener al menos 8 caracteres.', 'error')
+        toast(t('profile.toast_new_password_short'), 'error')
         return
       }
       if (form.new_password !== form.confirm_password) {
-        toast('Las contraseñas nuevas no coinciden.', 'error')
+        toast(t('profile.toast_passwords_mismatch'), 'error')
         return
       }
     }
@@ -81,7 +83,7 @@ export default function ProfilePage() {
 
       const res = await authApi.updateProfile(payload)
       setUser(res.data)
-      toast('Perfil actualizado correctamente.', 'success')
+      toast(t('profile.toast_updated'), 'success')
       setForm((f) => ({ ...f, current_password: '', new_password: '', confirm_password: '' }))
       setChangingPassword(false)
     } catch (err: unknown) {
@@ -92,20 +94,20 @@ export default function ProfilePage() {
 
       if (status === 400) {
         if (detail?.includes('already in use') || detail?.includes('already registered')) {
-          toast('Ese correo ya está en uso por otra cuenta.', 'error')
+          toast(t('profile.toast_email_taken'), 'error')
         } else if (detail?.includes('Incorrect current password')) {
-          toast('La contraseña actual es incorrecta.', 'error')
+          toast(t('profile.toast_wrong_password'), 'error')
         } else if (detail?.includes('current_password is required')) {
-          toast('Debes ingresar tu contraseña actual para cambiarla.', 'error')
+          toast(t('profile.toast_current_password_missing'), 'error')
         } else {
-          toast(detail ?? 'No se pudieron guardar los cambios.', 'error')
+          toast(detail ?? t('profile.toast_save_error'), 'error')
         }
       } else if (status && status >= 500) {
-        toast('El servidor no respondió correctamente. Intenta más tarde.', 'error')
+        toast(t('profile.toast_server_error'), 'error')
       } else if (!status) {
-        toast('No se pudo conectar al servidor.', 'error')
+        toast(t('profile.toast_network_error'), 'error')
       } else {
-        toast('No se pudieron guardar los cambios.', 'error')
+        toast(t('profile.toast_save_error'), 'error')
       }
     } finally {
       setLoading(false)
@@ -122,8 +124,8 @@ export default function ProfilePage() {
 
         {/* Header */}
         <div>
-          <h1 className="text-xl font-medium text-neutral-900">Mi perfil</h1>
-          <p className="text-sm text-neutral-700 mt-0.5">Gestiona tu información personal y contraseña.</p>
+          <h1 className="text-xl font-medium text-neutral-900">{t('profile.title')}</h1>
+          <p className="text-sm text-neutral-700 mt-0.5">{t('profile.subtitle')}</p>
         </div>
 
         {/* Avatar banner */}
@@ -146,14 +148,14 @@ export default function ProfilePage() {
 
           {/* Sección: Información personal */}
           <div className="px-6 pt-5 pb-1">
-            <p className="text-xs font-medium tracking-widest uppercase text-neutral-700">Información personal</p>
+            <p className="text-xs font-medium tracking-widest uppercase text-neutral-700">{t('profile.section_personal')}</p>
           </div>
 
           <div className="px-6 pb-6 space-y-4 mt-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {/* Nombre */}
               <div className="flex flex-col gap-1 sm:col-span-2">
-                <label htmlFor="full_name" className="app-label">Nombre completo</label>
+                <label htmlFor="full_name" className="app-label">{t('profile.field_fullname')}</label>
                 <input
                   id="full_name"
                   name="full_name"
@@ -167,7 +169,7 @@ export default function ProfilePage() {
 
               {/* Correo */}
               <div className="flex flex-col gap-1 sm:col-span-2">
-                <label htmlFor="email" className="app-label">Correo electrónico</label>
+                <label htmlFor="email" className="app-label">{t('profile.field_email')}</label>
                 <input
                   id="email"
                   name="email"
@@ -186,25 +188,25 @@ export default function ProfilePage() {
 
           {/* Sección: Contraseña */}
           <div className="px-6 pt-5 pb-1">
-            <p className="text-xs font-medium tracking-widest uppercase text-neutral-700">Contraseña</p>
+            <p className="text-xs font-medium tracking-widest uppercase text-neutral-700">{t('profile.section_password')}</p>
           </div>
 
           <div className="px-6 pb-6 mt-4 space-y-4">
             {!changingPassword ? (
               <div className="flex items-center justify-between py-2.5 px-4 bg-neutral-50 rounded-lg border border-neutral-100">
-                <span className="text-sm text-neutral-400 tracking-widest">••••••••••••</span>
+                <span className="text-sm text-neutral-400 tracking-widest">{t('profile.password_masked')}</span>
                 <button
                   type="button"
                   onClick={() => setChangingPassword(true)}
                   className="text-xs font-medium text-neutral-700 border border-neutral-100 bg-white hover:border-neutral-400 hover:text-neutral-900 rounded-md px-3 py-1 transition-colors"
                 >
-                  Cambiar
+                  {t('profile.password_change_btn')}
                 </button>
               </div>
             ) : (
               <>
                 <div className="flex flex-col gap-1">
-                  <label htmlFor="current_password" className="app-label">Contraseña actual</label>
+                  <label htmlFor="current_password" className="app-label">{t('profile.field_current_password')}</label>
                   <input
                     id="current_password"
                     name="current_password"
@@ -216,7 +218,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label htmlFor="new_password" className="app-label">Nueva contraseña</label>
+                  <label htmlFor="new_password" className="app-label">{t('profile.field_new_password')}</label>
                   <input
                     id="new_password"
                     name="new_password"
@@ -228,9 +230,9 @@ export default function ProfilePage() {
                   />
                   <div className="mt-2">
                     <div className="flex items-center justify-between text-xs text-neutral-400 mb-1">
-                      <span>Fortaleza de contraseña</span>
+                      <span>{t('profile.password_strength')}</span>
                       <span className="font-medium" style={{ color: form.new_password ? pwStrength.color : undefined }}>
-                        {form.new_password ? pwStrength.label : 'Sin definir'}
+                        {form.new_password ? pwStrength.label : t('profile.password_undefined')}
                       </span>
                     </div>
                     <div className="h-1.5 w-full bg-neutral-100 rounded-full overflow-hidden">
@@ -241,22 +243,22 @@ export default function ProfilePage() {
                     </div>
                     <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs">
                       <li className={pwChecks.minLength ? 'text-success' : 'text-neutral-400'}>
-                        {pwChecks.minLength ? '✓' : '•'} Mínimo 8 caracteres
+                        {pwChecks.minLength ? '✓' : '•'} {t('profile.req_length')}
                       </li>
                       <li className={pwChecks.hasUpper ? 'text-success' : 'text-neutral-400'}>
-                        {pwChecks.hasUpper ? '✓' : '•'} Al menos una mayúscula
+                        {pwChecks.hasUpper ? '✓' : '•'} {t('profile.req_uppercase')}
                       </li>
                       <li className={pwChecks.hasNumber ? 'text-success' : 'text-neutral-400'}>
-                        {pwChecks.hasNumber ? '✓' : '•'} Al menos un número
+                        {pwChecks.hasNumber ? '✓' : '•'} {t('profile.req_number')}
                       </li>
                       <li className={pwChecks.hasSymbol ? 'text-success' : 'text-neutral-400'}>
-                        {pwChecks.hasSymbol ? '✓' : '•'} Al menos un símbolo
+                        {pwChecks.hasSymbol ? '✓' : '•'} {t('profile.req_symbol')}
                       </li>
                     </ul>
                   </div>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label htmlFor="confirm_password" className="app-label">Confirmar nueva contraseña</label>
+                  <label htmlFor="confirm_password" className="app-label">{t('profile.field_confirm_password')}</label>
                   <input
                     id="confirm_password"
                     name="confirm_password"
@@ -268,7 +270,7 @@ export default function ProfilePage() {
                   />
                   {form.confirm_password.length > 0 && (
                     <p className={`text-xs mt-1 ${confirmMatch ? 'text-success' : 'text-neutral-400'}`}>
-                      {confirmMatch ? '✓ Las contraseñas coinciden' : '• Las contraseñas no coinciden'}
+                      {confirmMatch ? t('profile.confirm_match') : t('profile.confirm_mismatch')}
                     </p>
                   )}
                 </div>
@@ -283,7 +285,7 @@ export default function ProfilePage() {
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  Cancelar cambio de contraseña
+                  {t('profile.cancel_password_change')}
                 </button>
               </>
             )}
@@ -296,7 +298,7 @@ export default function ProfilePage() {
               disabled={loading}
               className="bg-brand hover:bg-brand-hover text-white text-sm font-medium px-6 py-2 rounded-lg transition-colors disabled:opacity-60 disabled:pointer-events-none"
             >
-              {loading ? 'Guardando…' : 'Guardar cambios'}
+              {loading ? t('profile.submitting') : t('profile.submit')}
             </button>
           </div>
         </form>
