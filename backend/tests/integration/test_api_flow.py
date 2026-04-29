@@ -23,9 +23,7 @@ def _auth_headers(client, email: str = "api@test.com"):
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_api_main_flow(client, monkeypatch):
-    monkeypatch.setattr("app.services.finance_service.convert_currency", lambda amount, _f, _t: amount)
-
+def test_api_main_flow(client):
     # End-to-end smoke path: auth, setup catalog, transactions lifecycle and metrics.
     headers = _auth_headers(client)
 

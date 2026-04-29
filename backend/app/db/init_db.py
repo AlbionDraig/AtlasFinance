@@ -47,22 +47,26 @@ def _migrate_categories_to_global() -> None:
                 )
                 """
             )
-            connection.exec_driver_sql(
-                """
-                INSERT INTO categories__tmp (id, name, description, is_fixed, category_type, created_at)
-                SELECT id, name, description, COALESCE(is_fixed, 0),
-                       CASE
-                           WHEN EXISTS (
-                               SELECT 1
-                               FROM pragma_table_info('categories')
-                               WHERE name = 'category_type'
-                           ) THEN COALESCE(category_type, 'any')
-                           ELSE 'any'
-                       END,
-                       created_at
-                FROM categories
-                """
-            )
+            if has_category_type:
+                connection.exec_driver_sql(
+                    """
+                    INSERT INTO categories__tmp (id, name, description, is_fixed, category_type, created_at)
+                    SELECT id, name, description, COALESCE(is_fixed, 0),
+                           COALESCE(category_type, 'any'),
+                           created_at
+                    FROM categories
+                    """
+                )
+            else:
+                connection.exec_driver_sql(
+                    """
+                    INSERT INTO categories__tmp (id, name, description, is_fixed, category_type, created_at)
+                    SELECT id, name, description, COALESCE(is_fixed, 0),
+                           'any',
+                           created_at
+                    FROM categories
+                    """
+                )
             connection.exec_driver_sql("DROP TABLE categories")
             connection.exec_driver_sql("ALTER TABLE categories__tmp RENAME TO categories")
             connection.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_categories_id ON categories (id)")
