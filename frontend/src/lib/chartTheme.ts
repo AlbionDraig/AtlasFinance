@@ -51,12 +51,12 @@ export const INSTRUMENT_PROGRESS_COLORS: Record<string, string> = {
 // CSS-var fill colors for recharts cells — one per instrument type
 export const INSTRUMENT_FILL_COLORS: Record<string, string> = {
   Acciones: 'var(--af-accent)',
-  Fondos:   'var(--af-positive)',
-  Bonos:    'var(--af-warning)',
-  CDT:      'var(--af-text-soft)',
+  Fondos:   'var(--af-accent-soft-text)',
+  Bonos:    'var(--af-accent-hover)',
+  CDT:      'var(--af-accent-soft-text)',
   ETF:      'var(--af-accent-deep)',
-  Cripto:   '#8a5200',
-  Otro:     'var(--af-text-muted)',
+  Cripto:   'var(--af-accent-hover)',
+  Otro:     'var(--af-accent-deep)',
 }
 
 export const CHART_TOOLTIP_STYLE = {

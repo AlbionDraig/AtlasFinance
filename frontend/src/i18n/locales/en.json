@@ -268,7 +268,7 @@
     "inv_insight_diversification_sub": "{{entities}} {{entities_label}} · {{types}} {{types_label}}",
     "inv_dist_empty": "No investments recorded in {{currency}}.",
     "inv_dist_help": "Portfolio breakdown by invested instrument types (Stocks, Bonds, Funds, etc.)",
-    "inv_dist_tooltip_label": "Value",
+    "inv_dist_tooltip_label": "Current value",
     "inv_pos_empty": "No investments recorded in {{currency}}.",
     "inv_pos_help": "Detailed list of all active investments with performance information",
     "inv_col_investment": "Investment",

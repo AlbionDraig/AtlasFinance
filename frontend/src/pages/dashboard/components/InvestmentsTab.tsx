@@ -12,8 +12,8 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/hooks/useToast'
 import {
   INSTRUMENT_COLORS,
-  INSTRUMENT_PROGRESS_COLORS,
   INSTRUMENT_FILL_COLORS,
+  CHART_PALETTE,
   CHART_TOOLTIP_STYLE,
 } from '@/lib/chartTheme'
 import type { Investment } from '@/types'
@@ -505,10 +505,10 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
                       paddingAngle={2}
                       label={false}
                     >
-                      {investmentsByType.map((item) => (
+                      {investmentsByType.map((item, i) => (
                         <Cell
                           key={item.type}
-                          fill={INSTRUMENT_FILL_COLORS[item.type] ?? 'var(--af-text-muted)'}
+                          fill={INSTRUMENT_FILL_COLORS[item.type] ?? CHART_PALETTE[i % CHART_PALETTE.length]}
                         />
                       ))}
                     </Pie>
@@ -528,10 +528,10 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
 
               {/* Progress bars */}
               <div className="space-y-3">
-                {investmentsByType.map((item) => {
+                {investmentsByType.map((item, i) => {
                   const share = totalCurrent > 0 ? (item.value / totalCurrent) * 100 : 0
                   const badge = INSTRUMENT_COLORS[item.type] ?? defaultBadgeStyle
-                  const progressClass = INSTRUMENT_PROGRESS_COLORS[item.type] ?? 'bg-neutral-400'
+                  const barColor = INSTRUMENT_FILL_COLORS[item.type] ?? CHART_PALETTE[i % CHART_PALETTE.length]
                   return (
                     <div key={item.type} className="space-y-1.5">
                       <div className="flex items-center justify-between text-sm">
@@ -544,7 +544,7 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
                         </span>
                       </div>
                       <div className="w-full h-2 rounded-full bg-neutral-100 overflow-hidden">
-                        <div className={`h-full ${progressClass}`} style={{ width: `${share}%` }} />
+                        <div className="h-full rounded-full" style={{ width: `${share}%`, backgroundColor: barColor }} />
                       </div>
                     </div>
                   )

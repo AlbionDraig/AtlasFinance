@@ -270,7 +270,7 @@
     "inv_insight_diversification_sub": "{{entities}} {{entities_label}} · {{types}} {{types_label}}",
     "inv_dist_empty": "No hay inversiones registradas en {{currency}}.",
     "inv_dist_help": "Desagregación del portafolio según tipos de instrumentos invertidos (Acciones, Bonos, Fondos, etc.)",
-    "inv_dist_tooltip_label": "Valor",
+    "inv_dist_tooltip_label": "Valor actual",
     "inv_pos_empty": "No hay inversiones registradas en {{currency}}.",
     "inv_pos_help": "Listado detallado de todas las inversiones activas con su información de rentabilidad y desempeño",
     "inv_col_investment": "Inversión",
