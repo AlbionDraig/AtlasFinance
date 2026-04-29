@@ -6,7 +6,7 @@ import { authApi } from '@/api/auth'
 const navItems = [
   {
     to: '/dashboard',
-    label: 'Resumen financiero',
+    label: 'Dashboard',
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 11.5L12 4l9 7.5" />

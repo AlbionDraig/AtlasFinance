@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line,
 } from 'recharts'
 import { metricsApi } from '@/api/metrics'
+import InvestmentsTab from './components/InvestmentsTab'
 import Select from '@/components/ui/Select'
 import DatePicker from '@/components/ui/DatePicker'
 import FilterCard from '@/components/ui/FilterCard'
@@ -227,11 +229,31 @@ const CHART_OPTIONS = [
 ] as const
 type ChartType = typeof CHART_OPTIONS[number]
 
+type Tab = 'resumen' | 'inversiones'
+
+function normalizeTab(value: string | null): Tab {
+  if (value === 'resumen' || value === 'inversiones') return value
+  return 'resumen'
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const today = new Date()
   const todayStr = toISODate(today)
   const yearStart = `${today.getFullYear()}-01-01`
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState<Tab>(() => normalizeTab(searchParams.get('tab')))
+
+  useEffect(() => {
+    const tabFromUrl = normalizeTab(searchParams.get('tab'))
+    if (tabFromUrl !== activeTab) setActiveTab(tabFromUrl)
+  }, [searchParams])
+
+  function handleTabChange(tab: Tab) {
+    setActiveTab(tab)
+    setSearchParams({ tab })
+  }
 
   const [period, setPeriod] = useState<Period>('Año actual')
   const [currency, setCurrency] = useState('COP')
@@ -353,9 +375,35 @@ export default function DashboardPage() {
 
       {/* Header */}
       <div>
-        <h1 className="app-title text-xl">Resumen financiero</h1>
-        <p className="app-subtitle text-sm mt-0.5">Vista general de tus finanzas en el período elegido</p>
+        <h1 className="app-title text-xl">Dashboard</h1>
+        <p className="app-subtitle text-sm mt-0.5">Vista general de tus finanzas</p>
       </div>
+
+      {/* Tabs */}
+      <div className="app-card p-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => handleTabChange('resumen')}
+            className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'resumen' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
+          >
+            Resumen financiero
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange('inversiones')}
+            className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'inversiones' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
+          >
+            Inversiones
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'inversiones' && (
+        <InvestmentsTab currency={currency} onCurrencyChange={setCurrency} />
+      )}
+
+      {activeTab === 'resumen' && (<>
 
       {/* Filters */}
       <FilterCard sticky>
@@ -599,6 +647,7 @@ export default function DashboardPage() {
           <p className="text-sm">Ajusta el filtro de fechas o importa movimientos.</p>
         </div>
       )}
+      </>)}
     </div>
   )
 }
