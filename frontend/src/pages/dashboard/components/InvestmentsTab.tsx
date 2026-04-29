@@ -5,6 +5,7 @@ import { investmentEntitiesApi } from '@/api/investmentEntities'
 import type { InvestmentEntity } from '@/api/investmentEntities'
 import AppTooltip from '@/components/ui/Tooltip'
 import Select from '@/components/ui/Select'
+import Badge from '@/components/ui/Badge'
 import FilterCard from '@/components/ui/FilterCard'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/hooks/useToast'
@@ -244,14 +245,25 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
 
   return (
     <>
-      <FilterCard sticky>
-        <div className="flex flex-col gap-1 ml-auto">
-          <label className="app-label">Moneda</label>
+      <FilterCard sticky className="w-full items-center gap-4">
+        <div className="min-w-0 flex-1 space-y-2">
+          <p className="text-sm font-medium text-neutral-900 leading-tight">Resumen rapido</p>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge>Posiciones activas: {investmentRows.length}</Badge>
+            <Badge variant={topInstrumentShare > 60 ? 'negative' : topInstrumentShare > 40 ? 'neutral' : 'positive'}>
+              Concentracion: {topInstrumentShare.toFixed(1)}% en {investmentsByType[0]?.type ?? '—'}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <label className="app-label whitespace-nowrap">Moneda</label>
           <Select
             value={currency}
             onChange={onCurrencyChange}
             options={[{ value: 'COP', label: 'COP' }, { value: 'USD', label: 'USD' }]}
-            className="w-24"
+            className="w-28"
           />
         </div>
       </FilterCard>
