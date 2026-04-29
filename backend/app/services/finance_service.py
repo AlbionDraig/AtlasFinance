@@ -25,7 +25,6 @@ from app.schemas.investment_entity import InvestmentEntityCreate, InvestmentEnti
 from app.schemas.metric import DashboardAggregates, DashboardMetrics
 from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
 from app.schemas.transaction import TransactionCreate, TransferCreate
-from app.services.currency_service import convert_currency
 
 # In-process cache for dashboard aggregates: {(user_id, currency) -> (metrics, expires_at)}
 # This reduces repeated heavy reads in short time windows.
@@ -813,17 +812,9 @@ def _sum_assets_in_currency(
 ) -> Decimal:
     total_assets = Decimal("0")
     for account in accounts:
-        total_assets += convert_currency(
-            account.current_balance,
-            account.currency.value,
-            target_currency,
-        )
+        total_assets += account.current_balance
     for investment in investments:
-        total_assets += convert_currency(
-            investment.current_value,
-            investment.currency.value,
-            target_currency,
-        )
+        total_assets += investment.current_value
     return total_assets
 
 
@@ -833,8 +824,7 @@ def _sum_transactions_in_currency(
 ) -> tuple[Decimal, Decimal]:
     totals = defaultdict(lambda: Decimal("0"))
     for txn in transactions:
-        converted = convert_currency(txn.amount, txn.currency.value, target_currency)
-        totals[txn.transaction_type.value] += converted
+        totals[txn.transaction_type.value] += txn.amount
 
     income = totals[TransactionType.INCOME.value]
     expenses = totals[TransactionType.EXPENSE.value]
@@ -899,7 +889,7 @@ def get_dashboard_aggregates(  # pylint: disable=too-many-locals
         return cat.name, cat.is_fixed
 
     def _convert(tx: Transaction) -> Decimal:
-        return convert_currency(tx.amount, tx.currency.value, target_currency)
+        return tx.amount
 
     # ── Monthly breakdown ──────────────────────────────────────────────────────
     month_income: dict[str, Decimal] = defaultdict(Decimal)
