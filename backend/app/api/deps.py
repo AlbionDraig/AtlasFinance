@@ -29,7 +29,8 @@ def get_token_from_bearer_or_cookie(
     cookie_token: Annotated[str | None, Cookie(alias="access_token")] = None,
 ) -> str:
     """Return auth token from cookie or fallback Authorization header."""
-    token = cookie_token or bearer_token
+    # Prefer explicit Authorization header when both are present.
+    token = bearer_token or cookie_token
     if not token:
         raise _credentials_exception()
     return token

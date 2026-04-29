@@ -107,3 +107,152 @@ def test_init_db_migrates_categories_to_global_schema(monkeypatch):
     with engine.begin() as connection:
         count = connection.execute(text("SELECT COUNT(*) FROM categories WHERE id = 1 AND name = 'Legacy category'"))
         assert count.scalar_one() == 1
+
+
+def test_migrate_categories_to_global_adds_missing_category_type_on_non_sqlite(monkeypatch):
+    executed_sql = []
+
+    class DummyConnection:
+        def __init__(self):
+            self.dialect = type("Dialect", (), {"name": "postgresql"})()
+
+        def execute(self, statement):
+            executed_sql.append(str(statement))
+
+    class DummyEngine:
+        def begin(self):
+            connection = DummyConnection()
+
+            class _Ctx:
+                def __enter__(self):
+                    return connection
+
+                def __exit__(self, exc_type, exc, tb):
+                    return False
+
+            return _Ctx()
+
+    class DummyInspector:
+        def get_table_names(self):
+            return ["categories"]
+
+        def get_columns(self, table_name):
+            assert table_name == "categories"
+            return [{"name": "id"}, {"name": "name"}, {"name": "user_id"}]
+
+        def get_foreign_keys(self, table_name):
+            assert table_name == "categories"
+            return [{"constrained_columns": ["user_id"], "name": "fk_categories_user_id"}]
+
+    monkeypatch.setattr(init_db_module, "engine", DummyEngine())
+    monkeypatch.setattr(init_db_module, "inspect", lambda _engine: DummyInspector())
+
+    init_db_module._migrate_categories_to_global()
+
+    assert any("DROP CONSTRAINT" in sql for sql in executed_sql)
+    assert any("ADD COLUMN category_type" in sql for sql in executed_sql)
+    assert any("DROP COLUMN user_id" in sql for sql in executed_sql)
+
+
+def test_migrate_investments_to_entities_handles_schema_finalization(monkeypatch):
+    driver_sql = []
+
+    class DummyConnection:
+        def exec_driver_sql(self, sql):
+            driver_sql.append(sql)
+
+    class DummyEngine:
+        def begin(self):
+            connection = DummyConnection()
+
+            class _Ctx:
+                def __enter__(self):
+                    return connection
+
+                def __exit__(self, exc_type, exc, tb):
+                    return False
+
+            return _Ctx()
+
+    class DummyInspector:
+        def __init__(self):
+            self.columns_calls = 0
+
+        def get_table_names(self):
+            return ["investments", "investment_entities"]
+
+        def get_columns(self, table_name):
+            assert table_name == "investments"
+            self.columns_calls += 1
+            if self.columns_calls == 1:
+                return [{"name": "id"}, {"name": "bank_id"}]
+            return [{"name": "id"}, {"name": "bank_id"}, {"name": "investment_entity_id"}]
+
+        def get_foreign_keys(self, table_name):
+            assert table_name == "investments"
+            return []
+
+        def get_indexes(self, table_name):
+            assert table_name == "investments"
+            return []
+
+    monkeypatch.setattr(init_db_module, "engine", DummyEngine())
+    monkeypatch.setattr(init_db_module, "inspect", lambda _engine: DummyInspector())
+
+    init_db_module._migrate_investments_to_entities()
+
+    assert any("ADD COLUMN investment_entity_id" in sql for sql in driver_sql)
+    assert any("INSERT INTO investment_entities" in sql for sql in driver_sql)
+    assert any("UPDATE investments" in sql for sql in driver_sql)
+    assert any("ALTER COLUMN investment_entity_id SET NOT NULL" in sql for sql in driver_sql)
+    assert any("ADD CONSTRAINT investments_investment_entity_id_fkey" in sql for sql in driver_sql)
+    assert any("CREATE INDEX ix_investments_investment_entity_id" in sql for sql in driver_sql)
+
+
+def test_migrate_investments_to_entities_tolerates_unsupported_ddl(monkeypatch):
+    driver_sql = []
+
+    class DummyConnection:
+        def exec_driver_sql(self, sql):
+            driver_sql.append(sql)
+            if "ALTER COLUMN investment_entity_id SET NOT NULL" in sql:
+                raise RuntimeError("unsupported alter")
+            if "ADD CONSTRAINT investments_investment_entity_id_fkey" in sql:
+                raise RuntimeError("unsupported fk")
+            if "CREATE INDEX ix_investments_investment_entity_id" in sql:
+                raise RuntimeError("unsupported index")
+
+    class DummyEngine:
+        def begin(self):
+            connection = DummyConnection()
+
+            class _Ctx:
+                def __enter__(self):
+                    return connection
+
+                def __exit__(self, exc_type, exc, tb):
+                    return False
+
+            return _Ctx()
+
+    class DummyInspector:
+        def get_table_names(self):
+            return ["investments", "investment_entities"]
+
+        def get_columns(self, _table_name):
+            return [{"name": "id"}, {"name": "bank_id"}, {"name": "investment_entity_id"}]
+
+        def get_foreign_keys(self, _table_name):
+            return []
+
+        def get_indexes(self, _table_name):
+            return []
+
+    monkeypatch.setattr(init_db_module, "engine", DummyEngine())
+    monkeypatch.setattr(init_db_module, "inspect", lambda _engine: DummyInspector())
+
+    init_db_module._migrate_investments_to_entities()
+
+    assert any("ALTER COLUMN investment_entity_id SET NOT NULL" in sql for sql in driver_sql)
+    assert any("ADD CONSTRAINT investments_investment_entity_id_fkey" in sql for sql in driver_sql)
+    assert any("CREATE INDEX ix_investments_investment_entity_id" in sql for sql in driver_sql)

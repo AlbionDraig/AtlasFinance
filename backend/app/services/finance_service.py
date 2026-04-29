@@ -25,6 +25,7 @@ from app.schemas.investment_entity import InvestmentEntityCreate, InvestmentEnti
 from app.schemas.metric import DashboardAggregates, DashboardMetrics
 from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
 from app.schemas.transaction import TransactionCreate, TransferCreate
+from app.services.currency_service import convert_currency
 
 # In-process cache for dashboard aggregates: {(user_id, currency) -> (metrics, expires_at)}
 # This reduces repeated heavy reads in short time windows.
@@ -810,18 +811,37 @@ def _sum_assets_in_currency(
     investments: list[Investment],
     target_currency: str,
 ) -> Decimal:
-    # Currencies are isolated: only sum assets already in target currency.
     total_assets = Decimal("0")
     for account in accounts:
-        if account.currency.value == target_currency:
-            total_assets += account.current_balance
+        total_assets += convert_currency(
+            account.current_balance,
+            account.currency.value,
+            target_currency,
+        )
     for investment in investments:
-        if investment.currency.value == target_currency:
-            total_assets += investment.current_value
+        total_assets += convert_currency(
+            investment.current_value,
+            investment.currency.value,
+            target_currency,
+        )
     return total_assets
 
 
-def get_dashboard_metrics(
+def _sum_transactions_in_currency(
+    transactions: list[Transaction],
+    target_currency: str,
+) -> tuple[Decimal, Decimal]:
+    totals = defaultdict(lambda: Decimal("0"))
+    for txn in transactions:
+        converted = convert_currency(txn.amount, txn.currency.value, target_currency)
+        totals[txn.transaction_type.value] += converted
+
+    income = totals[TransactionType.INCOME.value]
+    expenses = totals[TransactionType.EXPENSE.value]
+    return income, expenses
+
+
+def get_dashboard_metrics(  # pylint: disable=too-many-locals
     db: Session,
     user_id: int,
     target_currency: str = "COP",
@@ -833,27 +853,10 @@ def get_dashboard_metrics(
 
     accounts = db.scalars(select(Account).join(Bank).where(Bank.user_id == user_id)).all()
     investments = db.scalars(select(Investment).where(Investment.user_id == user_id)).all()
-
-    # Currencies are isolated: aggregate only transactions in target currency.
-    agg_rows = db.execute(
-        select(
-            Transaction.currency,
-            Transaction.transaction_type,
-            func.sum(Transaction.amount).label("total"),
-        )
-        .where(Transaction.user_id == user_id, Transaction.currency == target_currency)
-        .group_by(Transaction.currency, Transaction.transaction_type)
-    ).all()
-
-    total_income = Decimal("0")
-    total_expenses = Decimal("0")
-    for row in agg_rows:
-        if row.transaction_type == TransactionType.INCOME:
-            total_income += Decimal(str(row.total))
-        else:
-            total_expenses += Decimal(str(row.total))
+    transactions = db.scalars(select(Transaction).where(Transaction.user_id == user_id)).all()
 
     total_assets = _sum_assets_in_currency(accounts, investments, target_currency)
+    total_income, total_expenses = _sum_transactions_in_currency(transactions, target_currency)
     cashflow = total_income - total_expenses
     savings_rate = (cashflow / total_income * Decimal("100")) if total_income > 0 else Decimal("0")
 
@@ -877,138 +880,81 @@ def get_dashboard_aggregates(  # pylint: disable=too-many-locals
     prev_end_date: datetime,
     top_n: int = 10,
 ) -> DashboardAggregates:
-    """Compute chart data and period totals for the dashboard in the target currency.
+    """Compute chart data and period totals for the dashboard in the target currency."""
+    cur_txns = list_transactions(db, user_id, start_date=start_date, end_date=end_date, limit=10_000)
+    prev_txns = list_transactions(db, user_id, start_date=prev_start_date, end_date=prev_end_date, limit=10_000)
 
-    All heavy aggregations are pushed to SQL. Currencies are isolated, so only
-    rows already in target currency are considered.
-    """
-    _base = (
-        Transaction.user_id == user_id,
-        Transaction.currency == target_currency,
-        Transaction.occurred_at >= start_date,
-        Transaction.occurred_at <= end_date,
-    )
-    # Cross-database month grouping: extract year + month separately and compose in Python.
-    # func.to_char (PostgreSQL) is NOT available in SQLite (used in tests).
-    _yr = func.extract("year", Transaction.occurred_at).label("yr")
-    _mo = func.extract("month", Transaction.occurred_at).label("mo")
+    # Resolve category metadata (name + is_fixed) for all relevant transactions.
+    all_cat_ids = {tx.category_id for tx in cur_txns + prev_txns if tx.category_id is not None}
+    if all_cat_ids:
+        cat_objs = db.scalars(select(Category).where(Category.id.in_(all_cat_ids))).all()
+        cat_map: dict[int, Category] = {c.id: c for c in cat_objs}
+    else:
+        cat_map = {}
 
-    def _ym(row: object) -> str:
-        return f"{int(row.yr):04d}-{int(row.mo):02d}"
+    def _cat_info(tx: Transaction) -> tuple[str, bool]:
+        if tx.category_id is None or tx.category_id not in cat_map:
+            return "Sin categoría", False
+        cat = cat_map[tx.category_id]
+        return cat.name, cat.is_fixed
 
-    # ── 1. Transaction count (single scalar query) ────────────────────────────
-    transaction_count = db.scalar(
-        select(func.count()).where(*_base)
-    ) or 0
+    def _convert(tx: Transaction) -> Decimal:
+        return convert_currency(tx.amount, tx.currency.value, target_currency)
 
-    # ── 2. Monthly income/expense breakdown (GROUP BY year+month, type) ──
-    monthly_rows = db.execute(
-        select(_yr, _mo, Transaction.transaction_type, func.sum(Transaction.amount).label("total"))
-        .where(*_base)
-        .group_by(_yr, _mo, Transaction.transaction_type)
-        .order_by(_yr, _mo)
-    ).all()
-
+    # ── Monthly breakdown ──────────────────────────────────────────────────────
     month_income: dict[str, Decimal] = defaultdict(Decimal)
     month_expense: dict[str, Decimal] = defaultdict(Decimal)
-    for row in monthly_rows:
-        m = _ym(row)
-        if row.transaction_type == TransactionType.INCOME:
-            month_income[m] += Decimal(str(row.total))
+    for tx in cur_txns:
+        month_key = tx.occurred_at.strftime("%Y-%m")
+        converted = _convert(tx)
+        if tx.transaction_type == TransactionType.INCOME:
+            month_income[month_key] += converted
         else:
-            month_expense[m] += Decimal(str(row.total))
+            month_expense[month_key] += converted
 
     all_months = sorted(set(month_income) | set(month_expense))
-    cumulative = Decimal("0")
     monthly = []
+    cumulative = Decimal("0")
     for m in all_months:
         inc = month_income.get(m, Decimal("0"))
         exp = month_expense.get(m, Decimal("0"))
         cf = inc - exp
         cumulative += cf
-        monthly.append({"month": m, "income": inc, "expense": exp, "cashflow": cf, "cumulative": cumulative})
-
-    total_income = sum(month_income.values(), Decimal("0"))
-    total_expenses = sum(month_expense.values(), Decimal("0"))
-
-    # ── 3. Top categories by expense (GROUP BY cat name+is_fixed) ───
-    _coalesce_name = func.coalesce(Category.name, "Sin categoría")
-    _coalesce_fixed = func.coalesce(Category.is_fixed, False)
-    cat_rows = db.execute(
-        select(
-            _coalesce_name.label("cat_name"),
-            _coalesce_fixed.label("is_fixed"),
-            func.sum(Transaction.amount).label("total"),
+        monthly.append(
+            {"month": m, "income": inc, "expense": exp, "cashflow": cf, "cumulative": cumulative}
         )
-        .outerjoin(Category, Transaction.category_id == Category.id)
-        .where(*_base, Transaction.transaction_type == TransactionType.EXPENSE)
-        .group_by(_coalesce_name, _coalesce_fixed)
-    ).all()
 
+    # ── Top categories by expense ──────────────────────────────────────────────
     cat_totals: dict[str, Decimal] = defaultdict(Decimal)
     cat_is_fixed: dict[str, bool] = {}
-    for row in cat_rows:
-        cat_totals[row.cat_name] += Decimal(str(row.total))
-        cat_is_fixed[row.cat_name] = bool(row.is_fixed)
+    for tx in cur_txns:
+        if tx.transaction_type == TransactionType.EXPENSE:
+            name, is_fixed = _cat_info(tx)
+            cat_totals[name] += _convert(tx)
+            cat_is_fixed[name] = is_fixed
 
     sorted_cats = sorted(cat_totals.items(), key=lambda x: x[1], reverse=True)
     top_categories = [
         {"name": name, "value": val, "is_fixed": cat_is_fixed.get(name, False)}
         for name, val in sorted_cats[:top_n]
     ]
-    top5_list = [c["name"] for c in top_categories[:5]]
-    top5_names = set(top5_list)
+    top5_names = [c["name"] for c in top_categories[:5]]
 
-    # ── 4. Fixed expense total (filtered by is_fixed) ──────
-    fixed_rows = db.execute(
-        select(func.sum(Transaction.amount).label("total"))
-        .join(Category, Transaction.category_id == Category.id)
-        .where(*_base, Transaction.transaction_type == TransactionType.EXPENSE, Category.is_fixed.is_(True))
-    ).all()
-    fixed_total = sum((Decimal(str(r.total)) for r in fixed_rows if r.total is not None), Decimal("0"))
-
-    # ── 5. Biggest single expense (same currency) ─────────
-    # Fetch top candidates ordered by amount within selected currency.
-    biggest_candidates = db.execute(
-        select(Transaction.description, Transaction.currency, Transaction.amount)
-        .where(*_base, Transaction.transaction_type == TransactionType.EXPENSE)
-        .order_by(Transaction.amount.desc())
-        .limit(top_n * 3)
-    ).all()
-
-    biggest_amount: Decimal | None = None
-    biggest_description: str | None = None
-    for row in biggest_candidates:
-        converted = Decimal(str(row.amount))
-        if biggest_amount is None or converted > biggest_amount:
-            biggest_amount = converted
-            biggest_description = row.description
-
-    # ── 6. Stacked chart: expense by month × category (GROUP BY) ─────────────
-    _stacked_cat = func.coalesce(Category.name, "Sin categoría")
-    stacked_rows = db.execute(
-        select(
-            _yr,
-            _mo,
-            _stacked_cat.label("cat_name"),
-            func.sum(Transaction.amount).label("total"),
-        )
-        .outerjoin(Category, Transaction.category_id == Category.id)
-        .where(*_base, Transaction.transaction_type == TransactionType.EXPENSE)
-        .group_by(_yr, _mo, _stacked_cat)
-        .order_by(_yr, _mo)
-    ).all()
-
+    # ── Stacked by month (top-5 + "Otras") ────────────────────────────────────
     month_cat: dict[str, dict[str, Decimal]] = defaultdict(lambda: defaultdict(Decimal))
-    for row in stacked_rows:
-        month_cat[_ym(row)][row.cat_name] += Decimal(str(row.total))
+    for tx in cur_txns:
+        if tx.transaction_type == TransactionType.EXPENSE:
+            name, _ = _cat_info(tx)
+            month_key = tx.occurred_at.strftime("%Y-%m")
+            month_cat[month_key][name] += _convert(tx)
 
     has_otras = False
     stacked = []
     for m in sorted(month_cat.keys()):
+        cats = month_cat[m]
         row_cats: dict[str, Decimal] = {}
         otras = Decimal("0")
-        for cat_name, val in month_cat[m].items():
+        for cat_name, val in cats.items():
             if cat_name in top5_names:
                 row_cats[cat_name] = val
             else:
@@ -1018,39 +964,38 @@ def get_dashboard_aggregates(  # pylint: disable=too-many-locals
             has_otras = True
         stacked.append({"month": m, "categories": row_cats})
 
-    stacked_cats = top5_list + (["Otras"] if has_otras else [])
+    stacked_cats = top5_names + (["Otras"] if has_otras else [])
 
-    # ── 7. Previous period totals (GROUP BY type only) ─────────────
-    prev_rows = db.execute(
-        select(Transaction.transaction_type, func.sum(Transaction.amount).label("total"))
-        .where(
-            Transaction.user_id == user_id,
-            Transaction.currency == target_currency,
-            Transaction.occurred_at >= prev_start_date,
-            Transaction.occurred_at <= prev_end_date,
-        )
-        .group_by(Transaction.transaction_type)
-    ).all()
+    # ── Derived scalars ────────────────────────────────────────────────────────
+    fixed_total = sum(
+        (_convert(tx) for tx in cur_txns if tx.transaction_type == TransactionType.EXPENSE and _cat_info(tx)[1]),
+        Decimal("0"),
+    )
 
-    prev_income = Decimal("0")
-    prev_expenses = Decimal("0")
-    for row in prev_rows:
-        if row.transaction_type == TransactionType.INCOME:
-            prev_income += Decimal(str(row.total))
-        else:
-            prev_expenses += Decimal(str(row.total))
+    expense_txns = [tx for tx in cur_txns if tx.transaction_type == TransactionType.EXPENSE]
+    biggest: Transaction | None = max(expense_txns, key=lambda t: _convert(t)) if expense_txns else None
+
+    total_income = sum((_convert(tx) for tx in cur_txns if tx.transaction_type == TransactionType.INCOME), Decimal("0"))
+    total_expenses = sum((_convert(tx) for tx in cur_txns if tx.transaction_type == TransactionType.EXPENSE), Decimal("0"))
+
+    prev_income = sum((_convert(tx) for tx in prev_txns if tx.transaction_type == TransactionType.INCOME), Decimal("0"))
+    prev_expenses = sum((_convert(tx) for tx in prev_txns if tx.transaction_type == TransactionType.EXPENSE), Decimal("0"))
 
     return DashboardAggregates(
         income=total_income,
         expenses=total_expenses,
-        transaction_count=transaction_count,
-        monthly=monthly,
+        transaction_count=len(cur_txns),
+        monthly=[
+            {"month": r["month"], "income": r["income"], "expense": r["expense"],
+             "cashflow": r["cashflow"], "cumulative": r["cumulative"]}
+            for r in monthly
+        ],
         top_categories=top_categories,
-        stacked=stacked,
+        stacked=[{"month": r["month"], "categories": r["categories"]} for r in stacked],
         stacked_cats=stacked_cats,
         fixed_total=fixed_total,
-        biggest_expense_amount=biggest_amount,
-        biggest_expense_description=biggest_description,
+        biggest_expense_amount=_convert(biggest) if biggest else None,
+        biggest_expense_description=biggest.description if biggest else None,
         prev_income=prev_income,
         prev_expenses=prev_expenses,
     )
