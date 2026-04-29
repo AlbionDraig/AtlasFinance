@@ -245,26 +245,27 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
 
   return (
     <>
-      <FilterCard sticky className="w-full items-center gap-4">
-        <div className="min-w-0 flex-1 space-y-2">
-          <p className="text-sm font-medium text-neutral-900 leading-tight">Resumen rapido</p>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge>Posiciones activas: {investmentRows.length}</Badge>
-            <Badge variant={topInstrumentShare > 60 ? 'negative' : topInstrumentShare > 40 ? 'neutral' : 'positive'}>
-              Concentracion: {topInstrumentShare.toFixed(1)}% en {investmentsByType[0]?.type ?? '—'}
-            </Badge>
+      <FilterCard sticky>
+        <div className="flex items-center justify-between w-full gap-4">
+          <div className="min-w-0 flex flex-col gap-1.5">
+            <p className="text-sm font-medium text-neutral-900 leading-tight">Resumen rapido</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge>Posiciones activas: {investmentRows.length}</Badge>
+              <Badge variant={topInstrumentShare > 60 ? 'negative' : topInstrumentShare > 40 ? 'neutral' : 'positive'}>
+                Concentracion: {topInstrumentShare.toFixed(1)}% en {investmentsByType[0]?.type ?? '—'}
+              </Badge>
+            </div>
           </div>
-        </div>
 
-        <div className="ml-auto flex items-center gap-2">
-          <label className="app-label whitespace-nowrap">Moneda</label>
-          <Select
-            value={currency}
-            onChange={onCurrencyChange}
-            options={[{ value: 'COP', label: 'COP' }, { value: 'USD', label: 'USD' }]}
-            className="w-28"
-          />
+          <div className="flex flex-col gap-1 shrink-0">
+            <label className="app-label">Moneda</label>
+            <Select
+              value={currency}
+              onChange={onCurrencyChange}
+              options={[{ value: 'COP', label: 'COP' }, { value: 'USD', label: 'USD' }]}
+              className="w-24"
+            />
+          </div>
         </div>
       </FilterCard>
 
