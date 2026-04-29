@@ -15,7 +15,7 @@ import {
   CHART_TOOLTIP_STYLE,
 } from '@/lib/chartTheme'
 import type { Investment } from '@/types'
-import { fmt, fmtDate } from './dashboardUtils'
+import { fmt, fmtDate, fmtDateNumeric } from './dashboardUtils'
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 function HelpTooltip({ text }: { text: string }) {
@@ -588,7 +588,7 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
                         <td className={`px-4 py-3 text-sm text-right font-medium ${retPct >= 0 ? 'text-success' : 'text-warning'}`}>
                           {retPct >= 0 ? '+' : ''}{retPct.toFixed(1)}%
                         </td>
-                        <td className="px-4 py-3 text-sm text-right text-neutral-400">{fmtDate(investment.started_at)}</td>
+                        <td className="px-4 py-3 text-sm text-right text-neutral-400">{fmtDateNumeric(investment.started_at)}</td>
                       </tr>
                     )
                   })}

@@ -74,6 +74,10 @@ export function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
+export function fmtDateNumeric(iso: string): string {
+  return new Date(iso).toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' })
+}
+
 export function deltaBadge(curr: number, prev: number, inverse = false): { text: string; tone: Tone } {
   if (prev === 0) return { text: curr === 0 ? '0%' : 'primer período', tone: 'flat' }
   const pct = ((curr - prev) / prev) * 100
