@@ -38,6 +38,27 @@ export const INSTRUMENT_COLORS: Record<string, { bg: string; text: string }> = {
   Otro:     { bg: 'bg-neutral-100',   text: 'text-neutral-700' },
 }
 
+export const INSTRUMENT_PROGRESS_COLORS: Record<string, string> = {
+  Acciones: 'bg-brand',
+  Fondos: 'bg-success',
+  Bonos: 'bg-warning',
+  CDT: 'bg-neutral-700',
+  ETF: 'bg-brand-deep',
+  Cripto: 'bg-warning',
+  Otro: 'bg-neutral-400',
+}
+
+// CSS-var fill colors for recharts cells — one per instrument type
+export const INSTRUMENT_FILL_COLORS: Record<string, string> = {
+  Acciones: 'var(--af-accent)',
+  Fondos:   'var(--af-positive)',
+  Bonos:    'var(--af-warning)',
+  CDT:      'var(--af-text-soft)',
+  ETF:      'var(--af-accent-deep)',
+  Cripto:   '#8a5200',
+  Otro:     'var(--af-text-muted)',
+}
+
 export const CHART_TOOLTIP_STYLE = {
   contentStyle: {
     background: 'var(--af-surface)',

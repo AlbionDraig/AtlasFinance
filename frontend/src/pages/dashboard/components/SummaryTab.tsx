@@ -23,7 +23,7 @@ import {
 
 // ─── Help descriptions ───────────────────────────────────────────────────────
 const KPI_HELP: Record<string, string> = {
-  'Patrimonio neto': 'Suma de los saldos actuales de todas tus cuentas en la moneda seleccionada. Refleja tu riqueza neta disponible en este momento.',
+  'Patrimonio neto': 'Suma de los saldos actuales de tus cuentas más el valor actual de tus inversiones en la moneda seleccionada. Refleja tu riqueza neta disponible en este momento.',
   'Ingresos': 'Total de entradas de dinero registradas en el período. Incluye salarios, transferencias recibidas y cualquier otro ingreso.',
   'Gastos': 'Total de egresos del período. Cuanto más bajo sea respecto a tus ingresos, mayor es tu capacidad de ahorro.',
   'Tasa de ahorro': 'Porcentaje de tus ingresos que no gastaste. ≥20% es saludable, 5–19% moderado, <5% requiere atención.',
