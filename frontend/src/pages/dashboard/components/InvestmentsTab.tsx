@@ -28,8 +28,15 @@ function HelpTooltip({ text }: { text: string }) {
   )
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="app-section-title mb-3">{children}</h2>
+function SectionTitle({ children, help }: { children: React.ReactNode; help?: string }) {
+  return (
+    <div className="mb-3">
+      <div className="inline-flex items-center gap-2">
+        <h2 className="app-section-title">{children}</h2>
+        {help && <HelpTooltip text={help} />}
+      </div>
+    </div>
+  )
 }
 
 interface KpiCardProps {
@@ -283,9 +290,9 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
           <KpiCard
             label="Rentabilidad"
             value={`${totalReturnPct > 0 ? '+' : ''}${totalReturnPct.toFixed(1)}%`}
-            accentClass="bg-brand-deep"
-            accentRingClass="ring-2 ring-brand-deep/20"
-            valueClass="text-brand-deep"
+            accentClass={totalReturnPct >= 0 ? 'bg-success' : 'bg-warning'}
+            accentRingClass={totalReturnPct >= 0 ? 'ring-2 ring-success/20' : 'ring-2 ring-warning/20'}
+            valueClass={totalReturnPct >= 0 ? 'text-success' : 'text-warning'}
             sub="sobre el capital invertido"
             help="Porcentaje de ganancia o pérdida total respecto al capital invertido (ROI global)"
           />
@@ -297,7 +304,8 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
             <KpiCard
               label="Rent. media ponderada"
               value={`${weightedAvgReturn >= 0 ? '+' : ''}${weightedAvgReturn.toFixed(1)}%`}
-              accentClass="bg-neutral-100"
+              accentClass={weightedAvgReturn >= 0 ? 'bg-success' : 'bg-warning'}
+              accentRingClass={weightedAvgReturn >= 0 ? 'ring-2 ring-success/20' : 'ring-2 ring-warning/20'}
               valueClass={weightedAvgReturn >= 0 ? 'text-success' : 'text-warning'}
               sub="promedio ponderado por capital"
               help="Rentabilidad promedio del portafolio, ponderada según el peso de cada posición sobre el capital total invertido"
@@ -314,8 +322,9 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
             <KpiCard
               label="Entidades"
               value={distinctEntities.toString()}
-              accentClass="bg-neutral-100"
-              valueClass="text-neutral-900"
+              accentClass="bg-brand"
+              accentRingClass="ring-2 ring-brand/20"
+              valueClass="text-brand"
               sub="brókers y gestoras distintos"
               help="Número de brókers, bancos, exchanges o gestoras distintas donde tienes activos"
             />
@@ -325,6 +334,7 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
                 ? `${(avgHoldingDays / 365).toFixed(1)} años`
                 : `${avgHoldingDays} días`}
               accentClass="bg-neutral-100"
+              accentRingClass="ring-1 ring-neutral-100"
               valueClass="text-neutral-900"
               sub="tiempo promedio en cartera"
               help="Promedio de días desde la fecha de inicio de cada posición hasta hoy"
@@ -459,7 +469,7 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
 
       {/* ─── Distribution section ─────────────────────────────────────────── */}
       <section className="pt-1">
-        <SectionTitle>Distribución por instrumento</SectionTitle>
+        <SectionTitle help="Desagregación del portafolio según tipos de instrumentos invertidos (Acciones, Bonos, Fondos, etc.)">Distribución por instrumento</SectionTitle>
         <div className="app-panel p-5">
           {investmentsByType.length === 0 ? (
             <p className="app-subtitle text-sm">No hay inversiones registradas en {currency}.</p>
@@ -532,7 +542,7 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
 
       {/* ─── Positions table ──────────────────────────────────────────────── */}
       <section className="pt-1">
-        <SectionTitle>Posiciones</SectionTitle>
+        <SectionTitle help="Listado detallado de todas las inversiones activas con su información de rentabilidad y desempeño">Posiciones</SectionTitle>
         <div className="app-panel p-0 overflow-hidden">
           {investmentRows.length === 0 ? (
             <div className="p-8 text-center app-subtitle">
