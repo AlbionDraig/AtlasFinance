@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.db.init_db import init_db
-from app.db.seed import run_seed
+from app.db.seed import seed_base, seed_demo
 
 settings = get_settings()
 
@@ -25,10 +25,15 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup_event() -> None:
-    """Initialize database and optional seed data during app startup."""
+    """Initialize database and seed data during app startup.
+
+    seed_base  — always runs (countries + categories catalog).
+    seed_demo  — runs only in non-production or when SEED_DEMO_DATA=true.
+    """
     init_db()
-    if settings.seed_on_startup or settings.environment != "production":
-        run_seed()
+    seed_base()
+    if settings.seed_demo_data or settings.environment != "production":
+        seed_demo()
 
 
 @app.get("/health", tags=["system"])
