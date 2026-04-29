@@ -57,9 +57,8 @@ from app.services.finance_service import (
 TEST_PASSWORD = "AtlasFinanceTestPwd123!"
 
 
-def test_register_transaction_updates_balance_and_metrics(db_session, monkeypatch):
+def test_register_transaction_updates_balance_and_metrics(db_session):
     # Validate that balance mutations and aggregate metrics stay consistent.
-    monkeypatch.setattr("app.services.finance_service.convert_currency", lambda amount, _f, _t: amount)
 
     user = create_user(
         db_session,
@@ -1033,8 +1032,7 @@ def test_create_transfer_success_and_validation_rules(db_session):
     assert accounts[destination_account.id].current_balance == Decimal("250")
 
 
-def test_get_dashboard_aggregates_builds_expected_series_and_totals(db_session, monkeypatch):
-    monkeypatch.setattr("app.services.finance_service.convert_currency", lambda amount, _f, _t: amount)
+def test_get_dashboard_aggregates_builds_expected_series_and_totals(db_session):
 
     user = create_user(
         db_session,

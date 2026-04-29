@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Numeric, String
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -11,6 +11,10 @@ from app.models.enums import Currency, TransactionType
 class Transaction(Base):
     """Financial movement associated with user, account and optional category/pocket."""
     __tablename__ = "transactions"
+    __table_args__ = (
+        # Composite index to speed up per-user date-range queries used by the dashboard.
+        Index("ix_transactions_user_occurred", "user_id", "occurred_at"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
