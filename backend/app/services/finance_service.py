@@ -894,7 +894,7 @@ def get_dashboard_aggregates(  # pylint: disable=too-many-locals
     _mo = func.extract("month", Transaction.occurred_at).label("mo")
 
     def _ym(row: object) -> str:
-        return f"{int(getattr(row, 'yr')):04d}-{int(getattr(row, 'mo')):02d}"
+        return f"{int(row.yr):04d}-{int(row.mo):02d}"
 
     # ── 1. Transaction count (single scalar query) ────────────────────────────
     transaction_count = db.scalar(
