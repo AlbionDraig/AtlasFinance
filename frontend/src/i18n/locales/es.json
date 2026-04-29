@@ -22,6 +22,7 @@
     "name": "Nombre",
     "code": "Código",
     "country": "País",
+    "country_code": "Cód. país",
     "currency": "Moneda",
     "all": "Todos",
     "allFem": "Todas",

@@ -38,7 +38,7 @@ export default function AdminPage() {
         const response = await countriesApi.list()
         setCountries(response.data)
       } catch (error) {
-        toast(getApiErrorMessage(error, t('admin.error_load_countries')), 'error')
+        toast(getApiErrorMessage(error, t('admin.toast_load_countries_error')), 'error')
       }
     }
 
@@ -80,28 +80,28 @@ export default function AdminPage() {
             onClick={() => handleTabChange('banks')}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'banks' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
-            {t('admin.banks.tab')}
+            {t('admin.tab_banks')}
           </button>
           <button
             type="button"
             onClick={() => handleTabChange('investment-entities')}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'investment-entities' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
-            {t('admin.entities.tab')}
+            {t('admin.tab_entities')}
           </button>
           <button
             type="button"
             onClick={() => handleTabChange('countries')}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'countries' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
-            {t('admin.countries.tab')}
+            {t('admin.tab_countries')}
           </button>
           <button
             type="button"
             onClick={() => handleTabChange('categories')}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'categories' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
-            {t('admin.categories.tab')}
+            {t('admin.tab_categories')}
           </button>
         </div>
       </div>
