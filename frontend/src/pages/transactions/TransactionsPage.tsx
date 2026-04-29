@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { accountsApi } from '@/api/accounts'
 import { categoriesApi, type Category } from '@/api/categories'
 import { pocketsApi } from '@/api/pockets'
@@ -64,9 +65,9 @@ function normalizeTransactionType(value: string | null | undefined): Transaction
   return String(value ?? '').toLowerCase() === 'income' ? 'INCOME' : 'EXPENSE'
 }
 
-function getCategoryName(categoryId: number | null, categories: Category[]): string {
-  if (categoryId == null) return 'Sin categoría'
-  return categories.find((category) => category.id === categoryId)?.name ?? 'Sin categoría'
+function getCategoryName(categoryId: number | null, categories: Category[], noCategory: string): string {
+  if (categoryId == null) return noCategory
+  return categories.find((category) => category.id === categoryId)?.name ?? noCategory
 }
 
 function getAccountName(accountId: number, accounts: Account[]): string {
@@ -78,13 +79,13 @@ function getCompactAccountName(accountId: number, accounts: Account[]): string {
   return getAccountName(accountId, accounts).replace(/\s+\((COP|USD)\)$/, '')
 }
 
-function getPeriodLabel(period: PeriodFilter): string {
-  if (period === 'today') return 'Hoy'
-  if (period === '7d') return 'Últimos 7 días'
-  if (period === '30d') return 'Últimos 30 días'
-  if (period === 'month') return 'Mes actual'
-  if (period === 'custom') return 'Personalizado'
-  return 'Todos'
+function getPeriodLabel(period: PeriodFilter, t: (key: string) => string): string {
+  if (period === 'today') return t('transactions.filter_period_today')
+  if (period === '7d') return t('transactions.filter_period_7d')
+  if (period === '30d') return t('transactions.filter_period_30d')
+  if (period === 'month') return t('transactions.filter_period_month')
+  if (period === 'custom') return t('transactions.filter_period_custom')
+  return t('transactions.filter_period_all')
 }
 
 function resolvePeriodRange(period: PeriodFilter, fallbackFrom: string, fallbackTo: string): { from: string; to: string } {
@@ -122,6 +123,7 @@ function buildTransactionParams(filters: FiltersState, query: string): Transacti
 }
 
 export default function TransactionsPage() {
+  const { t } = useTranslation()
   const { toast } = useToast()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -131,7 +133,6 @@ export default function TransactionsPage() {
   const [filters, setFilters] = useState<FiltersState>(() => buildDefaultFilters())
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [loading, setLoading] = useState(true)
-  const [txnLoading, setTxnLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
@@ -163,7 +164,7 @@ export default function TransactionsPage() {
           setPockets([])
         }
       } catch (loadError) {
-        toast(getApiErrorMessage(loadError, 'No se pudieron cargar los datos.'), 'error')
+        toast(getApiErrorMessage(loadError, t('transactions.toast_load_error')), 'error')
       } finally {
         setLoading(false)
       }
@@ -178,21 +179,20 @@ export default function TransactionsPage() {
   }, [filters.query])
 
   async function reloadTransactions() {
-    setTxnLoading(true)
+    setLoading(true)
     try {
       const response = await transactionsApi.list(buildTransactionParams(filters, debouncedQuery))
       setTransactions(response.data)
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudieron cargar los movimientos.'), 'error')
+      toast(getApiErrorMessage(error, t('transactions.toast_load_movements_error')), 'error')
     } finally {
-      setTxnLoading(false)
+      setLoading(false)
     }
   }
 
   useEffect(() => {
     setPage(1)
     void reloadTransactions()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery, filters.transactionType, filters.currency, filters.accountId, filters.period, filters.from, filters.to])
 
   useEffect(() => {
@@ -225,12 +225,13 @@ export default function TransactionsPage() {
   const startIndex = (currentPage - 1) * filters.pageSize
   const endIndex = Math.min(startIndex + filters.pageSize, transactions.length)
   const paginatedTransactions = transactions.slice(startIndex, endIndex)
+  const noCategoryLabel = t('transactions.no_category')
   const activeFilters = [
-    filters.transactionType !== 'all' ? `Tipo: ${filters.transactionType === 'INCOME' ? 'Ingresos' : 'Gastos'}` : null,
-    filters.currency !== 'all' ? `Moneda: ${filters.currency}` : null,
-    filters.accountId !== 'all' ? `Cuenta: ${getCompactAccountName(Number(filters.accountId), accounts)}` : null,
-    filters.period !== 'all' ? `Período: ${getPeriodLabel(filters.period)}` : null,
-    filters.query.trim() ? `Búsqueda: ${filters.query.trim()}` : null,
+    filters.transactionType !== 'all' ? t(filters.transactionType === 'INCOME' ? 'transactions.chip_type_income' : 'transactions.chip_type_expense') : null,
+    filters.currency !== 'all' ? t('transactions.chip_currency', { value: filters.currency }) : null,
+    filters.accountId !== 'all' ? t('transactions.chip_account', { value: getCompactAccountName(Number(filters.accountId), accounts) }) : null,
+    filters.period !== 'all' ? t('transactions.chip_period', { value: getPeriodLabel(filters.period, t) }) : null,
+    filters.query.trim() ? t('transactions.chip_search', { value: filters.query.trim() }) : null,
   ].filter(Boolean) as string[]
 
   function resetForm() {
@@ -258,43 +259,43 @@ export default function TransactionsPage() {
     event.preventDefault()
 
     if (form.description.trim().length < 2) {
-      toast('La descripción debe tener al menos 2 caracteres.', 'error')
+      toast(t('transactions.toast_desc_short'), 'error')
       return
     }
 
     if (!form.transactionType) {
-      toast('Selecciona el tipo de movimiento (Gasto o Ingreso).', 'error')
+      toast(t('transactions.toast_select_type'), 'error')
       return
     }
 
     const amount = Number(form.amount)
     if (Number.isNaN(amount) || amount <= 0) {
-      toast('El monto debe ser mayor que 0.', 'error')
+      toast(t('transactions.toast_amount_zero'), 'error')
       return
     }
 
     if (!form.accountId) {
-      toast('Selecciona una cuenta para registrar el movimiento.', 'error')
+      toast(t('transactions.toast_select_account'), 'error')
       return
     }
 
     if (form.transactionType === 'EXPENSE' && (!form.categoryId || form.categoryId === 'none')) {
-      toast('Los gastos deben tener una categoría asociada.', 'error')
+      toast(t('transactions.toast_category_required'), 'error')
       return
     }
 
     if (!form.occurredDate) {
-      toast('Selecciona la fecha del movimiento.', 'error')
+      toast(t('transactions.toast_select_date'), 'error')
       return
     }
 
     if (!form.occurredTime) {
-      toast('Selecciona la hora del movimiento.', 'error')
+      toast(t('transactions.toast_select_time'), 'error')
       return
     }
 
     if (!selectedAccount) {
-      toast('Primero crea o selecciona una cuenta para registrar movimientos.', 'error')
+      toast(t('transactions.toast_no_account'), 'error')
       return
     }
 
@@ -314,15 +315,15 @@ export default function TransactionsPage() {
     try {
       if (editingId != null) {
         await transactionsApi.update(editingId, payload)
-        toast('Movimiento actualizado con éxito.')
+        toast(t('transactions.toast_updated'))
       } else {
         await transactionsApi.create(payload)
-        toast('Movimiento guardado con éxito.')
+        toast(t('transactions.toast_saved'))
       }
       resetForm()
       await reloadTransactions()
     } catch (submitError) {
-      toast(getApiErrorMessage(submitError, 'No se pudo guardar el movimiento.'), 'error')
+      toast(getApiErrorMessage(submitError, t('transactions.toast_save_error')), 'error')
     } finally {
       setSaving(false)
     }
@@ -340,11 +341,11 @@ export default function TransactionsPage() {
         amount,
         occurred_at: occurredAt,
       })
-      toast('Transferencia registrada con éxito.')
+      toast(t('transactions.toast_transfer_ok'))
       setTransferOpen(false)
       await reloadTransactions()
     } catch (transferError) {
-      toast(getApiErrorMessage(transferError, 'No se pudo registrar la transferencia.'), 'error')
+      toast(getApiErrorMessage(transferError, t('transactions.toast_transfer_error')), 'error')
     } finally {
       setSaving(false)
     }
@@ -368,10 +369,10 @@ export default function TransactionsPage() {
         occurred_at: occurredAt,
       })
       setMoveToPocketOpen(false)
-      toast('Monto movido al bolsillo con éxito.')
+      toast(t('transactions.toast_pocket_ok'))
       await reloadTransactions()
     } catch (moveError) {
-      toast(getApiErrorMessage(moveError, 'No se pudo mover el monto al bolsillo.'), 'error')
+      toast(getApiErrorMessage(moveError, t('transactions.toast_pocket_error')), 'error')
     } finally {
       setSaving(false)
     }
@@ -384,10 +385,10 @@ export default function TransactionsPage() {
     try {
       await transactionsApi.delete(transactionId)
       if (editingId === transactionId) resetForm()
-      toast('Movimiento eliminado con éxito.')
+      toast(t('transactions.toast_deleted'))
       await reloadTransactions()
     } catch (deleteError) {
-      toast(getApiErrorMessage(deleteError, 'No se pudo eliminar el movimiento.'), 'error')
+      toast(getApiErrorMessage(deleteError, t('transactions.toast_delete_error')), 'error')
     } finally {
       setDeletingId(null)
     }
@@ -396,7 +397,7 @@ export default function TransactionsPage() {
   if (loading) {
     return (
       <div className="app-panel p-6 flex min-h-72 items-center justify-center">
-        <LoadingSpinner text="Cargando movimientos..." />
+        <LoadingSpinner text={t('transactions.loading')} />
       </div>
     )
   }
@@ -405,8 +406,8 @@ export default function TransactionsPage() {
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       {/* Page header */}
       <div>
-        <h1 className="app-title text-xl">Movimientos</h1>
-        <p className="app-subtitle text-sm mt-0.5">Registra, filtra y administra tus ingresos y gastos desde una sola vista.</p>
+        <h1 className="app-title text-xl">{t('transactions.title')}</h1>
+        <p className="app-subtitle text-sm mt-0.5">{t('transactions.subtitle')}</p>
       </div>
 
       {modalOpen && (
@@ -487,18 +488,18 @@ export default function TransactionsPage() {
           setPendingDeleteId(transactionId)
         }}
         getCompactAccountName={getCompactAccountName}
-        getCategoryName={getCategoryName}
+        getCategoryName={(id, cats) => getCategoryName(id, cats, noCategoryLabel)}
         formatCurrency={formatCurrency}
         normalizeTransactionType={normalizeTransactionType}
       />
 
       <FloatingActionMenu
         hidden={modalOpen || transferOpen || moveToPocketOpen || pendingDeleteId !== null}
-        ariaLabel="Abrir acciones de movimientos"
+        ariaLabel={t('transactions.fab_menu_label')}
         items={[
           {
             key: 'move-to-pocket',
-            label: 'Mover a bolsillo',
+            label: t('transactions.fab_pocket'),
             onClick: () => setMoveToPocketOpen(true),
             icon: (
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
@@ -510,7 +511,7 @@ export default function TransactionsPage() {
           },
           {
             key: 'transfer',
-            label: 'Mover dinero entre cuentas',
+            label: t('transactions.fab_transfer'),
             onClick: () => setTransferOpen(true),
             icon: (
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
@@ -521,7 +522,7 @@ export default function TransactionsPage() {
           },
           {
             key: 'register-transaction',
-            label: 'Registrar movimiento',
+            label: t('transactions.fab_register'),
             onClick: () => { resetForm(); setModalOpen(true) },
             icon: (
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

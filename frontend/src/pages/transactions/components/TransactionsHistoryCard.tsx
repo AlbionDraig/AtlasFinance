@@ -3,6 +3,7 @@ import Badge from '@/components/ui/Badge'
 import Tooltip from '@/components/ui/Tooltip'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
+import { useTranslation } from 'react-i18next'
 import type { Category } from '@/api/categories'
 import type { Account, Transaction } from '@/types'
 
@@ -55,6 +56,7 @@ export default function TransactionsHistoryCard({
   expenseTotal,
   currency,
 }: TransactionsHistoryCardProps) {
+  const { t } = useTranslation()
   type MetricVariant = 'neutral' | 'positive' | 'negative'
 
   function isTransferTransaction(transaction: Transaction): boolean {
@@ -67,26 +69,26 @@ export default function TransactionsHistoryCard({
     {
       key: 'count',
       variant: 'neutral' as const,
-      label: `${filteredTransactions.length} movimientos`,
-      help: 'Total de movimientos que cumplen los filtros actuales.',
+      label: t('transactions.metric_total', { count: filteredTransactions.length }),
+      help: t('transactions.metric_total_help'),
     },
     {
       key: 'income',
       variant: 'positive' as const,
-      label: `Ingresos ${formatCurrency(incomeTotal, currency)}`,
-      help: 'Suma de transacciones de ingreso dentro del filtro activo.',
+      label: `${t('transactions.filter_type_income')} ${formatCurrency(incomeTotal, currency)}`,
+      help: t('transactions.metric_income_help'),
     },
     {
       key: 'expense',
       variant: 'negative' as const,
-      label: `Gastos ${formatCurrency(expenseTotal, currency)}`,
-      help: 'Suma de transacciones de gasto dentro del filtro activo.',
+      label: `${t('transactions.filter_type_expense')} ${formatCurrency(expenseTotal, currency)}`,
+      help: t('transactions.metric_expense_help'),
     },
     {
       key: 'net',
       variant: netFlow >= 0 ? 'positive' : 'negative',
-      label: `Flujo neto ${formatCurrency(netFlow, currency)}`,
-      help: 'Diferencia entre ingresos y gastos en el filtro actual.',
+      label: `${t('dashboard.chart_legend_cashflow')} ${formatCurrency(netFlow, currency)}`,
+      help: t('transactions.metric_flow_help'),
     },
   ]
 
@@ -102,11 +104,11 @@ export default function TransactionsHistoryCard({
             </svg>
           </div>
           <div>
-            <h2 className="text-sm font-medium text-neutral-900">Historial de movimientos</h2>
+            <h2 className="text-sm font-medium text-neutral-900">{t('transactions.table_title')}</h2>
             <p className="text-xs text-neutral-400">
               {filteredTransactions.length
-                ? `${startIndex + 1}–${endIndex} de ${filteredTransactions.length} movimientos`
-                : 'Sin resultados'}
+                ? t('transactions.table_range', { start: startIndex + 1, end: endIndex, total: filteredTransactions.length })
+                : t('common.noResults')}
             </p>
           </div>
         </div>
@@ -133,8 +135,8 @@ export default function TransactionsHistoryCard({
             </svg>
           </div>
           <div>
-            <p className="text-sm font-medium text-neutral-900">No hay movimientos</p>
-            <p className="mt-1 text-xs text-neutral-400">Ajusta los filtros o registra un nuevo movimiento.</p>
+            <p className="text-sm font-medium text-neutral-900">{t('transactions.table_empty_title')}</p>
+            <p className="mt-1 text-xs text-neutral-400">{t('transactions.table_empty_desc')}</p>
           </div>
         </div>
       ) : (
@@ -150,12 +152,12 @@ export default function TransactionsHistoryCard({
             </colgroup>
             <thead>
               <tr>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Fecha</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Descripción</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Cuenta</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Categoría</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Monto</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Acciones</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_date')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_desc')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_account')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_category')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_amount')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -207,7 +209,7 @@ export default function TransactionsHistoryCard({
                     {/* Categoría */}
                     <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-sm text-neutral-700 align-middle">
                       {getCategoryName(transaction.category_id, categories) || (
-                        <span className="text-xs italic text-neutral-300">Sin categoría</span>
+                        <span className="text-xs italic text-neutral-300">{t('transactions.no_category')}</span>
                       )}
                     </td>
 

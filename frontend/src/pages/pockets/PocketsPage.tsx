@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type Dispatch, type FormEvent, type SetStateAction } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
 import { accountsApi } from '@/api/accounts'
 import { banksApi, type Bank } from '@/api/banks'
@@ -109,6 +110,7 @@ function PocketModal({
   onSubmit,
   onClose,
 }: PocketModalProps) {
+  const { t } = useTranslation()
   const selectedAccount = accounts.find((account) => String(account.id) === form.account_id)
 
   return (
@@ -120,7 +122,7 @@ function PocketModal({
             type="button"
             onClick={onClose}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-            aria-label="Cerrar"
+            aria-label={t('common.close')}
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -129,24 +131,24 @@ function PocketModal({
         </div>
 
         <form onSubmit={onSubmit} className="px-5 py-4 space-y-4">
-          <FormField label="Nombre">
+          <FormField label={t('pockets.field_name')}>
             <input
               className="app-control"
               type="text"
               value={form.name}
               onChange={event => setForm(current => ({ ...current, name: event.target.value }))}
-              placeholder="Ej: Fondo de viajes"
+              placeholder={t('pockets.field_name_placeholder')}
               maxLength={120}
               autoFocus
             />
           </FormField>
 
-          <FormField label="Cuenta asociada">
+          <FormField label={t('pockets.field_account')}>
             <Select
               value={form.account_id}
               onChange={(value) => setForm(current => ({ ...current, account_id: value }))}
               options={[
-                { value: '', label: 'Selecciona una cuenta' },
+                { value: '', label: t('pockets.field_account_select') },
                 ...accounts.map(account => ({
                   value: String(account.id),
                   label: `${account.name} · ${account.currency}`,
@@ -158,7 +160,7 @@ function PocketModal({
           </FormField>
 
           {!isEditing ? (
-            <FormField label="Saldo inicial">
+            <FormField label={t('pockets.field_initial_balance')}>
               <AmountInput
                 value={form.balance}
                 onChange={raw => setForm(current => ({ ...current, balance: raw }))}
@@ -168,11 +170,11 @@ function PocketModal({
               />
               <InlineAlert
                 className="mt-2"
-                message={<>El saldo inicial no se puede modificar después de crear el bolsillo. Usa <span className="font-medium">Mover a bolsillo</span> para actualizar el saldo.</>}
+                message={<>{t('pockets.initial_balance_alert')}</>}
               />
             </FormField>
           ) : (
-            <FormField label="Saldo actual">
+            <FormField label={t('pockets.field_current_balance')}>
               <p className="app-control w-full min-h-10 flex items-center text-neutral-700">
                 {formatCurrency(currentBalance ?? 0, currentCurrency ?? selectedAccount?.currency ?? 'COP')}
               </p>
@@ -180,8 +182,7 @@ function PocketModal({
           )}
 
           <p className="text-xs text-neutral-400">
-            Los bolsillos solo guardan dinero para propósitos específicos y usan la misma moneda de la cuenta:
-            <span className="text-neutral-700"> {selectedAccount?.currency ?? 'N/A'}</span>
+            {t('pockets.currency_note', { currency: selectedAccount?.currency ?? 'N/A' })}
           </p>
 
           <div className="flex justify-end gap-2 pt-1">
@@ -190,14 +191,14 @@ function PocketModal({
               onClick={onClose}
               className="px-4 py-2 text-sm rounded-lg border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand transition-colors"
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={saving}
               className="px-4 py-2 text-sm rounded-lg bg-brand text-white hover:bg-brand-hover disabled:opacity-50 transition-colors"
             >
-              {saving ? 'Guardando…' : submitLabel}
+              {saving ? t('pockets.submitting') : submitLabel}
             </button>
           </div>
         </form>
@@ -207,6 +208,7 @@ function PocketModal({
 }
 
 export default function PocketsPage() {
+  const { t } = useTranslation()
   const { toast } = useToast()
 
   const [loading, setLoading] = useState(true)
@@ -235,7 +237,7 @@ export default function PocketsPage() {
         setAccounts(accountsResponse.data)
         setBanks(banksResponse.data)
       } catch (error) {
-        toast(getApiErrorMessage(error, 'No se pudo cargar la información de bolsillos.'), 'error')
+        toast(getApiErrorMessage(error, t('pockets.toast_load_error')), 'error')
       } finally {
         setLoading(false)
       }
@@ -292,24 +294,24 @@ export default function PocketsPage() {
   const activeFilters = useMemo(() => {
     const list: string[] = []
     const normalizedQuery = filters.query.trim()
-    if (normalizedQuery) list.push(`Búsqueda: ${normalizedQuery}`)
+    if (normalizedQuery) list.push(t('pockets.chip_search', { value: normalizedQuery }))
 
     if (filters.accountId !== 'all') {
       const accountName = accountById.get(Number(filters.accountId))?.name
-      list.push(`Cuenta: ${accountName ?? `#${filters.accountId}`}`)
+      list.push(t('pockets.chip_account', { value: accountName ?? `#${filters.accountId}` }))
     }
 
     if (filters.bankId !== 'all') {
       const bankName = bankById.get(Number(filters.bankId))?.name
-      list.push(`Banco: ${bankName ?? `#${filters.bankId}`}`)
+      list.push(t('pockets.chip_bank', { value: bankName ?? `#${filters.bankId}` }))
     }
 
     if (filters.currency !== 'all') {
-      list.push(`Moneda: ${filters.currency}`)
+      list.push(t('pockets.chip_currency', { value: filters.currency }))
     }
 
     return list
-  }, [filters, accountById, bankById])
+  }, [filters, accountById, bankById, t])
 
   function resetForm() {
     setForm(EMPTY_FORM)
@@ -341,21 +343,21 @@ export default function PocketsPage() {
 
     // Validate and normalize form state before calling API.
     if (name.length < 2) {
-      toast('El nombre del bolsillo debe tener al menos 2 caracteres.', 'error')
+      toast(t('pockets.toast_name_short'), 'error')
       return null
     }
     if (!Number.isInteger(accountId) || accountId <= 0) {
-      toast('Selecciona una cuenta para el bolsillo.', 'error')
+      toast(t('pockets.toast_select_account'), 'error')
       return null
     }
     if (!Number.isFinite(balance) || balance < 0) {
-      toast('El saldo inicial debe ser un número mayor o igual a 0.', 'error')
+      toast(t('pockets.toast_balance_invalid'), 'error')
       return null
     }
 
     const selectedAccount = accountById.get(accountId)
     if (!selectedAccount) {
-      toast('La cuenta seleccionada no es válida.', 'error')
+      toast(t('pockets.toast_invalid_account'), 'error')
       return null
     }
 
@@ -371,19 +373,18 @@ export default function PocketsPage() {
     const name = form.name.trim()
     const accountId = Number(form.account_id)
 
-    // Update flow excludes balance because backend keeps it immutable here.
     if (name.length < 2) {
-      toast('El nombre del bolsillo debe tener al menos 2 caracteres.', 'error')
+      toast(t('pockets.toast_name_short'), 'error')
       return null
     }
     if (!Number.isInteger(accountId) || accountId <= 0) {
-      toast('Selecciona una cuenta para el bolsillo.', 'error')
+      toast(t('pockets.toast_select_account'), 'error')
       return null
     }
 
     const selectedAccount = accountById.get(accountId)
     if (!selectedAccount) {
-      toast('La cuenta seleccionada no es válida.', 'error')
+      toast(t('pockets.toast_invalid_account'), 'error')
       return null
     }
 
@@ -403,9 +404,9 @@ export default function PocketsPage() {
       const response = await pocketsApi.create(payload)
       setPockets(current => [response.data, ...current])
       closeCreateModal()
-      toast('Bolsillo creado con éxito.')
+      toast(t('pockets.toast_created'))
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo crear el bolsillo.'), 'error')
+      toast(getApiErrorMessage(error, t('pockets.toast_create_error')), 'error')
     } finally {
       setSaving(false)
     }
@@ -423,9 +424,9 @@ export default function PocketsPage() {
       setPockets(current => current.map(pocket => (pocket.id === editingPocket.id ? response.data : pocket)))
       setEditingPocket(null)
       resetForm()
-      toast('Bolsillo actualizado con éxito.')
+      toast(t('pockets.toast_updated'))
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo actualizar el bolsillo.'), 'error')
+      toast(getApiErrorMessage(error, t('pockets.toast_update_error')), 'error')
     } finally {
       setSaving(false)
     }
@@ -438,9 +439,9 @@ export default function PocketsPage() {
       await pocketsApi.delete(deletingPocket.id)
       setPockets(current => current.filter(pocket => pocket.id !== deletingPocket.id))
       setDeletingPocket(null)
-      toast('Bolsillo eliminado.')
+      toast(t('pockets.toast_deleted'))
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo eliminar el bolsillo.'), 'error')
+      toast(getApiErrorMessage(error, t('pockets.toast_delete_error')), 'error')
     } finally {
       setSaving(false)
     }
@@ -449,7 +450,7 @@ export default function PocketsPage() {
   if (loading) {
     return (
       <div className="app-panel p-6 flex min-h-72 items-center justify-center">
-        <LoadingSpinner text="Cargando bolsillos..." />
+        <LoadingSpinner text={t('pockets.loading')} />
       </div>
     )
   }
@@ -457,21 +458,21 @@ export default function PocketsPage() {
   return (
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       <div>
-        <h1 className="app-title text-xl">Bolsillos</h1>
+        <h1 className="app-title text-xl">{t('pockets.title')}</h1>
         <p className="app-subtitle text-sm mt-0.5">
-          Asocia bolsillos a tus cuentas para separar dinero por propósito.
+          {t('pockets.subtitle')}
         </p>
       </div>
 
       {createOpen && (
         <PocketModal
-          title="Crear bolsillo"
+          title={t('pockets.create_title')}
           isEditing={false}
           form={form}
           setForm={setForm}
           accounts={accounts}
           saving={saving}
-          submitLabel="Crear bolsillo"
+          submitLabel={t('pockets.submit_create')}
           onSubmit={handleCreate}
           onClose={closeCreateModal}
         />
@@ -479,7 +480,7 @@ export default function PocketsPage() {
 
       {editingPocket && (
         <PocketModal
-          title="Editar bolsillo"
+          title={t('pockets.edit_title')}
           isEditing
           form={form}
           setForm={setForm}
@@ -487,7 +488,7 @@ export default function PocketsPage() {
           currentBalance={editingPocket.balance}
           currentCurrency={editingPocket.currency}
           saving={saving}
-          submitLabel="Guardar cambios"
+          submitLabel={t('pockets.submit_edit')}
           onSubmit={handleUpdate}
           onClose={() => {
             setEditingPocket(null)
@@ -498,8 +499,8 @@ export default function PocketsPage() {
 
       {deletingPocket && (
         <ConfirmDeleteModal
-          title="Eliminar bolsillo"
-          description={`¿Seguro que deseas eliminar el bolsillo "${deletingPocket.name}"?`}
+          title={t('pockets.delete_title')}
+          description={t('pockets.delete_desc', { name: deletingPocket.name })}
           loading={saving}
           onConfirm={handleDelete}
           onClose={() => setDeletingPocket(null)}
@@ -517,18 +518,18 @@ export default function PocketsPage() {
 
       {accounts.length === 0 ? (
         <div className="app-card p-8 text-center space-y-2">
-          <p className="text-sm text-neutral-700">Necesitas crear una cuenta antes de registrar bolsillos.</p>
-          <p className="text-xs text-neutral-400">Los bolsillos siempre pertenecen a una cuenta bancaria.</p>
+          <p className="text-sm text-neutral-700">{t('pockets.empty_no_accounts_title')}</p>
+          <p className="text-xs text-neutral-400">{t('pockets.empty_no_accounts_desc')}</p>
         </div>
       ) : filteredPockets.length === 0 ? (
         <div className="app-card p-10 text-center space-y-2">
           <p className="text-sm text-neutral-700">
-            {pockets.length === 0 ? 'Aún no tienes bolsillos.' : 'No hay bolsillos que coincidan con los filtros.'}
+            {pockets.length === 0 ? t('pockets.empty_no_pockets') : t('pockets.empty_no_results')}
           </p>
           <p className="text-xs text-neutral-400">
             {pockets.length === 0
-              ? 'Crea el primero para separar dinero por metas específicas.'
-              : 'Prueba con otro término o limpia los filtros.'}
+              ? t('pockets.empty_create_hint')
+              : t('pockets.empty_filter_hint')}
           </p>
         </div>
       ) : (
@@ -571,7 +572,7 @@ export default function PocketsPage() {
                     {formatCurrency(pocket.balance, pocket.currency)}
                   </p>
                   <p className="text-sm text-neutral-400 mt-1">
-                    Cuenta asociada: <span className="text-neutral-700">{account?.name ?? `#${pocket.account_id}`}</span>
+                    {t('pockets.card_account', { name: account?.name ?? `#${pocket.account_id}` })}
                   </p>
                 </div>
 
@@ -587,11 +588,11 @@ export default function PocketsPage() {
 
       <FloatingActionMenu
         hidden={createOpen || editingPocket !== null || accounts.length === 0}
-        ariaLabel="Abrir acciones de bolsillos"
+        ariaLabel={t('pockets.fab_menu_label')}
         items={[
           {
             key: 'create-pocket',
-            label: 'Crear bolsillo',
+            label: t('pockets.fab_create'),
             onClick: openCreateModal,
             icon: (
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">

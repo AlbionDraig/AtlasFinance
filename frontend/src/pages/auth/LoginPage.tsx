@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { authApi } from '@/api/auth'
 import AuthLoadingOverlay from '@/components/ui/AuthLoadingOverlay'
 import FormField from '@/components/ui/FormField'
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const { setUser } = useAuthStore()
   const { toast } = useToast()
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -18,7 +20,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (sessionStorage.getItem('session_expired')) {
       sessionStorage.removeItem('session_expired')
-      toast('Tu sesión ha expirado. Inicia sesión de nuevo.', 'error')
+      toast(t('auth.login.error_expired'), 'error')
     }
   }, [])
 
@@ -45,18 +47,18 @@ export default function LoginPage() {
 
       if (status === 401 || status === 403) {
         if (detail?.toLowerCase().includes('invalid credentials')) {
-          toast('Correo o contraseña incorrectos. Si tu usuario no existe, regístralo de nuevo.', 'error')
+          toast(t('auth.login.error_invalid'), 'error')
         } else {
-          toast(detail ?? 'Credenciales inválidas. Verifica tu correo y contraseña.', 'error')
+          toast(detail ?? t('auth.login.error_bad_credentials'), 'error')
         }
       } else if (status === 422) {
-        toast('Credenciales incorrectas. Verifica tu correo y contraseña.', 'error')
+        toast(t('auth.login.error_wrong_credentials'), 'error')
       } else if (status && status >= 500) {
-        toast('El servidor no respondió correctamente. Intenta de nuevo en unos segundos.', 'error')
+        toast(t('auth.login.error_server'), 'error')
       } else if (status) {
-        toast(detail ?? 'Error inesperado. Intenta de nuevo.', 'error')
+        toast(detail ?? t('auth.login.error_unexpected'), 'error')
       } else {
-        toast('No se pudo conectar con el servidor. Revisa tu conexión.', 'error')
+        toast(t('auth.login.error_network'), 'error')
       }
     } finally {
       setLoading(false)
@@ -71,8 +73,8 @@ export default function LoginPage() {
 
       {loading && (
         <AuthLoadingOverlay
-          title="Iniciando sesión"
-          subtitle="Validando tus credenciales..."
+          title={t('auth.login.loading_title')}
+          subtitle={t('auth.login.loading_subtitle')}
         />
       )}
 
@@ -87,43 +89,43 @@ export default function LoginPage() {
         </div>
 
         <h1 className="app-title text-2xl text-center mb-1 tracking-tight">
-          Atlas Finance
+          {t('common.atlasFinance')}
         </h1>
         <p className="app-subtitle text-sm text-center mb-6">
-          Inicia sesión en tu cuenta
+          {t('auth.login.subtitle')}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <FormField
-            label="Email"
+            label={t('auth.login.email_label')}
             type="email"
             required
             autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu_correo@ejemplo.com"
+            placeholder={t('auth.login.email_placeholder')}
           />
           <FormField
-            label="Contraseña"
+            label={t('auth.login.password_label')}
             type="password"
             required
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Tu contraseña"
+            placeholder={t('auth.login.password_placeholder')}
           />
           <button
             type="submit"
             disabled={loading}
             className="app-btn-primary"
           >
-            {loading ? 'Ingresando…' : 'Iniciar sesión'}
+            {loading ? t('auth.login.submitting') : t('auth.login.submit')}
           </button>
 
           <p className="text-center text-sm app-subtitle">
-            ¿No tienes cuenta?{' '}
+            {t('auth.login.no_account')}{' '}
             <Link to="/register" className="app-link">
-              Crear cuenta
+              {t('auth.login.create_account')}
             </Link>
           </p>
         </form>

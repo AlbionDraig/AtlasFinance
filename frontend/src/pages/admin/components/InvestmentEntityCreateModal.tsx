@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
 import type { InvestmentEntityType } from '@/api/investmentEntities'
@@ -30,6 +31,8 @@ export default function InvestmentEntityCreateModal({
   onSubmit,
   onClose,
 }: InvestmentEntityCreateModalProps) {
+  const { t } = useTranslation()
+
   return (
     <Modal onClose={onClose} maxWidth="max-w-xl">
       <div className="w-full rounded-2xl border border-neutral-100 border-t-4 border-t-brand bg-white shadow-xl overflow-visible">
@@ -40,12 +43,12 @@ export default function InvestmentEntityCreateModal({
             </svg>
           </div>
           <div>
-            <h2 className="app-section-title text-brand-text">Crear entidad de inversión</h2>
-            <p className="mt-0.5 text-sm text-neutral-700">Agrega una entidad para asociar nuevas inversiones.</p>
+            <h2 className="app-section-title text-brand-text">{t('admin.entities.create_title')}</h2>
+            <p className="mt-0.5 text-sm text-neutral-700">{t('admin.entities.create_desc')}</p>
           </div>
           <button
             type="button"
-            aria-label="Cerrar"
+            aria-label={t('common.close')}
             className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
             onClick={onClose}
           >
@@ -80,7 +83,7 @@ export default function InvestmentEntityCreateModal({
           </div>
 
           <div className="space-y-1">
-            <label className="app-label">País</label>
+            <label className="app-label">{t('admin.entities.field_country')}</label>
             <Select
               value={countryCode}
               onChange={setCountryCode}
@@ -93,10 +96,10 @@ export default function InvestmentEntityCreateModal({
 
           <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
             <button type="submit" className="app-btn-primary" disabled={saving}>
-              {saving ? 'Creando entidad...' : 'Crear entidad'}
+              {saving ? t('admin.entities.submit_creating') : t('admin.entities.submit_create')}
             </button>
             <button type="button" className="app-btn-secondary" onClick={onClose}>
-              Cancelar
+              {t('common.cancel')}
             </button>
           </div>
         </form>

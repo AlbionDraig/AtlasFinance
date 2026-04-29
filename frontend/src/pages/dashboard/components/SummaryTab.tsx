@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -21,47 +22,19 @@ import {
   deltaBadge, deltaPointsBadge, toneFn, toneToVariant,
 } from './dashboardUtils'
 
-// ─── Help descriptions ───────────────────────────────────────────────────────
-const KPI_HELP: Record<string, string> = {
-  'Patrimonio neto': 'Suma de los saldos actuales de tus cuentas más el valor actual de tus inversiones en la moneda seleccionada. Refleja tu riqueza neta disponible en este momento.',
-  'Ingresos': 'Total de entradas de dinero registradas en el período. Incluye salarios, transferencias recibidas y cualquier otro ingreso.',
-  'Gastos': 'Total de egresos del período. Cuanto más bajo sea respecto a tus ingresos, mayor es tu capacidad de ahorro.',
-  'Tasa de ahorro': 'Porcentaje de tus ingresos que no gastaste. ≥20% es saludable, 5–19% moderado, <5% requiere atención.',
-}
-
-const INSIGHT_HELP: Record<string, string> = {
-  'Balance del período': 'Ingresos menos gastos del período seleccionado. Positivo significa que generaste excedente; negativo indica déficit.',
-  'Movimientos': 'Número total de transacciones registradas en el período. Un volumen muy alto puede indicar atomización del gasto.',
-  'Relación gastos/ingresos': 'Qué fracción de tus ingresos se va en gastos. ≤70% es saludable, 71–90% moderado, >90% indica que estás gastando casi todo lo que ganas.',
-  'Mayor impacto': 'La categoría que concentró el mayor monto de gasto en el período. Útil para identificar dónde recortar.',
-  'Mayor gasto individual': 'La transacción de egreso con el mayor importe registrado en el período.',
-  'Cobertura de efectivo': 'Cuántos meses podrías sostenerte con tu patrimonio actual al ritmo de gasto mensual promedio del período. Se recomienda ≥6 meses.',
-  'Mes más costoso': 'El mes que concentró el mayor nivel de gasto dentro del período seleccionado.',
-  'Variación del gasto': 'Cambio porcentual del gasto total versus el período inmediatamente anterior de igual duración.',
-  'Participación gasto fijo': 'Proporción del gasto total que corresponde a obligaciones recurrentes (arriendo, servicios, suscripciones, etc.). <35% flexible, 35–60% normal, >60% comprometido.',
-}
-
-const CHART_HELP: Record<string, string> = {
-  'Ingresos vs gastos': 'Barras mensuales de ingresos y gastos lado a lado. Permite detectar rápidamente los meses en que los gastos superaron los ingresos.',
-  'Flujo neto mensual': 'Diferencia mensual entre ingresos y gastos (ingresos − gastos). Valores positivos significan ahorro, negativos significan déficit en ese mes.',
-  'Top categorías': 'Las 10 categorías de gasto más importantes del período, ordenadas de mayor a menor importe. Revela dónde se concentra tu gasto.',
-  'Distribución de gasto': 'Vista proporcional (donut) de cuánto representa cada categoría sobre el gasto total. Ideal para ver la composición del gasto de un vistazo.',
-  'Ahorro acumulado': 'Suma del flujo neto mes a mes a lo largo del período. Muestra si tu ahorro crece de forma sostenida o se erosiona en algún punto.',
-  'Gasto fijo vs variable': 'Compara el total gastado en obligaciones fijas (arriendo, servicios, suscripciones) contra gastos discrecionales o variables.',
-  'Gasto por categoría por mes': 'Barras apiladas que muestran cómo evoluciona el gasto de las 5 principales categorías mes a mes. Útil para detectar tendencias por rubro.',
-}
+// Help descriptions and chart help are now served via t() calls in the component.
 
 // ─── Chart options ────────────────────────────────────────────────────────────
-const CHART_OPTIONS = [
-  'Ingresos vs gastos',
-  'Flujo neto mensual',
-  'Top categorías',
-  'Distribución de gasto',
-  'Ahorro acumulado',
-  'Gasto fijo vs variable',
-  'Gasto por categoría por mes',
+const CHART_OPTION_KEYS = [
+  'chart_income_vs_expense',
+  'chart_net_flow',
+  'chart_top_categories',
+  'chart_expense_dist',
+  'chart_savings',
+  'chart_fixed_var',
+  'chart_by_category_month',
 ] as const
-type ChartType = typeof CHART_OPTIONS[number]
+type ChartOptionKey = typeof CHART_OPTION_KEYS[number]
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 function HelpTooltip({ text }: { text: string }) {
@@ -164,15 +137,16 @@ interface SummaryTabProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabProps) {
+  const { t } = useTranslation()
   const today = new Date()
   const todayStr = toISODate(today)
   const yearStart = `${today.getFullYear()}-01-01`
   const dataBounds = { min: '2000-01-01', max: todayStr }
 
-  const [period, setPeriod] = useState<Period>('Año actual')
+  const [period, setPeriod] = useState<Period>('current_year')
   const [customFrom, setCustomFrom] = useState(yearStart)
   const [customTo, setCustomTo] = useState(todayStr)
-  const [chartType, setChartType] = useState<ChartType>('Ingresos vs gastos')
+  const [chartType, setChartType] = useState<ChartOptionKey>('chart_income_vs_expense')
 
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
   const [aggregates, setAggregates] = useState<DashboardAggregates | null>(null)
@@ -211,7 +185,7 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
         setMetrics(m.data)
         setAggregates(agg.data)
       })
-      .catch(() => toast('No se pudieron cargar los datos del dashboard.', 'error'))
+      .catch(() => toast(t('dashboard.error_load'), 'error'))
       .finally(() => setLoading(false))
   }, [currency, dateFrom.getTime(), dateTo.getTime()])
 
@@ -261,8 +235,8 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
   const fixedShare = expense > 0 ? (fixedTotal / expense) * 100 : null
 
   const fixedVarData = [
-    { name: 'Gasto fijo', value: fixedTotal },
-    { name: 'Gasto variable', value: expense - fixedTotal },
+    { name: t('dashboard.chart_label_fixed'), value: fixedTotal },
+    { name: t('dashboard.chart_label_variable'), value: expense - fixedTotal },
   ]
 
   const incomeBadge = deltaBadge(income, prevIncome)
@@ -281,32 +255,37 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
       {/* Filters */}
       <FilterCard sticky>
         <div className="flex flex-col gap-1">
-          <label className="app-label">Período</label>
+          <label className="app-label">{t('dashboard.label_period')}</label>
           <Select
             value={period}
             onChange={v => setPeriod(v as Period)}
-            options={['Año actual', 'Últimos 90 días', 'Últimos 30 días', 'Personalizado'].map(v => ({ value: v, label: v }))}
+            options={[
+              { value: 'current_year', label: t('dashboard.period_current_year') },
+              { value: 'last_90d', label: t('dashboard.period_90d') },
+              { value: 'last_30d', label: t('dashboard.period_30d') },
+              { value: 'custom', label: t('dashboard.period_custom') },
+            ]}
             className="w-44"
           />
         </div>
         <DatePicker
-          label="Desde"
-          value={period === 'Personalizado' ? customFrom : toISODate(dateFrom)}
+          label={t('dashboard.label_from')}
+          value={period === 'custom' ? customFrom : toISODate(dateFrom)}
           onChange={setCustomFrom}
           min={dataBounds.min}
           max={customTo < dataBounds.max ? customTo : dataBounds.max}
-          disabled={period !== 'Personalizado'}
+          disabled={period !== 'custom'}
         />
         <DatePicker
-          label="Hasta"
-          value={period === 'Personalizado' ? customTo : toISODate(dateTo)}
+          label={t('dashboard.label_until')}
+          value={period === 'custom' ? customTo : toISODate(dateTo)}
           onChange={setCustomTo}
           min={customFrom > dataBounds.min ? customFrom : dataBounds.min}
           max={dataBounds.max}
-          disabled={period !== 'Personalizado'}
+          disabled={period !== 'custom'}
         />
         <div className="flex flex-col gap-1 ml-auto">
-          <label className="app-label">Moneda</label>
+          <label className="app-label">{t('dashboard.label_currency')}</label>
           <Select
             value={currency}
             onChange={onCurrencyChange}
@@ -318,108 +297,108 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
 
       {/* KPI strip */}
       <section>
-        <SectionTitle>Indicadores clave</SectionTitle>
+        <SectionTitle>{t('dashboard.section_kpi')}</SectionTitle>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <KpiCard
-            label="Patrimonio neto"
+            label={t('dashboard.kpi_net_worth')}
             value={fmt(netWorth, currency)}
             accentClass="bg-brand"
             accentRingClass="ring-2 ring-brand/20"
             valueClass="text-brand"
-            sub="saldo actual"
-            badge={{ text: cashflowBadge.text, variant: toneToVariant(cashflowBadge.tone, 'brand'), hint: hasPrev ? `El flujo neto del período anterior fue ${fmt(prevCashflow, currency)}. Un flujo positivo mejora tu patrimonio acumulado.` : 'No hay período anterior para comparar.' }}
-            help={KPI_HELP['Patrimonio neto']}
+            sub={t('dashboard.kpi_sub_balance')}
+            badge={{ text: cashflowBadge.text, variant: toneToVariant(cashflowBadge.tone, 'brand'), hint: hasPrev ? `El flujo neto del período anterior fue ${fmt(prevCashflow, currency)}. Un flujo positivo mejora tu patrimonio acumulado.` : t('dashboard.delta_no_prior') }}
+            help={t('dashboard.help_net_worth')}
           />
           <KpiCard
-            label="Ingresos"
+            label={t('dashboard.kpi_income')}
             value={fmt(income, currency)}
             accentClass="bg-success"
             accentRingClass="ring-2 ring-success/20"
             valueClass="text-success"
-            sub="total del período"
-            badge={{ text: incomeBadge.text, variant: toneToVariant(incomeBadge.tone, 'success'), hint: hasPrev ? `En el período anterior tus ingresos fueron ${fmt(prevIncome, currency)}. ${incomeBadge.tone === 'positive' ? 'Generaste más ingresos, buen ritmo.' : incomeBadge.tone === 'negative' ? 'Tus ingresos cayeron respecto al período previo.' : 'Ingresos estables.'}` : 'No hay período anterior para comparar.' }}
-            help={KPI_HELP['Ingresos']}
+            sub={t('dashboard.kpi_sub_period')}
+            badge={{ text: incomeBadge.text, variant: toneToVariant(incomeBadge.tone, 'success'), hint: hasPrev ? `En el período anterior tus ingresos fueron ${fmt(prevIncome, currency)}. ${incomeBadge.tone === 'positive' ? t('dashboard.delta_income_up') : incomeBadge.tone === 'negative' ? t('dashboard.delta_income_down') : t('dashboard.delta_income_stable')}` : t('dashboard.delta_no_prior') }}
+            help={t('dashboard.help_income')}
           />
           <KpiCard
-            label="Gastos"
+            label={t('dashboard.kpi_expenses')}
             value={fmt(expense, currency)}
             accentClass="bg-warning"
             accentRingClass="ring-2 ring-warning/20"
             valueClass="text-warning"
-            sub="total del período"
-            badge={{ text: expenseBadge.text, variant: toneToVariant(expenseBadge.tone, 'warning'), hint: hasPrev ? `En el período anterior tus gastos fueron ${fmt(prevExpense, currency)}. ${expenseBadge.tone === 'positive' ? 'Gastaste menos que antes, bien.' : expenseBadge.tone === 'negative' ? 'Tus gastos aumentaron respecto al período previo.' : 'Gasto estable.'}` : 'No hay período anterior para comparar.' }}
-            help={KPI_HELP['Gastos']}
+            sub={t('dashboard.kpi_sub_period')}
+            badge={{ text: expenseBadge.text, variant: toneToVariant(expenseBadge.tone, 'warning'), hint: hasPrev ? `En el período anterior tus gastos fueron ${fmt(prevExpense, currency)}. ${expenseBadge.tone === 'positive' ? t('dashboard.delta_expense_down') : expenseBadge.tone === 'negative' ? t('dashboard.delta_expense_up') : t('dashboard.delta_expense_stable')}` : t('dashboard.delta_no_prior') }}
+            help={t('dashboard.help_expenses')}
           />
           <KpiCard
-            label="Tasa de ahorro"
-            value={income === 0 ? 'Sin datos' : `${Math.abs(savingsRate) >= 999 ? (savingsRate > 0 ? '>999' : '<-999') : savingsRate.toFixed(1)}%`}
-            sub={income > 0 ? (savingsRate >= 20 ? 'margen saludable' : savingsRate >= 5 ? 'margen moderado' : 'margen bajo') : 'sin ingresos'}
+            label={t('dashboard.kpi_savings_rate')}
+            value={income === 0 ? t('dashboard.kpi_sub_no_data') : `${Math.abs(savingsRate) >= 999 ? (savingsRate > 0 ? '>999' : '<-999') : savingsRate.toFixed(1)}%`}
+            sub={income > 0 ? (savingsRate >= 20 ? t('dashboard.kpi_sub_margin_healthy') : savingsRate >= 5 ? t('dashboard.kpi_sub_margin_moderate') : t('dashboard.kpi_sub_margin_low')) : t('dashboard.kpi_sub_no_income')}
             accentClass="bg-brand-deep"
             accentRingClass="ring-2 ring-brand-deep/20"
             valueClass="text-brand-deep"
-            badge={{ text: savingsBadge.text, variant: toneToVariant(savingsBadge.tone, 'brand'), hint: hasPrev ? `Tu tasa de ahorro en el período anterior fue ${prevSavings.toFixed(1)}%. ${savingsBadge.tone === 'positive' ? 'Estás ahorrando una mayor proporción de tus ingresos.' : savingsBadge.tone === 'negative' ? 'Tu tasa de ahorro bajó respecto al período previo.' : 'Tasa de ahorro estable.'}` : 'No hay período anterior para comparar.' }}
-            help={KPI_HELP['Tasa de ahorro']}
+            badge={{ text: savingsBadge.text, variant: toneToVariant(savingsBadge.tone, 'brand'), hint: hasPrev ? `Tu tasa de ahorro en el período anterior fue ${prevSavings.toFixed(1)}%. ${savingsBadge.tone === 'positive' ? t('dashboard.delta_savings_up') : savingsBadge.tone === 'negative' ? t('dashboard.delta_savings_down') : t('dashboard.delta_savings_stable')}` : t('dashboard.delta_no_prior') }}
+            help={t('dashboard.help_savings_rate')}
           />
         </div>
       </section>
 
       {/* Insight cards */}
       <section className="pt-1">
-        <SectionTitle>Análisis del período</SectionTitle>
+        <SectionTitle>{t('dashboard.section_analysis')}</SectionTitle>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <InsightCard label="Balance del período" value={fmt(balance, currency)} sub={balance > 0 ? 'Saldo positivo ✓' : balance < 0 ? 'Gastos superan ingresos' : 'Equilibrado'} tone={toneFn(balance)} help={INSIGHT_HELP['Balance del período']} />
-          <InsightCard label="Movimientos" value={`${(aggregates?.transaction_count ?? 0).toLocaleString('es-CO')}`} sub="Transacciones en el período" tone="neutral" help={INSIGHT_HELP['Movimientos']} />
+          <InsightCard label={t('dashboard.insight_balance')} value={fmt(balance, currency)} sub={balance > 0 ? t('dashboard.insight_sub_positive') : balance < 0 ? t('dashboard.insight_sub_negative') : t('dashboard.insight_sub_balanced')} tone={toneFn(balance)} help={t('dashboard.help_balance')} />
+          <InsightCard label={t('dashboard.insight_movements')} value={`${(aggregates?.transaction_count ?? 0).toLocaleString('es-CO')}`} sub={t('dashboard.insight_sub_transactions')} tone="neutral" help={t('dashboard.help_movements')} />
           <InsightCard
-            label="Relación gastos/ingresos"
-            value={expRatio != null ? `${expRatio.toFixed(1)}%` : 'Sin datos'}
-            sub={expRatio != null ? `${expRatio <= 70 ? 'saludable' : expRatio <= 90 ? 'moderado' : 'alto'} · ${fmt(expense, currency)} de ${fmt(income, currency)}` : 'No hay ingresos'}
+            label={t('dashboard.insight_expense_ratio')}
+            value={expRatio != null ? `${expRatio.toFixed(1)}%` : t('dashboard.insight_sub_no_data')}
+            sub={expRatio != null ? `${expRatio <= 70 ? t('dashboard.insight_sub_healthy') : expRatio <= 90 ? t('dashboard.insight_sub_moderate') : t('dashboard.insight_sub_high')} · ${fmt(expense, currency)} de ${fmt(income, currency)}` : t('dashboard.insight_sub_no_income')}
             tone={expRatio == null ? 'neutral' : expRatio <= 70 ? 'positive' : expRatio <= 90 ? 'flat' : 'negative'}
-            help={INSIGHT_HELP['Relación gastos/ingresos']}
+            help={t('dashboard.help_expense_ratio')}
           />
-          <InsightCard label="Mayor impacto" value={topCat?.name ?? 'Sin gastos'} sub={topCat ? `${topCatShare.toFixed(1)}% del gasto · ${fmt(topCat.value, currency)}` : 'No hay egresos suficientes'} tone="neutral" help={INSIGHT_HELP['Mayor impacto']} />
-          <InsightCard label="Mayor gasto individual" value={biggestExpAmount != null ? fmt(biggestExpAmount, currency) : 'Sin gastos'} sub={biggestExpDescription ?? 'No hay egresos registrados'} tone="negative" help={INSIGHT_HELP['Mayor gasto individual']} />
+          <InsightCard label={t('dashboard.insight_top_category')} value={topCat?.name ?? t('dashboard.insight_sub_no_spending')} sub={topCat ? `${topCatShare.toFixed(1)}% del gasto · ${fmt(topCat.value, currency)}` : t('dashboard.insight_sub_no_expenses')} tone="neutral" help={t('dashboard.help_top_category')} />
+          <InsightCard label={t('dashboard.insight_top_expense')} value={biggestExpAmount != null ? fmt(biggestExpAmount, currency) : t('dashboard.insight_sub_no_spending')} sub={biggestExpDescription ?? t('dashboard.insight_sub_no_expenses_reg')} tone="negative" help={t('dashboard.help_top_expense')} />
           <InsightCard
-            label="Cobertura de efectivo"
-            value={cashCoverage != null ? `${cashCoverage.toFixed(1)} meses` : netWorth <= 0 ? fmt(netWorth, currency) : 'Sin referencia'}
+            label={t('dashboard.insight_cash_coverage')}
+            value={cashCoverage != null ? `${cashCoverage.toFixed(1)} meses` : netWorth <= 0 ? fmt(netWorth, currency) : t('dashboard.insight_sub_no_ref')}
             sub={cashCoverage != null ? `Al ritmo de ${fmt(avgMonthlyExp, currency)}/mes` : 'Necesitas gasto mensual para estimar'}
             tone={cashCoverage == null ? 'neutral' : cashCoverage >= 6 ? 'positive' : cashCoverage < 1 ? 'negative' : 'flat'}
-            help={INSIGHT_HELP['Cobertura de efectivo']}
+            help={t('dashboard.help_cash_coverage')}
           />
-          <InsightCard label="Mes más costoso" value={highestMonth?.month ?? 'Sin gastos'} sub={highestMonth ? `Gasto: ${fmt(highestMonth.expense, currency)}` : 'No hay meses con gasto'} tone="neutral" help={INSIGHT_HELP['Mes más costoso']} />
+          <InsightCard label={t('dashboard.insight_worst_month')} value={highestMonth?.month ?? t('dashboard.insight_sub_no_spending')} sub={highestMonth ? `Gasto: ${fmt(highestMonth.expense, currency)}` : t('dashboard.insight_sub_no_months')} tone="neutral" help={t('dashboard.help_worst_month')} />
           <InsightCard
-            label="Variación del gasto"
-            value={expVariation != null ? `${expVariation > 0 ? '+' : ''}${expVariation.toFixed(1)}%` : 'Sin referencia'}
-            sub={expVariation != null ? `Anterior: ${fmt(prevExpense, currency)} · Actual: ${fmt(expense, currency)}` : 'No hay período anterior'}
+            label={t('dashboard.insight_expense_change')}
+            value={expVariation != null ? `${expVariation > 0 ? '+' : ''}${expVariation.toFixed(1)}%` : t('dashboard.insight_sub_no_ref')}
+            sub={expVariation != null ? `Anterior: ${fmt(prevExpense, currency)} · Actual: ${fmt(expense, currency)}` : t('dashboard.insight_sub_no_prior')}
             tone={expVariation == null ? 'neutral' : expVariation > 0 ? 'negative' : expVariation < 0 ? 'positive' : 'flat'}
-            help={INSIGHT_HELP['Variación del gasto']}
+            help={t('dashboard.help_expense_change')}
           />
           <InsightCard
-            label="Participación gasto fijo"
-            value={fixedShare != null ? `${fixedShare.toFixed(1)}%` : 'Sin gastos'}
-            sub={fixedShare != null ? `Fijo: ${fmt(fixedTotal, currency)} · Variable: ${fmt(expense - fixedTotal, currency)}` : 'No hay egresos'}
+            label={t('dashboard.insight_fixed_ratio')}
+            value={fixedShare != null ? `${fixedShare.toFixed(1)}%` : t('dashboard.insight_sub_no_spending')}
+            sub={fixedShare != null ? `Fijo: ${fmt(fixedTotal, currency)} · Variable: ${fmt(expense - fixedTotal, currency)}` : t('dashboard.insight_sub_no_fixed')}
             tone={fixedShare == null ? 'neutral' : fixedShare >= 60 ? 'negative' : fixedShare <= 35 ? 'positive' : 'flat'}
-            help={INSIGHT_HELP['Participación gasto fijo']}
+            help={t('dashboard.help_fixed_ratio')}
           />
         </div>
       </section>
 
       {/* Analysis section */}
       <section className="pt-1">
-        <SectionTitle>Análisis gráfico</SectionTitle>
+        <SectionTitle>{t('dashboard.section_charts')}</SectionTitle>
         <div className="app-panel p-5 space-y-5">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3">
               <Select
                 value={chartType}
-                onChange={v => setChartType(v as ChartType)}
-                options={CHART_OPTIONS.map(opt => ({ value: opt, label: opt }))}
+                onChange={v => setChartType(v as ChartOptionKey)}
+                options={CHART_OPTION_KEYS.map(key => ({ value: key, label: t(`dashboard.${key}`) }))}
                 className="w-72"
               />
             </div>
-            <p className="text-neutral-700 text-sm leading-relaxed w-full">{CHART_HELP[chartType]}</p>
+            <p className="text-neutral-700 text-sm leading-relaxed w-full">{t(`dashboard.help_${chartType}`)}</p>
           </div>
 
-          {chartType === 'Ingresos vs gastos' && (
+          {chartType === 'chart_income_vs_expense' && (
             monthly.length > 0
               ? <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={monthly} barGap={4} barCategoryGap="25%">
@@ -428,14 +407,14 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
                     <YAxis tickFormatter={fmtShort} tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip {...TTStyle} formatter={fmtTT} cursor={false} />
                     <Legend wrapperStyle={{ fontSize: 12, color: CHART_LEGEND }} />
-                    <Bar dataKey="income" name="Ingresos" fill={CHART_INCOME} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="expense" name="Gastos" fill={CHART_EXPENSE} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="income" name={t('dashboard.chart_legend_income')} fill={CHART_INCOME} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="expense" name={t('dashboard.chart_legend_expense')} fill={CHART_EXPENSE} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              : <p className="app-subtitle text-sm">Sin datos para el período.</p>
+              : <p className="app-subtitle text-sm">{t('dashboard.chart_empty')}</p>
           )}
 
-          {chartType === 'Flujo neto mensual' && (
+          {chartType === 'chart_net_flow' && (
             monthly.length > 0
               ? <ResponsiveContainer width="100%" height={260}>
                   <AreaChart data={monthly}>
@@ -453,13 +432,13 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
                     <XAxis dataKey="month" tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tickFormatter={fmtShort} tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip {...TTStyle} formatter={fmtTT} cursor={false} />
-                    <Area type="monotone" dataKey="cashflow" name="Flujo neto" stroke={CHART_NEUTRAL} fill="url(#posGrad)" strokeWidth={2.5} dot={{ r: 3, fill: CHART_NEUTRAL }} />
+                    <Area type="monotone" dataKey="cashflow" name={t('dashboard.chart_legend_cashflow')} stroke={CHART_NEUTRAL} fill="url(#posGrad)" strokeWidth={2.5} dot={{ r: 3, fill: CHART_NEUTRAL }} />
                   </AreaChart>
                 </ResponsiveContainer>
-              : <p className="app-subtitle text-sm">Sin datos para el período.</p>
+              : <p className="app-subtitle text-sm">{t('dashboard.chart_empty')}</p>
           )}
 
-          {chartType === 'Top categorías' && (
+          {chartType === 'chart_top_categories' && (
             catRows.length > 0
               ? <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={[...catRows].reverse()} layout="vertical" barCategoryGap="20%">
@@ -467,15 +446,15 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
                     <XAxis type="number" tickFormatter={fmtShort} tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis type="category" dataKey="name" tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} width={110} />
                     <Tooltip {...TTStyle} formatter={fmtTT} cursor={false} />
-                    <Bar dataKey="value" name="Gasto" radius={[0, 4, 4, 0]}>
+                    <Bar dataKey="value" name={t('dashboard.chart_label_spending')} radius={[0, 4, 4, 0]}>
                       {[...catRows].reverse().map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-              : <p className="app-subtitle text-sm">Sin gastos registrados en el período.</p>
+              : <p className="app-subtitle text-sm">{t('dashboard.chart_empty_expenses')}</p>
           )}
 
-          {chartType === 'Distribución de gasto' && (
+          {chartType === 'chart_expense_dist' && (
             catRows.length > 0
               ? <ResponsiveContainer width="100%" height={280}>
                   <PieChart>
@@ -486,10 +465,10 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
                     <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ fontSize: 11, color: CHART_LEGEND }} formatter={(v: string) => v.length > 14 ? v.slice(0, 14) + '…' : v} />
                   </PieChart>
                 </ResponsiveContainer>
-              : <p className="app-subtitle text-sm">Sin gastos registrados en el período.</p>
+              : <p className="app-subtitle text-sm">{t('dashboard.chart_empty_expenses')}</p>
           )}
 
-          {chartType === 'Ahorro acumulado' && (
+          {chartType === 'chart_savings' && (
             monthly.length > 0
               ? <ResponsiveContainer width="100%" height={260}>
                   <LineChart data={monthly}>
@@ -503,13 +482,13 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
                     <XAxis dataKey="month" tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tickFormatter={fmtShort} tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip {...TTStyle} formatter={fmtTT} cursor={false} />
-                    <Line type="monotone" dataKey="cumulative" name="Ahorro acumulado" stroke={CHART_SAVINGS} strokeWidth={2.5} dot={{ r: 3, fill: CHART_SAVINGS }} />
+                    <Line type="monotone" dataKey="cumulative" name={t('dashboard.chart_legend_savings')} stroke={CHART_SAVINGS} strokeWidth={2.5} dot={{ r: 3, fill: CHART_SAVINGS }} />
                   </LineChart>
                 </ResponsiveContainer>
-              : <p className="app-subtitle text-sm">Sin datos para el período.</p>
+              : <p className="app-subtitle text-sm">{t('dashboard.chart_empty')}</p>
           )}
 
-          {chartType === 'Gasto fijo vs variable' && (
+          {chartType === 'chart_fixed_var' && (
             expense > 0
               ? <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={fixedVarData} barCategoryGap="40%">
@@ -517,16 +496,16 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
                     <XAxis dataKey="name" tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tickFormatter={fmtShort} tick={{ fill: CHART_TICK, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip {...TTStyle} formatter={fmtTT} cursor={false} />
-                    <Bar dataKey="value" name="Gasto" radius={[4, 4, 0, 0]}>
+                    <Bar dataKey="value" name={t('dashboard.chart_label_spending')} radius={[4, 4, 0, 0]}>
                       <Cell fill={CHART_EXPENSE} />
                       <Cell fill={CHART_NEUTRAL} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-              : <p className="app-subtitle text-sm">Sin gastos registrados en el período.</p>
+              : <p className="app-subtitle text-sm">{t('dashboard.chart_empty_expenses')}</p>
           )}
 
-          {chartType === 'Gasto por categoría por mes' && (
+          {chartType === 'chart_by_category_month' && (
             stackedRows.length > 0
               ? <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={stackedRows} barCategoryGap="20%">
@@ -540,15 +519,15 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
                     ))}
                   </BarChart>
                 </ResponsiveContainer>
-              : <p className="app-subtitle text-sm">Sin gastos registrados en el período.</p>
+              : <p className="app-subtitle text-sm">{t('dashboard.chart_empty_expenses')}</p>
           )}
         </div>
       </section>
 
       {(aggregates?.transaction_count ?? 0) === 0 && (
         <div className="app-card p-10 text-center app-subtitle">
-          <p className="text-lg mb-1">Sin transacciones en este período</p>
-          <p className="text-sm">Ajusta el filtro de fechas o importa movimientos.</p>
+          <p className="text-lg mb-1">{t('dashboard.empty_title')}</p>
+          <p className="text-sm">{t('dashboard.empty_subtitle')}</p>
         </div>
       )}
     </>

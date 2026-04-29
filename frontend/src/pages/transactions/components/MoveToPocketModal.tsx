@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
 import Modal from '@/components/ui/Modal'
@@ -42,6 +43,7 @@ export default function MoveToPocketModal({
   onSubmit,
   onClose,
 }: MoveToPocketModalProps) {
+  const { t } = useTranslation()
   const { toast } = useToast()
   const [form, setForm] = useState<MoveToPocketForm>(buildDefault)
 
@@ -57,24 +59,24 @@ export default function MoveToPocketModal({
     event.preventDefault()
 
     if (!form.accountId) {
-      toast('Selecciona la cuenta origen.', 'error')
+      toast(t('transactions.toast_pocket_select_account'), 'error')
       return
     }
     if (!form.pocketId) {
-      toast('Selecciona el bolsillo destino.', 'error')
+      toast(t('transactions.toast_pocket_select_pocket'), 'error')
       return
     }
     const amount = Number(form.amount)
     if (Number.isNaN(amount) || amount <= 0) {
-      toast('El monto debe ser mayor que 0.', 'error')
+      toast(t('transactions.toast_pocket_amount_zero'), 'error')
       return
     }
     if (!form.occurredDate) {
-      toast('Selecciona la fecha.', 'error')
+      toast(t('transactions.toast_pocket_select_date'), 'error')
       return
     }
     if (!form.occurredTime) {
-      toast('Selecciona la hora.', 'error')
+      toast(t('transactions.toast_pocket_select_time'), 'error')
       return
     }
 
@@ -93,12 +95,12 @@ export default function MoveToPocketModal({
             </svg>
           </div>
           <div>
-            <h2 className="app-section-title text-brand-text">Mover a bolsillo</h2>
-            <p className="text-sm text-neutral-700 mt-0.5">Transfiere dinero de una cuenta hacia un bolsillo de esa misma cuenta.</p>
+            <h2 className="app-section-title text-brand-text">{t('transactions.pocket_title')}</h2>
+            <p className="text-sm text-neutral-700 mt-0.5">{t('transactions.pocket_desc')}</p>
           </div>
           <button
             type="button"
-            aria-label="Cerrar"
+            aria-label={t('common.close')}
             className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
             onClick={onClose}
           >
@@ -110,12 +112,12 @@ export default function MoveToPocketModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-1">
-            <label className="app-label">Cuenta origen</label>
+            <label className="app-label">{t('transactions.pocket_field_account')}</label>
             <Select
               value={form.accountId}
               onChange={(value) => setForm((prev) => ({ ...prev, accountId: value, pocketId: '' }))}
               options={[
-                { value: '', label: 'Selecciona la cuenta origen' },
+                { value: '', label: t('transactions.pocket_select_account') },
                 ...accounts.map((item) => ({
                   value: String(item.id),
                   label: `${item.name} (${item.currency})`,
@@ -126,7 +128,7 @@ export default function MoveToPocketModal({
           </div>
 
           <div className="space-y-1">
-            <label className="app-label">Bolsillo destino</label>
+            <label className="app-label">{t('transactions.pocket_field_pocket')}</label>
             <Select
               value={form.pocketId}
               onChange={(value) => setForm((prev) => ({ ...prev, pocketId: value }))}
@@ -135,9 +137,9 @@ export default function MoveToPocketModal({
                   value: '',
                   label: form.accountId
                     ? accountPockets.length
-                      ? 'Selecciona el bolsillo'
-                      : 'La cuenta no tiene bolsillos'
-                    : 'Primero elige cuenta',
+                      ? t('transactions.pocket_select_pocket')
+                      : t('transactions.pocket_no_pockets')
+                    : t('pockets.field_account_select'),
                 },
                 ...accountPockets.map((pocket) => ({
                   value: String(pocket.id),
@@ -150,7 +152,7 @@ export default function MoveToPocketModal({
           </div>
 
           <div className="space-y-1">
-            <label className="app-label">Monto</label>
+            <label className="app-label">{t('common.amount')}</label>
             <AmountInput
               value={form.amount}
               onChange={(raw) => setForm((prev) => ({ ...prev, amount: raw }))}
@@ -168,14 +170,14 @@ export default function MoveToPocketModal({
 
           <div className="grid grid-cols-2 gap-4">
             <DatePicker
-              label="Fecha"
+              label={t('common.date')}
               value={form.occurredDate}
               onChange={(value) => setForm((prev) => ({ ...prev, occurredDate: value }))}
               max={maxDate}
               className="w-full"
             />
             <TimePicker
-              label="Hora"
+              label={t('common.time')}
               value={form.occurredTime}
               onChange={(value) => setForm((prev) => ({ ...prev, occurredTime: value }))}
               className="w-full"
@@ -184,10 +186,10 @@ export default function MoveToPocketModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <button type="submit" className="app-btn-primary" disabled={saving}>
-              {saving ? 'Moviendo...' : 'Mover a bolsillo'}
+              {saving ? t('transactions.pocket_submitting') : t('transactions.pocket_submit')}
             </button>
             <button type="button" className="app-btn-secondary" onClick={onClose}>
-              Cancelar
+              {t('common.cancel')}
             </button>
           </div>
         </form>

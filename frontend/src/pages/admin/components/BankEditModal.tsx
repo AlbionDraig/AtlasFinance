@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '@/components/ui/Modal'
 import type { Bank } from '@/api/banks'
 import Select from '@/components/ui/Select'
@@ -12,6 +13,7 @@ interface BankEditModalProps {
 }
 
 export default function BankEditModal({ bank, countryOptions, saving, onSubmit, onClose }: BankEditModalProps) {
+  const { t } = useTranslation()
   const [name, setName] = useState(bank.name)
   const [countryCode, setCountryCode] = useState(bank.country_code)
 
@@ -31,12 +33,12 @@ export default function BankEditModal({ bank, countryOptions, saving, onSubmit, 
             </svg>
           </div>
           <div>
-            <h2 className="app-section-title text-brand-text">Editar banco</h2>
-            <p className="mt-0.5 text-sm text-neutral-700">Modifica el nombre o el código de país del banco.</p>
+            <h2 className="app-section-title text-brand-text">{t('admin.banks.edit_title')}</h2>
+            <p className="mt-0.5 text-sm text-neutral-700">{t('admin.banks.edit_desc')}</p>
           </div>
           <button
             type="button"
-            aria-label="Cerrar"
+            aria-label={t('common.close')}
             className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
             onClick={onClose}
           >
@@ -48,20 +50,20 @@ export default function BankEditModal({ bank, countryOptions, saving, onSubmit, 
 
         <form onSubmit={handleSubmit} className="space-y-4 p-6">
           <div className="space-y-1">
-            <label className="app-label">Nombre del banco</label>
+            <label className="app-label">{t('admin.banks.field_name')}</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="app-control w-full"
-              placeholder="Ej: Bancolombia"
+              placeholder={t('admin.banks.field_name_placeholder')}
               autoFocus
               maxLength={120}
             />
           </div>
 
           <div className="space-y-1">
-            <label className="app-label">Código de país</label>
+            <label className="app-label">{t('admin.banks.field_country_code')}</label>
             <Select
               value={countryCode}
               onChange={setCountryCode}
@@ -74,10 +76,10 @@ export default function BankEditModal({ bank, countryOptions, saving, onSubmit, 
 
           <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
             <button type="submit" className="app-btn-primary" disabled={saving || name.trim().length < 2}>
-              {saving ? 'Guardando...' : 'Guardar cambios'}
+              {saving ? t('common.saving') : t('common.save')}
             </button>
             <button type="button" className="app-btn-secondary" onClick={onClose}>
-              Cancelar
+              {t('common.cancel')}
             </button>
           </div>
         </form>

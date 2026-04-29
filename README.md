@@ -1,6 +1,7 @@
 # Atlas Finance
 
 [![CI](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/ci.yml/badge.svg)](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/ci.yml)
+[![Frontend CI](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/frontend-ci.yml)
 [![Security](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/security.yml/badge.svg)](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/security.yml)
 [![Code Smell](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/code-quality.yml/badge.svg)](https://github.com/AlbionDraig/AtlasFinance/actions/workflows/code-quality.yml)
 [![Coverage](https://codecov.io/gh/AlbionDraig/AtlasFinance/graph/badge.svg?branch=main)](https://codecov.io/gh/AlbionDraig/AtlasFinance)

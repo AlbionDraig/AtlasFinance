@@ -12,8 +12,10 @@ class Settings(BaseSettings):
 
     # "development" | "test" | "production"
     environment: str = "production"
-    # Carga datos demo al arrancar. Se activa automáticamente cuando environment != "production"
-    seed_on_startup: bool = False
+    # Habilita la carga de datos demo al arrancar.
+    # En development/test se activa automáticamente.
+    # En production permanece False a menos que se establezca explícitamente.
+    seed_demo_data: bool = False
 
     secret_key: str = "change-this-in-production"
     algorithm: str = "HS256"

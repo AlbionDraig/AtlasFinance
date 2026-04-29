@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
 import type { Bank } from '@/api/banks'
@@ -13,6 +14,7 @@ interface AccountEditModalProps {
 }
 
 export default function AccountEditModal({ account, banks, saving, onSubmit, onClose }: AccountEditModalProps) {
+  const { t } = useTranslation()
   const [name, setName] = useState(account.name)
   const [accountType, setAccountType] = useState<'savings' | 'checking'>(
     account.account_type === 'checking' ? 'checking' : 'savings',
@@ -44,12 +46,12 @@ export default function AccountEditModal({ account, banks, saving, onSubmit, onC
             </svg>
           </div>
           <div>
-            <h2 className="app-section-title text-brand-text">Editar cuenta</h2>
-            <p className="text-sm text-neutral-700 mt-0.5">Modifica los datos de la cuenta bancaria.</p>
+            <h2 className="app-section-title text-brand-text">{t('accounts.edit_title')}</h2>
+            <p className="text-sm text-neutral-700 mt-0.5">{t('accounts.edit_desc')}</p>
           </div>
           <button
             type="button"
-            aria-label="Cerrar"
+            aria-label={t('common.close')}
             className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
             onClick={onClose}
           >
@@ -61,7 +63,7 @@ export default function AccountEditModal({ account, banks, saving, onSubmit, onC
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-1">
-            <label className="app-label">Nombre de cuenta</label>
+            <label className="app-label">{t('accounts.field_name')}</label>
             <input
               type="text"
               value={name}
@@ -80,8 +82,8 @@ export default function AccountEditModal({ account, banks, saving, onSubmit, onC
                 value={accountType}
                 onChange={(value) => setAccountType(value as 'savings' | 'checking')}
                 options={[
-                  { value: 'savings', label: 'Ahorros' },
-                  { value: 'checking', label: 'Corriente' },
+                  { value: 'savings', label: t('accounts.type_savings') },
+                  { value: 'checking', label: t('accounts.type_checking') },
                 ]}
                 className="w-full"
               />
@@ -113,10 +115,10 @@ export default function AccountEditModal({ account, banks, saving, onSubmit, onC
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <button type="submit" className="app-btn-primary" disabled={saving || name.trim().length < 2}>
-              {saving ? 'Guardando...' : 'Guardar cambios'}
+              {saving ? t('common.saving') : t('common.save')}
             </button>
             <button type="button" className="app-btn-secondary" onClick={onClose}>
-              Cancelar
+              {t('common.cancel')}
             </button>
           </div>
         </form>

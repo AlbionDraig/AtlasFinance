@@ -1,4 +1,5 @@
 import type { Dispatch, FormEvent, SetStateAction } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
 import type { Bank } from '@/api/banks'
@@ -27,6 +28,7 @@ export default function AccountCreateModal({
   onSubmit,
   onClose,
 }: AccountCreateModalProps) {
+  const { t } = useTranslation()
   return (
     <Modal onClose={onClose} maxWidth="max-w-2xl">
       <div className="w-full rounded-2xl bg-white border border-neutral-100 shadow-xl overflow-visible border-t-4 border-t-brand">
@@ -37,12 +39,12 @@ export default function AccountCreateModal({
             </svg>
           </div>
           <div>
-            <h2 className="app-section-title text-brand-text">Crear cuenta</h2>
-            <p className="text-sm text-neutral-700 mt-0.5">Registra una nueva cuenta para empezar a mover dinero.</p>
+            <h2 className="app-section-title text-brand-text">{t('accounts.create_title')}</h2>
+            <p className="text-sm text-neutral-700 mt-0.5">{t('accounts.create_desc')}</p>
           </div>
           <button
             type="button"
-            aria-label="Cerrar"
+            aria-label={t('common.close')}
             className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
             onClick={onClose}
           >
@@ -54,39 +56,39 @@ export default function AccountCreateModal({
 
         <form onSubmit={onSubmit} className="p-6 space-y-4">
           <div className="space-y-1">
-            <label className="app-label">Nombre de cuenta</label>
+            <label className="app-label">{t('accounts.field_name')}</label>
             <input
               type="text"
               value={form.name}
               onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
               className="app-control w-full"
-              placeholder="Ej: Cuenta Ahorros Principal"
+              placeholder={t('accounts.field_name_placeholder')}
               autoFocus
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1">
-              <label className="app-label">Tipo</label>
+              <label className="app-label">{t('accounts.field_type')}</label>
               <Select
                 value={form.accountType}
                 onChange={(value) => setForm((current) => ({ ...current, accountType: value as 'savings' | 'checking' | '' }))}
                 options={[
-                  { value: '', label: 'Selecciona un tipo' },
-                  { value: 'savings', label: 'Ahorros' },
-                  { value: 'checking', label: 'Corriente' },
+                  { value: '', label: t('accounts.select_type') },
+                  { value: 'savings', label: t('accounts.type_savings') },
+                  { value: 'checking', label: t('accounts.type_checking') },
                 ]}
                 className="w-full"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="app-label">Moneda</label>
+              <label className="app-label">{t('accounts.field_currency')}</label>
               <Select
                 value={form.currency}
                 onChange={(value) => setForm((current) => ({ ...current, currency: value as 'COP' | 'USD' | '' }))}
                 options={[
-                  { value: '', label: 'Selecciona una moneda' },
+                  { value: '', label: t('accounts.select_currency') },
                   { value: 'COP', label: 'COP' },
                   { value: 'USD', label: 'USD' },
                 ]}
@@ -95,12 +97,12 @@ export default function AccountCreateModal({
             </div>
 
             <div className="space-y-1">
-              <label className="app-label">Banco</label>
+              <label className="app-label">{t('accounts.field_bank')}</label>
               <Select
                 value={form.bankId}
                 onChange={(value) => setForm((current) => ({ ...current, bankId: value }))}
                 options={[
-                  { value: '', label: banks.length ? 'Selecciona un banco' : 'Sin bancos' },
+                  { value: '', label: banks.length ? t('accounts.select_bank') : t('accounts.no_banks') },
                   ...banks.map((bank) => ({ value: String(bank.id), label: `${bank.name} (${bank.country_code})` })),
                 ]}
                 className="w-full"
@@ -112,16 +114,16 @@ export default function AccountCreateModal({
           {!banks.length && (
             // Account creation requires at least one bank configured by the user.
             <p className="text-sm text-warning-text bg-warning-bg rounded-lg px-3 py-2">
-              No hay bancos disponibles. Crea bancos desde Administracion.
+              {t('accounts.no_banks_warning')}
             </p>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <button type="submit" className="app-btn-primary" disabled={saving || !banks.length}>
-              {saving ? 'Creando cuenta...' : 'Crear cuenta'}
+              {saving ? t('common.saving') : t('accounts.fab_create')}
             </button>
             <button type="button" className="app-btn-secondary" onClick={onClose}>
-              Cancelar
+              {t('common.cancel')}
             </button>
           </div>
         </form>

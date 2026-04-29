@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Category } from '@/api/categories'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
@@ -28,6 +29,7 @@ export default function CategoryGroup({
   onEdit,
   onDelete,
 }: CategoryGroupProps) {
+  const { t } = useTranslation()
   return (
     <div className={`app-card border-t-2 ${accentClass} overflow-hidden`}>
       <div className={`${headerBg} px-5 py-4 border-b border-neutral-100`}>
@@ -42,12 +44,14 @@ export default function CategoryGroup({
             </div>
           </div>
           <span className={`shrink-0 mt-0.5 text-xs font-medium px-2 py-0.5 rounded-full border border-black/5 ${badgeColor}`}>
-            {items.length} categor{items.length !== 1 ? 'ias' : 'ia'}
+            {items.length !== 1
+              ? t('categories.group_count_plural', { count: items.length })
+              : t('categories.group_count_singular', { count: items.length })}
           </span>
         </div>
       </div>
       {items.length === 0 ? (
-        <p className="px-5 py-5 text-sm text-neutral-400">Sin categorias en este grupo.</p>
+        <p className="px-5 py-5 text-sm text-neutral-400">{t('categories.group_empty')}</p>
       ) : (
         <ul className="divide-y divide-neutral-100">
           {items.map((cat) => (

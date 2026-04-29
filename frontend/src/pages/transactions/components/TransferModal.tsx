@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
 import Modal from '@/components/ui/Modal'
@@ -40,6 +41,7 @@ export default function TransferModal({
   onSubmit,
   onClose,
 }: TransferModalProps) {
+  const { t } = useTranslation()
   const { toast } = useToast()
   const [form, setForm] = useState<TransferForm>(buildDefault)
 
@@ -73,28 +75,28 @@ export default function TransferModal({
     event.preventDefault()
 
     if (!form.fromAccountId) {
-      toast('Selecciona la cuenta de origen.', 'error')
+      toast(t('transactions.toast_transfer_select_from'), 'error')
       return
     }
     if (!form.toAccountId) {
-      toast('Selecciona la cuenta de destino.', 'error')
+      toast(t('transactions.toast_transfer_select_to'), 'error')
       return
     }
     if (form.fromAccountId === form.toAccountId) {
-      toast('La cuenta de origen y destino deben ser diferentes.', 'error')
+      toast(t('transactions.toast_transfer_same_account'), 'error')
       return
     }
     const amount = Number(form.amount)
     if (Number.isNaN(amount) || amount <= 0) {
-      toast('El monto debe ser mayor que 0.', 'error')
+      toast(t('transactions.toast_transfer_amount_zero'), 'error')
       return
     }
     if (!form.occurredDate) {
-      toast('Selecciona la fecha.', 'error')
+      toast(t('transactions.toast_transfer_select_date'), 'error')
       return
     }
     if (!form.occurredTime) {
-      toast('Selecciona la hora.', 'error')
+      toast(t('transactions.toast_transfer_select_time'), 'error')
       return
     }
 
@@ -113,12 +115,12 @@ export default function TransferModal({
             </svg>
           </div>
           <div>
-            <h2 className="app-section-title text-brand-text">Mover dinero entre cuentas</h2>
-            <p className="text-sm text-neutral-700 mt-0.5">Solo puedes mover entre cuentas de la misma moneda.</p>
+            <h2 className="app-section-title text-brand-text">{t('transactions.transfer_title')}</h2>
+            <p className="text-sm text-neutral-700 mt-0.5">{t('transactions.transfer_desc')}</p>
           </div>
           <button
             type="button"
-            aria-label="Cerrar"
+            aria-label={t('common.close')}
             className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
             onClick={onClose}
           >
@@ -132,12 +134,12 @@ export default function TransferModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Origin */}
           <div className="space-y-1">
-            <label className="app-label">Cuenta de origen</label>
+            <label className="app-label">{t('transactions.transfer_field_from')}</label>
             <Select
               value={form.fromAccountId}
               onChange={handleFromChange}
               options={[
-                { value: '', label: 'Selecciona la cuenta origen' },
+                { value: '', label: t('transactions.transfer_select_from') },
                 ...accounts.map((a) => ({
                   value: String(a.id),
                   label: `${a.name} (${a.currency})`,
@@ -150,7 +152,7 @@ export default function TransferModal({
 
           {/* Destination */}
           <div className="space-y-1">
-            <label className="app-label">Cuenta de destino</label>
+            <label className="app-label">{t('transactions.transfer_field_to')}</label>
             <Select
               value={form.toAccountId}
               onChange={(value) => { setForm((prev) => ({ ...prev, toAccountId: value })) }}
@@ -159,9 +161,9 @@ export default function TransferModal({
                   value: '',
                   label: form.fromAccountId
                     ? eligibleDestinations.length
-                      ? 'Selecciona la cuenta destino'
-                      : `Sin cuentas ${currency ?? ''} disponibles`
-                    : 'Primero elige cuenta de origen',
+                      ? t('transactions.transfer_select_to')
+                      : `${t('common.noResults')} ${currency ?? ''}`
+                    : t('transactions.transfer_select_from'),
                 },
                 ...eligibleDestinations.map((a) => ({
                   value: String(a.id),
@@ -173,9 +175,8 @@ export default function TransferModal({
             />
           </div>
 
-          {/* Amount */}
           <div className="space-y-1">
-            <label className="app-label">Monto</label>
+            <label className="app-label">{t('common.amount')}</label>
             <AmountInput
               value={form.amount}
               onChange={(raw) => setForm((prev) => ({ ...prev, amount: raw }))}
@@ -185,7 +186,7 @@ export default function TransferModal({
           </div>
 
           <div className="space-y-1">
-            <label className="app-label">Descripción</label>
+            <label className="app-label">{t('common.description', 'Descripción')}</label>
             <p className="app-control w-full min-h-11 flex items-center text-neutral-700">
               {autoDescription}
             </p>
@@ -194,14 +195,14 @@ export default function TransferModal({
           {/* Date / time */}
           <div className="grid grid-cols-2 gap-4">
             <DatePicker
-              label="Fecha"
+              label={t('common.date')}
               value={form.occurredDate}
               onChange={(value) => setForm((prev) => ({ ...prev, occurredDate: value }))}
               max={maxDate}
               className="w-full"
             />
             <TimePicker
-              label="Hora"
+              label={t('common.time')}
               value={form.occurredTime}
               onChange={(value) => setForm((prev) => ({ ...prev, occurredTime: value }))}
               className="w-full"
@@ -211,10 +212,10 @@ export default function TransferModal({
           {/* Actions */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <button type="submit" className="app-btn-primary" disabled={saving}>
-              {saving ? 'Moviendo...' : 'Mover dinero'}
+              {saving ? t('transactions.transfer_submitting') : t('transactions.transfer_submit')}
             </button>
             <button type="button" className="app-btn-secondary" onClick={onClose}>
-              Cancelar
+              {t('common.cancel')}
             </button>
           </div>
         </form>

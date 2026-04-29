@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { accountsApi } from '@/api/accounts'
 import { banksApi, type Bank } from '@/api/banks'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
@@ -40,6 +41,7 @@ function buildDefaultFilters(): AccountsFiltersState {
 
 export default function AccountsPage() {
   const { toast } = useToast()
+  const { t } = useTranslation()
 
   const [accounts, setAccounts] = useState<Account[]>([])
   const [banks, setBanks] = useState<Bank[]>([])
@@ -57,7 +59,7 @@ export default function AccountsPage() {
   useEffect(() => {
     banksApi.list()
       .then((res) => setBanks(res.data))
-      .catch((error) => toast(getApiErrorMessage(error, 'No se pudieron cargar los bancos.'), 'error'))
+      .catch((error) => toast(getApiErrorMessage(error, t('accounts.toast_load_banks_error')), 'error'))
   }, [])
 
   // Reload accounts from server whenever filters change (debounce query text)
@@ -74,7 +76,7 @@ export default function AccountsPage() {
         bank_id: filters.bankId !== 'all' ? Number(filters.bankId) : undefined,
       })
         .then((res) => { if (!cancelled) { setAccounts(res.data); setPage(1) } })
-        .catch((error) => { if (!cancelled) toast(getApiErrorMessage(error, 'No se pudieron cargar las cuentas.'), 'error') })
+        .catch((error) => { if (!cancelled) toast(getApiErrorMessage(error, t('accounts.toast_load_error')), 'error') })
         .finally(() => { if (!cancelled) setLoading(false) })
     }, delayMs)
 
@@ -89,11 +91,11 @@ export default function AccountsPage() {
   const paginatedAccounts = accounts.slice(startIndex, endIndex)
   // Human-readable filter summary used by filter card chips.
   const activeFilters = [
-    filters.query.trim() ? `Búsqueda: ${filters.query.trim()}` : null,
-    filters.accountType !== 'all' ? `Tipo: ${filters.accountType === 'checking' ? 'Corriente' : 'Ahorros'}` : null,
-    filters.currency !== 'all' ? `Moneda: ${filters.currency}` : null,
+    filters.query.trim() ? `${t('common.search')}: ${filters.query.trim()}` : null,
+    filters.accountType !== 'all' ? `${t('accounts.field_type')}: ${filters.accountType === 'checking' ? t('accounts.type_checking') : t('accounts.type_savings')}` : null,
+    filters.currency !== 'all' ? `${t('common.currency')}: ${filters.currency}` : null,
     filters.bankId !== 'all'
-      ? `Banco: ${banks.find((bank) => String(bank.id) === filters.bankId)?.name ?? `Banco #${filters.bankId}`}`
+      ? `${t('common.bank')}: ${banks.find((bank) => String(bank.id) === filters.bankId)?.name ?? `${t('common.bank')} #${filters.bankId}`}`
       : null,
   ].filter(Boolean) as string[]
 
@@ -116,19 +118,19 @@ export default function AccountsPage() {
 
     // Keep validation in UI to provide immediate feedback before API call.
     if (accountForm.name.trim().length < 2) {
-      toast('El nombre de la cuenta debe tener al menos 2 caracteres.', 'error')
+      toast(t('accounts.toast_name_short'), 'error')
       return
     }
     if (!accountForm.accountType) {
-      toast('Selecciona el tipo de cuenta.', 'error')
+      toast(t('accounts.toast_select_type'), 'error')
       return
     }
     if (!accountForm.currency) {
-      toast('Selecciona la moneda de la cuenta.', 'error')
+      toast(t('accounts.toast_select_currency'), 'error')
       return
     }
     if (!accountForm.bankId) {
-      toast('Selecciona un banco para crear la cuenta.', 'error')
+      toast(t('accounts.toast_select_bank'), 'error')
       return
     }
 
@@ -143,9 +145,9 @@ export default function AccountsPage() {
       })
       setAccounts((current) => [response.data, ...current])
       closeCreateModal()
-      toast('Cuenta creada con éxito.')
+      toast(t('accounts.toast_created'))
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo crear la cuenta.'), 'error')
+      toast(getApiErrorMessage(error, t('accounts.toast_create_error')), 'error')
     } finally {
       setSavingAccount(false)
     }
@@ -160,9 +162,9 @@ export default function AccountsPage() {
       const response = await accountsApi.update(id, data)
       setAccounts((current) => current.map((acc) => (acc.id === id ? response.data : acc)))
       setEditingAccount(null)
-      toast('Cuenta actualizada con éxito.')
+      toast(t('accounts.toast_updated'))
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo actualizar la cuenta.'), 'error')
+      toast(getApiErrorMessage(error, t('accounts.toast_update_error')), 'error')
     } finally {
       setSavingAccount(false)
     }
@@ -175,9 +177,9 @@ export default function AccountsPage() {
       await accountsApi.delete(deletingAccount.id)
       setAccounts((current) => current.filter((acc) => acc.id !== deletingAccount.id))
       setDeletingAccount(null)
-      toast('Cuenta eliminada.')
+      toast(t('accounts.toast_deleted'))
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo eliminar la cuenta.'), 'error')
+      toast(getApiErrorMessage(error, t('accounts.toast_delete_error')), 'error')
     } finally {
       setSavingAccount(false)
     }
@@ -186,7 +188,7 @@ export default function AccountsPage() {
   if (loading) {
     return (
       <div className="app-panel p-6 flex min-h-72 items-center justify-center">
-        <LoadingSpinner text="Cargando cuentas..." />
+        <LoadingSpinner text={t('accounts.loading')} />
       </div>
     )
   }
@@ -194,8 +196,8 @@ export default function AccountsPage() {
   return (
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       <div>
-        <h1 className="app-title text-xl">Cuentas</h1>
-        <p className="app-subtitle text-sm mt-0.5">Crea y administra tus cuentas bancarias.</p>
+        <h1 className="app-title text-xl">{t('accounts.title')}</h1>
+        <p className="app-subtitle text-sm mt-0.5">{t('accounts.subtitle')}</p>
       </div>
 
       {createOpen && (
@@ -221,8 +223,8 @@ export default function AccountsPage() {
 
       {deletingAccount && (
         <ConfirmDeleteModal
-          title="Eliminar cuenta"
-          description={`¿Seguro que deseas eliminar la cuenta "${deletingAccount.name}"? Esta acción no se puede deshacer.`}
+          title={t('accounts.delete_title')}
+          description={t('accounts.delete_desc', { name: deletingAccount.name })}
           loading={savingAccount}
           onConfirm={handleDeleteAccount}
           onClose={() => setDeletingAccount(null)}
@@ -256,11 +258,11 @@ export default function AccountsPage() {
 
       <FloatingActionMenu
         hidden={createOpen}
-        ariaLabel="Abrir acciones de cuentas"
+        ariaLabel={t('transactions.fab_menu_label')}
         items={[
           {
             key: 'create-account',
-            label: 'Crear cuenta',
+            label: t('accounts.fab_create'),
             onClick: openCreateModal,
             icon: (
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">

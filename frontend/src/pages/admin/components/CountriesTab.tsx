@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { countriesApi, type Country } from '@/api/countries'
 import { useToast } from '@/hooks/useToast'
 import { getApiErrorMessage } from '@/lib/utils'
@@ -22,6 +23,7 @@ interface CountriesTabProps {
 }
 
 export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
+  const { t } = useTranslation()
   const { toast } = useToast()
 
   const [loadingCountries, setLoadingCountries] = useState(true)
@@ -41,7 +43,7 @@ export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
         setCountries(response.data)
         onCountriesChange?.(response.data)
       } catch (error) {
-        toast(getApiErrorMessage(error, 'No se pudieron cargar los paises.'), 'error')
+        toast(getApiErrorMessage(error, t('admin.countries.toast_load_error')), 'error')
       } finally {
         setLoadingCountries(false)
       }
@@ -75,7 +77,7 @@ export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
   const countryStartIndex = (currentCountryPage - 1) * countryFilters.pageSize
   const countryEndIndex = Math.min(countryStartIndex + countryFilters.pageSize, filteredCountries.length)
   const paginatedCountries = filteredCountries.slice(countryStartIndex, countryEndIndex)
-  const activeCountryFilters = [countryFilters.query.trim() ? `Busqueda: ${countryFilters.query.trim()}` : null].filter(Boolean) as string[]
+  const activeCountryFilters = [countryFilters.query.trim() ? t('admin.countries.chip_search', { value: countryFilters.query.trim() }) : null].filter(Boolean) as string[]
 
   async function handleCreateCountry(name: string, code: string) {
     setSavingCountry(true)
@@ -83,9 +85,9 @@ export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
       const response = await countriesApi.create({ name, code })
       setCountries((current) => [response.data, ...current])
       setCountryCreateOpen(false)
-      toast('Pais creado con exito.')
+      toast(t('admin.countries.toast_created'))
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo crear el pais.'), 'error')
+      toast(getApiErrorMessage(error, t('admin.countries.toast_create_error')), 'error')
     } finally {
       setSavingCountry(false)
     }
@@ -97,9 +99,9 @@ export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
       const response = await countriesApi.update(id, { name, code })
       setCountries((current) => current.map((country) => (country.id === id ? response.data : country)))
       setEditingCountry(null)
-      toast('Pais actualizado con exito.')
+      toast(t('admin.countries.toast_updated'))
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo actualizar el pais.'), 'error')
+      toast(getApiErrorMessage(error, t('admin.countries.toast_update_error')), 'error')
     } finally {
       setSavingCountry(false)
     }
@@ -112,9 +114,9 @@ export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
       await countriesApi.delete(deletingCountry.id)
       setCountries((current) => current.filter((country) => country.id !== deletingCountry.id))
       setDeletingCountry(null)
-      toast('Pais eliminado.')
+      toast(t('admin.countries.toast_deleted'))
     } catch (error) {
-      toast(getApiErrorMessage(error, 'No se pudo eliminar el pais.'), 'error')
+      toast(getApiErrorMessage(error, t('admin.countries.toast_delete_error')), 'error')
     } finally {
       setSavingCountry(false)
     }
@@ -141,8 +143,8 @@ export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
 
       {deletingCountry && (
         <ConfirmDeleteModal
-          title="Eliminar pais"
-          description={`¿Eliminar "${deletingCountry.name}"? Esta accion no se puede deshacer.`}
+          title={t('admin.countries.delete_title')}
+          description={t('admin.countries.delete_desc', { name: deletingCountry.name })}
           loading={savingCountry}
           onConfirm={handleDeleteCountry}
           onClose={() => setDeletingCountry(null)}
@@ -158,7 +160,7 @@ export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
 
       {loadingCountries ? (
         <section className="app-card p-6">
-          <LoadingSpinner text="Cargando paises..." />
+          <LoadingSpinner text={t('admin.countries.loading')} />
         </section>
       ) : (
         <CountriesTableCard
@@ -179,11 +181,11 @@ export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
 
       <FloatingActionMenu
         hidden={false}
-        ariaLabel="Abrir acciones de paises"
+        ariaLabel={t('admin.countries.fab_menu_label')}
         items={[
           {
             key: 'create-country',
-            label: 'Crear pais',
+            label: t('admin.countries.fab_create'),
             onClick: () => setCountryCreateOpen(true),
           },
         ]}

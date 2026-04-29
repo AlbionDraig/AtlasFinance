@@ -11,7 +11,7 @@ import {
 } from '@/lib/chartTheme'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-export type Period = 'Año actual' | 'Últimos 90 días' | 'Últimos 30 días' | 'Personalizado'
+export type Period = 'current_year' | 'last_90d' | 'last_30d' | 'custom'
 export type Tone = 'positive' | 'negative' | 'flat' | 'neutral'
 export type BadgeVariant = 'brand' | 'success' | 'warning' | 'neutral'
 
@@ -35,17 +35,17 @@ export function fmtMonthLabel(yyyyMM: string): string {
 
 export function computeDates(period: Period, from: string, to: string): { dateFrom: Date; dateTo: Date } {
   const today = new Date()
-  if (period === 'Año actual')
+  if (period === 'current_year')
     return { dateFrom: new Date(today.getFullYear(), 0, 1), dateTo: new Date(today.getFullYear(), 11, 31) }
-  if (period === 'Últimos 90 días')
+  if (period === 'last_90d')
     return { dateFrom: new Date(today.getTime() - 89 * 86400000), dateTo: today }
-  if (period === 'Últimos 30 días')
+  if (period === 'last_30d')
     return { dateFrom: new Date(today.getTime() - 29 * 86400000), dateTo: today }
   return { dateFrom: new Date(from), dateTo: new Date(to) }
 }
 
 export function computePrevDates(period: Period, dateFrom: Date, dateTo: Date): { prevFrom: Date; prevTo: Date } {
-  if (period === 'Año actual') {
+  if (period === 'current_year') {
     const y = dateFrom.getFullYear()
     return { prevFrom: new Date(y - 1, 0, 1), prevTo: new Date(y - 1, 11, 31) }
   }

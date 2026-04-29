@@ -3,6 +3,7 @@ import DeleteButton from '@/components/ui/DeleteButton'
 import EditButton from '@/components/ui/EditButton'
 import Pagination from '@/components/ui/Pagination'
 import Tooltip from '@/components/ui/Tooltip'
+import { useTranslation } from 'react-i18next'
 import type { InvestmentEntity } from '@/api/investmentEntities'
 
 interface InvestmentEntitiesTableCardProps {
@@ -36,6 +37,7 @@ export default function InvestmentEntitiesTableCard({
   onEdit,
   onDelete,
 }: InvestmentEntitiesTableCardProps) {
+  const { t } = useTranslation()
   const countryCounts = filteredEntities.reduce<Record<string, number>>((accumulator, entity) => {
     const countryCode = entity.country_code.trim().toUpperCase()
     accumulator[countryCode] = (accumulator[countryCode] ?? 0) + 1
@@ -50,20 +52,20 @@ export default function InvestmentEntitiesTableCard({
     {
       key: 'count',
       variant: 'neutral' as const,
-      label: `${filteredEntities.length} entidades`,
-      help: 'Total de entidades de inversión que cumplen los filtros actuales.',
+      label: t('admin.entities.metric_total', { count: filteredEntities.length }),
+      help: t('admin.entities.metric_total_help'),
     },
     {
       key: 'countries',
       variant: 'positive' as const,
-      label: `${Object.keys(countryCounts).length} países`,
-      help: 'Cantidad de códigos de país representados en los resultados filtrados.',
+      label: t('admin.entities.metric_countries', { count: Object.keys(countryCounts).length }),
+      help: t('admin.entities.metric_countries_help'),
     },
     {
       key: 'types',
       variant: 'warning' as const,
-      label: `${Object.keys(typeCounts).length} tipos`,
-      help: 'Cantidad de tipos de entidad presentes en los resultados filtrados.',
+      label: t('admin.entities.metric_types', { count: Object.keys(typeCounts).length }),
+      help: t('admin.entities.metric_types_help'),
     },
   ]
 
@@ -77,9 +79,9 @@ export default function InvestmentEntitiesTableCard({
             </svg>
           </div>
           <div>
-            <h2 className="text-sm font-medium text-neutral-900">Catálogo de entidades de inversión</h2>
+            <h2 className="text-sm font-medium text-neutral-900">{t('admin.entities.table_title')}</h2>
             <p className="text-xs text-neutral-400">
-              {filteredEntities.length ? `${startIndex + 1}-${endIndex} de ${filteredEntities.length} entidades` : 'Sin resultados'}
+              {filteredEntities.length ? `${startIndex + 1}-${endIndex} de ${filteredEntities.length} ${t('admin.entities.metric_total', { count: filteredEntities.length })}` : t('common.no_results')}
             </p>
           </div>
         </div>
@@ -101,8 +103,8 @@ export default function InvestmentEntitiesTableCard({
             </svg>
           </div>
           <div>
-            <p className="text-sm font-medium text-neutral-900">No hay entidades de inversión</p>
-            <p className="mt-1 text-xs text-neutral-400">Ajusta los filtros o crea una nueva entidad.</p>
+            <p className="text-sm font-medium text-neutral-900">{t('admin.entities.table_empty_title')}</p>
+            <p className="mt-1 text-xs text-neutral-400">{t('admin.entities.table_empty_desc')}</p>
           </div>
         </div>
       ) : (
@@ -116,10 +118,10 @@ export default function InvestmentEntitiesTableCard({
             </colgroup>
             <thead>
               <tr>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Entidad</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Tipo</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Código país</th>
-                <th className="border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">Acciones</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('admin.entities.table_col_entity')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('admin.entities.table_col_type')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('admin.entities.table_col_country')}</th>
+                <th className="border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
