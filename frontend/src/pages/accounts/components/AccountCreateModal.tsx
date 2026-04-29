@@ -71,6 +71,7 @@ export default function AccountCreateModal({
             <div className="space-y-1">
               <label className="app-label">{t('accounts.field_type')}</label>
               <Select
+                value={form.accountType}
                 onChange={(value) => setForm((current) => ({ ...current, accountType: value as 'savings' | 'checking' | '' }))}
                 options={[
                   { value: '', label: t('accounts.select_type') },
@@ -84,6 +85,7 @@ export default function AccountCreateModal({
             <div className="space-y-1">
               <label className="app-label">{t('accounts.field_currency')}</label>
               <Select
+                value={form.currency}
                 onChange={(value) => setForm((current) => ({ ...current, currency: value as 'COP' | 'USD' | '' }))}
                 options={[
                   { value: '', label: t('accounts.select_currency') },
@@ -97,6 +99,7 @@ export default function AccountCreateModal({
             <div className="space-y-1">
               <label className="app-label">{t('accounts.field_bank')}</label>
               <Select
+                value={form.bankId}
                 onChange={(value) => setForm((current) => ({ ...current, bankId: value }))}
                 options={[
                   { value: '', label: banks.length ? t('accounts.select_bank') : t('accounts.no_banks') },

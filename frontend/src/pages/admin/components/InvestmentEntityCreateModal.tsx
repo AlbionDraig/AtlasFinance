@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
 import type { InvestmentEntityType } from '@/api/investmentEntities'
@@ -30,6 +31,8 @@ export default function InvestmentEntityCreateModal({
   onSubmit,
   onClose,
 }: InvestmentEntityCreateModalProps) {
+  const { t } = useTranslation()
+
   return (
     <Modal onClose={onClose} maxWidth="max-w-xl">
       <div className="w-full rounded-2xl border border-neutral-100 border-t-4 border-t-brand bg-white shadow-xl overflow-visible">

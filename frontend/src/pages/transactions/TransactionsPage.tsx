@@ -133,7 +133,6 @@ export default function TransactionsPage() {
   const [filters, setFilters] = useState<FiltersState>(() => buildDefaultFilters())
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [loading, setLoading] = useState(true)
-  const [txnLoading, setTxnLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
@@ -180,21 +179,20 @@ export default function TransactionsPage() {
   }, [filters.query])
 
   async function reloadTransactions() {
-    setTxnLoading(true)
+    setLoading(true)
     try {
       const response = await transactionsApi.list(buildTransactionParams(filters, debouncedQuery))
       setTransactions(response.data)
     } catch (error) {
       toast(getApiErrorMessage(error, t('transactions.toast_load_movements_error')), 'error')
     } finally {
-      setTxnLoading(false)
+      setLoading(false)
     }
   }
 
   useEffect(() => {
     setPage(1)
     void reloadTransactions()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery, filters.transactionType, filters.currency, filters.accountId, filters.period, filters.from, filters.to])
 
   useEffect(() => {

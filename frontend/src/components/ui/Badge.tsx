@@ -1,5 +1,5 @@
 interface BadgeProps {
-  variant?: 'neutral' | 'positive' | 'negative'
+  variant?: 'neutral' | 'positive' | 'negative' | 'warning'
   children: React.ReactNode
   className?: string
 }
@@ -9,6 +9,7 @@ export default function Badge({ variant = 'neutral', children, className = '' }:
     neutral: 'bg-tone-neutral',
     positive: 'bg-tone-positive',
     negative: 'bg-tone-negative',
+    warning: 'bg-warning-bg text-warning-text',
   }[variant]
 
   return (

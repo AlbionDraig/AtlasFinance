@@ -98,6 +98,11 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
   const [investments, setInvestments] = useState<Investment[]>([])
   const [entities, setEntities] = useState<InvestmentEntity[]>([])
   const [loading, setLoading] = useState(true)
+  const [todayMs, setTodayMs] = useState<number | null>(null)
+
+  useEffect(() => {
+    setTodayMs(Date.now())
+  }, [])
 
   useEffect(() => {
     Promise.all([investmentsApi.list(), investmentEntitiesApi.list()])
@@ -215,14 +220,13 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
 
   // Antigüedad media de la cartera en días
   const avgHoldingDays = useMemo(() => {
-    if (investmentRows.length === 0) return 0
-    const today = Date.now()
+    if (investmentRows.length === 0 || todayMs === null) return 0
     const total = investmentRows.reduce((sum, inv) => {
-      const days = Math.floor((today - new Date(inv.started_at).getTime()) / 86400000)
+      const days = Math.floor((todayMs - new Date(inv.started_at).getTime()) / 86400000)
       return sum + days
     }, 0)
     return Math.round(total / investmentRows.length)
-  }, [investmentRows])
+  }, [investmentRows, todayMs])
 
   // Número de entidades distintas
   const distinctEntities = useMemo(

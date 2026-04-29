@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
 import type { InvestmentEntity, InvestmentEntityType } from '@/api/investmentEntities'
@@ -20,6 +21,8 @@ export default function InvestmentEntityEditModal({
   onSubmit,
   onClose,
 }: InvestmentEntityEditModalProps) {
+  const { t } = useTranslation()
+
   const [name, setName] = useState(entity.name)
   const [entityType, setEntityType] = useState<InvestmentEntityType>(entity.entity_type)
   const [countryCode, setCountryCode] = useState(entity.country_code)

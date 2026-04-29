@@ -25,10 +25,6 @@ export default function AdminPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const legacyTab = searchParams.get('tab')
 
-  if (legacyTab === 'management' || legacyTab === 'users' || legacyTab === 'general') {
-    return <Navigate to="/management" replace />
-  }
-
   const [activeTab, setActiveTab] = useState<AdminTab>(() => normalizeTab(searchParams.get('tab')))
   const [countries, setCountries] = useState<Country[]>([])
 
@@ -65,6 +61,10 @@ export default function AdminPage() {
         label: `${country.code} - ${country.name}`,
       }))
   }, [countries])
+
+  if (legacyTab === 'management' || legacyTab === 'users' || legacyTab === 'general') {
+    return <Navigate to="/management" replace />
+  }
 
   return (
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
