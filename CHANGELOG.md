@@ -8,7 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ### Tests
 
-- Added unit tests for `useDashboardData`, `useTransactionsCatalogs` and `useTransactionsList` covering happy path, API failure fallback, paramsKey-driven refetch and `reload()` semantics. Frontend Vitest suite up to **31 tests / 8 files**.
+- Added unit tests for `useDashboardData`, `useTransactionsCatalogs` and `useTransactionsList` covering happy path, API failure fallback, paramsKey-driven refetch and `reload()` semantics.
+- Added new tests for `Modal` and `useToast` (focus trap, auto-focus/restore focus, dismiss/autodismiss and max-3 toasts behavior).
+- Frontend Vitest suite is now **37 tests / 10 files**.
+- E2E login helpers were hardened to support both associated labels and placeholder-based fields.
 
 ### Accessibility
 

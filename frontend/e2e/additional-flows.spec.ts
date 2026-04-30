@@ -3,10 +3,16 @@ import { test, expect } from '@playwright/test'
 const TEST_EMAIL = process.env.E2E_EMAIL ?? 'demo@atlas.local'
 const TEST_PASSWORD = process.env.E2E_PASSWORD ?? 'Demo1234!'
 
+async function fillLoginForm(page: import('@playwright/test').Page, email: string, password: string) {
+  const emailField = page.getByLabel(/email/i).or(page.getByPlaceholder(/email/i))
+  const passwordField = page.getByLabel(/contraseña|password/i).or(page.getByPlaceholder(/contraseña|password/i))
+  await emailField.fill(email)
+  await passwordField.fill(password)
+}
+
 async function login(page: import('@playwright/test').Page) {
   await page.goto('/login')
-  await page.getByLabel(/email/i).fill(TEST_EMAIL)
-  await page.getByLabel(/contraseña|password/i).fill(TEST_PASSWORD)
+  await fillLoginForm(page, TEST_EMAIL, TEST_PASSWORD)
   await page.getByRole('button', { name: /iniciar sesión|sign in|log in/i }).click()
   await expect(page).not.toHaveURL(/\/login/, { timeout: 10_000 })
 }
