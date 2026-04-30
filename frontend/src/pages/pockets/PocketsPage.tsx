@@ -7,7 +7,7 @@ import type { Account, Pocket } from '@/types'
 import { useToast } from '@/hooks/useToast'
 import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { usePocketsData } from '@/hooks/usePocketsData'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import PageSkeleton from '@/components/ui/PageSkeleton'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
@@ -431,11 +431,7 @@ export default function PocketsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="app-panel p-6 flex min-h-72 items-center justify-center">
-        <LoadingSpinner text={t('pockets.loading')} />
-      </div>
-    )
+    return <PageSkeleton cards={2} rows={5} columns={4} />
   }
 
   return (

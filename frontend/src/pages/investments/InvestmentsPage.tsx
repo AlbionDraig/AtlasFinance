@@ -8,7 +8,7 @@ import type { Investment } from '@/types'
 import { useToast } from '@/hooks/useToast'
 import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { useInvestmentsData } from '@/hooks/useInvestmentsData'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import PageSkeleton from '@/components/ui/PageSkeleton'
 import Modal from '@/components/ui/Modal'
 import FilterCard from '@/components/ui/FilterCard'
 import SearchInput from '@/components/ui/SearchInput'
@@ -430,11 +430,7 @@ export default function InvestmentsPage() {
   ]
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner />
-      </div>
-    )
+    return <PageSkeleton cards={2} rows={5} columns={5} />
   }
 
   return (

@@ -17,6 +17,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Playwright E2E specs live in /e2e and are not executed by Vitest.
+    exclude: ['node_modules', 'dist', 'e2e/**', 'playwright-report/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { categoriesApi, type Category, type CategoryPayload } from '@/api/categories'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import PageSkeleton from '@/components/ui/PageSkeleton'
 import FilterCard from '@/components/ui/FilterCard'
 import SearchInput from '@/components/ui/SearchInput'
 import { useToast } from '@/hooks/useToast'
@@ -95,11 +95,7 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
   const variable = filtered.filter((c) => !c.is_fixed)
 
   if (loading) {
-    return (
-      <div className="app-panel p-6 flex min-h-72 items-center justify-center">
-        <LoadingSpinner text={t('categories.loading')} />
-      </div>
-    )
+    return <PageSkeleton rows={6} columns={4} />
   }
 
   const content = (

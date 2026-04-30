@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { type Category } from '@/api/categories'
 import { pocketsApi } from '@/api/pockets'
@@ -12,7 +13,7 @@ import TransactionsHistoryCard from './components/TransactionsHistoryCard'
 import TransferModal from './components/TransferModal'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import PageSkeleton from '@/components/ui/PageSkeleton'
 import { useToast } from '@/hooks/useToast'
 import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { useTransactionsCatalogs, useTransactionsList } from '@/hooks/useTransactionsData'
@@ -48,6 +49,49 @@ function buildDefaultFilters(): FiltersState {
     to: toDateInputValue(today),
     pageSize: 25,
   }
+}
+
+/**
+ * Hidrata los filtros desde la URL. Los valores ausentes caen al default,
+ * de modo que enlaces compartidos sólo necesitan transportar lo no-default.
+ */
+function buildFiltersFromParams(params: URLSearchParams): FiltersState {
+  const defaults = buildDefaultFilters()
+  const transactionType = params.get('type')
+  const currency = params.get('currency')
+  const period = params.get('period')
+  const pageSizeRaw = Number(params.get('pageSize'))
+  return {
+    query: params.get('q') ?? defaults.query,
+    transactionType: transactionType === 'INCOME' || transactionType === 'EXPENSE' ? transactionType : 'all',
+    currency: currency === 'COP' || currency === 'USD' ? currency : 'all',
+    accountId: params.get('account') ?? defaults.accountId,
+    period: ['all', 'today', '7d', '30d', 'month', 'custom'].includes(String(period))
+      ? (period as PeriodFilter)
+      : defaults.period,
+    from: params.get('from') ?? defaults.from,
+    to: params.get('to') ?? defaults.to,
+    pageSize: Number.isFinite(pageSizeRaw) && pageSizeRaw > 0 ? pageSizeRaw : defaults.pageSize,
+  }
+}
+
+/**
+ * Serializa sólo los filtros que difieren del default, para mantener URLs cortas.
+ */
+function filtersToSearchParams(filters: FiltersState): URLSearchParams {
+  const defaults = buildDefaultFilters()
+  const params = new URLSearchParams()
+  if (filters.query.trim() !== defaults.query) params.set('q', filters.query.trim())
+  if (filters.transactionType !== defaults.transactionType) params.set('type', filters.transactionType)
+  if (filters.currency !== defaults.currency) params.set('currency', filters.currency)
+  if (filters.accountId !== defaults.accountId) params.set('account', filters.accountId)
+  if (filters.period !== defaults.period) params.set('period', filters.period)
+  if (filters.period === 'custom') {
+    if (filters.from) params.set('from', filters.from)
+    if (filters.to) params.set('to', filters.to)
+  }
+  if (filters.pageSize !== defaults.pageSize) params.set('pageSize', String(filters.pageSize))
+  return params
 }
 
 function buildDefaultForm(): FormState {
@@ -135,8 +179,9 @@ export default function TransactionsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [form, setForm] = useState<FormState>(() => buildDefaultForm())
-  const [filters, setFilters] = useState<FiltersState>(() => buildDefaultFilters())
+  const [filters, setFilters] = useState<FiltersState>(() => buildFiltersFromParams(searchParams))
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [saving, setSaving] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -174,6 +219,17 @@ export default function TransactionsPage() {
   useEffect(() => {
     setPage(1)
   }, [debouncedQuery, filters.transactionType, filters.currency, filters.accountId, filters.period, filters.from, filters.to, filters.pageSize])
+
+  // Sync filters to URL search params (replace history to avoid polluting it on every keystroke).
+  useEffect(() => {
+    const next = filtersToSearchParams(filters)
+    const current = searchParams.toString()
+    if (next.toString() !== current) {
+      setSearchParams(next, { replace: true })
+    }
+    // Intentionally exclude searchParams/setSearchParams to avoid feedback loop.
+
+  }, [filters])
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -410,11 +466,7 @@ export default function TransactionsPage() {
   }
 
   if (catalogsLoading) {
-    return (
-      <div className="app-panel p-6 flex min-h-72 items-center justify-center">
-        <LoadingSpinner text={t('transactions.loading')} />
-      </div>
-    )
+    return <PageSkeleton cards={3} rows={8} columns={6} />
   }
 
   return (

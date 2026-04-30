@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { accountsApi } from '@/api/accounts'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import PageSkeleton from '@/components/ui/PageSkeleton'
 import { useToast } from '@/hooks/useToast'
 import { useAccountsList, useBanks } from '@/hooks/useAccountsData'
 import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
@@ -164,11 +164,7 @@ export default function AccountsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="app-panel p-6 flex min-h-72 items-center justify-center">
-        <LoadingSpinner text={t('accounts.loading')} />
-      </div>
-    )
+    return <PageSkeleton cards={2} rows={5} columns={5} />
   }
 
   return (

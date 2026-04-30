@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ### Added
 
+- **PageSkeleton** component (`components/ui/PageSkeleton.tsx`) used by Accounts, Transactions, Categories, Pockets and Investments pages. Replaces the centred `LoadingSpinner` with a layout-stable skeleton (header + cards + table) so content no longer "jumps" when data arrives.
+- **URL-persisted filters** in the Transactions page: `q`, `type`, `currency`, `account`, `period`, `from`, `to`, `pageSize` are reflected in the URL via `useSearchParams`, so links and reloads keep the active filter state.
+- **Additional Playwright E2E specs** (`frontend/e2e/additional-flows.spec.ts`) covering Pockets, Investments and Accounts smoke renders, Transactions URL filter persistence, and a no-error-boundary navigation walk through all private routes.
 - **Per-page error boundary** (`PageErrorBoundary`) with `Reintentar` button that invalidates the relevant React Query keys before re-rendering the subtree. Wired into all private routes in `App.tsx`.
 - **Integration tests** for `/transactions/transfer`, `/pockets/move-funds` and `/transactions/export` (`tests/integration/test_transfers_and_export.py`, +12 tests, total 133 backend tests).
 - **Cache invalidation** in mutations across Banks, Countries, Investment Entities, Investments, Pockets and Transactions pages — keeps catalog data and balances in sync across views.
