@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
+from app.core.security_headers import SecurityHeadersMiddleware
 from app.db.base import get_db
 from app.db.init_db import init_db
 from app.db.seed import seed_base, seed_demo
@@ -48,6 +49,9 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+# Cabeceras de seguridad: HSTS solo si el despliegue está bajo TLS (production).
+app.add_middleware(SecurityHeadersMiddleware, hsts=settings.environment == "production")
 
 app.add_middleware(
     CORSMiddleware,
