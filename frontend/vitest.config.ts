@@ -26,7 +26,15 @@ export default defineConfig({
         'src/main.tsx',
         'src/test/**',
         'src/**/*.stories.tsx',
+        'src/i18n/**',
+        'src/types/**',
       ],
+      thresholds: {
+        // Umbrales por módulo utilitario con cobertura real demostrada.
+        // Aumentar progresivamente conforme crecen los tests.
+        'src/lib/utils.ts': { lines: 90, functions: 90, branches: 80, statements: 90 },
+        'src/lib/passwordStrength.ts': { lines: 90, functions: 90, branches: 90, statements: 90 },
+      },
     },
   },
 })
