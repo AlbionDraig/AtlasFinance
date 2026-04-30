@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { accountsApi } from '@/api/accounts'
-import { categoriesApi, type Category } from '@/api/categories'
-import { pocketsApi } from '@/api/pockets'
-import { transactionsApi, type TransactionFilters } from '@/api/transactions'
-import type { Account, Pocket, Transaction } from '@/types'
+import { type Category } from '@/api/categories'
+import { type TransactionFilters } from '@/api/transactions'
+import type { Account, Transaction } from '@/types'
 import TransactionEditModal from './components/TransactionEditModal'
 import MoveToPocketModal from './components/MoveToPocketModal'
 import TransactionsFiltersCard from './components/TransactionsFiltersCard'
@@ -14,6 +12,7 @@ import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/hooks/useToast'
+import { useTransactionsCatalogs, useTransactionsList } from '@/hooks/useTransactionsData'
 import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
 
@@ -125,14 +124,9 @@ function buildTransactionParams(filters: FiltersState, query: string): Transacti
 export default function TransactionsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [pockets, setPockets] = useState<Pocket[]>([])
-  const [transactions, setTransactions] = useState<Transaction[]>([])
   const [form, setForm] = useState<FormState>(() => buildDefaultForm())
   const [filters, setFilters] = useState<FiltersState>(() => buildDefaultFilters())
   const [debouncedQuery, setDebouncedQuery] = useState('')
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
@@ -142,57 +136,31 @@ export default function TransactionsPage() {
   const [transferOpen, setTransferOpen] = useState(false)
   const [moveToPocketOpen, setMoveToPocketOpen] = useState(false)
 
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true)
+  // Catálogos: carga única tras montar.
+  const { accounts, categories, pockets, loading: catalogsLoading } = useTransactionsCatalogs()
 
-      try {
-        const [accountsResponse, categoriesResponse] = await Promise.all([
-          accountsApi.list(),
-          categoriesApi.list(),
-        ])
-
-        setAccounts(accountsResponse.data)
-        setCategories(categoriesResponse.data)
-        setForm((current) => current.accountId ? current : buildDefaultForm())
-
-        try {
-          const pocketsResponse = await pocketsApi.list()
-          setPockets(pocketsResponse.data)
-        } catch {
-          // Keep transactions usable even if pockets endpoint is unavailable.
-          setPockets([])
-        }
-      } catch (loadError) {
-        toast(getApiErrorMessage(loadError, t('transactions.toast_load_error')), 'error')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    void loadData()
-  }, [])
+  // Parámetros de la API derivados de filtros + query debounceado.
+  const transactionParams = useMemo(
+    () => buildTransactionParams(filters, debouncedQuery),
+    [filters, debouncedQuery],
+  )
+  const transactionParamsKey = useMemo(
+    () => JSON.stringify(transactionParams),
+    [transactionParams],
+  )
+  const { transactions, loading: listLoading, reload: reloadTransactions } = useTransactionsList(
+    transactionParams as Record<string, unknown>,
+    transactionParamsKey,
+  )
+  const loading = catalogsLoading || listLoading
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(filters.query), 400)
     return () => clearTimeout(timer)
   }, [filters.query])
 
-  async function reloadTransactions() {
-    setLoading(true)
-    try {
-      const response = await transactionsApi.list(buildTransactionParams(filters, debouncedQuery))
-      setTransactions(response.data)
-    } catch (error) {
-      toast(getApiErrorMessage(error, t('transactions.toast_load_movements_error')), 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
     setPage(1)
-    void reloadTransactions()
   }, [debouncedQuery, filters.transactionType, filters.currency, filters.accountId, filters.period, filters.from, filters.to])
 
   useEffect(() => {

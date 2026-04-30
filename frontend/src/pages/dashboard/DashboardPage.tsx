@@ -6,15 +6,13 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line,
 } from 'recharts'
-import { metricsApi } from '@/api/metrics'
 import InvestmentsTab from './components/InvestmentsTab'
 import Select from '@/components/ui/Select'
 import DatePicker from '@/components/ui/DatePicker'
 import FilterCard from '@/components/ui/FilterCard'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import AppTooltip from '@/components/ui/Tooltip'
-import { useToast } from '@/hooks/useToast'
-import type { DashboardAggregates, DashboardMetrics } from '@/types'
+import { useDashboardData } from '@/hooks/useDashboardData'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Period = 'current_year' | 'last_90' | 'last_30' | 'custom'
@@ -248,11 +246,6 @@ export default function DashboardPage() {
   const dataBounds = { min: '2000-01-01', max: todayStr }
   const [chartType, setChartType] = useState<ChartType>('income_vs_expense')
 
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
-  const [aggregates, setAggregates] = useState<DashboardAggregates | null>(null)
-  const [loading, setLoading] = useState(true)
-  const { toast } = useToast()
-
   // Compute date ranges
   const { dateFrom, dateTo } = useMemo(() => computeDates(period, customFrom, customTo), [period, customFrom, customTo])
   const { prevFrom, prevTo } = useMemo(() => computePrevDates(period, dateFrom, dateTo), [period, dateFrom, dateTo])
@@ -272,24 +265,14 @@ export default function DashboardPage() {
     if (clampedTo !== customTo) setCustomTo(clampedTo)
   }, [customFrom, customTo])
 
-  // Fetch data
-  useEffect(() => {
-    setLoading(true)
-    const dfStr = toISODate(dateFrom) + 'T00:00:00'
-    const dtStr = toISODate(dateTo) + 'T23:59:59'
-    const pfStr = toISODate(prevFrom) + 'T00:00:00'
-    const ptStr = toISODate(prevTo) + 'T23:59:59'
-    Promise.all([
-      metricsApi.dashboard(currency),
-      metricsApi.aggregates({ currency, start_date: dfStr, end_date: dtStr, prev_start_date: pfStr, prev_end_date: ptStr }),
-    ])
-      .then(([m, agg]) => {
-        setMetrics(m.data)
-        setAggregates(agg.data)
-      })
-      .catch(() => toast(t('dashboard.error_load'), 'error'))
-      .finally(() => setLoading(false))
-  }, [currency, dateFrom.getTime(), dateTo.getTime()])
+  // Fetch data via hook (separa SRP: la página solo deriva y renderiza).
+  const { metrics, aggregates, loading } = useDashboardData({
+    currency,
+    dateFrom,
+    dateTo,
+    prevFrom,
+    prevTo,
+  })
 
   // ── Derived metrics ──────────────────────────────────────────────────────────
   const netWorth = metrics ? Number(metrics.net_worth) : 0
