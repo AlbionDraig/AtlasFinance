@@ -1,30 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { accountsApi } from '@/api/accounts'
-import { banksApi, type Bank } from '@/api/banks'
+import type { Bank } from '@/api/banks'
 import { useToast } from '@/hooks/useToast'
 import { getApiErrorMessage } from '@/lib/utils'
 import type { Account } from '@/types'
 import type { AccountsFiltersState } from '@/pages/accounts/components/AccountsFiltersCard'
+import { useBanksQuery } from '@/hooks/useCatalogQueries'
 
 /**
- * Catálogo de bancos: lista única que solo se carga al montar.
- *
- * Se aísla del listado de cuentas porque su ciclo es distinto: bancos
- * cambian raramente y no dependen de los filtros.
+ * Catálogo de bancos: delegado a React Query para caché automático.
+ * Mantiene la misma interfaz `{ banks }` para no romper consumidores existentes.
  */
 export function useBanks(): { banks: Bank[] } {
-  const { t } = useTranslation()
-  const { toast } = useToast()
-  const [banks, setBanks] = useState<Bank[]>([])
-
-  useEffect(() => {
-    banksApi.list()
-      .then((res) => setBanks(res.data))
-      .catch((error) => toast(getApiErrorMessage(error, t('accounts.toast_load_banks_error')), 'error'))
-  }, [])
-
-  return { banks }
+  const { data } = useBanksQuery()
+  return { banks: data ?? [] }
 }
 
 interface AccountsListResult {

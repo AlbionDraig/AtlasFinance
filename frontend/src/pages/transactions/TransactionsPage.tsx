@@ -161,7 +161,7 @@ export default function TransactionsPage() {
     transactionParams as Record<string, unknown>,
     transactionParamsKey,
   )
-  const loading = catalogsLoading || listLoading
+  // loading combinado ya no se usa directamente; se usan catalogsLoading y listLoading por separado.
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(filters.query), 400)
