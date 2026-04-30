@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import { type Category } from '@/api/categories'
 import { pocketsApi } from '@/api/pockets'
 import { transactionsApi, type TransactionFilters } from '@/api/transactions'
@@ -13,6 +14,7 @@ import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/hooks/useToast'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { useTransactionsCatalogs, useTransactionsList } from '@/hooks/useTransactionsData'
 import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
@@ -132,6 +134,7 @@ function buildTransactionParams(
 export default function TransactionsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const [form, setForm] = useState<FormState>(() => buildDefaultForm())
   const [filters, setFilters] = useState<FiltersState>(() => buildDefaultFilters())
   const [debouncedQuery, setDebouncedQuery] = useState('')
@@ -326,6 +329,9 @@ export default function TransactionsPage() {
       }
       resetForm()
       await reloadTransactions()
+      // Balances and pocket totals depend on transactions — keep their caches fresh.
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
     } catch (submitError) {
       toast(getApiErrorMessage(submitError, t('transactions.toast_save_error')), 'error')
     } finally {
@@ -348,6 +354,7 @@ export default function TransactionsPage() {
       toast(t('transactions.toast_transfer_ok'))
       setTransferOpen(false)
       await reloadTransactions()
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
     } catch (transferError) {
       toast(getApiErrorMessage(transferError, t('transactions.toast_transfer_error')), 'error')
     } finally {
@@ -375,6 +382,8 @@ export default function TransactionsPage() {
       setMoveToPocketOpen(false)
       toast(t('transactions.toast_pocket_ok'))
       await reloadTransactions()
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
     } catch (moveError) {
       toast(getApiErrorMessage(moveError, t('transactions.toast_pocket_error')), 'error')
     } finally {
@@ -391,6 +400,8 @@ export default function TransactionsPage() {
       if (editingId === transactionId) resetForm()
       toast(t('transactions.toast_deleted'))
       await reloadTransactions()
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
     } catch (deleteError) {
       toast(getApiErrorMessage(deleteError, t('transactions.toast_delete_error')), 'error')
     } finally {

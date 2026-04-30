@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   investmentEntitiesApi,
   INVESTMENT_ENTITY_TYPE_OPTIONS,
@@ -7,6 +8,7 @@ import {
   type InvestmentEntityType,
 } from '@/api/investmentEntities'
 import { useToast } from '@/hooks/useToast'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { getApiErrorMessage } from '@/lib/utils'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
@@ -32,6 +34,7 @@ interface InvestmentEntitiesTabProps {
 export default function InvestmentEntitiesTab({ countryCatalogOptions }: InvestmentEntitiesTabProps) {
   const { t } = useTranslation()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const [loadingInvestmentEntities, setLoadingInvestmentEntities] = useState(true)
   const [savingInvestmentEntity, setSavingInvestmentEntity] = useState(false)
@@ -147,6 +150,7 @@ export default function InvestmentEntitiesTab({ countryCatalogOptions }: Investm
         country_code: investmentEntityCountryCode,
       })
       setInvestmentEntities((current) => [response.data, ...current])
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investmentEntities })
       setInvestmentEntityName('')
       setInvestmentEntityType('broker')
       setInvestmentEntityCountryCode(countryCatalogOptions[0]?.value ?? '')
@@ -167,6 +171,7 @@ export default function InvestmentEntitiesTab({ countryCatalogOptions }: Investm
     try {
       const response = await investmentEntitiesApi.update(id, data)
       setInvestmentEntities((current) => current.map((entity) => (entity.id === id ? response.data : entity)))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investmentEntities })
       setEditingInvestmentEntity(null)
       toast(t('admin.entities.toast_updated'))
     } catch (error) {
@@ -182,6 +187,7 @@ export default function InvestmentEntitiesTab({ countryCatalogOptions }: Investm
     try {
       await investmentEntitiesApi.delete(deletingInvestmentEntity.id)
       setInvestmentEntities((current) => current.filter((entity) => entity.id !== deletingInvestmentEntity.id))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investmentEntities })
       setDeletingInvestmentEntity(null)
       toast(t('admin.entities.toast_deleted'))
     } catch (error) {

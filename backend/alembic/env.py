@@ -46,7 +46,24 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Modo online: ejecuta las migraciones contra la BD configurada."""
+    """Modo online: ejecuta las migraciones contra la BD configurada.
+
+    Si la app ya nos pasó una conexión vía ``config.attributes['connection']``
+    (caso de los tests con SQLite in-memory y del startup de FastAPI), la
+    reutilizamos para no crear un engine paralelo. En CLI directo, abrimos
+    una conexión propia.
+    """
+    existing_connection = config.attributes.get("connection")
+    if existing_connection is not None:
+        context.configure(
+            connection=existing_connection,
+            target_metadata=target_metadata,
+            compare_type=True,
+        )
+        with context.begin_transaction():
+            context.run_migrations()
+        return
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",

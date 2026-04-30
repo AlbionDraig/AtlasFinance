@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import { banksApi, type Bank } from '@/api/banks'
 import { useToast } from '@/hooks/useToast'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { getApiErrorMessage } from '@/lib/utils'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
@@ -26,6 +28,7 @@ interface BanksTabProps {
 export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
   const { t } = useTranslation()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const [loadingBanks, setLoadingBanks] = useState(true)
   const [savingBank, setSavingBank] = useState(false)
@@ -115,6 +118,7 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
     try {
       const response = await banksApi.create({ name: bankName.trim(), country_code: bankCountryCode })
       setBanks((current) => [response.data, ...current])
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.banks })
       setBankName('')
       setBankCountryCode(countryCatalogOptions[0]?.value ?? '')
       setBankCreateOpen(false)
@@ -131,6 +135,7 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
     try {
       const response = await banksApi.update(id, { name, country_code: countryCode })
       setBanks((current) => current.map((b) => (b.id === id ? response.data : b)))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.banks })
       setEditingBank(null)
       toast(t('admin.banks.toast_updated'))
     } catch (error) {
@@ -146,6 +151,7 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
     try {
       await banksApi.delete(deletingBank.id)
       setBanks((current) => current.filter((b) => b.id !== deletingBank.id))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.banks })
       setDeletingBank(null)
       toast(t('admin.banks.toast_deleted'))
     } catch (error) {

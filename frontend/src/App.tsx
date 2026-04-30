@@ -20,6 +20,8 @@ import AdminPage from '@/pages/admin/AdminPage'
 import ManagementPage from '@/pages/management/ManagementPage'
 import { ToastProvider } from '@/hooks/useToast'
 import ToastContainer from '@/components/ui/ToastContainer'
+import PageErrorBoundary from '@/components/ui/PageErrorBoundary'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 
 export default function App() {
   // ToastProvider envuelve todo el árbol porque cualquier página/componente
@@ -37,16 +39,72 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             {/* AppLayout aporta sidebar + topbar; envolver aquí evita repetirlo en cada página */}
             <Route element={<AppLayout />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/transactions" element={<TransactionsPage />} />
-              <Route path="/accounts" element={<AccountsPage />} />
-              <Route path="/pockets" element={<PocketsPage />} />
-              <Route path="/investments" element={<InvestmentsPage />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <PageErrorBoundary pageLabel="el dashboard" invalidateKeys={[QUERY_KEYS.accounts]}>
+                    <DashboardPage />
+                  </PageErrorBoundary>
+                }
+              />
+              <Route
+                path="/transactions"
+                element={
+                  <PageErrorBoundary pageLabel="las transacciones" invalidateKeys={[QUERY_KEYS.accounts, QUERY_KEYS.categories]}>
+                    <TransactionsPage />
+                  </PageErrorBoundary>
+                }
+              />
+              <Route
+                path="/accounts"
+                element={
+                  <PageErrorBoundary pageLabel="las cuentas" invalidateKeys={[QUERY_KEYS.accounts, QUERY_KEYS.banks]}>
+                    <AccountsPage />
+                  </PageErrorBoundary>
+                }
+              />
+              <Route
+                path="/pockets"
+                element={
+                  <PageErrorBoundary pageLabel="los bolsillos" invalidateKeys={[QUERY_KEYS.pockets, QUERY_KEYS.accounts]}>
+                    <PocketsPage />
+                  </PageErrorBoundary>
+                }
+              />
+              <Route
+                path="/investments"
+                element={
+                  <PageErrorBoundary pageLabel="las inversiones" invalidateKeys={[QUERY_KEYS.investments, QUERY_KEYS.investmentEntities]}>
+                    <InvestmentsPage />
+                  </PageErrorBoundary>
+                }
+              />
               {/* /categories quedó fusionada en /admin como tab; se redirige por compat. con bookmarks. */}
               <Route path="/categories" element={<Navigate to="/admin?tab=categories" replace />} />
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="/management" element={<ManagementPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
+              <Route
+                path="/admin"
+                element={
+                  <PageErrorBoundary pageLabel="la administración" invalidateKeys={[QUERY_KEYS.banks, QUERY_KEYS.countries, QUERY_KEYS.categories, QUERY_KEYS.investmentEntities]}>
+                    <AdminPage />
+                  </PageErrorBoundary>
+                }
+              />
+              <Route
+                path="/management"
+                element={
+                  <PageErrorBoundary pageLabel="la gestión">
+                    <ManagementPage />
+                  </PageErrorBoundary>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <PageErrorBoundary pageLabel="el perfil">
+                    <ProfilePage />
+                  </PageErrorBoundary>
+                }
+              />
             </Route>
           </Route>
 

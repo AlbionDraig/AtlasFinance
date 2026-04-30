@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ### Added
 
+- **Per-page error boundary** (`PageErrorBoundary`) with `Reintentar` button that invalidates the relevant React Query keys before re-rendering the subtree. Wired into all private routes in `App.tsx`.
+- **Integration tests** for `/transactions/transfer`, `/pockets/move-funds` and `/transactions/export` (`tests/integration/test_transfers_and_export.py`, +12 tests, total 133 backend tests).
+- **Cache invalidation** in mutations across Banks, Countries, Investment Entities, Investments, Pockets and Transactions pages — keeps catalog data and balances in sync across views.
+- **Strict TypeScript** (`strict: true`) enabled in `tsconfig.app.json`; CI already runs `npm run type-check` so the gate is enforced on every PR.
 - **Alembic migrations** wired into FastAPI startup (`_apply_migrations()` in `db/init_db.py`) with three strategies: fresh DB, alembic-managed DB, and legacy DB stamping.
 - **React Query DevTools** mounted in dev only (`buttonPosition="bottom-left"`).
 - **`EmptyState` component** in `frontend/src/components/ui/` with icon + title + description, used in Investments and Pockets.

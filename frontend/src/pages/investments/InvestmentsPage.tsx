@@ -1,10 +1,12 @@
 import { useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
+import { useQueryClient } from '@tanstack/react-query'
 import { type InvestmentEntity } from '@/api/investmentEntities'
 import { investmentsApi, INSTRUMENT_TYPES, type InvestmentPayload, type InvestmentUpdatePayload } from '@/api/investments'
 import type { Investment } from '@/types'
 import { useToast } from '@/hooks/useToast'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { useInvestmentsData } from '@/hooks/useInvestmentsData'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Modal from '@/components/ui/Modal'
@@ -250,6 +252,7 @@ function KpiCard({ label, value, accent, sub, subColor }: KpiCardProps) {
 export default function InvestmentsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const { investments, setInvestments, entities, loading } = useInvestmentsData()
 
@@ -365,6 +368,7 @@ export default function InvestmentsPage() {
     try {
       const res = await investmentsApi.create(payload)
       setInvestments(prev => [res.data, ...prev])
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investments })
       setCreateOpen(false)
       toast(t('investments.toast_created'), 'success')
     } catch (err) {
@@ -384,6 +388,7 @@ export default function InvestmentsPage() {
     try {
       const res = await investmentsApi.update(editingInvestment.id, payload)
       setInvestments(prev => prev.map(inv => inv.id === editingInvestment.id ? res.data : inv))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investments })
       setEditingInvestment(null)
       toast(t('investments.toast_updated'), 'success')
     } catch (err) {
@@ -400,6 +405,7 @@ export default function InvestmentsPage() {
     try {
       await investmentsApi.delete(deletingInvestment.id)
       setInvestments(prev => prev.filter(inv => inv.id !== deletingInvestment.id))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investments })
       setDeletingInvestment(null)
       toast(t('investments.toast_deleted'), 'success')
     } catch {

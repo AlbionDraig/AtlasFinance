@@ -1,9 +1,11 @@
 import { useMemo, useState, type CSSProperties, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
+import { useQueryClient } from '@tanstack/react-query'
 import { pocketsApi, type PocketPayload, type PocketUpdatePayload } from '@/api/pockets'
 import type { Account, Pocket } from '@/types'
 import { useToast } from '@/hooks/useToast'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { usePocketsData } from '@/hooks/usePocketsData'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import FormField from '@/components/ui/FormField'
@@ -210,6 +212,7 @@ function PocketModal({
 export default function PocketsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const [saving, setSaving] = useState(false)
   const [filters, setFilters] = useState<PocketFiltersState>(DEFAULT_FILTERS)
@@ -378,6 +381,8 @@ export default function PocketsPage() {
     try {
       const response = await pocketsApi.create(payload)
       setPockets(current => [response.data, ...current])
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
       closeCreateModal()
       toast(t('pockets.toast_created'))
     } catch (error) {
@@ -397,6 +402,7 @@ export default function PocketsPage() {
     try {
       const response = await pocketsApi.update(editingPocket.id, payload)
       setPockets(current => current.map(pocket => (pocket.id === editingPocket.id ? response.data : pocket)))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
       setEditingPocket(null)
       resetForm()
       toast(t('pockets.toast_updated'))
@@ -413,6 +419,8 @@ export default function PocketsPage() {
     try {
       await pocketsApi.delete(deletingPocket.id)
       setPockets(current => current.filter(pocket => pocket.id !== deletingPocket.id))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
       setDeletingPocket(null)
       toast(t('pockets.toast_deleted'))
     } catch (error) {

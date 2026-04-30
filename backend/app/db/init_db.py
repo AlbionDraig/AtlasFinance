@@ -181,16 +181,22 @@ def _apply_migrations() -> None:
     _BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     alembic_cfg = Config(os.path.join(_BACKEND_DIR, "alembic.ini"))
 
-    inspector = inspect(engine)
-    table_names = inspector.get_table_names()
+    # Share the application engine with Alembic so SQLite in-memory DBs work
+    # consistently in tests (otherwise Alembic would build its own engine
+    # against a different ephemeral memory DB and the tables would vanish).
+    with engine.connect() as connection:
+        alembic_cfg.attributes["connection"] = connection
+        inspector = inspect(connection)
+        table_names = inspector.get_table_names()
 
-    if not table_names or "alembic_version" in table_names:
-        # Fresh DB or already managed by Alembic — run migrations normally.
-        command.upgrade(alembic_cfg, "head")
-    else:
-        # Legacy DB: ensure all tables exist, then stamp so future runs are migration-based.
-        Base.metadata.create_all(bind=engine)
-        command.stamp(alembic_cfg, "head")
+        if not table_names or "alembic_version" in table_names:
+            # Fresh DB or already managed by Alembic — run migrations normally.
+            command.upgrade(alembic_cfg, "head")
+        else:
+            # Legacy DB: ensure all tables exist, then stamp so future runs are migration-based.
+            Base.metadata.create_all(bind=connection)
+            command.stamp(alembic_cfg, "head")
+        connection.commit()
 
 
 def init_db() -> None:

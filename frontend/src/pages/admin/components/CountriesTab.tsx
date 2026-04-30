@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import { countriesApi, type Country } from '@/api/countries'
 import { useToast } from '@/hooks/useToast'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { getApiErrorMessage } from '@/lib/utils'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
@@ -25,6 +27,7 @@ interface CountriesTabProps {
 export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
   const { t } = useTranslation()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const [loadingCountries, setLoadingCountries] = useState(true)
   const [savingCountry, setSavingCountry] = useState(false)
@@ -84,6 +87,7 @@ export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
     try {
       const response = await countriesApi.create({ name, code })
       setCountries((current) => [response.data, ...current])
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.countries })
       setCountryCreateOpen(false)
       toast(t('admin.countries.toast_created'))
     } catch (error) {
@@ -98,6 +102,7 @@ export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
     try {
       const response = await countriesApi.update(id, { name, code })
       setCountries((current) => current.map((country) => (country.id === id ? response.data : country)))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.countries })
       setEditingCountry(null)
       toast(t('admin.countries.toast_updated'))
     } catch (error) {
@@ -113,6 +118,7 @@ export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
     try {
       await countriesApi.delete(deletingCountry.id)
       setCountries((current) => current.filter((country) => country.id !== deletingCountry.id))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.countries })
       setDeletingCountry(null)
       toast(t('admin.countries.toast_deleted'))
     } catch (error) {

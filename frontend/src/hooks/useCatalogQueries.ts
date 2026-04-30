@@ -22,7 +22,9 @@ export const QUERY_KEYS = {
   banks: ['banks'] as const,
   categories: ['categories'] as const,
   countries: ['countries'] as const,
+  investments: ['investments'] as const,
   investmentEntities: ['investmentEntities'] as const,
+  pockets: ['pockets'] as const,
 } as const
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
