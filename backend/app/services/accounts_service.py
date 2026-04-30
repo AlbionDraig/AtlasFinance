@@ -1,20 +1,18 @@
 """CRUD de cuentas bancarias del usuario."""
 from decimal import Decimal
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.account import Account
-from app.models.bank import Bank
 from app.models.enums import AccountType, Currency
+from app.repositories.accounts import AccountRepository
+from app.repositories.banks import BankRepository
 from app.schemas.account import AccountCreate, AccountUpdate
-from app.services._common import persist_and_refresh
 
 
 def create_account(db: Session, user_id: int, payload: AccountCreate) -> Account:
     """Crear una cuenta asociada a un banco propio del usuario."""
-    bank = db.get(Bank, payload.bank_id)
-    if not bank or bank.user_id != user_id:
+    if BankRepository(db).get_owned(user_id, payload.bank_id) is None:
         raise ValueError("Invalid bank for user")
 
     account = Account(
@@ -25,7 +23,7 @@ def create_account(db: Session, user_id: int, payload: AccountCreate) -> Account
         current_balance=Decimal("0"),
         bank_id=payload.bank_id,
     )
-    return persist_and_refresh(db, account)
+    return AccountRepository(db).add(account)
 
 
 def list_accounts(
@@ -37,41 +35,36 @@ def list_accounts(
     bank_id: int | None = None,
 ) -> list[Account]:
     """Listar cuentas del usuario aplicando filtros opcionales."""
-    query = select(Account).join(Bank).where(Bank.user_id == user_id)
-    if search:
-        term = f"%{search}%"
-        query = query.where(Account.name.ilike(term) | Bank.name.ilike(term))
-    if account_type is not None:
-        query = query.where(Account.account_type == account_type)
-    if currency is not None:
-        query = query.where(Account.currency == currency)
-    if bank_id is not None:
-        query = query.where(Account.bank_id == bank_id)
-    query = query.order_by(Account.created_at.desc())
-    return list(db.scalars(query).all())
+    return AccountRepository(db).list_by_user(
+        user_id,
+        search=search,
+        account_type=account_type,
+        currency=currency,
+        bank_id=bank_id,
+    )
 
 
 def update_account(
     db: Session, user_id: int, account_id: int, payload: AccountUpdate
 ) -> Account:
     """Actualizar una cuenta propiedad del usuario."""
-    account = db.get(Account, account_id)
-    if not account or account.bank.user_id != user_id:
+    accounts = AccountRepository(db)
+    account = accounts.get_owned(user_id, account_id)
+    if account is None:
         raise ValueError("Account not found")
-    bank = db.get(Bank, payload.bank_id)
-    if not bank or bank.user_id != user_id:
+    if BankRepository(db).get_owned(user_id, payload.bank_id) is None:
         raise ValueError("Invalid bank for user")
     account.name = payload.name
     account.account_type = payload.account_type
     account.currency = payload.currency
     account.bank_id = payload.bank_id
-    return persist_and_refresh(db, account)
+    return accounts.commit_refresh(account)
 
 
 def delete_account(db: Session, user_id: int, account_id: int) -> None:
     """Eliminar una cuenta propiedad del usuario."""
-    account = db.get(Account, account_id)
-    if not account or account.bank.user_id != user_id:
+    accounts = AccountRepository(db)
+    account = accounts.get_owned(user_id, account_id)
+    if account is None:
         raise ValueError("Account not found")
-    db.delete(account)
-    db.commit()
+    accounts.delete(account)

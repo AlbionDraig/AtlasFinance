@@ -1,17 +1,13 @@
 """CRUD de entidades de inversión."""
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.investment_entity import InvestmentEntity
+from app.repositories.investment_entities import InvestmentEntityRepository
 from app.schemas.investment_entity import (
     InvestmentEntityCreate,
     InvestmentEntityUpdate,
 )
-from app.services._common import (
-    ensure_country_code_exists,
-    get_user,
-    persist_and_refresh,
-)
+from app.services._common import ensure_country_code_exists, get_user
 
 
 def create_investment_entity(
@@ -26,17 +22,12 @@ def create_investment_entity(
         country_code=normalized_code,
         user_id=user_id,
     )
-    return persist_and_refresh(db, entity)
+    return InvestmentEntityRepository(db).add(entity)
 
 
 def list_investment_entities(db: Session, user_id: int) -> list[InvestmentEntity]:
     """Listar entidades de inversión del usuario, las más recientes primero."""
-    query = (
-        select(InvestmentEntity)
-        .where(InvestmentEntity.user_id == user_id)
-        .order_by(InvestmentEntity.created_at.desc())
-    )
-    return list(db.scalars(query).all())
+    return InvestmentEntityRepository(db).list_by_user(user_id)
 
 
 def update_investment_entity(
@@ -46,20 +37,21 @@ def update_investment_entity(
     payload: InvestmentEntityUpdate,
 ) -> InvestmentEntity:
     """Actualizar una entidad de inversión propiedad del usuario."""
-    entity = db.get(InvestmentEntity, investment_entity_id)
-    if not entity or entity.user_id != user_id:
+    repo = InvestmentEntityRepository(db)
+    entity = repo.get_owned(user_id, investment_entity_id)
+    if entity is None:
         raise ValueError("Investment entity not found")
     normalized_code = ensure_country_code_exists(db, payload.country_code)
     entity.name = payload.name
     entity.entity_type = payload.entity_type
     entity.country_code = normalized_code
-    return persist_and_refresh(db, entity)
+    return repo.commit_refresh(entity)
 
 
 def delete_investment_entity(db: Session, user_id: int, investment_entity_id: int) -> None:
     """Eliminar una entidad de inversión propiedad del usuario."""
-    entity = db.get(InvestmentEntity, investment_entity_id)
-    if not entity or entity.user_id != user_id:
+    repo = InvestmentEntityRepository(db)
+    entity = repo.get_owned(user_id, investment_entity_id)
+    if entity is None:
         raise ValueError("Investment entity not found")
-    db.delete(entity)
-    db.commit()
+    repo.delete(entity)

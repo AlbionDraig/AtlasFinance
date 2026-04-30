@@ -8,19 +8,13 @@ Centralizar aquí evita ciclos entre módulos y mantiene SRP en cada servicio:
 from decimal import Decimal
 from time import monotonic
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.account import Account
-from app.models.bank import Bank
-from app.models.category import Category
-from app.models.country import Country
 from app.models.enums import TransactionType
-from app.models.investment import Investment
-from app.models.investment_entity import InvestmentEntity
-from app.models.pocket import Pocket
-from app.models.transaction import Transaction
 from app.models.user import User
+from app.repositories.countries import CountryRepository
+from app.repositories.users import UserRepository
 from app.schemas.metric import DashboardMetrics
 
 # Caché in-process del dashboard: {(user_id, currency) -> (metrics, expires_at)}.
@@ -63,7 +57,7 @@ def set_cached_metrics(
 
 def get_user(db: Session, user_id: int) -> User:
     """Recuperar usuario o lanzar ValueError de dominio."""
-    user = db.get(User, user_id)
+    user = UserRepository(db).get(user_id)
     if not user:
         raise ValueError("User not found")
     return user
@@ -72,16 +66,12 @@ def get_user(db: Session, user_id: int) -> User:
 def ensure_country_code_exists(db: Session, country_code: str) -> str:
     """Validar código de país contra el catálogo global y normalizar."""
     normalized_code = country_code.strip().upper()
-    country_id = db.scalar(select(Country.id).where(Country.code == normalized_code).limit(1))
-    if country_id is None:
+    if not CountryRepository(db).code_exists(normalized_code):
         raise ValueError("Country code is not registered in countries catalog")
     return normalized_code
 
 
-def persist_and_refresh(
-    db: Session,
-    instance: Bank | Account | Pocket | Category | Country | Transaction | Investment | InvestmentEntity,
-):
+def persist_and_refresh(db: Session, instance):
     """Persistir una nueva instancia y devolverla refrescada desde la BD."""
     db.add(instance)
     db.commit()
@@ -89,8 +79,8 @@ def persist_and_refresh(
     return instance
 
 
-def commit_and_refresh(db: Session, instance: Transaction) -> Transaction:
-    """Confirmar cambios pendientes y refrescar una transacción."""
+def commit_and_refresh(db: Session, instance):
+    """Confirmar cambios pendientes y refrescar una instancia."""
     db.commit()
     db.refresh(instance)
     return instance

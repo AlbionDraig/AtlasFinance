@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.core.security import get_password_hash, hash_token, verify_password
 from app.models.revoked_token import RevokedToken
 from app.models.user import User
+from app.repositories.users import UserRepository
 from app.schemas.user import UserCreate, UserUpdate
 
 
@@ -24,8 +25,8 @@ def create_user(db: Session, payload: UserCreate) -> User:
     """
     # Validamos unicidad antes de hash + insert para evitar trabajo innecesario
     # y para devolver un mensaje claro en lugar de un IntegrityError genérico.
-    existing = db.scalar(select(User).where(User.email == payload.email))
-    if existing:
+    repo = UserRepository(db)
+    if repo.get_by_email(payload.email):
         raise ValueError("Email already registered")
 
     user = User(
@@ -34,11 +35,7 @@ def create_user(db: Session, payload: UserCreate) -> User:
         # Nunca almacenamos la contraseña en claro: get_password_hash usa bcrypt.
         hashed_password=get_password_hash(payload.password),
     )
-    db.add(user)
-    db.commit()
-    # refresh() recarga campos generados por la BD (id, created_at) para devolverlos al caller.
-    db.refresh(user)
-    return user
+    return repo.add(user)
 
 
 def authenticate_user(db: Session, email: str, password: str) -> User | None:
@@ -47,7 +44,7 @@ def authenticate_user(db: Session, email: str, password: str) -> User | None:
     Devolvemos None (no excepción) porque el caller necesita distinguir
     "credenciales inválidas" de un error inesperado.
     """
-    user = db.scalar(select(User).where(User.email == email))
+    user = UserRepository(db).get_by_email(email)
     if not user:
         # No diferenciamos "usuario inexistente" de "password incorrecta" en el mensaje
         # del route para no filtrar qué emails están registrados (mitiga user enumeration).
@@ -65,8 +62,7 @@ def update_user(db: Session, user: User, payload: UserUpdate) -> User:
 
     if payload.email is not None and payload.email != user.email:
         # Validamos unicidad antes de mutar el modelo para que un fallo no deje el objeto sucio.
-        conflict = db.scalar(select(User).where(User.email == payload.email))
-        if conflict:
+        if UserRepository(db).get_by_email(payload.email):
             raise ValueError("Email already in use")
         user.email = payload.email
 

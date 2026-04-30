@@ -3,25 +3,21 @@ from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.account import Account
-from app.models.bank import Bank
 from app.models.category import Category
 from app.models.enums import TransactionType
-from app.models.investment import Investment
 from app.models.transaction import Transaction
+from app.repositories.accounts import AccountRepository
+from app.repositories.categories import CategoryRepository
+from app.repositories.investments import InvestmentRepository
+from app.repositories.transactions import TransactionRepository
 from app.schemas.metric import DashboardAggregates, DashboardMetrics
 from app.services._common import get_cached_metrics, set_cached_metrics
 from app.services.transactions_service import list_transactions
 
 
-def _sum_assets_in_currency(
-    accounts: list[Account],
-    investments: list[Investment],
-    target_currency: str,  # noqa: ARG001 — placeholder para conversión futura
-) -> Decimal:
+def _sum_assets(accounts: list, investments: list) -> Decimal:
     """Sumar saldos de cuentas e inversiones (sin conversión por ahora)."""
     total_assets = Decimal("0")
     for account in accounts:
@@ -31,18 +27,15 @@ def _sum_assets_in_currency(
     return total_assets
 
 
-def _sum_transactions_in_currency(
-    transactions: list[Transaction],
-    target_currency: str,  # noqa: ARG001 — placeholder para conversión futura
-) -> tuple[Decimal, Decimal]:
+def _sum_transactions(transactions: list[Transaction]) -> tuple[Decimal, Decimal]:
     """Sumar ingresos y gastos del periodo."""
     totals = defaultdict(lambda: Decimal("0"))
     for txn in transactions:
         totals[txn.transaction_type.value] += txn.amount
-
-    income = totals[TransactionType.INCOME.value]
-    expenses = totals[TransactionType.EXPENSE.value]
-    return income, expenses
+    return (
+        totals[TransactionType.INCOME.value],
+        totals[TransactionType.EXPENSE.value],
+    )
 
 
 def get_dashboard_metrics(
@@ -55,18 +48,12 @@ def get_dashboard_metrics(
     if cached_metrics is not None:
         return cached_metrics
 
-    accounts = db.scalars(
-        select(Account).join(Bank).where(Bank.user_id == user_id)
-    ).all()
-    investments = db.scalars(
-        select(Investment).where(Investment.user_id == user_id)
-    ).all()
-    transactions = db.scalars(
-        select(Transaction).where(Transaction.user_id == user_id)
-    ).all()
+    accounts = AccountRepository(db).list_all_by_user(user_id)
+    investments = InvestmentRepository(db).list_by_user(user_id)
+    transactions = TransactionRepository(db).list_all_by_user(user_id)
 
-    total_assets = _sum_assets_in_currency(accounts, investments, target_currency)
-    total_income, total_expenses = _sum_transactions_in_currency(transactions, target_currency)
+    total_assets = _sum_assets(accounts, investments)
+    total_income, total_expenses = _sum_transactions(transactions)
     cashflow = total_income - total_expenses
     savings_rate = (
         (cashflow / total_income * Decimal("100")) if total_income > 0 else Decimal("0")
@@ -82,9 +69,7 @@ def get_dashboard_metrics(
     return set_cached_metrics(user_id, target_currency, metrics)
 
 
-def _build_monthly_breakdown(
-    cur_txns: list[Transaction],
-) -> list[dict]:
+def _build_monthly_breakdown(cur_txns: list[Transaction]) -> list[dict]:
     """Construir el desglose mensual con ingresos, gastos y acumulado."""
     month_income: dict[str, Decimal] = defaultdict(Decimal)
     month_expense: dict[str, Decimal] = defaultdict(Decimal)
@@ -109,6 +94,14 @@ def _build_monthly_breakdown(
     return monthly
 
 
+def _resolve_categories(
+    db: Session, transactions: list[Transaction]
+) -> dict[int, Category]:
+    """Pre-cargar metadatos de categorías referenciadas por las transacciones."""
+    cat_ids = {tx.category_id for tx in transactions if tx.category_id is not None}
+    return {c.id: c for c in CategoryRepository(db).list_by_ids(cat_ids)}
+
+
 def get_dashboard_aggregates(  # pylint: disable=too-many-arguments,too-many-locals
     db: Session,
     user_id: int,
@@ -127,13 +120,7 @@ def get_dashboard_aggregates(  # pylint: disable=too-many-arguments,too-many-loc
         db, user_id, start_date=prev_start_date, end_date=prev_end_date, limit=10_000
     )
 
-    # Resolver metadata de categorías (nombre + is_fixed) en una sola consulta.
-    all_cat_ids = {tx.category_id for tx in cur_txns + prev_txns if tx.category_id is not None}
-    if all_cat_ids:
-        cat_objs = db.scalars(select(Category).where(Category.id.in_(all_cat_ids))).all()
-        cat_map: dict[int, Category] = {c.id: c for c in cat_objs}
-    else:
-        cat_map = {}
+    cat_map = _resolve_categories(db, cur_txns + prev_txns)
 
     def _cat_info(tx: Transaction) -> tuple[str, bool]:
         if tx.category_id is None or tx.category_id not in cat_map:
