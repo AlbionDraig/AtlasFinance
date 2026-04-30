@@ -12,8 +12,6 @@ htmlcov/
 *.sqlite3
 */coverage.xml
 backend/coverage.xml
-# Frontend old (Python legacy)
-frontend_old/
 
 # React / Vite / Tailwind
 node_modules/
