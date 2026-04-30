@@ -85,7 +85,7 @@ const navItems = [
 ]
 
 export default function AppLayout() {
-  const { logout, user } = useAuthStore()
+  const { logout, user, setUser } = useAuthStore()
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
@@ -93,6 +93,14 @@ export default function AppLayout() {
   // y debemos poder cancelarlos sincrónicamente desde otros handlers.
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Hidrata el perfil desde el servidor al montar para reflejar cambios hechos
+  // en otras sesiones (e.g. email/nombre actualizados).
+  useEffect(() => {
+    authApi.me().then((res) => setUser(res.data)).catch(() => {
+      // Silencioso: si falla (401) el interceptor de axios maneja la sesión.
+    })
+  }, [])
 
   // Delays pequeños para evitar parpadeos cuando el cursor cruza el sidebar
   // accidentalmente (e.g. moverse hacia el menú desde el contenido).
