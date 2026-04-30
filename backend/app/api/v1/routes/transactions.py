@@ -4,10 +4,13 @@ Esta capa es delgada a propósito: solo traduce HTTP ↔ servicios.
 La lógica de negocio (impacto en saldos, validaciones de propiedad) vive en
 `transactions_service` para que sea testeable sin levantar FastAPI.
 """
+import csv
+import io
 from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -96,6 +99,53 @@ def list_transactions_endpoint(
         total=total,
         skip=skip,
         limit=limit,
+    )
+
+
+@router.get("/export")
+def export_transactions_csv(
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
+    account_id: Annotated[int | None, Query()] = None,
+    transaction_type: Annotated[TransactionType | None, Query()] = None,
+    currency: Annotated[Currency | None, Query()] = None,
+    search: Annotated[str | None, Query(max_length=255)] = None,
+) -> StreamingResponse:
+    """Export all matching transactions as a UTF-8 CSV file (no pagination limit)."""
+    items, _ = list_transactions(
+        db, current_user.id,
+        start_date=start_date,
+        end_date=end_date,
+        account_id=account_id,
+        transaction_type=transaction_type,
+        currency=currency,
+        search=search,
+        skip=0,
+        limit=100_000,
+    )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["id", "occurred_at", "description", "amount", "currency", "transaction_type", "account_id", "category_id"])
+    for item in items:
+        writer.writerow([
+            item.id,
+            item.occurred_at.isoformat() if item.occurred_at else "",
+            item.description,
+            item.amount,
+            item.currency.value if item.currency else "",
+            item.transaction_type.value if item.transaction_type else "",
+            item.account_id,
+            item.category_id if item.category_id is not None else "",
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=transactions.csv"},
     )
 
 

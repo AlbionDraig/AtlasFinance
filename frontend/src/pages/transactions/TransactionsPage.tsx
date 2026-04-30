@@ -136,6 +136,7 @@ export default function TransactionsPage() {
   const [filters, setFilters] = useState<FiltersState>(() => buildDefaultFilters())
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [saving, setSaving] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -215,6 +216,32 @@ export default function TransactionsPage() {
     setEditingId(null)
     setModalOpen(false)
     setForm(buildDefaultForm())
+  }
+
+  async function handleExportCSV() {
+    setExporting(true)
+    try {
+      const range = resolvePeriodRange(filters.period, filters.from, filters.to)
+      const params = {
+        start_date: range.from ? `${range.from}T00:00:00` : undefined,
+        end_date: range.to ? `${range.to}T23:59:59` : undefined,
+        account_id: filters.accountId !== 'all' ? Number(filters.accountId) : undefined,
+        transaction_type: filters.transactionType !== 'all' ? filters.transactionType.toLowerCase() : undefined,
+        currency: filters.currency !== 'all' ? filters.currency : undefined,
+        search: debouncedQuery.trim() || undefined,
+      }
+      const response = await transactionsApi.export(params)
+      const url = URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }))
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = 'transactions.csv'
+      anchor.click()
+      URL.revokeObjectURL(url)
+    } catch (exportError) {
+      toast(getApiErrorMessage(exportError, t('transactions.toast_export_error')), 'error')
+    } finally {
+      setExporting(false)
+    }
   }
 
   function handleEdit(transaction: Transaction) {
@@ -382,9 +409,22 @@ export default function TransactionsPage() {
   return (
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       {/* Page header */}
-      <div>
-        <h1 className="app-title text-xl">{t('transactions.title')}</h1>
-        <p className="app-subtitle text-sm mt-0.5">{t('transactions.subtitle')}</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="app-title text-xl">{t('transactions.title')}</h1>
+          <p className="app-subtitle text-sm mt-0.5">{t('transactions.subtitle')}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => { void handleExportCSV() }}
+          disabled={exporting}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-brand text-brand hover:bg-brand-light px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11" />
+          </svg>
+          {exporting ? t('common.loading') : t('transactions.export_csv')}
+        </button>
       </div>
 
       {modalOpen && (

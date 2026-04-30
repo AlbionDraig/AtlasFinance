@@ -457,7 +457,9 @@
     "toast_pocket_amount_zero": "El monto debe ser mayor que 0.",
     "toast_pocket_select_date": "Selecciona la fecha.",
     "toast_pocket_select_time": "Selecciona la hora.",
-    "table_range": "Mostrando {{start}}–{{end}} de {{total}}"
+    "table_range": "Mostrando {{start}}\u2013{{end}} de {{total}}",
+    "export_csv": "Exportar CSV",
+    "toast_export_error": "No se pudo exportar las transacciones."
   },
   "investments": {
     "title": "Inversiones",

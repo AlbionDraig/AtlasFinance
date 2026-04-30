@@ -33,6 +33,8 @@ export interface TransactionPage {
 export const transactionsApi = {
   list: (params?: TransactionFilters) =>
     apiClient.get<TransactionPage>('/transactions', { params }),
+  export: (params?: Omit<TransactionFilters, 'skip' | 'limit'>) =>
+    apiClient.get<Blob>('/transactions/export', { params, responseType: 'blob' }),
   get: (id: number) => apiClient.get<Transaction>(`/transactions/${id}`),
   create: (data: Omit<Transaction, 'id'>) =>
     apiClient.post<Transaction>('/transactions', data),
