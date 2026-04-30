@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import { categoriesApi, type Category, type CategoryPayload } from '@/api/categories'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -7,6 +8,7 @@ import FilterCard from '@/components/ui/FilterCard'
 import SearchInput from '@/components/ui/SearchInput'
 import { useToast } from '@/hooks/useToast'
 import { useCategoriesData } from '@/hooks/useCategoriesData'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import CategoryModal, { type FormState } from './components/CategoryModal'
 import CategoryGroup from './components/CategoryGroup'
 
@@ -15,6 +17,7 @@ const EMPTY_FORM: FormState = { name: '', is_fixed: false, description: '' }
 export default function CategoriesPage({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const { categories, setCategories, loading } = useCategoriesData()
   const [saving, setSaving] = useState(false)
@@ -30,6 +33,7 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
       const payload: CategoryPayload = { name: data.name, is_fixed: data.is_fixed, description: data.description || null }
       const r = await categoriesApi.create(payload)
       setCategories((prev) => [r.data, ...prev])
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories })
       setShowCreate(false)
       toast(t('categories.toast_created'), 'success')
     } catch {
@@ -46,6 +50,7 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
       const payload: CategoryPayload = { name: data.name, is_fixed: data.is_fixed, description: data.description || null }
       const r = await categoriesApi.update(editing.id, payload)
       setCategories((prev) => prev.map((c) => (c.id === editing.id ? r.data : c)))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories })
       setEditing(null)
       toast(t('categories.toast_updated'), 'success')
     } catch {
@@ -61,6 +66,7 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
     try {
       await categoriesApi.delete(deleting.id)
       setCategories((prev) => prev.filter((c) => c.id !== deleting.id))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories })
       setDeleting(null)
       toast(t('categories.toast_deleted'), 'success')
     } catch {

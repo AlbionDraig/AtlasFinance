@@ -1,17 +1,18 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import { accountsApi } from '@/api/accounts'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/hooks/useToast'
 import { useAccountsList, useBanks } from '@/hooks/useAccountsData'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import type { Account } from '@/types'
 import AccountCreateModal from './components/AccountCreateModal'
 import AccountEditModal from './components/AccountEditModal'
 import AccountsFiltersCard, { type AccountsFiltersState } from './components/AccountsFiltersCard'
 import AccountsTableCard from './components/AccountsTableCard'
-
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 
 interface AccountFormState {
@@ -42,6 +43,7 @@ function buildDefaultFilters(): AccountsFiltersState {
 export default function AccountsPage() {
   const { toast } = useToast()
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
 
   const [savingAccount, setSavingAccount] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
@@ -117,6 +119,7 @@ export default function AccountsPage() {
         bank_id: Number(accountForm.bankId),
       })
       setAccounts((current) => [response.data, ...current])
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
       closeCreateModal()
       toast(t('accounts.toast_created'))
     } catch (error) {
@@ -134,6 +137,7 @@ export default function AccountsPage() {
     try {
       const response = await accountsApi.update(id, data)
       setAccounts((current) => current.map((acc) => (acc.id === id ? response.data : acc)))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
       setEditingAccount(null)
       toast(t('accounts.toast_updated'))
     } catch (error) {
@@ -149,6 +153,7 @@ export default function AccountsPage() {
     try {
       await accountsApi.delete(deletingAccount.id)
       setAccounts((current) => current.filter((acc) => acc.id !== deletingAccount.id))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
       setDeletingAccount(null)
       toast(t('accounts.toast_deleted'))
     } catch (error) {

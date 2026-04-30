@@ -10,6 +10,7 @@ import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
+import EmptyState from '@/components/ui/EmptyState'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 import Select from '@/components/ui/Select'
@@ -491,20 +492,24 @@ export default function PocketsPage() {
       />
 
       {accounts.length === 0 ? (
-        <div className="app-card p-8 text-center space-y-2">
-          <p className="text-sm text-neutral-700">{t('pockets.empty_no_accounts_title')}</p>
-          <p className="text-xs text-neutral-400">{t('pockets.empty_no_accounts_desc')}</p>
+        <div className="app-card">
+          <EmptyState
+            title={t('pockets.empty_no_accounts_title')}
+            description={t('pockets.empty_no_accounts_desc')}
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <rect x="3" y="6" width="18" height="12" rx="2" ry="2" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18" />
+              </svg>
+            }
+          />
         </div>
       ) : filteredPockets.length === 0 ? (
-        <div className="app-card p-10 text-center space-y-2">
-          <p className="text-sm text-neutral-700">
-            {pockets.length === 0 ? t('pockets.empty_no_pockets') : t('pockets.empty_no_results')}
-          </p>
-          <p className="text-xs text-neutral-400">
-            {pockets.length === 0
-              ? t('pockets.empty_create_hint')
-              : t('pockets.empty_filter_hint')}
-          </p>
+        <div className="app-card">
+          <EmptyState
+            title={pockets.length === 0 ? t('pockets.empty_no_pockets') : t('pockets.empty_no_results')}
+            description={pockets.length === 0 ? t('pockets.empty_create_hint') : t('pockets.empty_filter_hint')}
+          />
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

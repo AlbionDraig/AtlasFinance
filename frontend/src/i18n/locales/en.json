@@ -494,6 +494,8 @@
     "card_since": "Since {{date}}",
     "empty_no_investments": "You have no investments registered yet. Create one with the + button.",
     "empty_no_results": "No investments match the current filters.",
+    "empty_create_hint": "Register your first investment with the + button.",
+    "empty_filter_hint": "Try a different term or clear the filters.",
     "toast_load_error": "Error loading investments.",
     "toast_name_short": "Name must be at least 2 characters.",
     "toast_select_entity": "Select an entity.",

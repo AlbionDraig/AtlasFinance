@@ -1,3 +1,5 @@
+import os
+
 from sqlalchemy import inspect, text
 
 from app.db.base import Base, engine
@@ -164,8 +166,35 @@ def _migrate_investments_to_entities() -> None:
                     pass
 
 
+def _apply_migrations() -> None:
+    """Apply Alembic migrations on startup.
+
+    Strategy:
+    - Fresh DB (no tables): run ``alembic upgrade head`` to create the schema via migrations.
+    - Existing DB managed by Alembic (``alembic_version`` table present): run pending migrations.
+    - Legacy DB (tables exist but no ``alembic_version``): create missing tables via
+      ``create_all`` then stamp head so future runs use Alembic normally.
+    """
+    from alembic import command  # noqa: PLC0415 (deferred import to avoid heavy cost in tests)
+    from alembic.config import Config
+
+    _BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    alembic_cfg = Config(os.path.join(_BACKEND_DIR, "alembic.ini"))
+
+    inspector = inspect(engine)
+    table_names = inspector.get_table_names()
+
+    if not table_names or "alembic_version" in table_names:
+        # Fresh DB or already managed by Alembic — run migrations normally.
+        command.upgrade(alembic_cfg, "head")
+    else:
+        # Legacy DB: ensure all tables exist, then stamp so future runs are migration-based.
+        Base.metadata.create_all(bind=engine)
+        command.stamp(alembic_cfg, "head")
+
+
 def init_db() -> None:
-    """Create schema and execute idempotent compatibility migrations."""
-    Base.metadata.create_all(bind=engine)
+    """Apply schema migrations and execute idempotent compatibility migrations."""
+    _apply_migrations()
     _migrate_categories_to_global()
     _migrate_investments_to_entities()

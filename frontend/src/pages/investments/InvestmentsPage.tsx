@@ -12,6 +12,7 @@ import FilterCard from '@/components/ui/FilterCard'
 import SearchInput from '@/components/ui/SearchInput'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
+import EmptyState from '@/components/ui/EmptyState'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 import Select from '@/components/ui/Select'
@@ -507,10 +508,16 @@ export default function InvestmentsPage() {
 
       {/* Cards grid */}
       {filtered.length === 0 ? (
-        <div className="bg-white border border-neutral-100 rounded-xl p-10 text-center text-neutral-400">
-          {investments.length === 0
-            ? t('investments.empty_no_investments')
-            : t('investments.empty_no_results')}
+        <div className="app-card">
+          <EmptyState
+            title={investments.length === 0 ? t('investments.empty_no_investments') : t('investments.empty_no_results')}
+            description={investments.length === 0 ? t('investments.empty_create_hint') : t('investments.empty_filter_hint')}
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+            }
+          />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
