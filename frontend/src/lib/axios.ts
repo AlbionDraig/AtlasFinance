@@ -1,7 +1,7 @@
 // axios.ts — cliente HTTP centralizado para hablar con la API de Atlas.
 // Centralizar la instancia evita repetir baseURL y headers en cada módulo de api/*
-// y permite enganchar interceptores globales (sesión expirada, logging, etc.).
-import axios from 'axios'
+// y permite enganchar interceptores globales (refresh silencioso, sesión expirada, etc.).
+import axios, { type AxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/store/authStore'
 
 const apiClient = axios.create({
@@ -13,21 +13,68 @@ const apiClient = axios.create({
   withCredentials: true,
 })
 
-// Interceptor de respuestas: detecta sesiones expiradas y fuerza logout limpio.
+// ── Refresh silencioso ───────────────────────────────────────────────────────
+// Cuando el access token expira (401) intentamos renovarlo una sola vez usando
+// la cookie httpOnly de refresh token. Si el refresh también falla, hacemos
+// logout y redirigimos a login con la bandera "session_expired".
+//
+// Para evitar múltiples llamadas paralelas al endpoint /auth/refresh mientras
+// el primero está en vuelo, mantenemos una promesa compartida (_refreshPromise).
+// Todas las peticiones fallidas esperan por la misma promesa y se reintentan
+// en cuanto el nuevo access token queda disponible en la cookie.
+
+let _refreshPromise: Promise<void> | null = null
+
+// Marca en la config de la petición para detectar reintentos y evitar bucles.
+interface RetryableConfig extends AxiosRequestConfig {
+  _retry?: boolean
+}
+
+function forceLogout() {
+  useAuthStore.getState().logout()
+  sessionStorage.setItem('session_expired', '1')
+  window.location.href = '/login'
+}
+
+async function refreshTokens(): Promise<void> {
+  // Llamamos directamente con axios (no apiClient) para no disparar este
+  // mismo interceptor de forma recursiva.
+  await axios.post(
+    '/api/v1/auth/refresh',
+    {},
+    { withCredentials: true, baseURL: window.location.origin },
+  )
+}
+
 apiClient.interceptors.response.use(
   (res) => res,
-  (err) => {
-    // Excluimos endpoints /auth/* porque un 401 ahí (login fallido, refresh inválido)
-    // NO debe disparar redirección: el formulario debe poder mostrar el error inline.
-    const isAuthEndpoint = err.config?.url?.includes('/auth/')
-    if (err.response?.status === 401 && !isAuthEndpoint) {
-      // Limpiamos el store para que ProtectedRoute reaccione y para que la UI no muestre datos stale.
-      useAuthStore.getState().logout()
-      // Bandera leída por LoginPage para mostrar "Tu sesión expiró" en vez de error genérico.
-      sessionStorage.setItem('session_expired', '1')
-      // window.location en lugar de navigate(): garantiza un reset completo del estado de React.
-      window.location.href = '/login'
+  async (err) => {
+    const config = err.config as RetryableConfig | undefined
+
+    // Endpoints de auth: un 401 aquí significa credenciales inválidas,
+    // no token expirado — mostramos el error inline sin redirigir.
+    const isAuthEndpoint = (config?.url ?? '').includes('/auth/')
+
+    if (err.response?.status === 401 && !isAuthEndpoint && config && !config._retry) {
+      config._retry = true
+
+      try {
+        // Si ya hay un refresh en vuelo lo reutilizamos; si no, lanzamos uno nuevo.
+        if (!_refreshPromise) {
+          _refreshPromise = refreshTokens().finally(() => {
+            _refreshPromise = null
+          })
+        }
+        await _refreshPromise
+
+        // Reintentamos la petición original con las cookies actualizadas.
+        return apiClient(config)
+      } catch {
+        forceLogout()
+        return Promise.reject(err)
+      }
     }
+
     return Promise.reject(err)
   },
 )
