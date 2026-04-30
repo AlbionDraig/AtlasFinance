@@ -47,3 +47,13 @@ jobs:
       - name: Build smoke check
         run: |
           python -m compileall backend/app
+
+      - name: Alembic migrations smoke check
+        env:
+          DATABASE_URL: "sqlite+pysqlite:///./ci_alembic.db"
+          SECRET_KEY: "ci-secret-key"
+        run: |
+          cd backend
+          python -m alembic upgrade head
+          python -m alembic downgrade -1
+          python -m alembic upgrade head
