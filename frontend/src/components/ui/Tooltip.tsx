@@ -49,7 +49,7 @@ export default function Tooltip({
 
       // Primero, calcular el left centrado basado en el ancho estimado
       let left = triggerRect.left + triggerRect.width / 2 - estimatedWidth / 2
-      
+
       // Ajustar si se sale de los bordes del viewport
       left = Math.max(margin, Math.min(left, viewportWidth - estimatedWidth - margin))
 
@@ -107,8 +107,8 @@ export default function Tooltip({
         <span
           ref={tooltipRef}
           className="fixed z-50 bg-neutral-900 text-white text-xs rounded-xl px-3 py-2.5 shadow-xl leading-relaxed pointer-events-none whitespace-normal"
-          style={{ 
-            top: tooltipPos.top, 
+          style={{
+            top: tooltipPos.top,
             left: tooltipPos.left,
             maxWidth: `${tooltipPos.maxWidth}px`
           }}

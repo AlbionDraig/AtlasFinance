@@ -1,0 +1,60 @@
+# Pre-commit hooks for AtlasFinance
+# Install once with:
+#   pip install -r backend/requirements.txt
+#   pre-commit install
+# Run on all files manually:
+#   pre-commit run --all-files
+# Run heavy hooks (pylint, pytest) on demand:
+#   pre-commit run --hook-stage manual pylint-backend
+#   pre-commit run --hook-stage manual pytest-backend
+repos:
+  # Generic safety nets (kept conservative to avoid CRLF/LF churn on Windows)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-json
+        # Exclude TypeScript "JSONC" configs that allow // comments.
+        exclude: ^frontend/tsconfig.*\.json$
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+
+  # Backend lint (matches the version in backend/requirements.txt).
+  # ruff-format is intentionally NOT enabled to avoid reformatting the
+  # whole codebase; only `ruff check --fix` runs, mirroring CI.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+        files: ^backend/.*\.py$
+
+  # Backend security scan over application code (skip tests/scripts).
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.3
+    hooks:
+      - id: bandit
+        args: ["--quiet"]
+        files: ^backend/app/.*\.py$
+
+  # Heavy hooks: only run on demand with `pre-commit run --hook-stage manual <id>`.
+  # Frontend ESLint is enforced by the frontend-ci.yml workflow, so it is not
+  # duplicated here to keep local commits fast and cross-platform.
+  - repo: local
+    hooks:
+      - id: pylint-backend
+        name: pylint (manual)
+        entry: python -m pylint backend/app --fail-under=8.0
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [manual]
+      - id: pytest-backend
+        name: pytest (manual)
+        entry: python -m pytest backend -q
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [manual]

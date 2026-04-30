@@ -253,6 +253,26 @@ python -m pytest backend/tests --cov=backend/app --cov-report=term-missing --cov
 python -m compileall backend/app
 ```
 
+### Pre-commit hooks (opcional pero recomendado)
+
+Para correr ruff, bandit y validaciones genericas en cada `git commit`:
+
+```bash
+python -m pip install -r backend/requirements.txt
+python -m pre_commit install
+```
+
+Comandos utiles:
+
+```bash
+# Correr todos los hooks sobre el repo completo (no solo lo staged)
+python -m pre_commit run --all-files
+
+# Correr hooks pesados (pylint y pytest) bajo demanda
+python -m pre_commit run --hook-stage manual pylint-backend
+python -m pre_commit run --hook-stage manual pytest-backend
+```
+
 ### Recomendaciones para despliegue futuro (fase SaaS)
 
 - Agregar job de build y push de imagen Docker a un registry
