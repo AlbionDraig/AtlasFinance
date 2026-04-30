@@ -45,7 +45,12 @@
     "atlasFinance": "Atlas Finance",
     "confirmDelete": "Yes, delete",
     "defaultDeleteTitle": "Delete transaction",
-    "defaultDeleteDesc": "This action cannot be undone. The transaction will be permanently deleted."
+    "defaultDeleteDesc": "This action cannot be undone. The transaction will be permanently deleted.",
+    "edit_item": "Edit {{name}}",
+    "delete_item": "Delete {{name}}",
+    "no_results": "No results",
+    "description": "Description",
+    "entity": "Entity"
   },
   "auth": {
     "login": {
@@ -449,7 +454,8 @@
     "toast_pocket_select_pocket": "Select the destination pocket.",
     "toast_pocket_amount_zero": "Amount must be greater than 0.",
     "toast_pocket_select_date": "Select the date.",
-    "toast_pocket_select_time": "Select the time."
+    "toast_pocket_select_time": "Select the time.",
+    "table_range": "Showing {{start}}–{{end}} of {{total}}"
   },
   "investments": {
     "title": "Investments",

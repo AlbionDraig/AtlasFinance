@@ -45,7 +45,12 @@
     "atlasFinance": "Atlas Finance",
     "confirmDelete": "Sí, eliminar",
     "defaultDeleteTitle": "Eliminar movimiento",
-    "defaultDeleteDesc": "Esta acción no se puede deshacer. El movimiento será eliminado permanentemente."
+    "defaultDeleteDesc": "Esta acción no se puede deshacer. El movimiento será eliminado permanentemente.",
+    "edit_item": "Editar {{name}}",
+    "delete_item": "Eliminar {{name}}",
+    "no_results": "Sin resultados",
+    "description": "Descripción",
+    "entity": "Entidad"
   },
   "auth": {
     "login": {
@@ -451,7 +456,8 @@
     "toast_pocket_select_pocket": "Selecciona el bolsillo destino.",
     "toast_pocket_amount_zero": "El monto debe ser mayor que 0.",
     "toast_pocket_select_date": "Selecciona la fecha.",
-    "toast_pocket_select_time": "Selecciona la hora."
+    "toast_pocket_select_time": "Selecciona la hora.",
+    "table_range": "Mostrando {{start}}–{{end}} de {{total}}"
   },
   "investments": {
     "title": "Inversiones",
