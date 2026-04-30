@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+### Changed
+
+- **Playwright E2E in CI now runs against a real backend.** The `e2e` job in `frontend-ci.yml` boots the FastAPI app with SQLite + `SEED_DEMO_DATA=true`, waits for `/openapi.json`, then starts the Vite dev server and runs the suite. Removed the previous `continue-on-error: true` so failures actually fail the pipeline. Browser binaries are cached between runs.
+
 ### Added
 
 - **Route-level code splitting**: every private page (Dashboard, Transactions, Accounts, Pockets, Investments, Admin, Management, Profile) is now lazy-loaded with `React.lazy` + `Suspense`, falling back to `PageSkeleton`. The Dashboard chunk (~436 KB, dominated by `recharts`) no longer ships in the initial bundle — measured locally the main chunk dropped from ~870 KB to ~440 KB.
