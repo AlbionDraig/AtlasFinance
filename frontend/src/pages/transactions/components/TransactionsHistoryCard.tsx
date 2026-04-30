@@ -3,6 +3,7 @@ import Badge from '@/components/ui/Badge'
 import Tooltip from '@/components/ui/Tooltip'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
+import SkeletonTable from '@/components/ui/SkeletonTable'
 import { useTranslation } from 'react-i18next'
 import type { Category } from '@/api/categories'
 import type { Account, Transaction } from '@/types'
@@ -11,6 +12,7 @@ interface TransactionsHistoryCardProps {
   filteredTransactions: Transaction[]
   paginatedTransactions: Transaction[]
   total: number
+  loading?: boolean
   currentPage: number
   totalPages: number
   startIndex: number
@@ -37,6 +39,7 @@ export default function TransactionsHistoryCard({
   filteredTransactions,
   paginatedTransactions,
   total,
+  loading = false,
   currentPage,
   totalPages,
   startIndex,
@@ -140,6 +143,10 @@ export default function TransactionsHistoryCard({
             <p className="text-sm font-medium text-neutral-900">{t('transactions.table_empty_title')}</p>
             <p className="mt-1 text-xs text-neutral-400">{t('transactions.table_empty_desc')}</p>
           </div>
+        </div>
+      ) : loading ? (
+        <div className="p-2">
+          <SkeletonTable rows={8} columns={6} />
         </div>
       ) : (
         <div className="overflow-x-auto">

@@ -9,7 +9,7 @@ import { metricsApi } from '@/api/metrics'
 import Select from '@/components/ui/Select'
 import DatePicker from '@/components/ui/DatePicker'
 import FilterCard from '@/components/ui/FilterCard'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import SkeletonCard from '@/components/ui/SkeletonCard'
 import AppTooltip from '@/components/ui/Tooltip'
 import { useToast } from '@/hooks/useToast'
 import type { DashboardAggregates, DashboardMetrics } from '@/types'
@@ -245,8 +245,14 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
   const savingsBadge = deltaPointsBadge(savingsRate, prevSavings, hasPrev)
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <LoadingSpinner size={8} />
+    <div className="space-y-6 py-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <SkeletonCard borderColor="border-t-success" valueHeight="h-7" lines={2} />
+        <SkeletonCard borderColor="border-t-warning" valueHeight="h-7" lines={2} />
+        <SkeletonCard borderColor="border-t-brand" valueHeight="h-7" lines={2} />
+        <SkeletonCard borderColor="border-t-brand-deep" valueHeight="h-7" lines={2} />
+      </div>
+      <div className="bg-white border border-neutral-100 rounded-xl p-5 animate-pulse h-64" />
     </div>
   )
 

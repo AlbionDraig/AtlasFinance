@@ -371,7 +371,7 @@ export default function TransactionsPage() {
     }
   }
 
-  if (loading) {
+  if (catalogsLoading) {
     return (
       <div className="app-panel p-6 flex min-h-72 items-center justify-center">
         <LoadingSpinner text={t('transactions.loading')} />
@@ -447,6 +447,7 @@ export default function TransactionsPage() {
         filteredTransactions={transactions}
         paginatedTransactions={paginatedTransactions}
         total={total}
+        loading={listLoading}
         currentPage={currentPage}
         totalPages={totalPages}
         startIndex={startIndex}
