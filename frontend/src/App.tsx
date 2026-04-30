@@ -5,6 +5,7 @@
 //   2) ProtectedRoute: gate de autenticación (redirige a /login si no hay user).
 //   3) AppLayout: chrome compartido (sidebar, topbar) para todas las páginas privadas.
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import AppLayout from '@/layouts/AppLayout'
 import LoginPage from '@/pages/auth/LoginPage'
@@ -24,8 +25,9 @@ export default function App() {
   // ToastProvider envuelve todo el árbol porque cualquier página/componente
   // (incluso fuera del layout) puede emitir notificaciones (e.g. login fallido).
   return (
-    <ToastProvider>
-      <BrowserRouter>
+    <ErrorBoundary>
+      <ToastProvider>
+        <BrowserRouter>
         <Routes>
           {/* Rutas públicas: accesibles sin sesión */}
           <Route path="/login" element={<LoginPage />} />
@@ -55,5 +57,6 @@ export default function App() {
       {/* ToastContainer va FUERA del Router para que los toasts persistan al navegar. */}
       <ToastContainer />
     </ToastProvider>
+    </ErrorBoundary>
   )
 }
