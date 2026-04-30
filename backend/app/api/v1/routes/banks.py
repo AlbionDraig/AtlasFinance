@@ -27,7 +27,7 @@ def create_bank_endpoint(
 ) -> BankRead:
     """Create a bank for the authenticated user."""
     try:
-        return create_bank(db, current_user.id, payload)
+        return BankRead.model_validate(create_bank(db, current_user.id, payload))
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 
@@ -51,7 +51,7 @@ def update_bank_endpoint(
 ) -> BankRead:
     """Update a bank owned by the authenticated user."""
     try:
-        return update_bank(db, current_user.id, bank_id, payload)
+        return BankRead.model_validate(update_bank(db, current_user.id, bank_id, payload))
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 

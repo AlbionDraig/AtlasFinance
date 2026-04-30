@@ -36,7 +36,9 @@ def create_investment_entity_endpoint(
 ) -> InvestmentEntityRead:
     """Create an investment entity for the authenticated user."""
     try:
-        return create_investment_entity(db, current_user.id, payload)
+        return InvestmentEntityRead.model_validate(
+            create_investment_entity(db, current_user.id, payload)
+        )
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 
@@ -63,7 +65,9 @@ def update_investment_entity_endpoint(
 ) -> InvestmentEntityRead:
     """Update an investment entity owned by the authenticated user."""
     try:
-        return update_investment_entity(db, current_user.id, investment_entity_id, payload)
+        return InvestmentEntityRead.model_validate(
+            update_investment_entity(db, current_user.id, investment_entity_id, payload)
+        )
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 

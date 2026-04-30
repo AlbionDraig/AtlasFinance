@@ -5,19 +5,27 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.models.account import Account
 from app.models.category import Category
 from app.models.enums import TransactionType
+from app.models.investment import Investment
 from app.models.transaction import Transaction
 from app.repositories.accounts import AccountRepository
 from app.repositories.categories import CategoryRepository
 from app.repositories.investments import InvestmentRepository
 from app.repositories.transactions import TransactionRepository
-from app.schemas.metric import DashboardAggregates, DashboardMetrics
+from app.schemas.metric import (
+    CategoryExpenseRow,
+    DashboardAggregates,
+    DashboardMetrics,
+    MonthlyBreakdown,
+    StackedMonthRow,
+)
 from app.services._common import get_cached_metrics, set_cached_metrics
 from app.services.transactions_service import list_transactions
 
 
-def _sum_assets(accounts: list, investments: list) -> Decimal:
+def _sum_assets(accounts: list[Account], investments: list[Investment]) -> Decimal:
     """Sumar saldos de cuentas e inversiones (sin conversión por ahora)."""
     total_assets = Decimal("0")
     for account in accounts:
@@ -29,7 +37,7 @@ def _sum_assets(accounts: list, investments: list) -> Decimal:
 
 def _sum_transactions(transactions: list[Transaction]) -> tuple[Decimal, Decimal]:
     """Sumar ingresos y gastos del periodo."""
-    totals = defaultdict(lambda: Decimal("0"))
+    totals: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
     for txn in transactions:
         totals[txn.transaction_type.value] += txn.amount
     return (
@@ -69,7 +77,7 @@ def get_dashboard_metrics(
     return set_cached_metrics(user_id, target_currency, metrics)
 
 
-def _build_monthly_breakdown(cur_txns: list[Transaction]) -> list[dict]:
+def _build_monthly_breakdown(cur_txns: list[Transaction]) -> list[MonthlyBreakdown]:
     """Construir el desglose mensual con ingresos, gastos y acumulado."""
     month_income: dict[str, Decimal] = defaultdict(Decimal)
     month_expense: dict[str, Decimal] = defaultdict(Decimal)
@@ -81,7 +89,7 @@ def _build_monthly_breakdown(cur_txns: list[Transaction]) -> list[dict]:
             month_expense[month_key] += tx.amount
 
     all_months = sorted(set(month_income) | set(month_expense))
-    monthly = []
+    monthly: list[MonthlyBreakdown] = []
     cumulative = Decimal("0")
     for m in all_months:
         inc = month_income.get(m, Decimal("0"))
@@ -89,7 +97,9 @@ def _build_monthly_breakdown(cur_txns: list[Transaction]) -> list[dict]:
         cf = inc - exp
         cumulative += cf
         monthly.append(
-            {"month": m, "income": inc, "expense": exp, "cashflow": cf, "cumulative": cumulative}
+            MonthlyBreakdown(
+                month=m, income=inc, expense=exp, cashflow=cf, cumulative=cumulative
+            )
         )
     return monthly
 
@@ -141,10 +151,10 @@ def get_dashboard_aggregates(  # pylint: disable=too-many-arguments,too-many-loc
 
     sorted_cats = sorted(cat_totals.items(), key=lambda x: x[1], reverse=True)
     top_categories = [
-        {"name": name, "value": val, "is_fixed": cat_is_fixed.get(name, False)}
+        CategoryExpenseRow(name=name, value=val, is_fixed=cat_is_fixed.get(name, False))
         for name, val in sorted_cats[:top_n]
     ]
-    top5_names = [c["name"] for c in top_categories[:5]]
+    top5_names = [c.name for c in top_categories[:5]]
 
     # Apilado por mes (top-5 + "Otras") para gráficos del dashboard.
     month_cat: dict[str, dict[str, Decimal]] = defaultdict(lambda: defaultdict(Decimal))
@@ -155,7 +165,7 @@ def get_dashboard_aggregates(  # pylint: disable=too-many-arguments,too-many-loc
             month_cat[month_key][name] += tx.amount
 
     has_otras = False
-    stacked = []
+    stacked: list[StackedMonthRow] = []
     for m in sorted(month_cat.keys()):
         cats = month_cat[m]
         row_cats: dict[str, Decimal] = {}
@@ -168,7 +178,7 @@ def get_dashboard_aggregates(  # pylint: disable=too-many-arguments,too-many-loc
         if otras > 0:
             row_cats["Otras"] = otras
             has_otras = True
-        stacked.append({"month": m, "categories": row_cats})
+        stacked.append(StackedMonthRow(month=m, categories=row_cats))
 
     stacked_cats = top5_names + (["Otras"] if has_otras else [])
 
@@ -209,18 +219,9 @@ def get_dashboard_aggregates(  # pylint: disable=too-many-arguments,too-many-loc
         income=total_income,
         expenses=total_expenses,
         transaction_count=len(cur_txns),
-        monthly=[
-            {
-                "month": r["month"],
-                "income": r["income"],
-                "expense": r["expense"],
-                "cashflow": r["cashflow"],
-                "cumulative": r["cumulative"],
-            }
-            for r in monthly
-        ],
+        monthly=monthly,
         top_categories=top_categories,
-        stacked=[{"month": r["month"], "categories": r["categories"]} for r in stacked],
+        stacked=stacked,
         stacked_cats=stacked_cats,
         fixed_total=fixed_total,
         biggest_expense_amount=biggest.amount if biggest else None,

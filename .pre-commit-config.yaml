@@ -51,6 +51,13 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [manual]
+      - id: mypy-backend
+        name: mypy strict (manual)
+        entry: python -m mypy backend/app
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [manual]
       - id: pytest-backend
         name: pytest (manual)
         entry: python -m pytest backend -q

@@ -26,7 +26,7 @@ def create_category_endpoint(
 ) -> CategoryRead:
     """Create a global spending category."""
     try:
-        return create_category(db, payload)
+        return CategoryRead.model_validate(create_category(db, payload))
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 

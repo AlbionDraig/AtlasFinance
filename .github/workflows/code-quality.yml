@@ -29,3 +29,8 @@ jobs:
           pylint backend/app \
             --disable=missing-module-docstring,missing-class-docstring,missing-function-docstring,too-few-public-methods \
             --fail-under=8.0
+
+      - name: Mypy strict type check
+        run: |
+          cd backend
+          python -m mypy app

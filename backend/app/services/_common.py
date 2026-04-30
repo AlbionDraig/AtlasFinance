@@ -7,15 +7,19 @@ Centralizar aquí evita ciclos entre módulos y mantiene SRP en cada servicio:
 """
 from decimal import Decimal
 from time import monotonic
+from typing import TypeVar
 
 from sqlalchemy.orm import Session
 
+from app.db.base import Base
 from app.models.account import Account
 from app.models.enums import TransactionType
 from app.models.user import User
 from app.repositories.countries import CountryRepository
 from app.repositories.users import UserRepository
 from app.schemas.metric import DashboardMetrics
+
+ModelT = TypeVar("ModelT", bound=Base)
 
 # Caché in-process del dashboard: {(user_id, currency) -> (metrics, expires_at)}.
 # Reduce lecturas pesadas repetidas en ventanas cortas.
@@ -71,7 +75,7 @@ def ensure_country_code_exists(db: Session, country_code: str) -> str:
     return normalized_code
 
 
-def persist_and_refresh(db: Session, instance):
+def persist_and_refresh(db: Session, instance: ModelT) -> ModelT:
     """Persistir una nueva instancia y devolverla refrescada desde la BD."""
     db.add(instance)
     db.commit()
@@ -79,7 +83,7 @@ def persist_and_refresh(db: Session, instance):
     return instance
 
 
-def commit_and_refresh(db: Session, instance):
+def commit_and_refresh(db: Session, instance: ModelT) -> ModelT:
     """Confirmar cambios pendientes y refrescar una instancia."""
     db.commit()
     db.refresh(instance)

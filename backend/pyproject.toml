@@ -8,3 +8,27 @@ ignore = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
+
+# Strict static type checking. The pydantic plugin teaches mypy how
+# Pydantic v2 BaseModels work (Annotated[..., Field(...)] etc.).
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["app"]
+exclude = "(^tests/|^seed_demo\\.py$)"
+
+# Third-party packages without type stubs.
+[[tool.mypy.overrides]]
+module = [
+    "passlib.*",
+    "jose.*",
+    "pandas.*",
+    "openpyxl.*",
+]
+ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true

@@ -39,7 +39,9 @@ def create_transaction_endpoint(
 ) -> TransactionRead:
     """Create a transaction and update account balance accordingly."""
     try:
-        return register_transaction(db, current_user.id, payload)
+        return TransactionRead.model_validate(
+            register_transaction(db, current_user.id, payload)
+        )
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 
@@ -96,7 +98,9 @@ def update_transaction_endpoint(
 ) -> TransactionRead:
     """Update a transaction and keep balances consistent."""
     try:
-        return update_transaction(db, current_user.id, transaction_id, payload)
+        return TransactionRead.model_validate(
+            update_transaction(db, current_user.id, transaction_id, payload)
+        )
     except ValueError as exc:
         raise_domain_value_error(exc, not_found_messages={"Transaction not found"})
 

@@ -32,7 +32,7 @@ def register(payload: UserCreate, db: Annotated[Session, Depends(get_db)]) -> Us
         user = create_user(db, payload)
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
-    return user
+    return UserRead.model_validate(user)
 
 
 @router.post("/login", responses={401: {"description": "Unauthorized"}})
@@ -49,7 +49,7 @@ def login(payload: UserLogin, db: Annotated[Session, Depends(get_db)], response:
 @router.get("/me")
 def read_current_user(current_user: Annotated[User, Depends(get_current_user)]) -> UserRead:
     """Return the authenticated user profile."""
-    return current_user
+    return UserRead.model_validate(current_user)
 
 
 @router.patch("/me", responses={400: {"description": "Bad Request"}})
@@ -63,7 +63,7 @@ def update_current_user(
         user = update_user(db, current_user, payload)
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
-    return user
+    return UserRead.model_validate(user)
 
 
 @router.post("/refresh", responses={401: {"description": "Unauthorized"}})

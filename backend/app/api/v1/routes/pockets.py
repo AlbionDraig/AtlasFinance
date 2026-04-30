@@ -36,7 +36,7 @@ def create_pocket_endpoint(
 ) -> PocketRead:
     """Create a pocket under an account owned by the authenticated user."""
     try:
-        return create_pocket(db, current_user.id, payload)
+        return PocketRead.model_validate(create_pocket(db, current_user.id, payload))
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 
@@ -59,7 +59,9 @@ def move_funds_to_pocket_endpoint(
 ) -> TransactionRead:
     """Move funds from a user account into a pocket and register expense transaction."""
     try:
-        return move_amount_to_pocket(db, current_user.id, payload)
+        return TransactionRead.model_validate(
+            move_amount_to_pocket(db, current_user.id, payload)
+        )
     except ValueError as exc:
         raise_domain_value_error(exc, not_found_messages={"Pocket not found"})
 
@@ -72,7 +74,7 @@ def get_pocket_endpoint(
 ) -> PocketRead:
     """Return a single pocket owned by the authenticated user."""
     try:
-        return get_pocket(db, current_user.id, pocket_id)
+        return PocketRead.model_validate(get_pocket(db, current_user.id, pocket_id))
     except ValueError as exc:
         raise_domain_value_error(exc, not_found_messages={"Pocket not found"})
 
@@ -86,7 +88,9 @@ def update_pocket_endpoint(
 ) -> PocketRead:
     """Update a pocket owned by the authenticated user."""
     try:
-        return update_pocket(db, current_user.id, pocket_id, payload)
+        return PocketRead.model_validate(
+            update_pocket(db, current_user.id, pocket_id, payload)
+        )
     except ValueError as exc:
         raise_domain_value_error(exc, not_found_messages={"Pocket not found"})
 

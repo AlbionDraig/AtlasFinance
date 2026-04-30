@@ -5,11 +5,12 @@ Estos helpers viven en la capa API y unifican la traducción a códigos HTTP
 así cada route no replica try/except con la misma lógica.
 """
 from collections.abc import Collection
+from typing import NoReturn
 
 from fastapi import HTTPException, status
 
 
-def raise_bad_request_from_value_error(exc: ValueError) -> None:
+def raise_bad_request_from_value_error(exc: ValueError) -> NoReturn:
     """Traduce un ValueError de dominio en HTTP 400 (Bad Request).
 
     Se usa cuando todo error del servicio implica datos inválidos del cliente
@@ -23,7 +24,7 @@ def raise_domain_value_error(
     exc: ValueError,
     *,
     not_found_messages: Collection[str] | None = None,
-) -> None:
+) -> NoReturn:
     """Traduce ValueError a 400 ó 404 según el mensaje.
 
     Algunos servicios usan ValueError tanto para validación como para
@@ -38,6 +39,6 @@ def raise_domain_value_error(
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail) from exc
 
 
-def raise_not_found_from_value_error(exc: ValueError) -> None:
+def raise_not_found_from_value_error(exc: ValueError) -> NoReturn:
     """Traduce un ValueError de dominio en HTTP 404 (Not Found)."""
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
