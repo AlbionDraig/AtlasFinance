@@ -92,7 +92,7 @@ export default function AdminPage() {
 
       {activeTab === 'banks' && <BanksTab countryCatalogOptions={countryCatalogOptions} />}
       {activeTab === 'investment-entities' && <InvestmentEntitiesTab countryCatalogOptions={countryCatalogOptions} />}
-      {activeTab === 'countries' && <CountriesTab onCountriesChange={setCountries} />}
+      {activeTab === 'countries' && <CountriesTab />}
       {activeTab === 'categories' && <CategoriesPage embedded />}
     </div>
   )
