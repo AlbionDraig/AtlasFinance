@@ -1,3 +1,9 @@
+"""Endpoints REST para el catálogo global de países.
+
+A diferencia de bancos/cuentas, los países son globales: se muestran en
+selects de bancos/entidades. Por eso los endpoints son compartidos entre
+todos los usuarios autenticados.
+"""
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -53,6 +59,9 @@ def update_country_endpoint(
         return CountryRead.model_validate(update_country(db, country_id, payload))
     except ValueError as exc:
         detail = str(exc)
+        # Detectamos "not found" por substring porque finance_service usa mensajes
+        # variados ("Country not found", "Country with id X not found"). Mantener
+        # esta normalización aquí evita acoplar los servicios a códigos HTTP.
         if "not found" in detail.lower():
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail) from exc
         raise_bad_request_from_value_error(exc)

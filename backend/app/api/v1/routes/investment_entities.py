@@ -1,3 +1,9 @@
+"""Endpoints REST para entidades de inversión (banco/broker/exchange).
+
+Se modelan separadas de los bancos porque una entidad puede ser un broker
+o exchange que no opera como banco; mantener tablas distintas evita
+mezclar dominios y mantiene las consultas específicas (ej. listar exchanges).
+"""
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status

@@ -1,3 +1,9 @@
+"""Endpoints REST para inversiones del usuario.
+
+Las inversiones son un registro contable: se asocian a una InvestmentEntity
+(banco/broker/exchange) y guardan monto invertido + valor actual para que
+el dashboard pueda calcular rendimiento. No mueven saldo de cuentas.
+"""
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status

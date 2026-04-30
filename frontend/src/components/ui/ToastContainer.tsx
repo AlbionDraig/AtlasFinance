@@ -1,23 +1,31 @@
+// ToastContainer — renderiza la cola de toasts del ToastProvider.
+// Va fuera del Router para que las notificaciones sobrevivan a la navegación
+// (ej. crear una transacción y navegar mientras se muestra el confirm).
 import { useEffect, useRef, useState } from 'react'
 import { useToast, type Toast } from '@/hooks/useToast'
 
+// Duración total del toast (ms). 4.5s permite leer mensajes cortos sin sentirse intrusivo.
 const DURATION = 4500
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
+  // visible controla la animación de entrada (slide+fade) vía clases condicionales.
   const [visible, setVisible] = useState(false)
   const [progress, setProgress] = useState(100)
+  // startRef guarda el timestamp inicial del rAF; usar ref evita re-renders por cada frame.
   const startRef = useRef<number | null>(null)
   const rafRef = useRef<number | null>(null)
 
   const isError = toast.variant === 'error'
 
-  // Enter animation
+  // Animación de entrada: aplicamos `visible=true` en el siguiente frame para que la
+  // transición CSS (translate/opacity) detecte el cambio y la anime.
   useEffect(() => {
     const frame = requestAnimationFrame(() => setVisible(true))
     return () => cancelAnimationFrame(frame)
   }, [])
 
-  // Progress bar
+  // Barra de progreso: usamos requestAnimationFrame en vez de setInterval para sincronizar
+  // con el refresh de pantalla y evitar saltos visuales bajo carga.
   useEffect(() => {
     const tick = (now: number) => {
       if (startRef.current === null) startRef.current = now
@@ -30,6 +38,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
     }
     rafRef.current = requestAnimationFrame(tick)
     return () => {
+      // Cancelar el frame al desmontar evita warnings de "setState on unmounted".
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
     }
   }, [])

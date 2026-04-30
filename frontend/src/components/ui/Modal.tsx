@@ -1,3 +1,6 @@
+// Modal — wrapper accesible para diálogos.
+// Usa createPortal para renderizar fuera de la jerarquía del padre, evitando
+// problemas de overflow/z-index dentro de cards o tablas.
 import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -9,16 +12,18 @@ interface ModalProps {
 }
 
 export default function Modal({ onClose, children, maxWidth = 'max-w-lg' }: ModalProps) {
-  // Close on Escape
+  // Cerrar con Escape: convención estándar de UI accesible (WAI-ARIA dialog).
   useEffect(() => {
     function handleKey(event: KeyboardEvent) {
       if (event.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', handleKey)
+    // Cleanup imprescindible para no acumular listeners cuando el modal se desmonta.
     return () => document.removeEventListener('keydown', handleKey)
   }, [onClose])
 
-  // Prevent body scroll
+  // Bloqueo de scroll del body mientras el modal está abierto: evita que el
+  // contenido detrás scrollee al hacer wheel sobre el overlay.
   useEffect(() => {
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
@@ -30,6 +35,8 @@ export default function Modal({ onClose, children, maxWidth = 'max-w-lg' }: Moda
       aria-modal="true"
       role="dialog"
     >
+      {/* Overlay clickeable: click fuera = cerrar (UX estándar). aria-hidden lo
+          excluye de la nav por screen reader, ya que es decorativo. */}
       <div
         className="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm"
         onClick={onClose}

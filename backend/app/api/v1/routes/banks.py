@@ -1,3 +1,9 @@
+"""Endpoints REST para bancos del usuario.
+
+Cada cuenta requiere un banco; los bancos son por-usuario (no globales)
+para permitir nombres personalizados ("Mi Bancolombia personal") sin
+colisionar entre usuarios.
+"""
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status

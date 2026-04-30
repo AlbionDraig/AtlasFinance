@@ -1,3 +1,10 @@
+"""Endpoints REST para pockets (sub-saldos virtuales sobre una cuenta).
+
+Un pocket NO es una cuenta real: representa dinero "apartado" para un
+propósito (vacaciones, fondo de emergencia). El servicio garantiza que
+mover dinero a un pocket descuenta del saldo disponible de la cuenta
+madre y deja registro vía transacción para auditoría.
+"""
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status

@@ -1,3 +1,9 @@
+"""Endpoints REST para transacciones y transferencias entre cuentas.
+
+Esta capa es delgada a propósito: solo traduce HTTP ↔ servicios.
+La lógica de negocio (impacto en saldos, validaciones de propiedad) vive en
+`finance_service` para que sea testeable sin levantar FastAPI.
+"""
 from datetime import datetime
 from typing import Annotated
 
@@ -63,6 +69,7 @@ def list_transactions_endpoint(
     currency: Annotated[Currency | None, Query()] = None,
     search: Annotated[str | None, Query(max_length=255)] = None,
     skip: Annotated[int, Query(ge=0)] = 0,
+    # limit acotado a 1000 para evitar payloads gigantes que degradan el dashboard.
     limit: Annotated[int, Query(ge=1, le=1000)] = 500,
 ) -> list[TransactionRead]:
     """List user transactions with optional filtering by date, account, type, currency and text search."""

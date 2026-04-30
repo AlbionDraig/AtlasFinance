@@ -1,3 +1,7 @@
+// AppLayout — chrome compartido por todas las páginas privadas.
+// Aporta sidebar (navegación + perfil + logout) y un área principal con <Outlet/>.
+// El sidebar usa hover-expansion (icon-only → expandido) para maximizar área
+// útil en desktop sin sacrificar acceso rápido al menú.
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -5,6 +9,8 @@ import { useAuthStore } from '@/store/authStore'
 import { authApi } from '@/api/auth'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
 
+// Catálogo declarativo de items del sidebar. Mantenerlo aquí (vs. en cada NavLink)
+// permite reordenar/agregar entradas sin tocar el JSX del render.
 const navItems = [
   {
     to: '/dashboard',
@@ -83,9 +89,13 @@ export default function AppLayout() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
+  // Refs (no state) para los timers porque su mutación no debe disparar re-render
+  // y debemos poder cancelarlos sincrónicamente desde otros handlers.
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Delays pequeños para evitar parpadeos cuando el cursor cruza el sidebar
+  // accidentalmente (e.g. moverse hacia el menú desde el contenido).
   const OPEN_DELAY_MS = 140
   const CLOSE_DELAY_MS = 180
 
@@ -130,9 +140,11 @@ export default function AppLayout() {
     try {
       await authApi.logout()
     } catch {
-      // Even if the server call fails, clear local state and redirect
+      // Aunque la llamada al servidor falle (red caída, token ya expirado),
+      // limpiamos el estado local: el usuario espera salir sí o sí.
     }
     logout()
+    // replace: true evita que "atrás" en el navegador regrese a la app autenticada.
     navigate('/login', { replace: true })
   }
 

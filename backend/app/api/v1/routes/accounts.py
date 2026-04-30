@@ -1,3 +1,8 @@
+"""Endpoints REST para cuentas bancarias del usuario.
+
+La capa solo enrutado HTTP → servicio + traducción de errores. Las reglas
+de propiedad (un usuario solo accede a sus cuentas) viven en `finance_service`.
+"""
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
