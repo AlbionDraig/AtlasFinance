@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ### Added
 
+- **Per-file coverage thresholds** in `frontend/vitest.config.ts` for `ProtectedRoute.tsx` and `ErrorBoundary.tsx` (95% lines/functions/statements). Joins the existing thresholds for `lib/utils.ts` and `lib/passwordStrength.ts`.
+- **`authStore` unit tests** (`src/store/authStore.test.ts`) covering `setUser`/`logout`/initial state — bumps the file from 50% → 100% line coverage.
 - **i18n in error boundaries**: `ErrorBoundary` and `PageErrorBoundary` now read their copy from `errors.*` keys in `i18n/locales/{es,en}.json` instead of having hardcoded Spanish strings. `PageErrorBoundary` accepts a `labelKey` prop (e.g. `errors.page_label_dashboard`).
 - **i18next bootstrapped in test setup** (`src/test/setup.ts`) so components using `useTranslation()` render real translations during Vitest runs.
 - **Pre-commit manual hooks** for the frontend: `tsc-frontend` (`npm run type-check`) and `eslint-frontend` (`npm run lint`). Run them with `pre-commit run --hook-stage manual <id>`.

@@ -36,6 +36,8 @@ export default defineConfig({
         // Aumentar progresivamente conforme crecen los tests.
         'src/lib/utils.ts': { lines: 90, functions: 90, branches: 80, statements: 90 },
         'src/lib/passwordStrength.ts': { lines: 90, functions: 90, branches: 90, statements: 90 },
+        'src/components/ProtectedRoute.tsx': { lines: 95, functions: 95, branches: 95, statements: 95 },
+        'src/components/ErrorBoundary.tsx': { lines: 95, functions: 95, branches: 80, statements: 95 },
       },
     },
   },
