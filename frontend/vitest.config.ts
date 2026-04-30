@@ -30,6 +30,7 @@ export default defineConfig({
         'src/**/*.stories.tsx',
         'src/i18n/**',
         'src/types/**',
+        'src/api/generated.ts',
       ],
       thresholds: {
         // Umbrales por módulo utilitario con cobertura real demostrada.

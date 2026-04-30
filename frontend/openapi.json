@@ -1,0 +1,4684 @@
+{
+  "components": {
+    "schemas": {
+      "AccountCreate": {
+        "description": "Payload used to create a bank account.",
+        "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType"
+          },
+          "bank_id": {
+            "title": "Bank Id",
+            "type": "integer"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "current_balance": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "0",
+            "title": "Current Balance"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "account_type",
+          "currency",
+          "bank_id"
+        ],
+        "title": "AccountCreate",
+        "type": "object"
+      },
+      "AccountRead": {
+        "description": "Serialized account response exposed by the API.",
+        "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType"
+          },
+          "bank_id": {
+            "title": "Bank Id",
+            "type": "integer"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "current_balance": {
+            "title": "Current Balance",
+            "type": "number"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "account_type",
+          "currency",
+          "current_balance",
+          "bank_id"
+        ],
+        "title": "AccountRead",
+        "type": "object"
+      },
+      "AccountType": {
+        "description": "Supported bank account types.",
+        "enum": [
+          "savings",
+          "checking"
+        ],
+        "title": "AccountType",
+        "type": "string"
+      },
+      "AccountUpdate": {
+        "description": "Payload used to update a bank account.",
+        "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType"
+          },
+          "bank_id": {
+            "title": "Bank Id",
+            "type": "integer"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "account_type",
+          "currency",
+          "bank_id"
+        ],
+        "title": "AccountUpdate",
+        "type": "object"
+      },
+      "BankCreate": {
+        "description": "Payload used to create a bank entity.",
+        "properties": {
+          "country_code": {
+            "default": "CO",
+            "maxLength": 3,
+            "minLength": 2,
+            "title": "Country Code",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "BankCreate",
+        "type": "object"
+      },
+      "BankRead": {
+        "description": "Serialized bank response exposed by the API.",
+        "properties": {
+          "country_code": {
+            "title": "Country Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "country_code"
+        ],
+        "title": "BankRead",
+        "type": "object"
+      },
+      "BankUpdate": {
+        "description": "Payload used to update a bank entity.",
+        "properties": {
+          "country_code": {
+            "maxLength": 3,
+            "minLength": 2,
+            "title": "Country Code",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "country_code"
+        ],
+        "title": "BankUpdate",
+        "type": "object"
+      },
+      "CategoryCreate": {
+        "description": "Payload used to create a custom transaction category.",
+        "properties": {
+          "category_type": {
+            "default": "any",
+            "enum": [
+              "income",
+              "expense",
+              "any"
+            ],
+            "title": "Category Type",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Human-readable description shown in the UI to guide category selection.",
+            "title": "Description"
+          },
+          "is_fixed": {
+            "default": false,
+            "title": "Is Fixed",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CategoryCreate",
+        "type": "object"
+      },
+      "CategoryExpenseRow": {
+        "description": "Total expense and fixed/variable classification for a single category.",
+        "properties": {
+          "is_fixed": {
+            "title": "Is Fixed",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "value",
+          "is_fixed"
+        ],
+        "title": "CategoryExpenseRow",
+        "type": "object"
+      },
+      "CategoryRead": {
+        "description": "Serialized category response exposed by the API.",
+        "properties": {
+          "category_type": {
+            "default": "any",
+            "enum": [
+              "income",
+              "expense",
+              "any"
+            ],
+            "title": "Category Type",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_fixed": {
+            "default": false,
+            "title": "Is Fixed",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CategoryRead",
+        "type": "object"
+      },
+      "CategoryUpdate": {
+        "description": "Partial update payload for a category.",
+        "properties": {
+          "category_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "income",
+                  "expense",
+                  "any"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Type"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "is_fixed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Fixed"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "CategoryUpdate",
+        "type": "object"
+      },
+      "CountryCreate": {
+        "description": "Payload used to create a country entry.",
+        "properties": {
+          "code": {
+            "maxLength": 3,
+            "minLength": 2,
+            "title": "Code",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "CountryCreate",
+        "type": "object"
+      },
+      "CountryRead": {
+        "description": "Serialized country response exposed by the API.",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "title": "CountryRead",
+        "type": "object"
+      },
+      "CountryUpdate": {
+        "description": "Partial update payload for a country.",
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "maxLength": 3,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "CountryUpdate",
+        "type": "object"
+      },
+      "Currency": {
+        "description": "Supported currency codes in the current MVP.",
+        "enum": [
+          "COP",
+          "USD"
+        ],
+        "title": "Currency",
+        "type": "string"
+      },
+      "DashboardAggregates": {
+        "description": "Pre-computed chart data and period totals for the financial dashboard.",
+        "properties": {
+          "biggest_expense_amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Biggest Expense Amount"
+          },
+          "biggest_expense_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Biggest Expense Description"
+          },
+          "expenses": {
+            "title": "Expenses",
+            "type": "number"
+          },
+          "fixed_total": {
+            "title": "Fixed Total",
+            "type": "number"
+          },
+          "income": {
+            "title": "Income",
+            "type": "number"
+          },
+          "monthly": {
+            "items": {
+              "$ref": "#/components/schemas/MonthlyBreakdown"
+            },
+            "title": "Monthly",
+            "type": "array"
+          },
+          "prev_expenses": {
+            "title": "Prev Expenses",
+            "type": "number"
+          },
+          "prev_income": {
+            "title": "Prev Income",
+            "type": "number"
+          },
+          "stacked": {
+            "items": {
+              "$ref": "#/components/schemas/StackedMonthRow"
+            },
+            "title": "Stacked",
+            "type": "array"
+          },
+          "stacked_cats": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Stacked Cats",
+            "type": "array"
+          },
+          "top_categories": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryExpenseRow"
+            },
+            "title": "Top Categories",
+            "type": "array"
+          },
+          "transaction_count": {
+            "title": "Transaction Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "income",
+          "expenses",
+          "transaction_count",
+          "monthly",
+          "top_categories",
+          "stacked",
+          "stacked_cats",
+          "fixed_total",
+          "biggest_expense_amount",
+          "biggest_expense_description",
+          "prev_income",
+          "prev_expenses"
+        ],
+        "title": "DashboardAggregates",
+        "type": "object"
+      },
+      "DashboardMetrics": {
+        "description": "Aggregated KPI values shown in the financial dashboard.",
+        "properties": {
+          "cashflow": {
+            "title": "Cashflow",
+            "type": "number"
+          },
+          "net_worth": {
+            "title": "Net Worth",
+            "type": "number"
+          },
+          "savings_rate": {
+            "title": "Savings Rate",
+            "type": "number"
+          },
+          "total_expenses": {
+            "title": "Total Expenses",
+            "type": "number"
+          },
+          "total_income": {
+            "title": "Total Income",
+            "type": "number"
+          }
+        },
+        "required": [
+          "net_worth",
+          "total_income",
+          "total_expenses",
+          "savings_rate",
+          "cashflow"
+        ],
+        "title": "DashboardMetrics",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "InvestmentCreate": {
+        "description": "Payload used to register a new investment position.",
+        "properties": {
+          "amount_invested": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Amount Invested"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "current_value": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Current Value"
+          },
+          "instrument_type": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Instrument Type",
+            "type": "string"
+          },
+          "investment_entity_id": {
+            "title": "Investment Entity Id",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "instrument_type",
+          "amount_invested",
+          "current_value",
+          "currency",
+          "investment_entity_id",
+          "started_at"
+        ],
+        "title": "InvestmentCreate",
+        "type": "object"
+      },
+      "InvestmentEntityCreate": {
+        "description": "Payload used to create an investment entity.",
+        "properties": {
+          "country_code": {
+            "default": "CO",
+            "maxLength": 3,
+            "minLength": 2,
+            "title": "Country Code",
+            "type": "string"
+          },
+          "entity_type": {
+            "$ref": "#/components/schemas/InvestmentEntityType"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "entity_type"
+        ],
+        "title": "InvestmentEntityCreate",
+        "type": "object"
+      },
+      "InvestmentEntityRead": {
+        "description": "Serialized investment entity response exposed by the API.",
+        "properties": {
+          "country_code": {
+            "title": "Country Code",
+            "type": "string"
+          },
+          "entity_type": {
+            "$ref": "#/components/schemas/InvestmentEntityType"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "entity_type",
+          "country_code"
+        ],
+        "title": "InvestmentEntityRead",
+        "type": "object"
+      },
+      "InvestmentEntityType": {
+        "description": "Supported entity categories where investments can be held.",
+        "enum": [
+          "bank",
+          "broker",
+          "exchange",
+          "fund_manager",
+          "other"
+        ],
+        "title": "InvestmentEntityType",
+        "type": "string"
+      },
+      "InvestmentEntityUpdate": {
+        "description": "Payload used to update an investment entity.",
+        "properties": {
+          "country_code": {
+            "maxLength": 3,
+            "minLength": 2,
+            "title": "Country Code",
+            "type": "string"
+          },
+          "entity_type": {
+            "$ref": "#/components/schemas/InvestmentEntityType"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "entity_type",
+          "country_code"
+        ],
+        "title": "InvestmentEntityUpdate",
+        "type": "object"
+      },
+      "InvestmentRead": {
+        "description": "Serialized investment response exposed by the API.",
+        "properties": {
+          "amount_invested": {
+            "title": "Amount Invested",
+            "type": "number"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "current_value": {
+            "title": "Current Value",
+            "type": "number"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "instrument_type": {
+            "title": "Instrument Type",
+            "type": "string"
+          },
+          "investment_entity_id": {
+            "title": "Investment Entity Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "instrument_type",
+          "amount_invested",
+          "current_value",
+          "currency",
+          "investment_entity_id",
+          "started_at"
+        ],
+        "title": "InvestmentRead",
+        "type": "object"
+      },
+      "InvestmentUpdate": {
+        "description": "Payload used to update an existing investment position.",
+        "properties": {
+          "current_value": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Current Value"
+          },
+          "instrument_type": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Instrument Type",
+            "type": "string"
+          },
+          "investment_entity_id": {
+            "title": "Investment Entity Id",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "instrument_type",
+          "current_value",
+          "investment_entity_id",
+          "started_at"
+        ],
+        "title": "InvestmentUpdate",
+        "type": "object"
+      },
+      "MonthlyBreakdown": {
+        "description": "Income, expense, cashflow and running cumulative for a single calendar month.",
+        "properties": {
+          "cashflow": {
+            "title": "Cashflow",
+            "type": "number"
+          },
+          "cumulative": {
+            "title": "Cumulative",
+            "type": "number"
+          },
+          "expense": {
+            "title": "Expense",
+            "type": "number"
+          },
+          "income": {
+            "title": "Income",
+            "type": "number"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "income",
+          "expense",
+          "cashflow",
+          "cumulative"
+        ],
+        "title": "MonthlyBreakdown",
+        "type": "object"
+      },
+      "PocketCreate": {
+        "description": "Payload used to create a pocket inside an account.",
+        "properties": {
+          "account_id": {
+            "title": "Account Id",
+            "type": "integer"
+          },
+          "balance": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "0",
+            "title": "Balance"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "currency",
+          "account_id"
+        ],
+        "title": "PocketCreate",
+        "type": "object"
+      },
+      "PocketMoveCreate": {
+        "description": "Payload used to move funds from account balance into a pocket.",
+        "properties": {
+          "account_id": {
+            "title": "Account Id",
+            "type": "integer"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "pocket_id": {
+            "title": "Pocket Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "amount",
+          "account_id",
+          "pocket_id",
+          "occurred_at"
+        ],
+        "title": "PocketMoveCreate",
+        "type": "object"
+      },
+      "PocketRead": {
+        "description": "Serialized pocket response exposed by the API.",
+        "properties": {
+          "account_id": {
+            "title": "Account Id",
+            "type": "integer"
+          },
+          "balance": {
+            "title": "Balance",
+            "type": "number"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "balance",
+          "currency",
+          "account_id",
+          "created_at"
+        ],
+        "title": "PocketRead",
+        "type": "object"
+      },
+      "PocketUpdate": {
+        "description": "Payload used to update an existing pocket.",
+        "properties": {
+          "account_id": {
+            "title": "Account Id",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "account_id"
+        ],
+        "title": "PocketUpdate",
+        "type": "object"
+      },
+      "StackedMonthRow": {
+        "description": "Per-month expense breakdown keyed by category name (for stacked charts).",
+        "properties": {
+          "categories": {
+            "additionalProperties": {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            "title": "Categories",
+            "type": "object"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "categories"
+        ],
+        "title": "StackedMonthRow",
+        "type": "object"
+      },
+      "Token": {
+        "description": "JWT access token payload returned by auth endpoints.",
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "token_type": {
+            "default": "bearer",
+            "title": "Token Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "access_token"
+        ],
+        "title": "Token",
+        "type": "object"
+      },
+      "TransactionCreate": {
+        "description": "Payload used to create or update a transaction.",
+        "properties": {
+          "account_id": {
+            "title": "Account Id",
+            "type": "integer"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "description": {
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Description",
+            "type": "string"
+          },
+          "is_initial_balance": {
+            "default": false,
+            "title": "Is Initial Balance",
+            "type": "boolean"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "pocket_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pocket Id"
+          },
+          "transaction_type": {
+            "$ref": "#/components/schemas/TransactionType"
+          }
+        },
+        "required": [
+          "description",
+          "amount",
+          "currency",
+          "transaction_type",
+          "occurred_at",
+          "account_id"
+        ],
+        "title": "TransactionCreate",
+        "type": "object"
+      },
+      "TransactionPage": {
+        "description": "Paginated list of transactions with total count for UI pagination controls.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TransactionRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "skip": {
+            "title": "Skip",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "skip",
+          "limit"
+        ],
+        "title": "TransactionPage",
+        "type": "object"
+      },
+      "TransactionRead": {
+        "description": "Serialized transaction response exposed by the API.",
+        "properties": {
+          "account_id": {
+            "title": "Account Id",
+            "type": "integer"
+          },
+          "amount": {
+            "title": "Amount",
+            "type": "number"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "pocket_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pocket Id"
+          },
+          "transaction_type": {
+            "$ref": "#/components/schemas/TransactionType"
+          }
+        },
+        "required": [
+          "id",
+          "description",
+          "amount",
+          "currency",
+          "transaction_type",
+          "occurred_at",
+          "account_id",
+          "category_id",
+          "pocket_id"
+        ],
+        "title": "TransactionRead",
+        "type": "object"
+      },
+      "TransactionType": {
+        "description": "Transaction direction that impacts account balance.",
+        "enum": [
+          "income",
+          "expense"
+        ],
+        "title": "TransactionType",
+        "type": "string"
+      },
+      "TransferCreate": {
+        "description": "Payload for creating an atomic transfer between two accounts.",
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "from_account_id": {
+            "title": "From Account Id",
+            "type": "integer"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "to_account_id": {
+            "title": "To Account Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from_account_id",
+          "to_account_id",
+          "amount",
+          "occurred_at"
+        ],
+        "title": "TransferCreate",
+        "type": "object"
+      },
+      "UserCreate": {
+        "description": "Payload used to register a new user.",
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "full_name": {
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Full Name",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 64,
+            "minLength": 8,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "full_name",
+          "password"
+        ],
+        "title": "UserCreate",
+        "type": "object"
+      },
+      "UserLogin": {
+        "description": "Credentials payload used to authenticate users.",
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "UserLogin",
+        "type": "object"
+      },
+      "UserRead": {
+        "description": "Public user representation returned by API responses.",
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "full_name"
+        ],
+        "title": "UserRead",
+        "type": "object"
+      },
+      "UserUpdate": {
+        "description": "Fields the user may update on their own profile.",
+        "properties": {
+          "current_password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Password"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "full_name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "new_password": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 8,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Password"
+          }
+        },
+        "title": "UserUpdate",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "OAuth2PasswordBearer": {
+        "flows": {
+          "password": {
+            "scopes": {},
+            "tokenUrl": "/api/v1/auth/login"
+          }
+        },
+        "type": "oauth2"
+      }
+    }
+  },
+  "info": {
+    "description": "Atlas Finance API for personal financial management.",
+    "title": "Atlas Finance",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/accounts/": {
+      "get": {
+        "description": "Return all accounts that belong to the authenticated user.",
+        "operationId": "list_accounts_endpoint_api_v1_accounts__get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 255,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "in": "query",
+            "name": "account_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AccountType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Account Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "currency",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Currency"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Currency"
+            }
+          },
+          {
+            "in": "query",
+            "name": "bank_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Bank Id"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AccountRead"
+                  },
+                  "title": "Response List Accounts Endpoint Api V1 Accounts  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Accounts Endpoint",
+        "tags": [
+          "accounts"
+        ]
+      },
+      "post": {
+        "description": "Create an account linked to a bank owned by the current user.",
+        "operationId": "create_account_endpoint_api_v1_accounts__post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Account Endpoint",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/v1/accounts/{account_id}": {
+      "delete": {
+        "description": "Delete an account owned by the authenticated user.",
+        "operationId": "delete_account_endpoint_api_v1_accounts__account_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account_id",
+            "required": true,
+            "schema": {
+              "title": "Account Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Account Endpoint",
+        "tags": [
+          "accounts"
+        ]
+      },
+      "put": {
+        "description": "Update an account owned by the authenticated user.",
+        "operationId": "update_account_endpoint_api_v1_accounts__account_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account_id",
+            "required": true,
+            "schema": {
+              "title": "Account Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Account Endpoint",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "description": "Authenticate user, set cookie, and return access token payload.",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLogin"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "description": "Invalidate the current access token so it cannot be reused after logout.",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Logout",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "description": "Return the authenticated user profile.",
+        "operationId": "read_current_user_api_v1_auth_me_get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Read Current User",
+        "tags": [
+          "auth"
+        ]
+      },
+      "patch": {
+        "description": "Update the authenticated user's profile fields.",
+        "operationId": "update_current_user_api_v1_auth_me_patch",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Current User",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "description": "Validate refresh token and issue a new access token payload.",
+        "operationId": "refresh_token_api_v1_auth_refresh_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "refresh_token",
+            "required": true,
+            "schema": {
+              "title": "Refresh Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refresh Token",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "description": "Register a new user with hashed password.",
+        "operationId": "register_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/banks/": {
+      "get": {
+        "description": "Return all banks owned by the authenticated user.",
+        "operationId": "list_banks_endpoint_api_v1_banks__get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BankRead"
+                  },
+                  "title": "Response List Banks Endpoint Api V1 Banks  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Banks Endpoint",
+        "tags": [
+          "banks"
+        ]
+      },
+      "post": {
+        "description": "Create a bank for the authenticated user.",
+        "operationId": "create_bank_endpoint_api_v1_banks__post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Bank Endpoint",
+        "tags": [
+          "banks"
+        ]
+      }
+    },
+    "/api/v1/banks/{bank_id}": {
+      "delete": {
+        "description": "Delete a bank owned by the authenticated user.",
+        "operationId": "delete_bank_endpoint_api_v1_banks__bank_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bank_id",
+            "required": true,
+            "schema": {
+              "title": "Bank Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Bank Endpoint",
+        "tags": [
+          "banks"
+        ]
+      },
+      "put": {
+        "description": "Update a bank owned by the authenticated user.",
+        "operationId": "update_bank_endpoint_api_v1_banks__bank_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bank_id",
+            "required": true,
+            "schema": {
+              "title": "Bank Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Bank Endpoint",
+        "tags": [
+          "banks"
+        ]
+      }
+    },
+    "/api/v1/categories/": {
+      "get": {
+        "description": "Return all global categories (public catalog \u2014 no auth required).",
+        "operationId": "list_categories_endpoint_api_v1_categories__get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryRead"
+                  },
+                  "title": "Response List Categories Endpoint Api V1 Categories  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Categories Endpoint",
+        "tags": [
+          "categories"
+        ]
+      },
+      "post": {
+        "description": "Create a global spending category.",
+        "operationId": "create_category_endpoint_api_v1_categories__post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Category Endpoint",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/v1/categories/{category_id}": {
+      "delete": {
+        "description": "Delete a global category.",
+        "operationId": "delete_category_endpoint_api_v1_categories__category_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "title": "Category Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Category Endpoint",
+        "tags": [
+          "categories"
+        ]
+      },
+      "put": {
+        "description": "Update a global category.",
+        "operationId": "update_category_endpoint_api_v1_categories__category_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "title": "Category Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Category Endpoint",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/v1/countries/": {
+      "get": {
+        "description": "Return all global countries.",
+        "operationId": "list_countries_endpoint_api_v1_countries__get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CountryRead"
+                  },
+                  "title": "Response List Countries Endpoint Api V1 Countries  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Countries Endpoint",
+        "tags": [
+          "countries"
+        ]
+      },
+      "post": {
+        "description": "Create a global country entry.",
+        "operationId": "create_country_endpoint_api_v1_countries__post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CountryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountryRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Country Endpoint",
+        "tags": [
+          "countries"
+        ]
+      }
+    },
+    "/api/v1/countries/{country_id}": {
+      "delete": {
+        "description": "Delete a global country entry.",
+        "operationId": "delete_country_endpoint_api_v1_countries__country_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "country_id",
+            "required": true,
+            "schema": {
+              "title": "Country Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Country Endpoint",
+        "tags": [
+          "countries"
+        ]
+      },
+      "put": {
+        "description": "Update a global country entry.",
+        "operationId": "update_country_endpoint_api_v1_countries__country_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "country_id",
+            "required": true,
+            "schema": {
+              "title": "Country Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CountryUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountryRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Country Endpoint",
+        "tags": [
+          "countries"
+        ]
+      }
+    },
+    "/api/v1/investment-entities/": {
+      "get": {
+        "description": "Return all investment entities owned by the authenticated user.",
+        "operationId": "list_investment_entities_endpoint_api_v1_investment_entities__get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InvestmentEntityRead"
+                  },
+                  "title": "Response List Investment Entities Endpoint Api V1 Investment Entities  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Investment Entities Endpoint",
+        "tags": [
+          "investment-entities"
+        ]
+      },
+      "post": {
+        "description": "Create an investment entity for the authenticated user.",
+        "operationId": "create_investment_entity_endpoint_api_v1_investment_entities__post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvestmentEntityCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentEntityRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Investment Entity Endpoint",
+        "tags": [
+          "investment-entities"
+        ]
+      }
+    },
+    "/api/v1/investment-entities/{investment_entity_id}": {
+      "delete": {
+        "description": "Delete an investment entity owned by the authenticated user.",
+        "operationId": "delete_investment_entity_endpoint_api_v1_investment_entities__investment_entity_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "investment_entity_id",
+            "required": true,
+            "schema": {
+              "title": "Investment Entity Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Investment Entity Endpoint",
+        "tags": [
+          "investment-entities"
+        ]
+      },
+      "put": {
+        "description": "Update an investment entity owned by the authenticated user.",
+        "operationId": "update_investment_entity_endpoint_api_v1_investment_entities__investment_entity_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "investment_entity_id",
+            "required": true,
+            "schema": {
+              "title": "Investment Entity Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvestmentEntityUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentEntityRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Investment Entity Endpoint",
+        "tags": [
+          "investment-entities"
+        ]
+      }
+    },
+    "/api/v1/investments/": {
+      "get": {
+        "description": "Return all investments belonging to the authenticated user.",
+        "operationId": "list_investments_endpoint_api_v1_investments__get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InvestmentRead"
+                  },
+                  "title": "Response List Investments Endpoint Api V1 Investments  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Investments Endpoint",
+        "tags": [
+          "investments"
+        ]
+      },
+      "post": {
+        "description": "Register a new investment for the authenticated user.",
+        "operationId": "create_investment_endpoint_api_v1_investments__post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvestmentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Investment Endpoint",
+        "tags": [
+          "investments"
+        ]
+      }
+    },
+    "/api/v1/investments/{investment_id}": {
+      "delete": {
+        "description": "Delete an investment owned by the authenticated user.",
+        "operationId": "delete_investment_endpoint_api_v1_investments__investment_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "investment_id",
+            "required": true,
+            "schema": {
+              "title": "Investment Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Investment Endpoint",
+        "tags": [
+          "investments"
+        ]
+      },
+      "get": {
+        "description": "Return a single investment owned by the authenticated user.",
+        "operationId": "get_investment_endpoint_api_v1_investments__investment_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "investment_id",
+            "required": true,
+            "schema": {
+              "title": "Investment Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Investment Endpoint",
+        "tags": [
+          "investments"
+        ]
+      },
+      "put": {
+        "description": "Update an investment owned by the authenticated user.",
+        "operationId": "update_investment_endpoint_api_v1_investments__investment_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "investment_id",
+            "required": true,
+            "schema": {
+              "title": "Investment Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvestmentUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestmentRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Investment Endpoint",
+        "tags": [
+          "investments"
+        ]
+      }
+    },
+    "/api/v1/metrics/aggregates": {
+      "get": {
+        "description": "Return pre-computed chart data and period totals for the dashboard.",
+        "operationId": "get_aggregates_endpoint_api_v1_metrics_aggregates_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start_date",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "title": "Start Date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end_date",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "title": "End Date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "prev_start_date",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "title": "Prev Start Date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "prev_end_date",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "title": "Prev End Date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "currency",
+            "required": false,
+            "schema": {
+              "default": "COP",
+              "title": "Currency",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardAggregates"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Aggregates Endpoint",
+        "tags": [
+          "metrics"
+        ]
+      }
+    },
+    "/api/v1/metrics/dashboard": {
+      "get": {
+        "description": "Return aggregated dashboard metrics in the requested currency.",
+        "operationId": "get_metrics_endpoint_api_v1_metrics_dashboard_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "currency",
+            "required": false,
+            "schema": {
+              "default": "COP",
+              "title": "Currency",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardMetrics"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Metrics Endpoint",
+        "tags": [
+          "metrics"
+        ]
+      }
+    },
+    "/api/v1/pockets/": {
+      "get": {
+        "description": "Return all pockets that belong to the authenticated user.",
+        "operationId": "list_pockets_endpoint_api_v1_pockets__get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PocketRead"
+                  },
+                  "title": "Response List Pockets Endpoint Api V1 Pockets  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Pockets Endpoint",
+        "tags": [
+          "pockets"
+        ]
+      },
+      "post": {
+        "description": "Create a pocket under an account owned by the authenticated user.",
+        "operationId": "create_pocket_endpoint_api_v1_pockets__post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PocketCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PocketRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Pocket Endpoint",
+        "tags": [
+          "pockets"
+        ]
+      }
+    },
+    "/api/v1/pockets/move-funds": {
+      "post": {
+        "description": "Move funds from a user account into a pocket and register expense transaction.",
+        "operationId": "move_funds_to_pocket_endpoint_api_v1_pockets_move_funds_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PocketMoveCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Move Funds To Pocket Endpoint",
+        "tags": [
+          "pockets"
+        ]
+      }
+    },
+    "/api/v1/pockets/{pocket_id}": {
+      "delete": {
+        "description": "Delete a pocket owned by the authenticated user.",
+        "operationId": "delete_pocket_endpoint_api_v1_pockets__pocket_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pocket_id",
+            "required": true,
+            "schema": {
+              "title": "Pocket Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Pocket Endpoint",
+        "tags": [
+          "pockets"
+        ]
+      },
+      "get": {
+        "description": "Return a single pocket owned by the authenticated user.",
+        "operationId": "get_pocket_endpoint_api_v1_pockets__pocket_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pocket_id",
+            "required": true,
+            "schema": {
+              "title": "Pocket Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PocketRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Pocket Endpoint",
+        "tags": [
+          "pockets"
+        ]
+      },
+      "put": {
+        "description": "Update a pocket owned by the authenticated user.",
+        "operationId": "update_pocket_endpoint_api_v1_pockets__pocket_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pocket_id",
+            "required": true,
+            "schema": {
+              "title": "Pocket Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PocketUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PocketRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Pocket Endpoint",
+        "tags": [
+          "pockets"
+        ]
+      }
+    },
+    "/api/v1/transactions/": {
+      "get": {
+        "description": "List user transactions with pagination metadata (total, skip, limit).",
+        "operationId": "list_transactions_endpoint_api_v1_transactions__get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start_date",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start Date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end_date",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End Date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "account_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Account Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "transaction_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TransactionType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Transaction Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "currency",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Currency"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Currency"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 255,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "in": "query",
+            "name": "skip",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Skip",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Transactions Endpoint",
+        "tags": [
+          "transactions"
+        ]
+      },
+      "post": {
+        "description": "Create a transaction and update account balance accordingly.",
+        "operationId": "create_transaction_endpoint_api_v1_transactions__post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Transaction Endpoint",
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
+    "/api/v1/transactions/export": {
+      "get": {
+        "description": "Export all matching transactions as a UTF-8 CSV file (no pagination limit).",
+        "operationId": "export_transactions_csv_api_v1_transactions_export_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start_date",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start Date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end_date",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End Date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "account_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Account Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "transaction_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TransactionType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Transaction Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "currency",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Currency"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Currency"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 255,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Export Transactions Csv",
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
+    "/api/v1/transactions/transfer": {
+      "post": {
+        "description": "Create an atomic transfer between two accounts and return both transaction legs.",
+        "operationId": "create_transfer_endpoint_api_v1_transactions_transfer_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TransactionRead"
+                  },
+                  "title": "Response Create Transfer Endpoint Api V1 Transactions Transfer Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Transfer Endpoint",
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
+    "/api/v1/transactions/{transaction_id}": {
+      "delete": {
+        "description": "Delete a transaction and reverse its balance effect.",
+        "operationId": "delete_transaction_endpoint_api_v1_transactions__transaction_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "transaction_id",
+            "required": true,
+            "schema": {
+              "title": "Transaction Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Transaction Endpoint",
+        "tags": [
+          "transactions"
+        ]
+      },
+      "put": {
+        "description": "Update a transaction and keep balances consistent.",
+        "operationId": "update_transaction_endpoint_api_v1_transactions__transaction_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "transaction_id",
+            "required": true,
+            "schema": {
+              "title": "Transaction Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "access_token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Transaction Endpoint",
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "Return lightweight liveness payload for health probes.",
+        "operationId": "healthcheck_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Healthcheck Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Healthcheck",
+        "tags": [
+          "system"
+        ]
+      }
+    },
+    "/ready": {
+      "get": {
+        "description": "Readiness probe: verifica conectividad real con la BD.\n\nDiferencia clave vs `/health`:\n- liveness (/health): \u00bfel proceso responde? Si falla, k8s reinicia el pod.\n- readiness (/ready): \u00bfpuede atender tr\u00e1fico? Si falla, k8s lo saca del LB.",
+        "operationId": "readiness_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Readiness Ready Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Readiness",
+        "tags": [
+          "system"
+        ]
+      }
+    }
+  }
+}
