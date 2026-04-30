@@ -18,7 +18,7 @@ from app.schemas.investment_entity import (
     InvestmentEntityRead,
     InvestmentEntityUpdate,
 )
-from app.services.finance_service import (
+from app.services.investment_entities_service import (
     create_investment_entity,
     delete_investment_entity,
     list_investment_entities,

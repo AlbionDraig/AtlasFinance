@@ -2,7 +2,7 @@
 
 Esta capa es delgada a propósito: solo traduce HTTP ↔ servicios.
 La lógica de negocio (impacto en saldos, validaciones de propiedad) vive en
-`finance_service` para que sea testeable sin levantar FastAPI.
+`transactions_service` para que sea testeable sin levantar FastAPI.
 """
 from datetime import datetime
 from typing import Annotated
@@ -20,7 +20,7 @@ from app.db.base import get_db
 from app.models.enums import Currency, TransactionType
 from app.models.user import User
 from app.schemas.transaction import TransactionCreate, TransactionRead, TransferCreate
-from app.services.finance_service import (
+from app.services.transactions_service import (
     create_transfer,
     delete_transaction,
     list_transactions,

@@ -14,7 +14,7 @@ from app.api.error_handlers import raise_bad_request_from_value_error
 from app.db.base import get_db
 from app.models.user import User
 from app.schemas.country import CountryCreate, CountryRead, CountryUpdate
-from app.services.finance_service import (
+from app.services.countries_service import (
     create_country,
     delete_country,
     list_countries,
@@ -59,7 +59,7 @@ def update_country_endpoint(
         return CountryRead.model_validate(update_country(db, country_id, payload))
     except ValueError as exc:
         detail = str(exc)
-        # Detectamos "not found" por substring porque finance_service usa mensajes
+        # Detectamos "not found" por substring porque countries_service usa mensajes
         # variados ("Country not found", "Country with id X not found"). Mantener
         # esta normalización aquí evita acoplar los servicios a códigos HTTP.
         if "not found" in detail.lower():

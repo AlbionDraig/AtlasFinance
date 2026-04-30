@@ -14,7 +14,7 @@ from app.api.error_handlers import raise_bad_request_from_value_error
 from app.db.base import get_db
 from app.models.user import User
 from app.schemas.bank import BankCreate, BankRead, BankUpdate
-from app.services.finance_service import create_bank, delete_bank, list_banks, update_bank
+from app.services.banks_service import create_bank, delete_bank, list_banks, update_bank
 
 router = APIRouter()
 

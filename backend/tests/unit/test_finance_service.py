@@ -13,44 +13,56 @@ from app.schemas.investment_entity import InvestmentEntityCreate, InvestmentEnti
 from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
 from app.schemas.transaction import TransactionCreate, TransferCreate
 from app.schemas.user import UserCreate
-from app.services.auth_service import create_user
-from app.services.finance_service import (
+from app.services.accounts_service import (
     create_account,
-    create_bank,
-    create_category,
-    create_country,
-    create_investment,
-    create_investment_entity,
-    create_pocket,
-    create_transfer,
     delete_account,
-    delete_bank,
+    list_accounts,
+    update_account,
+)
+from app.services.auth_service import create_user
+from app.services.banks_service import create_bank, delete_bank, update_bank
+from app.services.categories_service import (
+    create_category,
     delete_category,
+    list_categories,
+    update_category,
+)
+from app.services.countries_service import (
+    create_country,
     delete_country,
-    delete_investment,
+    list_countries,
+    update_country,
+)
+from app.services.investment_entities_service import (
+    create_investment_entity,
     delete_investment_entity,
-    delete_pocket,
-    delete_transaction,
+    list_investment_entities,
+    update_investment_entity,
+)
+from app.services.investments_service import (
+    create_investment,
+    delete_investment,
+    get_investment,
+    list_investments,
+    update_investment,
+)
+from app.services.metrics_service import (
     get_dashboard_aggregates,
     get_dashboard_metrics,
-    get_investment,
+)
+from app.services.pockets_service import (
+    create_pocket,
+    delete_pocket,
     get_pocket,
-    list_accounts,
-    list_categories,
-    list_countries,
-    list_investment_entities,
-    list_investments,
     list_pockets,
-    list_transactions,
     move_amount_to_pocket,
-    register_transaction,
-    update_account,
-    update_bank,
-    update_category,
-    update_country,
-    update_investment,
-    update_investment_entity,
     update_pocket,
+)
+from app.services.transactions_service import (
+    create_transfer,
+    delete_transaction,
+    list_transactions,
+    register_transaction,
     update_transaction,
 )
 

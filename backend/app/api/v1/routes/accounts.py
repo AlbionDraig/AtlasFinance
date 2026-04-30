@@ -1,7 +1,7 @@
 """Endpoints REST para cuentas bancarias del usuario.
 
 La capa solo enrutado HTTP → servicio + traducción de errores. Las reglas
-de propiedad (un usuario solo accede a sus cuentas) viven en `finance_service`.
+de propiedad (un usuario solo accede a sus cuentas) viven en `accounts_service`.
 """
 from typing import Annotated
 
@@ -14,7 +14,7 @@ from app.db.base import get_db
 from app.models.enums import AccountType, Currency
 from app.models.user import User
 from app.schemas.account import AccountCreate, AccountRead, AccountUpdate
-from app.services.finance_service import (
+from app.services.accounts_service import (
     create_account,
     delete_account,
     list_accounts,

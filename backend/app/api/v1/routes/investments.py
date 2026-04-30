@@ -14,7 +14,7 @@ from app.api.error_handlers import raise_domain_value_error
 from app.db.base import get_db
 from app.models.user import User
 from app.schemas.investment import InvestmentCreate, InvestmentRead, InvestmentUpdate
-from app.services.finance_service import (
+from app.services.investments_service import (
     create_investment,
     delete_investment,
     get_investment,

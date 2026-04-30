@@ -16,7 +16,7 @@ from app.db.base import get_db
 from app.models.user import User
 from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketRead, PocketUpdate
 from app.schemas.transaction import TransactionRead
-from app.services.finance_service import (
+from app.services.pockets_service import (
     create_pocket,
     delete_pocket,
     get_pocket,
