@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+### Accessibility
+
+- **Modal focus management**: focus the first interactive element on open, trap Tab/Shift+Tab inside the dialog, and restore focus to the previously-active element on close. Mirrors native `<dialog>` semantics.
+- **Global `:focus-visible` outline** in `index.css` so keyboard users always see where focus is, without affecting mouse users.
+
 ### Changed
 
 - **Playwright E2E in CI now runs against a real backend.** The `e2e` job in `frontend-ci.yml` boots the FastAPI app with SQLite + `SEED_DEMO_DATA=true`, waits for `/openapi.json`, then starts the Vite dev server and runs the suite. Removed the previous `continue-on-error: true` so failures actually fail the pipeline. Browser binaries are cached between runs.

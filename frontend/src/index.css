@@ -123,6 +123,16 @@ body {
 /* ─── Clases de utilidad compuestas ──────────────────────────────────────────
    Para patrones repetitivos: fondo de página, tarjetas, inputs, botones.
    ──────────────────────────────────────────────────────────────────────────── */
+
+/* Accesibilidad: estilo de foco visible global solo para navegación con
+   teclado (no se muestra al hacer click con mouse). Aplica a cualquier
+   elemento interactivo que no tenga su propio :focus-visible custom. */
+*:focus-visible {
+  outline: 2px solid var(--af-accent);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
 @layer utilities {
   .app-page {
     background: var(--af-bg);
