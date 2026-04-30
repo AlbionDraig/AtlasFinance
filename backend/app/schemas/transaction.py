@@ -4,6 +4,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import Currency, TransactionType
+from app.schemas.common import MoneyDecimal
 
 
 class TransactionCreate(BaseModel):
@@ -31,7 +32,7 @@ class TransactionRead(BaseModel):
     """Serialized transaction response exposed by the API."""
     id: int
     description: str
-    amount: Decimal
+    amount: MoneyDecimal
     currency: Currency
     transaction_type: TransactionType
     occurred_at: datetime
@@ -39,4 +40,5 @@ class TransactionRead(BaseModel):
     category_id: int | None
     pocket_id: int | None
 
-    model_config = ConfigDict(from_attributes=True, json_encoders={Decimal: float})
+    model_config = ConfigDict(from_attributes=True)
+

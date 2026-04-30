@@ -3,6 +3,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import AccountType, Currency
+from app.schemas.common import MoneyDecimal
 
 
 class AccountCreate(BaseModel):
@@ -28,7 +29,8 @@ class AccountRead(BaseModel):
     name: str
     account_type: AccountType
     currency: Currency
-    current_balance: Decimal
+    current_balance: MoneyDecimal
     bank_id: int
 
-    model_config = ConfigDict(from_attributes=True, json_encoders={Decimal: float})
+    model_config = ConfigDict(from_attributes=True)
+

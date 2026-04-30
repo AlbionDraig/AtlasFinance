@@ -86,16 +86,31 @@ def commit_and_refresh(db: Session, instance):
     return instance
 
 
+# Tabla de despacho: signo del impacto sobre el saldo segun el tipo de transaccion.
+# Sustituye al if/elif por TransactionType y permite extender el dominio con
+# nuevos tipos sin tocar la logica de aplicacion/reversion.
+_TRANSACTION_SIGN: dict[TransactionType, int] = {
+    TransactionType.INCOME: 1,
+    TransactionType.EXPENSE: -1,
+}
+
+
+def _balance_delta(transaction_type: TransactionType, amount: Decimal) -> Decimal:
+    """Calcular el delta firmado a aplicar al saldo de una cuenta."""
+    try:
+        sign = _TRANSACTION_SIGN[transaction_type]
+    except KeyError as exc:
+        raise ValueError(f"Unsupported transaction type: {transaction_type}") from exc
+    return amount * sign
+
+
 def apply_transaction_effect(
     account: Account,
     transaction_type: TransactionType,
     amount: Decimal,
 ) -> None:
-    """Aplicar el impacto de la transacción al saldo de la cuenta."""
-    if transaction_type == TransactionType.INCOME:
-        account.current_balance += amount
-    else:
-        account.current_balance -= amount
+    """Aplicar el impacto de la transaccion al saldo de la cuenta."""
+    account.current_balance += _balance_delta(transaction_type, amount)
 
 
 def revert_transaction_effect(
@@ -104,10 +119,7 @@ def revert_transaction_effect(
     amount: Decimal,
 ) -> None:
     """Revertir un efecto previamente aplicado al saldo de la cuenta."""
-    if transaction_type == TransactionType.INCOME:
-        account.current_balance -= amount
-    else:
-        account.current_balance += amount
+    account.current_balance -= _balance_delta(transaction_type, amount)
 
 
 def ensure_sufficient_funds(
@@ -115,6 +127,7 @@ def ensure_sufficient_funds(
     transaction_type: TransactionType,
     amount: Decimal,
 ) -> None:
-    """Lanzar ValueError si un gasto dejaría el saldo en negativo."""
+    """Lanzar ValueError si un gasto dejaria el saldo en negativo."""
     if transaction_type == TransactionType.EXPENSE and amount > account.current_balance:
         raise ValueError("Insufficient funds in the selected account.")
+

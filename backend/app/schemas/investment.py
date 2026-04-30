@@ -4,6 +4,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import Currency
+from app.schemas.common import MoneyDecimal
 
 INSTRUMENT_TYPES = ["Acciones", "Fondos", "Bonos", "CDT", "ETF", "Cripto", "Otro"]
 
@@ -33,10 +34,11 @@ class InvestmentRead(BaseModel):
     id: int
     name: str
     instrument_type: str
-    amount_invested: Decimal
-    current_value: Decimal
+    amount_invested: MoneyDecimal
+    current_value: MoneyDecimal
     currency: Currency
     investment_entity_id: int
     started_at: datetime
 
-    model_config = ConfigDict(from_attributes=True, json_encoders={Decimal: float})
+    model_config = ConfigDict(from_attributes=True)
+

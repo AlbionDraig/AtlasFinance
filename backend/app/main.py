@@ -1,3 +1,6 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -8,10 +11,29 @@ from app.db.seed import seed_base, seed_demo
 
 settings = get_settings()
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    """Inicializar BD y catálogos durante el arranque de la app.
+
+    seed_base  — siempre se ejecuta (países + catálogo de categorías).
+    seed_demo  — solo en entornos no productivos o si SEED_DEMO_DATA=true.
+
+    Reemplaza al hook deprecado ``@app.on_event("startup")`` por el patrón
+    ``lifespan`` recomendado en FastAPI 0.110+.
+    """
+    init_db()
+    seed_base()
+    if settings.seed_demo_data or settings.environment != "production":
+        seed_demo()
+    yield
+
+
 app = FastAPI(
     title=settings.project_name,
     version="0.1.0",
     description="Atlas Finance API for personal financial management.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -23,19 +45,6 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-def startup_event() -> None:
-    """Initialize database and seed data during app startup.
-
-    seed_base  — always runs (countries + categories catalog).
-    seed_demo  — runs only in non-production or when SEED_DEMO_DATA=true.
-    """
-    init_db()
-    seed_base()
-    if settings.seed_demo_data or settings.environment != "production":
-        seed_demo()
-
-
 @app.get("/health", tags=["system"])
 def healthcheck() -> dict[str, str]:
     """Return lightweight liveness payload for health probes."""
@@ -43,3 +52,4 @@ def healthcheck() -> dict[str, str]:
 
 
 app.include_router(api_router, prefix=settings.api_v1_prefix)
+
