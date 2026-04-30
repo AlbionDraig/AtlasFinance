@@ -10,6 +10,7 @@ import type { Account, Transaction } from '@/types'
 interface TransactionsHistoryCardProps {
   filteredTransactions: Transaction[]
   paginatedTransactions: Transaction[]
+  total: number
   currentPage: number
   totalPages: number
   startIndex: number
@@ -35,6 +36,7 @@ interface TransactionsHistoryCardProps {
 export default function TransactionsHistoryCard({
   filteredTransactions,
   paginatedTransactions,
+  total,
   currentPage,
   totalPages,
   startIndex,
@@ -106,8 +108,8 @@ export default function TransactionsHistoryCard({
           <div>
             <h2 className="text-sm font-medium text-neutral-900">{t('transactions.table_title')}</h2>
             <p className="text-xs text-neutral-400">
-              {filteredTransactions.length
-                ? t('transactions.table_range', { start: startIndex + 1, end: endIndex, total: filteredTransactions.length })
+              {total
+                ? t('transactions.table_range', { start: startIndex + 1, end: endIndex, total })
                 : t('common.noResults')}
             </p>
           </div>

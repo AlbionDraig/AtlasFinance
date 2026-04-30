@@ -109,9 +109,14 @@ function resolvePeriodRange(period: PeriodFilter, fallbackFrom: string, fallback
   return { from: fallbackFrom, to: fallbackTo }
 }
 
-function buildTransactionParams(filters: FiltersState, query: string): TransactionFilters {
+function buildTransactionParams(
+  filters: FiltersState,
+  query: string,
+  page: number,
+): TransactionFilters {
   const range = resolvePeriodRange(filters.period, filters.from, filters.to)
-  // Convert UI state into API contract expected by backend list endpoint.
+  const skip = (page - 1) * filters.pageSize
+  // Convert UI state + current page into API contract for server-side pagination.
   return {
     start_date: range.from ? `${range.from}T00:00:00` : undefined,
     end_date: range.to ? `${range.to}T23:59:59` : undefined,
@@ -119,7 +124,8 @@ function buildTransactionParams(filters: FiltersState, query: string): Transacti
     transaction_type: filters.transactionType !== 'all' ? filters.transactionType.toLowerCase() : undefined,
     currency: filters.currency !== 'all' ? filters.currency : undefined,
     search: query.trim() || undefined,
-    limit: 500,
+    skip,
+    limit: filters.pageSize,
   }
 }
 
@@ -141,16 +147,16 @@ export default function TransactionsPage() {
   // Catálogos: carga única tras montar.
   const { accounts, categories, pockets, loading: catalogsLoading } = useTransactionsCatalogs()
 
-  // Parámetros de la API derivados de filtros + query debounceado.
+  // Parámetros de la API derivados de filtros + query debounceado + página actual.
   const transactionParams = useMemo(
-    () => buildTransactionParams(filters, debouncedQuery),
-    [filters, debouncedQuery],
+    () => buildTransactionParams(filters, debouncedQuery, page),
+    [filters, debouncedQuery, page],
   )
   const transactionParamsKey = useMemo(
     () => JSON.stringify(transactionParams),
     [transactionParams],
   )
-  const { transactions, loading: listLoading, reload: reloadTransactions } = useTransactionsList(
+  const { transactions, total, loading: listLoading, reload: reloadTransactions } = useTransactionsList(
     transactionParams as Record<string, unknown>,
     transactionParamsKey,
   )
@@ -163,7 +169,7 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     setPage(1)
-  }, [debouncedQuery, filters.transactionType, filters.currency, filters.accountId, filters.period, filters.from, filters.to])
+  }, [debouncedQuery, filters.transactionType, filters.currency, filters.accountId, filters.period, filters.from, filters.to, filters.pageSize])
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -190,11 +196,12 @@ export default function TransactionsPage() {
   const expenseTotal = transactions
     .filter((transaction) => normalizeTransactionType(String(transaction.transaction_type)) === 'EXPENSE')
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0)
-  const totalPages = Math.max(1, Math.ceil(transactions.length / filters.pageSize))
+  // totalPages derived from server total; paginatedTransactions IS the full page (no client slice).
+  const totalPages = Math.max(1, Math.ceil(total / filters.pageSize))
   const currentPage = Math.min(page, totalPages)
   const startIndex = (currentPage - 1) * filters.pageSize
-  const endIndex = Math.min(startIndex + filters.pageSize, transactions.length)
-  const paginatedTransactions = transactions.slice(startIndex, endIndex)
+  const endIndex = Math.min(startIndex + transactions.length, total)
+  const paginatedTransactions = transactions
   const noCategoryLabel = t('transactions.no_category')
   const activeFilters = [
     filters.transactionType !== 'all' ? t(filters.transactionType === 'INCOME' ? 'transactions.chip_type_income' : 'transactions.chip_type_expense') : null,
@@ -439,6 +446,7 @@ export default function TransactionsPage() {
       <TransactionsHistoryCard
         filteredTransactions={transactions}
         paginatedTransactions={paginatedTransactions}
+        total={total}
         currentPage={currentPage}
         totalPages={totalPages}
         startIndex={startIndex}
