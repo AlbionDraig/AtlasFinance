@@ -42,7 +42,7 @@ export default function App() {
               <Route
                 path="/dashboard"
                 element={
-                  <PageErrorBoundary pageLabel="el dashboard" invalidateKeys={[QUERY_KEYS.accounts]}>
+                  <PageErrorBoundary labelKey="errors.page_label_dashboard" invalidateKeys={[QUERY_KEYS.accounts]}>
                     <DashboardPage />
                   </PageErrorBoundary>
                 }
@@ -50,7 +50,7 @@ export default function App() {
               <Route
                 path="/transactions"
                 element={
-                  <PageErrorBoundary pageLabel="las transacciones" invalidateKeys={[QUERY_KEYS.accounts, QUERY_KEYS.categories]}>
+                  <PageErrorBoundary labelKey="errors.page_label_transactions" invalidateKeys={[QUERY_KEYS.accounts, QUERY_KEYS.categories]}>
                     <TransactionsPage />
                   </PageErrorBoundary>
                 }
@@ -58,7 +58,7 @@ export default function App() {
               <Route
                 path="/accounts"
                 element={
-                  <PageErrorBoundary pageLabel="las cuentas" invalidateKeys={[QUERY_KEYS.accounts, QUERY_KEYS.banks]}>
+                  <PageErrorBoundary labelKey="errors.page_label_accounts" invalidateKeys={[QUERY_KEYS.accounts, QUERY_KEYS.banks]}>
                     <AccountsPage />
                   </PageErrorBoundary>
                 }
@@ -66,7 +66,7 @@ export default function App() {
               <Route
                 path="/pockets"
                 element={
-                  <PageErrorBoundary pageLabel="los bolsillos" invalidateKeys={[QUERY_KEYS.pockets, QUERY_KEYS.accounts]}>
+                  <PageErrorBoundary labelKey="errors.page_label_pockets" invalidateKeys={[QUERY_KEYS.pockets, QUERY_KEYS.accounts]}>
                     <PocketsPage />
                   </PageErrorBoundary>
                 }
@@ -74,7 +74,7 @@ export default function App() {
               <Route
                 path="/investments"
                 element={
-                  <PageErrorBoundary pageLabel="las inversiones" invalidateKeys={[QUERY_KEYS.investments, QUERY_KEYS.investmentEntities]}>
+                  <PageErrorBoundary labelKey="errors.page_label_investments" invalidateKeys={[QUERY_KEYS.investments, QUERY_KEYS.investmentEntities]}>
                     <InvestmentsPage />
                   </PageErrorBoundary>
                 }
@@ -84,7 +84,7 @@ export default function App() {
               <Route
                 path="/admin"
                 element={
-                  <PageErrorBoundary pageLabel="la administración" invalidateKeys={[QUERY_KEYS.banks, QUERY_KEYS.countries, QUERY_KEYS.categories, QUERY_KEYS.investmentEntities]}>
+                  <PageErrorBoundary labelKey="errors.page_label_admin" invalidateKeys={[QUERY_KEYS.banks, QUERY_KEYS.countries, QUERY_KEYS.categories, QUERY_KEYS.investmentEntities]}>
                     <AdminPage />
                   </PageErrorBoundary>
                 }
@@ -92,7 +92,7 @@ export default function App() {
               <Route
                 path="/management"
                 element={
-                  <PageErrorBoundary pageLabel="la gestión">
+                  <PageErrorBoundary labelKey="errors.page_label_management">
                     <ManagementPage />
                   </PageErrorBoundary>
                 }
@@ -100,7 +100,7 @@ export default function App() {
               <Route
                 path="/profile"
                 element={
-                  <PageErrorBoundary pageLabel="el perfil">
+                  <PageErrorBoundary labelKey="errors.page_label_profile">
                     <ProfilePage />
                   </PageErrorBoundary>
                 }

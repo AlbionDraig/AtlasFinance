@@ -10,6 +10,23 @@
     "myProfile": "My profile",
     "logout": "Sign out"
   },
+  "errors": {
+    "app_title": "Something went wrong",
+    "app_message": "The page hit an unexpected error. Your session and data are safe.",
+    "app_action": "Back to home",
+    "page_title": "We couldn't load {{label}}",
+    "page_message": "An unexpected error happened. Your data is safe; please try again.",
+    "page_action": "Retry",
+    "page_label_default": "this page",
+    "page_label_dashboard": "the dashboard",
+    "page_label_transactions": "transactions",
+    "page_label_accounts": "accounts",
+    "page_label_pockets": "pockets",
+    "page_label_investments": "investments",
+    "page_label_admin": "the admin area",
+    "page_label_management": "the management area",
+    "page_label_profile": "the profile"
+  },
   "common": {
     "save": "Save changes",
     "saving": "Saving...",

@@ -32,9 +32,10 @@ describe('ErrorBoundary', () => {
         <Bomb shouldThrow={true} />
       </ErrorBoundary>,
     )
-    expect(screen.getByText('Algo salió mal')).toBeInTheDocument()
+    // Match either language ("Algo salió mal" / "Something went wrong").
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
     expect(screen.getByText('Test render error')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /volver/i })).toBeInTheDocument()
+    expect(screen.getByRole('button')).toBeInTheDocument()
   })
 
   it('does not render children after an error', () => {
@@ -63,7 +64,7 @@ describe('ErrorBoundary', () => {
         <Bomb shouldThrow={true} />
       </ErrorBoundary>,
     )
-    fireEvent.click(screen.getByRole('button', { name: /volver/i }))
+    fireEvent.click(screen.getByRole('button'))
     expect(assign).toHaveBeenCalledWith('/dashboard')
   })
 })

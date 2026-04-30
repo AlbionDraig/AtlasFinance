@@ -72,3 +72,26 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [manual]
+
+      # Frontend type-check (manual). CI already runs `npm run type-check`,
+      # so this is provided as an opt-in gate for contributors who want a
+      # local pre-push safety net:
+      #   pre-commit run --hook-stage manual tsc-frontend
+      - id: tsc-frontend
+        name: tsc --noEmit (manual)
+        entry: npm --prefix frontend run type-check
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [manual]
+
+      # Frontend ESLint (manual). Useful when you want to lint without
+      # spinning up CI:
+      #   pre-commit run --hook-stage manual eslint-frontend
+      - id: eslint-frontend
+        name: eslint (manual)
+        entry: npm --prefix frontend run lint
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [manual]

@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ### Added
 
+- **i18n in error boundaries**: `ErrorBoundary` and `PageErrorBoundary` now read their copy from `errors.*` keys in `i18n/locales/{es,en}.json` instead of having hardcoded Spanish strings. `PageErrorBoundary` accepts a `labelKey` prop (e.g. `errors.page_label_dashboard`).
+- **i18next bootstrapped in test setup** (`src/test/setup.ts`) so components using `useTranslation()` render real translations during Vitest runs.
+- **Pre-commit manual hooks** for the frontend: `tsc-frontend` (`npm run type-check`) and `eslint-frontend` (`npm run lint`). Run them with `pre-commit run --hook-stage manual <id>`.
 - **PageSkeleton** component (`components/ui/PageSkeleton.tsx`) used by Accounts, Transactions, Categories, Pockets and Investments pages. Replaces the centred `LoadingSpinner` with a layout-stable skeleton (header + cards + table) so content no longer "jumps" when data arrives.
 - **URL-persisted filters** in the Transactions page: `q`, `type`, `currency`, `account`, `period`, `from`, `to`, `pageSize` are reflected in the URL via `useSearchParams`, so links and reloads keep the active filter state.
 - **Additional Playwright E2E specs** (`frontend/e2e/additional-flows.spec.ts`) covering Pockets, Investments and Accounts smoke renders, Transactions URL filter persistence, and a no-error-boundary navigation walk through all private routes.

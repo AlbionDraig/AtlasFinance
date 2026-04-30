@@ -10,6 +10,23 @@
     "myProfile": "Mi perfil",
     "logout": "Cerrar sesión"
   },
+  "errors": {
+    "app_title": "Algo salió mal",
+    "app_message": "La página encontró un error inesperado. Tu sesión y datos están seguros.",
+    "app_action": "Volver al inicio",
+    "page_title": "No pudimos cargar {{label}}",
+    "page_message": "Ocurrió un error inesperado. Tus datos están seguros; intenta nuevamente.",
+    "page_action": "Reintentar",
+    "page_label_default": "esta página",
+    "page_label_dashboard": "el dashboard",
+    "page_label_transactions": "las transacciones",
+    "page_label_accounts": "las cuentas",
+    "page_label_pockets": "los bolsillos",
+    "page_label_investments": "las inversiones",
+    "page_label_admin": "la administración",
+    "page_label_management": "la gestión",
+    "page_label_profile": "el perfil"
+  },
   "common": {
     "save": "Guardar cambios",
     "saving": "Guardando...",
