@@ -1,991 +1,116 @@
-from collections import defaultdict
-from datetime import datetime
-from decimal import Decimal
-from time import monotonic
-
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
-
-from app.models.account import Account
-from app.models.bank import Bank
-from app.models.category import Category
-from app.models.country import Country
-from app.models.enums import AccountType, Currency, TransactionType
-from app.models.investment import Investment
-from app.models.investment_entity import InvestmentEntity
-from app.models.pocket import Pocket
-from app.models.transaction import Transaction
-from app.models.user import User
-from app.schemas.account import AccountCreate, AccountUpdate
-from app.schemas.bank import BankCreate, BankUpdate
-from app.schemas.category import CategoryCreate, CategoryUpdate
-from app.schemas.country import CountryCreate, CountryUpdate
-from app.schemas.investment import InvestmentCreate, InvestmentUpdate
-from app.schemas.investment_entity import InvestmentEntityCreate, InvestmentEntityUpdate
-from app.schemas.metric import DashboardAggregates, DashboardMetrics
-from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
-from app.schemas.transaction import TransactionCreate, TransferCreate
-
-# In-process cache for dashboard aggregates: {(user_id, currency) -> (metrics, expires_at)}
-# This reduces repeated heavy reads in short time windows.
-# NOTE: cache is not shared across workers.
-_METRICS_CACHE: dict[tuple[int, str], tuple[DashboardMetrics, float]] = {}
-_METRICS_CACHE_TTL_SECONDS: float = 60.0
-
-
-def _invalidate_metrics_cache(user_id: int) -> None:
-    """Remove all cached dashboard snapshots for a user across currencies."""
-    keys = [key for key in _METRICS_CACHE if key[0] == user_id]
-    for key in keys:
-        _METRICS_CACHE.pop(key, None)
-
-
-def _get_cached_metrics(user_id: int, target_currency: str) -> DashboardMetrics | None:
-    """Return cached dashboard metrics when entry is still fresh."""
-    key = (user_id, target_currency)
-    entry = _METRICS_CACHE.get(key)
-    if entry is None:
-        return None
-    metrics, expires_at = entry
-    if monotonic() >= expires_at:
-        _METRICS_CACHE.pop(key, None)
-        return None
-    return metrics
-
-
-def _set_cached_metrics(
-    user_id: int,
-    target_currency: str,
-    metrics: DashboardMetrics,
-) -> DashboardMetrics:
-    """Store dashboard metrics snapshot with TTL and return the same object."""
-    key = (user_id, target_currency)
-    _METRICS_CACHE[key] = (metrics, monotonic() + _METRICS_CACHE_TTL_SECONDS)
-    return metrics
-
-
-def _get_user(db: Session, user_id: int) -> User:
-    """Return an existing user or raise a domain-level validation error."""
-    user = db.get(User, user_id)
-    if not user:
-        raise ValueError("User not found")
-    return user
-
-
-def _ensure_country_code_exists(db: Session, country_code: str) -> str:
-    """Validate country code against the global countries catalog."""
-    normalized_code = country_code.strip().upper()
-    country_id = db.scalar(select(Country.id).where(Country.code == normalized_code).limit(1))
-    if country_id is None:
-        raise ValueError("Country code is not registered in countries catalog")
-    return normalized_code
-
-
-def _persist_and_refresh(
-    db: Session,
-    instance: Bank | Account | Pocket | Category | Country | Transaction | Investment | InvestmentEntity,
-):
-    """Persist a new instance and return it refreshed from the DB."""
-    db.add(instance)
-    db.commit()
-    db.refresh(instance)
-    return instance
-
-
-def _commit_and_refresh(db: Session, instance: Transaction) -> Transaction:
-    """Commit pending changes and refresh a transaction instance."""
-    db.commit()
-    db.refresh(instance)
-    return instance
-
-
-def create_bank(db: Session, user_id: int, payload: BankCreate) -> Bank:
-    """Create a bank owned by the authenticated user."""
-    _get_user(db, user_id)
-    normalized_code = _ensure_country_code_exists(db, payload.country_code)
-    bank = Bank(name=payload.name, country_code=normalized_code, user_id=user_id)
-    return _persist_and_refresh(db, bank)
-
-
-def list_banks(db: Session, user_id: int) -> list[Bank]:
-    """List user banks ordered by newest first."""
-    query = select(Bank).where(Bank.user_id == user_id).order_by(Bank.created_at.desc())
-    return list(db.scalars(query).all())
-
-
-def update_bank(db: Session, user_id: int, bank_id: int, payload: BankUpdate) -> Bank:
-    """Update name and country_code of a bank owned by the user."""
-    bank = db.get(Bank, bank_id)
-    if not bank or bank.user_id != user_id:
-        raise ValueError("Bank not found")
-    normalized_code = _ensure_country_code_exists(db, payload.country_code)
-    bank.name = payload.name
-    bank.country_code = normalized_code
-    return _persist_and_refresh(db, bank)
-
-
-def delete_bank(db: Session, user_id: int, bank_id: int) -> None:
-    """Delete a bank owned by the user."""
-    bank = db.get(Bank, bank_id)
-    if not bank or bank.user_id != user_id:
-        raise ValueError("Bank not found")
-    db.delete(bank)
-    db.commit()
-
-
-def create_investment_entity(db: Session, user_id: int, payload: InvestmentEntityCreate) -> InvestmentEntity:
-    """Create an investment entity owned by the authenticated user."""
-    _get_user(db, user_id)
-    normalized_code = _ensure_country_code_exists(db, payload.country_code)
-    entity = InvestmentEntity(
-        name=payload.name,
-        entity_type=payload.entity_type,
-        country_code=normalized_code,
-        user_id=user_id,
-    )
-    return _persist_and_refresh(db, entity)
-
-
-def list_investment_entities(db: Session, user_id: int) -> list[InvestmentEntity]:
-    """List investment entities for the authenticated user ordered by newest first."""
-    query = select(InvestmentEntity).where(InvestmentEntity.user_id == user_id).order_by(InvestmentEntity.created_at.desc())
-    return list(db.scalars(query).all())
-
-
-def update_investment_entity(
-    db: Session,
-    user_id: int,
-    investment_entity_id: int,
-    payload: InvestmentEntityUpdate,
-) -> InvestmentEntity:
-    """Update an investment entity owned by the authenticated user."""
-    entity = db.get(InvestmentEntity, investment_entity_id)
-    if not entity or entity.user_id != user_id:
-        raise ValueError("Investment entity not found")
-    normalized_code = _ensure_country_code_exists(db, payload.country_code)
-    entity.name = payload.name
-    entity.entity_type = payload.entity_type
-    entity.country_code = normalized_code
-    return _persist_and_refresh(db, entity)
-
-
-def delete_investment_entity(db: Session, user_id: int, investment_entity_id: int) -> None:
-    """Delete an investment entity owned by the authenticated user."""
-    entity = db.get(InvestmentEntity, investment_entity_id)
-    if not entity or entity.user_id != user_id:
-        raise ValueError("Investment entity not found")
-    db.delete(entity)
-    db.commit()
-
-
-def create_account(db: Session, user_id: int, payload: AccountCreate) -> Account:
-    """Create an account linked to one of the user's banks."""
-    bank = db.get(Bank, payload.bank_id)
-    if not bank or bank.user_id != user_id:
-        raise ValueError("Invalid bank for user")
-
-    account = Account(
-        name=payload.name,
-        account_type=payload.account_type,
-        currency=payload.currency,
-        # New accounts always start at zero; opening balance is a movement.
-        current_balance=Decimal("0"),
-        bank_id=payload.bank_id,
-    )
-    return _persist_and_refresh(db, account)
-
-
-def list_accounts(
-    db: Session,
-    user_id: int,
-    search: str | None = None,
-    account_type: AccountType | None = None,
-    currency: Currency | None = None,
-    bank_id: int | None = None,
-) -> list[Account]:
-    """List accounts that belong to the authenticated user with optional filters."""
-    query = (
-        select(Account)
-        .join(Bank)
-        .where(Bank.user_id == user_id)
-    )
-    if search:
-        term = f"%{search}%"
-        query = query.where(
-            Account.name.ilike(term) | Bank.name.ilike(term)
-        )
-    if account_type is not None:
-        query = query.where(Account.account_type == account_type)
-    if currency is not None:
-        query = query.where(Account.currency == currency)
-    if bank_id is not None:
-        query = query.where(Account.bank_id == bank_id)
-    query = query.order_by(Account.created_at.desc())
-    return list(db.scalars(query).all())
-
-
-def update_account(db: Session, user_id: int, account_id: int, payload: AccountUpdate) -> Account:
-    """Update an account owned by the user."""
-    account = db.get(Account, account_id)
-    if not account or account.bank.user_id != user_id:
-        raise ValueError("Account not found")
-    bank = db.get(Bank, payload.bank_id)
-    if not bank or bank.user_id != user_id:
-        raise ValueError("Invalid bank for user")
-    account.name = payload.name
-    account.account_type = payload.account_type
-    account.currency = payload.currency
-    account.bank_id = payload.bank_id
-    return _persist_and_refresh(db, account)
-
-
-def delete_account(db: Session, user_id: int, account_id: int) -> None:
-    """Delete an account owned by the user."""
-    account = db.get(Account, account_id)
-    if not account or account.bank.user_id != user_id:
-        raise ValueError("Account not found")
-    db.delete(account)
-    db.commit()
-
-
-def create_pocket(db: Session, user_id: int, payload: PocketCreate) -> Pocket:
-    """Create a pocket under an account that belongs to the user."""
-    account = db.get(Account, payload.account_id)
-    if not account or account.bank.user_id != user_id:
-        raise ValueError("Invalid account for user")
-
-    if payload.currency != account.currency:
-        raise ValueError("Pocket currency must match account currency")
-
-    duplicated_name = db.scalar(
-        select(Pocket.id)
-        .where(
-            Pocket.account_id == payload.account_id,
-            func.lower(Pocket.name) == payload.name.lower(),
-        )
-        .limit(1)
-    )
-    if duplicated_name is not None:
-        raise ValueError("Pocket name already exists for account")
-
-    pocket = Pocket(
-        name=payload.name,
-        balance=payload.balance,
-        currency=payload.currency,
-        account_id=payload.account_id,
-    )
-    return _persist_and_refresh(db, pocket)
-
-
-def list_pockets(db: Session, user_id: int) -> list[Pocket]:
-    """List pockets that belong to the authenticated user."""
-    query = (
-        select(Pocket)
-        .join(Account)
-        .join(Bank)
-        .where(Bank.user_id == user_id)
-        .order_by(Pocket.created_at.desc())
-    )
-    return list(db.scalars(query).all())
-
-
-def get_pocket(db: Session, user_id: int, pocket_id: int) -> Pocket:
-    """Return a pocket owned by the authenticated user."""
-    pocket = db.get(Pocket, pocket_id)
-    if not pocket or pocket.account.bank.user_id != user_id:
-        raise ValueError("Pocket not found")
-    return pocket
-
-
-def update_pocket(db: Session, user_id: int, pocket_id: int, payload: PocketUpdate) -> Pocket:
-    """Update pocket metadata and target account when both belong to the user."""
-    pocket = db.get(Pocket, pocket_id)
-    if not pocket or pocket.account.bank.user_id != user_id:
-        raise ValueError("Pocket not found")
-
-    account = db.get(Account, payload.account_id)
-    if not account or account.bank.user_id != user_id:
-        raise ValueError("Invalid account for user")
-
-    if account.currency != pocket.currency:
-        raise ValueError("Cannot move pocket to account with different currency")
-
-    duplicated_name = db.scalar(
-        select(Pocket.id)
-        .where(
-            Pocket.account_id == payload.account_id,
-            func.lower(Pocket.name) == payload.name.lower(),
-            Pocket.id != pocket_id,
-        )
-        .limit(1)
-    )
-    if duplicated_name is not None:
-        raise ValueError("Pocket name already exists for account")
-
-    pocket.name = payload.name
-    pocket.account_id = payload.account_id
-    return _persist_and_refresh(db, pocket)
-
-
-def delete_pocket(db: Session, user_id: int, pocket_id: int) -> None:
-    """Delete a pocket owned by the authenticated user."""
-    pocket = db.get(Pocket, pocket_id)
-    if not pocket or pocket.account.bank.user_id != user_id:
-        raise ValueError("Pocket not found")
-    db.delete(pocket)
-    db.commit()
-
-
-def move_amount_to_pocket(db: Session, user_id: int, payload: PocketMoveCreate) -> Transaction:
-    """Move funds from an account into a pocket and register it as an expense transaction."""
-    account = db.get(Account, payload.account_id)
-    if not account or account.bank.user_id != user_id:
-        raise ValueError("Invalid account for user")
-
-    pocket = db.get(Pocket, payload.pocket_id)
-    if not pocket or pocket.account.bank.user_id != user_id:
-        raise ValueError("Pocket not found")
-    if pocket.account_id != payload.account_id:
-        raise ValueError("Pocket does not belong to account")
-    if pocket.currency != account.currency:
-        raise ValueError("Pocket currency must match account currency")
-
-    _ensure_sufficient_funds(account, TransactionType.EXPENSE, payload.amount)
-
-    description = f"Movimiento a Bolsillo {pocket.name}"
-    txn = Transaction(
-        description=description,
-        amount=payload.amount,
-        currency=account.currency,
-        transaction_type=TransactionType.EXPENSE,
-        occurred_at=payload.occurred_at,
-        user_id=user_id,
-        account_id=payload.account_id,
-        category_id=None,
-        pocket_id=payload.pocket_id,
-    )
-    db.add(txn)
-
-    _apply_transaction_effect(account, TransactionType.EXPENSE, payload.amount)
-    pocket.balance += payload.amount
-
-    created_txn = _commit_and_refresh(db, txn)
-    _invalidate_metrics_cache(user_id)
-    return created_txn
-
-
-def create_investment(db: Session, user_id: int, payload: InvestmentCreate) -> Investment:
-    """Register a new investment linked to an investment entity owned by the user."""
-    entity = db.get(InvestmentEntity, payload.investment_entity_id)
-    if not entity or entity.user_id != user_id:
-        raise ValueError("Invalid investment entity for user")
-
-    investment = Investment(
-        name=payload.name,
-        instrument_type=payload.instrument_type,
-        amount_invested=payload.amount_invested,
-        current_value=payload.current_value,
-        currency=payload.currency,
-        investment_entity_id=payload.investment_entity_id,
-        started_at=payload.started_at,
-        user_id=user_id,
-    )
-    return _persist_and_refresh(db, investment)
-
-
-def list_investments(db: Session, user_id: int) -> list[Investment]:
-    """List all investments belonging to the authenticated user."""
-    query = (
-        select(Investment)
-        .where(Investment.user_id == user_id)
-        .order_by(Investment.started_at.desc())
-    )
-    return list(db.scalars(query).all())
-
-
-def get_investment(db: Session, user_id: int, investment_id: int) -> Investment:
-    """Return a single investment owned by the authenticated user."""
-    investment = db.get(Investment, investment_id)
-    if not investment or investment.user_id != user_id:
-        raise ValueError("Investment not found")
-    return investment
-
-
-def update_investment(db: Session, user_id: int, investment_id: int, payload: InvestmentUpdate) -> Investment:
-    """Update investment metadata for one owned by the authenticated user."""
-    investment = db.get(Investment, investment_id)
-    if not investment or investment.user_id != user_id:
-        raise ValueError("Investment not found")
-
-    entity = db.get(InvestmentEntity, payload.investment_entity_id)
-    if not entity or entity.user_id != user_id:
-        raise ValueError("Invalid investment entity for user")
-
-    investment.name = payload.name
-    investment.instrument_type = payload.instrument_type
-    investment.current_value = payload.current_value
-    investment.investment_entity_id = payload.investment_entity_id
-    investment.started_at = payload.started_at
-    return _persist_and_refresh(db, investment)
-
-
-def delete_investment(db: Session, user_id: int, investment_id: int) -> None:
-    """Delete an investment owned by the authenticated user."""
-    investment = db.get(Investment, investment_id)
-    if not investment or investment.user_id != user_id:
-        raise ValueError("Investment not found")
-    db.delete(investment)
-    db.commit()
-
-
-def create_category(db: Session, payload: CategoryCreate) -> Category:
-    category = Category(
-        name=payload.name,
-        description=payload.description,
-        is_fixed=payload.is_fixed,
-    )
-    return _persist_and_refresh(db, category)
-
-
-def update_category(db: Session, category_id: int, payload: CategoryUpdate) -> Category:
-    """Update a global category."""
-    category = db.get(Category, category_id)
-    if not category:
-        raise ValueError(f"Category {category_id} not found")
-    if payload.name is not None:
-        category.name = payload.name
-    if payload.description is not None:
-        category.description = payload.description
-    if payload.is_fixed is not None:
-        category.is_fixed = payload.is_fixed
-    db.commit()
-    db.refresh(category)
-    return category
-
-
-def delete_category(db: Session, category_id: int) -> None:
-    """Delete a global category."""
-    category = db.get(Category, category_id)
-    if not category:
-        raise ValueError(f"Category {category_id} not found")
-    db.delete(category)
-    db.commit()
-
-
-def list_categories(db: Session) -> list[Category]:
-    """List all global categories."""
-    query = select(Category).order_by(Category.created_at.desc())
-    return list(db.scalars(query).all())
-
-
-def create_country(db: Session, payload: CountryCreate) -> Country:
-    """Create a global country entry."""
-    normalized_code = payload.code.strip().upper()
-    normalized_name = payload.name.strip()
-
-    existing_by_code = db.scalar(select(Country.id).where(Country.code == normalized_code).limit(1))
-    if existing_by_code is not None:
-        raise ValueError("Country code already exists")
-
-    existing_by_name = db.scalar(
-        select(Country.id)
-        .where(func.lower(Country.name) == normalized_name.lower())
-        .limit(1)
-    )
-    if existing_by_name is not None:
-        raise ValueError("Country name already exists")
-
-    country = Country(code=normalized_code, name=normalized_name)
-    return _persist_and_refresh(db, country)
-
-
-def list_countries(db: Session) -> list[Country]:
-    """List all global countries ordered by name."""
-    query = select(Country).order_by(Country.name.asc())
-    return list(db.scalars(query).all())
-
-
-def update_country(db: Session, country_id: int, payload: CountryUpdate) -> Country:
-    """Update code and/or name of a global country entry."""
-    country = db.get(Country, country_id)
-    if not country:
-        raise ValueError(f"Country {country_id} not found")
-
-    if payload.code is None and payload.name is None:
-        raise ValueError("At least one country field must be provided")
-
-    if payload.code is not None:
-        old_code = country.code
-        normalized_code = payload.code.strip().upper()
-        duplicated_code = db.scalar(
-            select(Country.id)
-            .where(Country.code == normalized_code, Country.id != country_id)
-            .limit(1)
-        )
-        if duplicated_code is not None:
-            raise ValueError("Country code already exists")
-        if old_code != normalized_code:
-            banks_using_country = db.scalars(select(Bank).where(Bank.country_code == old_code)).all()
-            for bank in banks_using_country:
-                bank.country_code = normalized_code
-        country.code = normalized_code
-
-    if payload.name is not None:
-        normalized_name = payload.name.strip()
-        duplicated_name = db.scalar(
-            select(Country.id)
-            .where(func.lower(Country.name) == normalized_name.lower(), Country.id != country_id)
-            .limit(1)
-        )
-        if duplicated_name is not None:
-            raise ValueError("Country name already exists")
-        country.name = normalized_name
-
-    return _persist_and_refresh(db, country)
-
-
-def delete_country(db: Session, country_id: int) -> None:
-    """Delete a global country entry."""
-    country = db.get(Country, country_id)
-    if not country:
-        raise ValueError(f"Country {country_id} not found")
-    linked_bank_id = db.scalar(select(Bank.id).where(Bank.country_code == country.code).limit(1))
-    if linked_bank_id is not None:
-        raise ValueError("Country is in use by one or more banks")
-    db.delete(country)
-    db.commit()
-
-
-def _apply_transaction_effect(
-    account: Account,
-    transaction_type: TransactionType,
-    amount: Decimal,
-) -> None:
-    """Apply transaction impact to account balance."""
-    if transaction_type == TransactionType.INCOME:
-        account.current_balance += amount
-    else:
-        account.current_balance -= amount
-
-
-def _revert_transaction_effect(
-    account: Account,
-    transaction_type: TransactionType,
-    amount: Decimal,
-) -> None:
-    """Revert a previously applied transaction impact from account balance."""
-    if transaction_type == TransactionType.INCOME:
-        account.current_balance -= amount
-    else:
-        account.current_balance += amount
-
-
-def _validate_transaction_payload(db: Session, user_id: int, payload: TransactionCreate) -> Account:
-    """Validate ownership/relations and return the destination account."""
-    account = db.get(Account, payload.account_id)
-    if not account or account.bank.user_id != user_id:
-        raise ValueError("Invalid account for user")
-
-    if payload.pocket_id:
-        pocket = db.get(Pocket, payload.pocket_id)
-        if not pocket or pocket.account_id != payload.account_id:
-            raise ValueError("Pocket does not belong to account")
-
-    if payload.category_id:
-        category = db.get(Category, payload.category_id)
-        if not category:
-            raise ValueError("Invalid category")
-
-    return account
-
-
-def _ensure_sufficient_funds(account: Account, transaction_type: TransactionType, amount: Decimal) -> None:
-    """Raise ValueError when an expense would leave account with negative balance."""
-    if transaction_type == TransactionType.EXPENSE and amount > account.current_balance:
-        raise ValueError("Insufficient funds in the selected account.")
-
-
-def _is_transfer_transaction(db: Session, txn: Transaction) -> bool:
-    """Detect mirrored transfer pair to block direct editing of transfer entries.
-
-    Transfers are persisted as two mirrored transactions (expense/income) with
-    same metadata and opposite account/transaction type.
-    """
-    if not txn.description.startswith("Transferencia: "):
-        return False
-
-    opposite_type = (
-        TransactionType.INCOME if txn.transaction_type == TransactionType.EXPENSE else TransactionType.EXPENSE
-    )
-    # Look up counterpart transaction generated by transfer flow.
-    mirrored_tx_id = db.scalar(
-        select(Transaction.id)
-        .where(
-            Transaction.user_id == txn.user_id,
-            Transaction.id != txn.id,
-            Transaction.amount == txn.amount,
-            Transaction.currency == txn.currency,
-            Transaction.occurred_at == txn.occurred_at,
-            Transaction.description == txn.description,
-            Transaction.transaction_type == opposite_type,
-            Transaction.account_id != txn.account_id,
-        )
-        .limit(1)
-    )
-    return mirrored_tx_id is not None
-
-
-def register_transaction(db: Session, user_id: int, payload: TransactionCreate) -> Transaction:
-    """Create a transaction and update the account running balance."""
-    account = _validate_transaction_payload(db, user_id, payload)
-
-    if payload.is_initial_balance:
-        existing_tx = db.scalar(
-            select(Transaction.id)
-            .where(Transaction.user_id == user_id, Transaction.account_id == payload.account_id)
-            .limit(1)
-        )
-        if existing_tx is not None:
-            raise ValueError(
-                "Initial balance can only be registered once per account."
-            )
-
-    _ensure_sufficient_funds(account, payload.transaction_type, payload.amount)
-
-    txn = Transaction(
-        description=payload.description,
-        amount=payload.amount,
-        currency=payload.currency,
-        transaction_type=payload.transaction_type,
-        occurred_at=payload.occurred_at,
-        user_id=user_id,
-        account_id=payload.account_id,
-        category_id=payload.category_id,
-        pocket_id=payload.pocket_id,
-    )
-    db.add(txn)
-
-    _apply_transaction_effect(account, payload.transaction_type, payload.amount)
-
-    created_txn = _commit_and_refresh(db, txn)
-    _invalidate_metrics_cache(user_id)
-    return created_txn
-
-
-def update_transaction(
-    db: Session,
-    user_id: int,
-    transaction_id: int,
-    payload: TransactionCreate,
-) -> Transaction:
-    """Update a transaction and keep account balances consistent."""
-    txn = db.get(Transaction, transaction_id)
-    if not txn or txn.user_id != user_id:
-        raise ValueError("Transaction not found")
-    if _is_transfer_transaction(db, txn):
-        raise ValueError("Transfer transactions cannot be edited.")
-
-    old_account = txn.account
-    _revert_transaction_effect(old_account, txn.transaction_type, txn.amount)
-
-    new_account = _validate_transaction_payload(db, user_id, payload)
-    _ensure_sufficient_funds(new_account, payload.transaction_type, payload.amount)
-
-    txn.description = payload.description
-    txn.amount = payload.amount
-    txn.currency = payload.currency
-    txn.transaction_type = payload.transaction_type
-    txn.occurred_at = payload.occurred_at
-    txn.account_id = payload.account_id
-    txn.category_id = payload.category_id
-    txn.pocket_id = payload.pocket_id
-
-    _apply_transaction_effect(new_account, payload.transaction_type, payload.amount)
-
-    updated_txn = _commit_and_refresh(db, txn)
-    _invalidate_metrics_cache(user_id)
-    return updated_txn
-
-
-def delete_transaction(db: Session, user_id: int, transaction_id: int) -> None:
-    """Delete a transaction and reverse its balance effect."""
-    txn = db.get(Transaction, transaction_id)
-    if not txn or txn.user_id != user_id:
-        raise ValueError("Transaction not found")
-
-    account = txn.account
-    _revert_transaction_effect(account, txn.transaction_type, txn.amount)
-    db.delete(txn)
-    db.commit()
-    _invalidate_metrics_cache(user_id)
-
-
-def create_transfer(db: Session, user_id: int, payload: TransferCreate) -> tuple[Transaction, Transaction]:
-    """Atomically create a transfer between two accounts the user owns.
-
-    Returns a (debit_txn, credit_txn) tuple — both in a single DB commit.
-    """
-    from_account = db.get(Account, payload.from_account_id)
-    if not from_account or from_account.bank.user_id != user_id:
-        raise ValueError("Source account not found")
-
-    to_account = db.get(Account, payload.to_account_id)
-    if not to_account or to_account.bank.user_id != user_id:
-        raise ValueError("Destination account not found")
-
-    if from_account.id == to_account.id:
-        raise ValueError("Source and destination accounts must be different")
-
-    _ensure_sufficient_funds(from_account, TransactionType.EXPENSE, payload.amount)
-
-    description = f"Transferencia: {from_account.name} a {to_account.name}"
-
-    debit = Transaction(
-        description=description,
-        amount=payload.amount,
-        currency=from_account.currency,
-        transaction_type=TransactionType.EXPENSE,
-        occurred_at=payload.occurred_at,
-        user_id=user_id,
-        account_id=from_account.id,
-        category_id=None,
-        pocket_id=None,
-    )
-    credit = Transaction(
-        description=description,
-        amount=payload.amount,
-        currency=to_account.currency,
-        transaction_type=TransactionType.INCOME,
-        occurred_at=payload.occurred_at,
-        user_id=user_id,
-        account_id=to_account.id,
-        category_id=None,
-        pocket_id=None,
-    )
-    db.add(debit)
-    db.add(credit)
-
-    _apply_transaction_effect(from_account, TransactionType.EXPENSE, payload.amount)
-    _apply_transaction_effect(to_account, TransactionType.INCOME, payload.amount)
-
-    db.commit()
-    db.refresh(debit)
-    db.refresh(credit)
-    _invalidate_metrics_cache(user_id)
-    return debit, credit
-
-
-def list_transactions(
-    db: Session,
-    user_id: int,
-    start_date: datetime | None = None,
-    end_date: datetime | None = None,
-    account_id: int | None = None,
-    transaction_type: TransactionType | None = None,
-    currency: Currency | None = None,
-    search: str | None = None,
-    skip: int = 0,
-    limit: int = 500,
-) -> list[Transaction]:
-    """Return user transactions filtered by optional criteria."""
-    query = select(Transaction).where(Transaction.user_id == user_id)
-    if start_date:
-        query = query.where(Transaction.occurred_at >= start_date)
-    if end_date:
-        query = query.where(Transaction.occurred_at <= end_date)
-    if account_id is not None:
-        query = query.where(Transaction.account_id == account_id)
-    if transaction_type is not None:
-        query = query.where(Transaction.transaction_type == transaction_type)
-    if currency is not None:
-        query = query.where(Transaction.currency == currency)
-    if search:
-        query = query.where(Transaction.description.ilike(f"%{search}%"))
-    query = query.order_by(Transaction.occurred_at.desc()).offset(skip).limit(limit)
-    return list(db.scalars(query).all())
-
-
-def _sum_assets_in_currency(
-    accounts: list[Account],
-    investments: list[Investment],
-    target_currency: str,
-) -> Decimal:
-    total_assets = Decimal("0")
-    for account in accounts:
-        total_assets += account.current_balance
-    for investment in investments:
-        total_assets += investment.current_value
-    return total_assets
-
-
-def _sum_transactions_in_currency(
-    transactions: list[Transaction],
-    target_currency: str,
-) -> tuple[Decimal, Decimal]:
-    totals = defaultdict(lambda: Decimal("0"))
-    for txn in transactions:
-        totals[txn.transaction_type.value] += txn.amount
-
-    income = totals[TransactionType.INCOME.value]
-    expenses = totals[TransactionType.EXPENSE.value]
-    return income, expenses
-
-
-def get_dashboard_metrics(  # pylint: disable=too-many-locals
-    db: Session,
-    user_id: int,
-    target_currency: str = "COP",
-) -> DashboardMetrics:
-    """Aggregate net worth, income, expenses and savings rate in a target currency."""
-    cached_metrics = _get_cached_metrics(user_id, target_currency)
-    if cached_metrics is not None:
-        return cached_metrics
-
-    accounts = db.scalars(select(Account).join(Bank).where(Bank.user_id == user_id)).all()
-    investments = db.scalars(select(Investment).where(Investment.user_id == user_id)).all()
-    transactions = db.scalars(select(Transaction).where(Transaction.user_id == user_id)).all()
-
-    total_assets = _sum_assets_in_currency(accounts, investments, target_currency)
-    total_income, total_expenses = _sum_transactions_in_currency(transactions, target_currency)
-    cashflow = total_income - total_expenses
-    savings_rate = (cashflow / total_income * Decimal("100")) if total_income > 0 else Decimal("0")
-
-    metrics = DashboardMetrics(
-        net_worth=total_assets,
-        total_income=total_income,
-        total_expenses=total_expenses,
-        savings_rate=savings_rate.quantize(Decimal("0.01")),
-        cashflow=cashflow,
-    )
-    return _set_cached_metrics(user_id, target_currency, metrics)
-
-
-def get_dashboard_aggregates(  # pylint: disable=too-many-locals
-    db: Session,
-    user_id: int,
-    start_date: datetime,
-    end_date: datetime,
-    target_currency: str,
-    prev_start_date: datetime,
-    prev_end_date: datetime,
-    top_n: int = 10,
-) -> DashboardAggregates:
-    """Compute chart data and period totals for the dashboard in the target currency."""
-    cur_txns = list_transactions(db, user_id, start_date=start_date, end_date=end_date, limit=10_000)
-    prev_txns = list_transactions(db, user_id, start_date=prev_start_date, end_date=prev_end_date, limit=10_000)
-
-    # Resolve category metadata (name + is_fixed) for all relevant transactions.
-    all_cat_ids = {tx.category_id for tx in cur_txns + prev_txns if tx.category_id is not None}
-    if all_cat_ids:
-        cat_objs = db.scalars(select(Category).where(Category.id.in_(all_cat_ids))).all()
-        cat_map: dict[int, Category] = {c.id: c for c in cat_objs}
-    else:
-        cat_map = {}
-
-    def _cat_info(tx: Transaction) -> tuple[str, bool]:
-        if tx.category_id is None or tx.category_id not in cat_map:
-            return "Sin categoría", False
-        cat = cat_map[tx.category_id]
-        return cat.name, cat.is_fixed
-
-    def _convert(tx: Transaction) -> Decimal:
-        return tx.amount
-
-    # ── Monthly breakdown ──────────────────────────────────────────────────────
-    month_income: dict[str, Decimal] = defaultdict(Decimal)
-    month_expense: dict[str, Decimal] = defaultdict(Decimal)
-    for tx in cur_txns:
-        month_key = tx.occurred_at.strftime("%Y-%m")
-        converted = _convert(tx)
-        if tx.transaction_type == TransactionType.INCOME:
-            month_income[month_key] += converted
-        else:
-            month_expense[month_key] += converted
-
-    all_months = sorted(set(month_income) | set(month_expense))
-    monthly = []
-    cumulative = Decimal("0")
-    for m in all_months:
-        inc = month_income.get(m, Decimal("0"))
-        exp = month_expense.get(m, Decimal("0"))
-        cf = inc - exp
-        cumulative += cf
-        monthly.append(
-            {"month": m, "income": inc, "expense": exp, "cashflow": cf, "cumulative": cumulative}
-        )
-
-    # ── Top categories by expense ──────────────────────────────────────────────
-    cat_totals: dict[str, Decimal] = defaultdict(Decimal)
-    cat_is_fixed: dict[str, bool] = {}
-    for tx in cur_txns:
-        if tx.transaction_type == TransactionType.EXPENSE:
-            name, is_fixed = _cat_info(tx)
-            cat_totals[name] += _convert(tx)
-            cat_is_fixed[name] = is_fixed
-
-    sorted_cats = sorted(cat_totals.items(), key=lambda x: x[1], reverse=True)
-    top_categories = [
-        {"name": name, "value": val, "is_fixed": cat_is_fixed.get(name, False)}
-        for name, val in sorted_cats[:top_n]
-    ]
-    top5_names = [c["name"] for c in top_categories[:5]]
-
-    # ── Stacked by month (top-5 + "Otras") ────────────────────────────────────
-    month_cat: dict[str, dict[str, Decimal]] = defaultdict(lambda: defaultdict(Decimal))
-    for tx in cur_txns:
-        if tx.transaction_type == TransactionType.EXPENSE:
-            name, _ = _cat_info(tx)
-            month_key = tx.occurred_at.strftime("%Y-%m")
-            month_cat[month_key][name] += _convert(tx)
-
-    has_otras = False
-    stacked = []
-    for m in sorted(month_cat.keys()):
-        cats = month_cat[m]
-        row_cats: dict[str, Decimal] = {}
-        otras = Decimal("0")
-        for cat_name, val in cats.items():
-            if cat_name in top5_names:
-                row_cats[cat_name] = val
-            else:
-                otras += val
-        if otras > 0:
-            row_cats["Otras"] = otras
-            has_otras = True
-        stacked.append({"month": m, "categories": row_cats})
-
-    stacked_cats = top5_names + (["Otras"] if has_otras else [])
-
-    # ── Derived scalars ────────────────────────────────────────────────────────
-    fixed_total = sum(
-        (_convert(tx) for tx in cur_txns if tx.transaction_type == TransactionType.EXPENSE and _cat_info(tx)[1]),
-        Decimal("0"),
-    )
-
-    expense_txns = [tx for tx in cur_txns if tx.transaction_type == TransactionType.EXPENSE]
-    biggest: Transaction | None = max(expense_txns, key=lambda t: _convert(t)) if expense_txns else None
-
-    total_income = sum((_convert(tx) for tx in cur_txns if tx.transaction_type == TransactionType.INCOME), Decimal("0"))
-    total_expenses = sum((_convert(tx) for tx in cur_txns if tx.transaction_type == TransactionType.EXPENSE), Decimal("0"))
-
-    prev_income = sum((_convert(tx) for tx in prev_txns if tx.transaction_type == TransactionType.INCOME), Decimal("0"))
-    prev_expenses = sum((_convert(tx) for tx in prev_txns if tx.transaction_type == TransactionType.EXPENSE), Decimal("0"))
-
-    return DashboardAggregates(
-        income=total_income,
-        expenses=total_expenses,
-        transaction_count=len(cur_txns),
-        monthly=[
-            {"month": r["month"], "income": r["income"], "expense": r["expense"],
-             "cashflow": r["cashflow"], "cumulative": r["cumulative"]}
-            for r in monthly
-        ],
-        top_categories=top_categories,
-        stacked=[{"month": r["month"], "categories": r["categories"]} for r in stacked],
-        stacked_cats=stacked_cats,
-        fixed_total=fixed_total,
-        biggest_expense_amount=_convert(biggest) if biggest else None,
-        biggest_expense_description=biggest.description if biggest else None,
-        prev_income=prev_income,
-        prev_expenses=prev_expenses,
-    )
+"""Fachada de los servicios financieros.
+
+Mantenida por compatibilidad: rutas y tests existentes importan desde este
+módulo. La lógica real vive en módulos por dominio que respetan SRP:
+
+- `banks_service` — bancos del usuario.
+- `accounts_service` — cuentas bancarias.
+- `pockets_service` — bolsillos y movimientos a bolsillo.
+- `investment_entities_service` — entidades de inversión.
+- `investments_service` — inversiones del usuario.
+- `categories_service` — catálogo global de categorías.
+- `countries_service` — catálogo global de países.
+- `transactions_service` — registros, transferencias y listados.
+- `metrics_service` — agregados del dashboard.
+
+Reexportar aquí evita romper los imports `from app.services.finance_service import ...`
+mientras los nuevos módulos pueden ser importados directamente para nuevo código.
+"""
+# pylint: disable=unused-import
+from app.services.accounts_service import (
+    create_account,
+    delete_account,
+    list_accounts,
+    update_account,
+)
+from app.services.banks_service import (
+    create_bank,
+    delete_bank,
+    list_banks,
+    update_bank,
+)
+from app.services.categories_service import (
+    create_category,
+    delete_category,
+    list_categories,
+    update_category,
+)
+from app.services.countries_service import (
+    create_country,
+    delete_country,
+    list_countries,
+    update_country,
+)
+from app.services.investment_entities_service import (
+    create_investment_entity,
+    delete_investment_entity,
+    list_investment_entities,
+    update_investment_entity,
+)
+from app.services.investments_service import (
+    create_investment,
+    delete_investment,
+    get_investment,
+    list_investments,
+    update_investment,
+)
+from app.services.metrics_service import (
+    get_dashboard_aggregates,
+    get_dashboard_metrics,
+)
+from app.services.pockets_service import (
+    create_pocket,
+    delete_pocket,
+    get_pocket,
+    list_pockets,
+    move_amount_to_pocket,
+    update_pocket,
+)
+from app.services.transactions_service import (
+    create_transfer,
+    delete_transaction,
+    list_transactions,
+    register_transaction,
+    update_transaction,
+)
+
+__all__ = [
+    "create_account",
+    "create_bank",
+    "create_category",
+    "create_country",
+    "create_investment",
+    "create_investment_entity",
+    "create_pocket",
+    "create_transfer",
+    "delete_account",
+    "delete_bank",
+    "delete_category",
+    "delete_country",
+    "delete_investment",
+    "delete_investment_entity",
+    "delete_pocket",
+    "delete_transaction",
+    "get_dashboard_aggregates",
+    "get_dashboard_metrics",
+    "get_investment",
+    "get_pocket",
+    "list_accounts",
+    "list_banks",
+    "list_categories",
+    "list_countries",
+    "list_investment_entities",
+    "list_investments",
+    "list_pockets",
+    "list_transactions",
+    "move_amount_to_pocket",
+    "register_transaction",
+    "update_account",
+    "update_bank",
+    "update_category",
+    "update_country",
+    "update_investment",
+    "update_investment_entity",
+    "update_pocket",
+    "update_transaction",
+]
