@@ -149,14 +149,20 @@ export default function AccountsPage() {
 
   async function handleDeleteAccount() {
     if (!deletingAccount) return
+    // Optimistic update: snapshot the current list, remove the row
+    // immediately, and close the confirm modal so the UI feels instant.
+    // On error we restore the snapshot to keep the table consistent.
+    const target = deletingAccount
+    const snapshot = accounts
+    setAccounts((current) => current.filter((acc) => acc.id !== target.id))
+    setDeletingAccount(null)
     setSavingAccount(true)
     try {
-      await accountsApi.delete(deletingAccount.id)
-      setAccounts((current) => current.filter((acc) => acc.id !== deletingAccount.id))
+      await accountsApi.delete(target.id)
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
-      setDeletingAccount(null)
       toast(t('accounts.toast_deleted'))
     } catch (error) {
+      setAccounts(snapshot)
       toast(getApiErrorMessage(error, t('accounts.toast_delete_error')), 'error')
     } finally {
       setSavingAccount(false)

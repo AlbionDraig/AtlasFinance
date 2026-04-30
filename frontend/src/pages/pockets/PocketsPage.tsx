@@ -415,15 +415,20 @@ export default function PocketsPage() {
 
   async function handleDelete() {
     if (!deletingPocket) return
+    // Optimistic delete: drop from the list and close the confirm modal
+    // before the network round-trip; restore from snapshot on failure.
+    const target = deletingPocket
+    const snapshot = pockets
+    setPockets(current => current.filter(pocket => pocket.id !== target.id))
+    setDeletingPocket(null)
     setSaving(true)
     try {
-      await pocketsApi.delete(deletingPocket.id)
-      setPockets(current => current.filter(pocket => pocket.id !== deletingPocket.id))
+      await pocketsApi.delete(target.id)
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
-      setDeletingPocket(null)
       toast(t('pockets.toast_deleted'))
     } catch (error) {
+      setPockets(snapshot)
       toast(getApiErrorMessage(error, t('pockets.toast_delete_error')), 'error')
     } finally {
       setSaving(false)

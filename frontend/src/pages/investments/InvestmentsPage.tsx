@@ -401,14 +401,19 @@ export default function InvestmentsPage() {
 
   async function handleDelete() {
     if (!deletingInvestment) return
+    // Optimistic delete: remove from local state and dismiss the modal
+    // immediately; restore from snapshot if the API call fails.
+    const target = deletingInvestment
+    const snapshot = investments
+    setInvestments(prev => prev.filter(inv => inv.id !== target.id))
+    setDeletingInvestment(null)
     setSaving(true)
     try {
-      await investmentsApi.delete(deletingInvestment.id)
-      setInvestments(prev => prev.filter(inv => inv.id !== deletingInvestment.id))
+      await investmentsApi.delete(target.id)
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investments })
-      setDeletingInvestment(null)
       toast(t('investments.toast_deleted'), 'success')
     } catch {
+      setInvestments(snapshot)
       toast(t('investments.toast_delete_error'), 'error')
     } finally {
       setSaving(false)
