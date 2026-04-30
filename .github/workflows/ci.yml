@@ -35,7 +35,7 @@ jobs:
           DATABASE_URL: "sqlite+pysqlite:///:memory:"
           SECRET_KEY: "ci-secret-key"
         run: |
-          pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-report=xml:backend/coverage.xml --cov-fail-under=85
+          pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-report=xml:backend/coverage.xml --cov-fail-under=92
 
       - name: Upload coverage to Codecov (CLI)
         shell: bash

@@ -1,11 +1,18 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Annotated
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
+from app.core.rate_limit import limiter, rate_limit_exceeded_handler
+from app.db.base import get_db
 from app.db.init_db import init_db
 from app.db.seed import seed_base, seed_demo
 
@@ -36,6 +43,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# slowapi se registra como state + middleware + handler.
+# Los decoradores @limiter.limit(...) en rutas leen request.app.state.limiter.
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.backend_cors_origins,
@@ -49,6 +62,21 @@ app.add_middleware(
 def healthcheck() -> dict[str, str]:
     """Return lightweight liveness payload for health probes."""
     return {"status": "ok"}
+
+
+@app.get("/ready", tags=["system"])
+def readiness(db: Annotated[Session, Depends(get_db)]) -> dict[str, str]:
+    """Readiness probe: verifica conectividad real con la BD.
+
+    Diferencia clave vs `/health`:
+    - liveness (/health): ¿el proceso responde? Si falla, k8s reinicia el pod.
+    - readiness (/ready): ¿puede atender tráfico? Si falla, k8s lo saca del LB.
+    """
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception as exc:  # pragma: no cover - defensive
+        raise HTTPException(status_code=503, detail=f"DB unavailable: {exc}") from exc
+    return {"status": "ready"}
 
 
 app.include_router(api_router, prefix=settings.api_v1_prefix)

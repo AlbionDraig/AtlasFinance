@@ -165,12 +165,12 @@ def test_update_country_endpoint_maps_not_found_and_bad_request(monkeypatch):
 def test_auth_route_error_and_success_paths(monkeypatch):
     monkeypatch.setattr(auth_routes, "create_user", lambda *_args, **_kwargs: (_ for _ in ()).throw(ValueError("duplicate")))
     with pytest.raises(HTTPException) as exc_info:
-        auth_routes.register(object(), object())
+        auth_routes.register(object(), object(), object())
     assert exc_info.value.status_code == 400
 
     monkeypatch.setattr(auth_routes, "authenticate_user", lambda *_args, **_kwargs: None)
     with pytest.raises(HTTPException) as exc_info:
-        auth_routes.login(SimpleNamespace(email="e", password="p"), object(), Response())
+        auth_routes.login(object(), SimpleNamespace(email="e", password="p"), object(), Response())
     assert exc_info.value.status_code == 401
 
     monkeypatch.setattr(auth_routes, "update_user", lambda *_args, **_kwargs: (_ for _ in ()).throw(ValueError("invalid")))
@@ -197,22 +197,22 @@ def test_auth_route_error_and_success_paths(monkeypatch):
 
     monkeypatch.setattr(auth_routes.jwt, "decode", lambda *_args, **_kwargs: {"sub": None})
     with pytest.raises(HTTPException) as exc_info:
-        auth_routes.refresh_token(Response(), DummyDb(SimpleNamespace(id=1)), "refresh-token")
+        auth_routes.refresh_token(object(), Response(), DummyDb(SimpleNamespace(id=1)), "refresh-token")
     assert exc_info.value.status_code == 401
 
     monkeypatch.setattr(auth_routes.jwt, "decode", lambda *_args, **_kwargs: {"sub": "1"})
     with pytest.raises(HTTPException) as exc_info:
-        auth_routes.refresh_token(Response(), DummyDb(None), "refresh-token")
+        auth_routes.refresh_token(object(), Response(), DummyDb(None), "refresh-token")
     assert exc_info.value.status_code == 401
 
     monkeypatch.setattr(auth_routes.jwt, "decode", lambda *_args, **_kwargs: (_ for _ in ()).throw(ExpiredSignatureError("expired")))
     with pytest.raises(HTTPException) as exc_info:
-        auth_routes.refresh_token(Response(), DummyDb(SimpleNamespace(id=1)), "refresh-token")
+        auth_routes.refresh_token(object(), Response(), DummyDb(SimpleNamespace(id=1)), "refresh-token")
     assert exc_info.value.detail == "Refresh token expired"
 
     monkeypatch.setattr(auth_routes.jwt, "decode", lambda *_args, **_kwargs: (_ for _ in ()).throw(JWTError("bad token")))
     with pytest.raises(HTTPException) as exc_info:
-        auth_routes.refresh_token(Response(), DummyDb(SimpleNamespace(id=1)), "refresh-token")
+        auth_routes.refresh_token(object(), Response(), DummyDb(SimpleNamespace(id=1)), "refresh-token")
     assert exc_info.value.detail == "Invalid refresh token"
 
     monkeypatch.setattr(auth_routes.jwt, "decode", lambda *_args, **_kwargs: {})

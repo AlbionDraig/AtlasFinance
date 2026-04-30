@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     refresh_token_expire_minutes: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_MINUTES", 1440))  # 1 día: balance entre UX y exposición.
 
     default_currency: str = "COP"
+    # Rate limits por IP para endpoints sensibles (slowapi formato "N/segundos|minutos|hour").
+    # Se desactivan en tests con rate_limit_enabled=False para no falsear assertions.
+    rate_limit_enabled: bool = True
+    rate_limit_login: str = "10/minute"
+    rate_limit_register: str = "5/minute"
+    rate_limit_refresh: str = "30/minute"
     # CSV con los orígenes permitidos por CORS. Se lista hosts de dev (Vite, Streamlit legacy)
     # para no bloquear el desarrollo local; en prod debe restringirse vía env var.
     backend_cors_origins: str = (

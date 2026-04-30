@@ -1,13 +1,14 @@
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from jose import ExpiredSignatureError, JWTError, jwt
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_token_from_bearer_or_cookie
 from app.api.error_handlers import raise_bad_request_from_value_error
 from app.core.config import get_settings
+from app.core.rate_limit import limiter
 from app.core.security import create_access_token
 from app.db.base import get_db
 from app.models.user import User
@@ -26,7 +27,12 @@ router = APIRouter()
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, responses={400: {"description": "Bad Request"}})
-def register(payload: UserCreate, db: Annotated[Session, Depends(get_db)]) -> UserRead:
+@limiter.limit(settings.rate_limit_register)
+def register(
+    request: Request,  # noqa: ARG001  required by slowapi
+    payload: UserCreate,
+    db: Annotated[Session, Depends(get_db)],
+) -> UserRead:
     """Register a new user with hashed password."""
     try:
         user = create_user(db, payload)
@@ -36,7 +42,13 @@ def register(payload: UserCreate, db: Annotated[Session, Depends(get_db)]) -> Us
 
 
 @router.post("/login", responses={401: {"description": "Unauthorized"}})
-def login(payload: UserLogin, db: Annotated[Session, Depends(get_db)], response: Response) -> Token:
+@limiter.limit(settings.rate_limit_login)
+def login(
+    request: Request,  # noqa: ARG001
+    payload: UserLogin,
+    db: Annotated[Session, Depends(get_db)],
+    response: Response,
+) -> Token:
     """Authenticate user, set cookie, and return access token payload."""
     user = authenticate_user(db, payload.email, payload.password)
     if not user:
@@ -67,8 +79,13 @@ def update_current_user(
 
 
 @router.post("/refresh", responses={401: {"description": "Unauthorized"}})
-def refresh_token(response: Response, db: Annotated[Session, Depends(get_db)],
-                  token: Annotated[str, Cookie(alias="refresh_token")]) -> Token:
+@limiter.limit(settings.rate_limit_refresh)
+def refresh_token(
+    request: Request,  # noqa: ARG001
+    response: Response,
+    db: Annotated[Session, Depends(get_db)],
+    token: Annotated[str, Cookie(alias="refresh_token")],
+) -> Token:
     """Validate refresh token and issue a new access token payload."""
     try:
     # Refresh flow trusts HttpOnly cookie and rotates access token only.
