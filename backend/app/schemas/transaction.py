@@ -42,3 +42,11 @@ class TransactionRead(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
+class TransactionPage(BaseModel):
+    """Paginated list of transactions with total count for UI pagination controls."""
+    items: list[TransactionRead]
+    total: int
+    skip: int
+    limit: int
+

@@ -538,7 +538,7 @@ def test_delete_transaction_allows_transfer_transactions(db_session):
 
     delete_transaction(db_session, user.id, transfer_income.id)
 
-    remaining_transactions = list_transactions(db_session, user.id)
+    remaining_transactions, _ = list_transactions(db_session, user.id)
     assert all(item.id != transfer_income.id for item in remaining_transactions)
 
 
@@ -679,7 +679,7 @@ def test_transaction_listing_update_and_delete_success_paths(db_session):
     )
     assert updated_txn.description == "Compra ajustada"
 
-    filtered_transactions = list_transactions(
+    filtered_transactions, _ = list_transactions(
         db_session,
         user.id,
         start_date=datetime(2026, 4, 2, tzinfo=timezone.utc),
@@ -689,7 +689,7 @@ def test_transaction_listing_update_and_delete_success_paths(db_session):
 
     delete_transaction(db_session, user.id, updated_txn.id)
 
-    remaining_transactions = list_transactions(db_session, user.id)
+    remaining_transactions, _ = list_transactions(db_session, user.id)
     assert [txn.id for txn in remaining_transactions] == [opening_txn.id]
 
 

@@ -119,6 +119,7 @@ function buildTransactionParams(filters: FiltersState, query: string): Transacti
     transaction_type: filters.transactionType !== 'all' ? filters.transactionType.toLowerCase() : undefined,
     currency: filters.currency !== 'all' ? filters.currency : undefined,
     search: query.trim() || undefined,
+    limit: 500,
   }
 }
 

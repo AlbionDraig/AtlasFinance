@@ -67,6 +67,7 @@ export function useTransactionsCatalogs(): TransactionsCatalogs {
  */
 export interface TransactionsListResult {
   transactions: Transaction[]
+  total: number
   loading: boolean
   reload: () => Promise<void>
 }
@@ -82,13 +83,15 @@ export function useTransactionsList(
   const { t } = useTranslation()
   const { toast } = useToast()
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
 
   async function reload() {
     setLoading(true)
     try {
       const response = await transactionsApi.list(params)
-      setTransactions(response.data)
+      setTransactions(response.data.items)
+      setTotal(response.data.total)
     } catch (error) {
       toast(
         getApiErrorMessage(error, t('transactions.toast_load_movements_error')),
@@ -103,5 +106,5 @@ export function useTransactionsList(
     void reload()
   }, [paramsKey])
 
-  return { transactions, loading, reload }
+  return { transactions, total, loading, reload }
 }

@@ -1,7 +1,7 @@
 """Repositorio del agregado Transaction."""
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.models.enums import Currency, TransactionType
 from app.models.transaction import Transaction
@@ -90,6 +90,32 @@ class TransactionRepository(BaseRepository[Transaction]):
             query.order_by(Transaction.occurred_at.desc()).offset(skip).limit(limit)
         )
         return list(self.db.scalars(query).all())
+
+    def count_by_user(
+        self,
+        user_id: int,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        account_id: int | None = None,
+        transaction_type: TransactionType | None = None,
+        currency: Currency | None = None,
+        search: str | None = None,
+    ) -> int:
+        """Contar transacciones de un usuario con los mismos filtros que list_by_user."""
+        query = select(func.count()).select_from(Transaction).where(Transaction.user_id == user_id)
+        if start_date:
+            query = query.where(Transaction.occurred_at >= start_date)
+        if end_date:
+            query = query.where(Transaction.occurred_at <= end_date)
+        if account_id is not None:
+            query = query.where(Transaction.account_id == account_id)
+        if transaction_type is not None:
+            query = query.where(Transaction.transaction_type == transaction_type)
+        if currency is not None:
+            query = query.where(Transaction.currency == currency)
+        if search:
+            query = query.where(Transaction.description.ilike(f"%{search}%"))
+        return self.db.scalar(query) or 0
 
     def list_all_by_user(self, user_id: int) -> list[Transaction]:
         """Recuperar todas las transacciones del usuario (uso en métricas)."""

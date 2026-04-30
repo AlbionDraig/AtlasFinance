@@ -19,7 +19,12 @@ from app.api.error_handlers import (
 from app.db.base import get_db
 from app.models.enums import Currency, TransactionType
 from app.models.user import User
-from app.schemas.transaction import TransactionCreate, TransactionRead, TransferCreate
+from app.schemas.transaction import (
+    TransactionCreate,
+    TransactionPage,
+    TransactionRead,
+    TransferCreate,
+)
 from app.services.transactions_service import (
     create_transfer,
     delete_transaction,
@@ -71,11 +76,11 @@ def list_transactions_endpoint(
     currency: Annotated[Currency | None, Query()] = None,
     search: Annotated[str | None, Query(max_length=255)] = None,
     skip: Annotated[int, Query(ge=0)] = 0,
-    # limit acotado a 1000 para evitar payloads gigantes que degradan el dashboard.
-    limit: Annotated[int, Query(ge=1, le=1000)] = 500,
-) -> list[TransactionRead]:
-    """List user transactions with optional filtering by date, account, type, currency and text search."""
-    transactions = list_transactions(
+    # limit acotado a 500 para evitar payloads gigantes que degradan el dashboard.
+    limit: Annotated[int, Query(ge=1, le=500)] = 50,
+) -> TransactionPage:
+    """List user transactions with pagination metadata (total, skip, limit)."""
+    items, total = list_transactions(
         db, current_user.id,
         start_date=start_date,
         end_date=end_date,
@@ -86,7 +91,12 @@ def list_transactions_endpoint(
         skip=skip,
         limit=limit,
     )
-    return [TransactionRead.model_validate(t) for t in transactions]
+    return TransactionPage(
+        items=[TransactionRead.model_validate(t) for t in items],
+        total=total,
+        skip=skip,
+        limit=limit,
+    )
 
 
 @router.put("/{transaction_id}", responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}})

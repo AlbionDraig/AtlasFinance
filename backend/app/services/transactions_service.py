@@ -196,9 +196,15 @@ def list_transactions(  # pylint: disable=too-many-arguments
     search: str | None = None,
     skip: int = 0,
     limit: int = 500,
-) -> list[Transaction]:
-    """Listar transacciones del usuario aplicando filtros opcionales."""
-    return TransactionRepository(db).list_by_user(
+) -> tuple[list[Transaction], int]:
+    """Listar transacciones del usuario aplicando filtros opcionales.
+
+    Returns:
+        Tuple (items, total) donde total es el recuento sin paginar para que
+        el endpoint pueda construir la respuesta paginada sin una segunda llamada.
+    """
+    repo = TransactionRepository(db)
+    items = repo.list_by_user(
         user_id,
         start_date=start_date,
         end_date=end_date,
@@ -209,3 +215,13 @@ def list_transactions(  # pylint: disable=too-many-arguments
         skip=skip,
         limit=limit,
     )
+    total = repo.count_by_user(
+        user_id,
+        start_date=start_date,
+        end_date=end_date,
+        account_id=account_id,
+        transaction_type=transaction_type,
+        currency=currency,
+        search=search,
+    )
+    return items, total

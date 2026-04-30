@@ -123,10 +123,10 @@ def get_dashboard_aggregates(  # pylint: disable=too-many-arguments,too-many-loc
     top_n: int = 10,
 ) -> DashboardAggregates:
     """Calcular datos para los gráficos y totales del dashboard."""
-    cur_txns = list_transactions(
+    cur_txns, _ = list_transactions(
         db, user_id, start_date=start_date, end_date=end_date, limit=10_000
     )
-    prev_txns = list_transactions(
+    prev_txns, _ = list_transactions(
         db, user_id, start_date=prev_start_date, end_date=prev_end_date, limit=10_000
     )
 
