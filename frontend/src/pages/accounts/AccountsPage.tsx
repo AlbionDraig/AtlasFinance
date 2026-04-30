@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { accountsApi } from '@/api/accounts'
-import { banksApi, type Bank } from '@/api/banks'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/hooks/useToast'
+import { useAccountsList, useBanks } from '@/hooks/useAccountsData'
 import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import type { Account } from '@/types'
 import AccountCreateModal from './components/AccountCreateModal'
@@ -43,9 +43,6 @@ export default function AccountsPage() {
   const { toast } = useToast()
   const { t } = useTranslation()
 
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [banks, setBanks] = useState<Bank[]>([])
-  const [loading, setLoading] = useState(true)
   const [savingAccount, setSavingAccount] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
@@ -55,33 +52,9 @@ export default function AccountsPage() {
   const [accountForm, setAccountForm] = useState<AccountFormState>(EMPTY_ACCOUNT_FORM)
   const [filters, setFilters] = useState<AccountsFiltersState>(() => buildDefaultFilters())
 
-  // Load banks once on mount
-  useEffect(() => {
-    banksApi.list()
-      .then((res) => setBanks(res.data))
-      .catch((error) => toast(getApiErrorMessage(error, t('accounts.toast_load_banks_error')), 'error'))
-  }, [])
-
-  // Reload accounts from server whenever filters change (debounce query text)
-  useEffect(() => {
-    let cancelled = false
-    const delayMs = filters.query.trim() ? 350 : 0
-
-    const timer = setTimeout(() => {
-      setLoading(true)
-      accountsApi.list({
-        search: filters.query.trim() || undefined,
-        account_type: filters.accountType !== 'all' ? (filters.accountType as 'savings' | 'checking') : undefined,
-        currency: filters.currency !== 'all' ? (filters.currency as 'COP' | 'USD') : undefined,
-        bank_id: filters.bankId !== 'all' ? Number(filters.bankId) : undefined,
-      })
-        .then((res) => { if (!cancelled) { setAccounts(res.data); setPage(1) } })
-        .catch((error) => { if (!cancelled) toast(getApiErrorMessage(error, t('accounts.toast_load_error')), 'error') })
-        .finally(() => { if (!cancelled) setLoading(false) })
-    }, delayMs)
-
-    return () => { cancelled = true; clearTimeout(timer) }
-  }, [filters.query, filters.accountType, filters.currency, filters.bankId])
+  // Catálogos y lista vienen de hooks dedicados (separación de responsabilidades).
+  const { banks } = useBanks()
+  const { accounts, setAccounts, loading } = useAccountsList(filters, () => setPage(1))
 
   const totalPages = Math.max(1, Math.ceil(accounts.length / filters.pageSize))
   const currentPage = Math.min(page, totalPages)

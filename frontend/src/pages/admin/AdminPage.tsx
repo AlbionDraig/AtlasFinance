@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { countriesApi, type Country } from '@/api/countries'
 import CategoriesPage from '@/pages/categories/CategoriesPage'
-import { useToast } from '@/hooks/useToast'
-import { getApiErrorMessage } from '@/lib/utils'
+import { useCountries } from '@/hooks/useCountries'
 import BanksTab from './components/BanksTab'
 import InvestmentEntitiesTab from './components/InvestmentEntitiesTab'
 import CountriesTab from './components/CountriesTab'
@@ -20,26 +18,12 @@ function normalizeTab(value: string | null): AdminTab {
 }
 
 export default function AdminPage() {
-  const { toast } = useToast()
   const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const legacyTab = searchParams.get('tab')
 
   const [activeTab, setActiveTab] = useState<AdminTab>(() => normalizeTab(searchParams.get('tab')))
-  const [countries, setCountries] = useState<Country[]>([])
-
-  useEffect(() => {
-    async function loadCountriesCatalog() {
-      try {
-        const response = await countriesApi.list()
-        setCountries(response.data)
-      } catch (error) {
-        toast(getApiErrorMessage(error, t('admin.toast_load_countries_error')), 'error')
-      }
-    }
-
-    void loadCountriesCatalog()
-  }, [])
+  const { countries } = useCountries()
 
   useEffect(() => {
     const tabFromUrl = normalizeTab(searchParams.get('tab'))

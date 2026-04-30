@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
+import { useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
-import { investmentEntitiesApi, type InvestmentEntity } from '@/api/investmentEntities'
+import { type InvestmentEntity } from '@/api/investmentEntities'
 import { investmentsApi, INSTRUMENT_TYPES, type InvestmentPayload, type InvestmentUpdatePayload } from '@/api/investments'
 import type { Investment } from '@/types'
 import { useToast } from '@/hooks/useToast'
+import { useInvestmentsData } from '@/hooks/useInvestmentsData'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Modal from '@/components/ui/Modal'
 import FilterCard from '@/components/ui/FilterCard'
@@ -249,9 +250,7 @@ export default function InvestmentsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
 
-  const [investments, setInvestments] = useState<Investment[]>([])
-  const [entities, setEntities] = useState<InvestmentEntity[]>([])
-  const [loading, setLoading] = useState(true)
+  const { investments, setInvestments, entities, loading } = useInvestmentsData()
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null)
@@ -264,16 +263,6 @@ export default function InvestmentsPage() {
   const [filterEntity, setFilterEntity] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filterCurrency, setFilterCurrency] = useState('')
-
-  useEffect(() => {
-    Promise.all([investmentsApi.list(), investmentEntitiesApi.list()])
-      .then(([invRes, entityRes]) => {
-        setInvestments(invRes.data)
-        setEntities(entityRes.data)
-      })
-      .catch(() => toast(t('investments.toast_load_error'), 'error'))
-      .finally(() => setLoading(false))
-  }, [])
 
   const entityById = useMemo(() => new Map(entities.map(entity => [entity.id, entity])), [entities])
 

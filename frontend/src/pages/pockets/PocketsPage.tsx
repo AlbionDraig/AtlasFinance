@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState, type CSSProperties, type Dispatch, type FormEvent, type SetStateAction } from 'react'
+import { useMemo, useState, type CSSProperties, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
-import { accountsApi } from '@/api/accounts'
-import { banksApi, type Bank } from '@/api/banks'
 import { pocketsApi, type PocketPayload, type PocketUpdatePayload } from '@/api/pockets'
 import type { Account, Pocket } from '@/types'
 import { useToast } from '@/hooks/useToast'
+import { usePocketsData } from '@/hooks/usePocketsData'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
@@ -211,40 +210,15 @@ export default function PocketsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
 
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [filters, setFilters] = useState<PocketFiltersState>(DEFAULT_FILTERS)
 
-  const [pockets, setPockets] = useState<Pocket[]>([])
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [banks, setBanks] = useState<Bank[]>([])
+  const { pockets, setPockets, accounts, banks, loading } = usePocketsData()
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editingPocket, setEditingPocket] = useState<Pocket | null>(null)
   const [deletingPocket, setDeletingPocket] = useState<Pocket | null>(null)
   const [form, setForm] = useState<PocketFormState>(EMPTY_FORM)
-
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true)
-      try {
-        const [pocketsResponse, accountsResponse, banksResponse] = await Promise.all([
-          pocketsApi.list(),
-          accountsApi.list(),
-          banksApi.list(),
-        ])
-        setPockets(pocketsResponse.data)
-        setAccounts(accountsResponse.data)
-        setBanks(banksResponse.data)
-      } catch (error) {
-        toast(getApiErrorMessage(error, t('pockets.toast_load_error')), 'error')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    void loadData()
-  }, [])
 
   const accountById = useMemo(() => {
     // Precompute lookup maps to avoid repeated O(n) searches in render/filter logic.

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { categoriesApi, type Category, type CategoryPayload } from '@/api/categories'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
@@ -6,6 +6,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import FilterCard from '@/components/ui/FilterCard'
 import SearchInput from '@/components/ui/SearchInput'
 import { useToast } from '@/hooks/useToast'
+import { useCategoriesData } from '@/hooks/useCategoriesData'
 import CategoryModal, { type FormState } from './components/CategoryModal'
 import CategoryGroup from './components/CategoryGroup'
 
@@ -15,22 +16,13 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
   const { t } = useTranslation()
   const { toast } = useToast()
 
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
+  const { categories, setCategories, loading } = useCategoriesData()
   const [saving, setSaving] = useState(false)
 
   const [showCreate, setShowCreate] = useState(false)
   const [editing, setEditing] = useState<Category | null>(null)
   const [deleting, setDeleting] = useState<Category | null>(null)
   const [query, setQuery] = useState('')
-
-  useEffect(() => {
-    categoriesApi
-      .list()
-      .then((r) => setCategories(r.data))
-      .catch(() => toast(t('categories.toast_load_error'), 'error'))
-      .finally(() => setLoading(false))
-  }, [])
 
   async function handleCreate(data: FormState) {
     setSaving(true)
