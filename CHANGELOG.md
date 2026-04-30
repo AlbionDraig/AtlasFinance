@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+### Tests
+
+- Added unit tests for `useDashboardData`, `useTransactionsCatalogs` and `useTransactionsList` covering happy path, API failure fallback, paramsKey-driven refetch and `reload()` semantics. Frontend Vitest suite up to **31 tests / 8 files**.
+
 ### Accessibility
 
 - **Modal focus management**: focus the first interactive element on open, trap Tab/Shift+Tab inside the dialog, and restore focus to the previously-active element on close. Mirrors native `<dialog>` semantics.
