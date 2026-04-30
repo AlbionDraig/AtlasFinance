@@ -5,6 +5,7 @@ from app.models.country import Country
 from app.models.investment import Investment
 from app.models.investment_entity import InvestmentEntity
 from app.models.pocket import Pocket
+from app.models.refresh_token import RefreshToken
 from app.models.revoked_token import RevokedToken
 from app.models.transaction import Transaction
 from app.models.user import User
@@ -19,5 +20,6 @@ __all__ = [
     "Country",
     "Investment",
     "InvestmentEntity",
+    "RefreshToken",
     "RevokedToken",
 ]

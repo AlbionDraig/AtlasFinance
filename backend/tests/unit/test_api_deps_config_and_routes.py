@@ -241,6 +241,11 @@ def test_auth_route_error_and_success_paths(monkeypatch):
         "revoke_access_token",
         lambda _db, token, expires_at: captured.update({"token": token, "expires_at": expires_at}),
     )
+    monkeypatch.setattr(
+        auth_routes,
+        "revoke_all_user_refresh_tokens",
+        lambda _db, _user_id: None,
+    )
     response = Response()
     result = auth_routes.logout(response, object(), "access-token", SimpleNamespace(id=1))
     assert captured["token"] == "access-token"

@@ -1,6 +1,7 @@
 import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from uuid import uuid4
 
 from fastapi import Response
 from jose import jwt
@@ -38,7 +39,7 @@ def create_access_token(subject: str | Any, expires_delta: timedelta | None = No
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
 
-    to_encode = {"exp": expire, "sub": str(subject)}
+    to_encode = {"exp": expire, "sub": str(subject), "type": "access"}
     token = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
     # Keep the cookie HttpOnly and strict to reduce XSS/CSRF attack surface.
@@ -54,3 +55,38 @@ def create_access_token(subject: str | Any, expires_delta: timedelta | None = No
         )
 
     return token
+
+
+def create_refresh_token(
+    subject: str | Any,
+    response: Response | None = None,
+    expires_delta: timedelta | None = None,
+) -> tuple[str, datetime]:
+    """Create JWT refresh token and optionally attach it as a secure cookie.
+
+    Devuelve (token, expires_at) para que el caller pueda persistir el hash
+    en BD y habilitar la rotación con detección de reuso.
+    """
+    settings = get_settings()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.refresh_token_expire_minutes)
+
+    to_encode = {"exp": expire, "sub": str(subject), "type": "refresh", "jti": uuid4().hex}
+    token = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+
+    if response:
+        is_production = settings.environment == "production"
+        response.set_cookie(
+            key="refresh_token",
+            value=token,
+            httponly=True,
+            secure=is_production,
+            samesite="strict",
+            # path acotado a /api/v1/auth para que el navegador sólo lo envíe a endpoints de auth.
+            path="/api/v1/auth",
+            max_age=settings.refresh_token_expire_minutes * 60,
+        )
+
+    return token, expire
