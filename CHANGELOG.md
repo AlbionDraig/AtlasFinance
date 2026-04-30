@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ### Added
 
+- **Optional Sentry integration** for the backend. `sentry-sdk[fastapi]` is now a runtime dependency; when `SENTRY_DSN` is set the SDK boots in `app/main.py` with the FastAPI/Starlette integrations. Sample rates default to 0.0 so it stays fully off until a deployment opts in. New env vars: `SENTRY_DSN`, `SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_PROFILES_SAMPLE_RATE` (documented in `backend/example.env`).
 - **OpenAPI codegen pipeline** (opt-in): `backend/scripts/export_openapi.py` dumps the FastAPI schema to `frontend/openapi.json`, and `openapi-typescript` regenerates `frontend/src/api/generated.ts`. Run it all with `npm run openapi` from `frontend/`. The generated file is excluded from ESLint and Vitest coverage. Existing hand-written wrappers under `src/api/*.ts` keep working unchanged; the generated `paths`/`components` types are available for gradual migration.
 - **Per-file coverage thresholds** in `frontend/vitest.config.ts` for `ProtectedRoute.tsx` and `ErrorBoundary.tsx` (95% lines/functions/statements). Joins the existing thresholds for `lib/utils.ts` and `lib/passwordStrength.ts`.
 - **`authStore` unit tests** (`src/store/authStore.test.ts`) covering `setUser`/`logout`/initial state — bumps the file from 50% → 100% line coverage.

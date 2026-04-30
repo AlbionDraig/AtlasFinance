@@ -23,6 +23,32 @@ settings = get_settings()
 configure_logging()
 
 
+def _init_sentry() -> None:
+    """Initialise Sentry only if a DSN is configured.
+
+    Kept as a separate function so the import is lazy: when ``sentry_dsn`` is
+    empty (the default) we don't pay the import cost and we don't fail if
+    ``sentry-sdk`` isn't installed in lightweight environments.
+    """
+    if not settings.sentry_dsn:
+        return
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.starlette import StarletteIntegration
+
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        environment=settings.environment,
+        traces_sample_rate=settings.sentry_traces_sample_rate,
+        profiles_sample_rate=settings.sentry_profiles_sample_rate,
+        integrations=[StarletteIntegration(), FastApiIntegration()],
+        send_default_pii=False,
+    )
+
+
+_init_sentry()
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Inicializar BD y catálogos durante el arranque de la app.

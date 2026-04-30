@@ -39,6 +39,13 @@ class Settings(BaseSettings):
     rate_limit_login: str = "10/minute"
     rate_limit_register: str = "5/minute"
     rate_limit_refresh: str = "30/minute"
+
+    # Observability — Sentry is opt-in. When sentry_dsn is empty (default) no
+    # SDK is initialised and the dependency stays unused. Set SENTRY_DSN in
+    # the environment of a production deployment to start capturing errors.
+    sentry_dsn: str = ""
+    sentry_traces_sample_rate: float = 0.0
+    sentry_profiles_sample_rate: float = 0.0
     # CSV con los orígenes permitidos por CORS. Se lista hosts de dev (Vite, Streamlit legacy)
     # para no bloquear el desarrollo local; en prod debe restringirse vía env var.
     backend_cors_origins: str = (
