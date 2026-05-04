@@ -31,8 +31,8 @@ export default function AccountCreateModal({
   const { t } = useTranslation()
   return (
     <Modal onClose={onClose} maxWidth="max-w-2xl">
-      <div className="w-full rounded-2xl bg-white border border-neutral-100 shadow-xl overflow-visible border-t-4 border-t-brand">
-        <div className="bg-brand-light border-b border-brand/10 px-6 py-4 flex items-start gap-3">
+      <div className="w-full rounded-2xl border border-neutral-100 border-t-4 border-t-brand bg-white shadow-xl overflow-visible">
+        <div className="flex items-start gap-3 border-b border-brand/10 bg-brand-light px-6 py-4">
           <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white shadow-[0_0_0_5px_rgba(202,11,11,0.10)]">
             <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
               <path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -54,7 +54,7 @@ export default function AccountCreateModal({
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="p-6 space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4 p-6">
           <div className="space-y-1">
             <label className="app-label">{t('accounts.field_name')}</label>
             <input

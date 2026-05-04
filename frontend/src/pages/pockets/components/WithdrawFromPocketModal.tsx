@@ -95,9 +95,9 @@ export default function WithdrawFromPocketModal({
 
   return (
     <Modal onClose={onClose} maxWidth="max-w-md">
-      <div className="bg-white rounded-2xl shadow-2xl w-full border border-neutral-100 overflow-visible">
-        <div className="bg-success-bg border-b border-success/10 px-6 py-4 flex items-start gap-3">
-          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success text-white shadow-[0_0_0_5px_rgba(15,122,85,0.10)]">
+      <div className="w-full rounded-2xl border border-neutral-100 border-t-4 border-t-brand bg-white shadow-xl overflow-visible">
+        <div className="flex items-start gap-3 border-b border-brand/10 bg-brand-light px-6 py-4">
+          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white shadow-[0_0_0_5px_rgba(202,11,11,0.10)]">
             <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
               <path d="M16 10H4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
               <path d="M9 7l-3 3 3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -105,7 +105,7 @@ export default function WithdrawFromPocketModal({
             </svg>
           </div>
           <div>
-            <h2 className="app-section-title text-success-text">{t('pockets.withdraw_title')}</h2>
+            <h2 className="app-section-title text-brand-text">{t('pockets.withdraw_title')}</h2>
             <p className="text-sm text-neutral-700 mt-0.5">{t('pockets.withdraw_desc')}</p>
           </div>
           <button
