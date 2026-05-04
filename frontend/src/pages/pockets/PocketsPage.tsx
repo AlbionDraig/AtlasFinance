@@ -515,6 +515,7 @@ export default function PocketsPage() {
 
       {withdrawOpen && (
         <WithdrawFromPocketModal
+          accounts={accounts}
           pockets={pockets}
           saving={saving}
           maxDate={new Date().toISOString().slice(0, 10)}

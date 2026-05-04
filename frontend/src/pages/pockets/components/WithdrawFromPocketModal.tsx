@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+﻿import { useMemo, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
@@ -6,9 +6,10 @@ import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
 import TimePicker from '@/components/ui/TimePicker'
 import { useToast } from '@/hooks/useToast'
-import type { Pocket } from '@/types'
+import type { Account, Pocket } from '@/types'
 
 interface WithdrawForm {
+  accountId: string
   pocketId: string
   amount: string
   occurredDate: string
@@ -23,6 +24,7 @@ export interface WithdrawFromPocketFormData {
 }
 
 interface WithdrawFromPocketModalProps {
+  accounts: Account[]
   pockets: Pocket[]
   saving: boolean
   maxDate: string
@@ -32,6 +34,7 @@ interface WithdrawFromPocketModalProps {
 
 function buildDefault(): WithdrawForm {
   return {
+    accountId: '',
     pocketId: '',
     amount: '',
     occurredDate: '',
@@ -40,6 +43,7 @@ function buildDefault(): WithdrawForm {
 }
 
 export default function WithdrawFromPocketModal({
+  accounts,
   pockets,
   saving,
   maxDate,
@@ -50,11 +54,20 @@ export default function WithdrawFromPocketModal({
   const { toast } = useToast()
   const [form, setForm] = useState<WithdrawForm>(buildDefault)
 
-  const selectedPocket = pockets.find((p) => String(p.id) === form.pocketId) ?? null
+  const selectedAccount = accounts.find((a) => String(a.id) === form.accountId) ?? null
+  const accountPockets = useMemo(() => {
+    if (!selectedAccount) return []
+    return pockets.filter((p) => p.account_id === selectedAccount.id)
+  }, [selectedAccount, pockets])
+  const selectedPocket = accountPockets.find((p) => String(p.id) === form.pocketId) ?? null
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
+    if (!form.accountId) {
+      toast(t('pockets.toast_withdraw_select_account'), 'error')
+      return
+    }
     if (!form.pocketId) {
       toast(t('pockets.toast_withdraw_select_pocket'), 'error')
       return
@@ -77,7 +90,7 @@ export default function WithdrawFromPocketModal({
       return
     }
 
-    await onSubmit(form)
+    await onSubmit({ pocketId: form.pocketId, amount: form.amount, occurredDate: form.occurredDate, occurredTime: form.occurredTime })
   }
 
   return (
@@ -109,18 +122,42 @@ export default function WithdrawFromPocketModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-1">
+            <label className="app-label">{t('pockets.withdraw_field_account')}</label>
+            <Select
+              value={form.accountId}
+              onChange={(value) => setForm((prev) => ({ ...prev, accountId: value, pocketId: '', amount: '' }))}
+              options={[
+                { value: '', label: t('pockets.withdraw_select_account') },
+                ...accounts.map((a) => ({
+                  value: String(a.id),
+                  label: `${a.name} (${a.currency})`,
+                })),
+              ]}
+              className="w-full"
+            />
+          </div>
+
+          <div className="space-y-1">
             <label className="app-label">{t('pockets.withdraw_field_pocket')}</label>
             <Select
               value={form.pocketId}
               onChange={(value) => setForm((prev) => ({ ...prev, pocketId: value, amount: '' }))}
               options={[
-                { value: '', label: t('pockets.withdraw_select_pocket') },
-                ...pockets.map((pocket) => ({
+                {
+                  value: '',
+                  label: form.accountId
+                    ? accountPockets.length
+                      ? t('pockets.withdraw_select_pocket')
+                      : t('pockets.withdraw_no_pockets')
+                    : t('pockets.field_account_select'),
+                },
+                ...accountPockets.map((pocket) => ({
                   value: String(pocket.id),
                   label: `${pocket.name} · ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: pocket.currency, maximumFractionDigits: 0 }).format(pocket.balance)}`,
                 })),
               ]}
               className="w-full"
+              disabled={!form.accountId || accountPockets.length === 0}
             />
           </div>
 
@@ -129,7 +166,7 @@ export default function WithdrawFromPocketModal({
             <AmountInput
               value={form.amount}
               onChange={(raw) => setForm((prev) => ({ ...prev, amount: raw }))}
-              currency={selectedPocket?.currency ?? 'COP'}
+              currency={selectedPocket?.currency ?? selectedAccount?.currency ?? 'COP'}
               className="w-full"
             />
             {selectedPocket && (
@@ -168,3 +205,4 @@ export default function WithdrawFromPocketModal({
     </Modal>
   )
 }
+
