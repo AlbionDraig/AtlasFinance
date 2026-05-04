@@ -178,7 +178,8 @@ export default function AmountInput({
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         disabled={disabled}
-        className="h-full min-w-0 flex-1 border-0 bg-transparent px-1 text-sm text-[var(--af-text)] outline-none placeholder:text-[var(--af-text-soft)]"
+        className="h-full min-w-0 flex-1 border-0 bg-transparent px-1 text-sm text-[var(--af-text)] placeholder:text-[var(--af-text-soft)]"
+        style={{ outline: 'none', boxShadow: 'none' }}
         placeholder={placeholder}
       />
       {currency && (
