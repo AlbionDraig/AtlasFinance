@@ -190,18 +190,18 @@ function PocketModal({
 
           <div className="flex justify-end gap-2 pt-1">
             <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm rounded-lg border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand transition-colors"
-            >
-              {t('common.cancel')}
-            </button>
-            <button
               type="submit"
               disabled={saving}
               className="px-4 py-2 text-sm rounded-lg bg-brand text-white hover:bg-brand-hover disabled:opacity-50 transition-colors"
             >
               {saving ? t('pockets.submitting') : submitLabel}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm rounded-lg border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand transition-colors"
+            >
+              {t('common.cancel')}
             </button>
           </div>
         </form>
