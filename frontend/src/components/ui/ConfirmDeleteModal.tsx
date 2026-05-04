@@ -49,7 +49,7 @@ export default function ConfirmDeleteModal({
         </div>
 
         {/* Footer */}
-        <div className="grid grid-cols-1 gap-3 px-5 py-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-5 py-3">
           <button
             type="button"
             onClick={onConfirm}
