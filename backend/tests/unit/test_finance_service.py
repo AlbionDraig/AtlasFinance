@@ -10,7 +10,7 @@ from app.schemas.category import CategoryCreate
 from app.schemas.country import CountryCreate, CountryUpdate
 from app.schemas.investment import InvestmentCreate, InvestmentUpdate
 from app.schemas.investment_entity import InvestmentEntityCreate, InvestmentEntityUpdate
-from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
+from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate, PocketWithdrawCreate
 from app.schemas.transaction import TransactionCreate, TransferCreate
 from app.schemas.user import UserCreate
 from app.services.accounts_service import (
@@ -57,6 +57,7 @@ from app.services.pockets_service import (
     list_pockets,
     move_amount_to_pocket,
     update_pocket,
+    withdraw_amount_from_pocket,
 )
 from app.services.transactions_service import (
     create_transfer,
@@ -287,6 +288,109 @@ def test_move_amount_to_pocket_updates_pocket_and_account_balance(db_session):
     assert txn.description == "Movimiento a Bolsillo Vacaciones"
     assert refreshed_pocket.balance == Decimal("120")
     assert refreshed_account.current_balance == Decimal("380")
+
+
+def test_withdraw_amount_from_pocket_updates_pocket_and_account_balance(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="pocket-withdraw@test.com", full_name="Pocket Withdraw", password=TEST_PASSWORD),
+    )
+    bank = create_bank(db_session, user.id, BankCreate(name="Banco Retiro", country_code="CO"))
+    account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Cuenta Retiro",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=bank.id,
+        ),
+    )
+
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Fondeo",
+            amount=Decimal("500"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.INCOME,
+            occurred_at=datetime.now(timezone.utc),
+            account_id=account.id,
+        ),
+    )
+
+    pocket = create_pocket(
+        db_session,
+        user.id,
+        PocketCreate(name="Emergencias", balance=Decimal("0"), currency=Currency.COP, account_id=account.id),
+    )
+
+    move_amount_to_pocket(
+        db_session,
+        user.id,
+        PocketMoveCreate(
+            amount=Decimal("200"),
+            account_id=account.id,
+            pocket_id=pocket.id,
+            occurred_at=datetime.now(timezone.utc),
+        ),
+    )
+
+    txn = withdraw_amount_from_pocket(
+        db_session,
+        user.id,
+        PocketWithdrawCreate(
+            amount=Decimal("80"),
+            pocket_id=pocket.id,
+            occurred_at=datetime.now(timezone.utc),
+        ),
+    )
+
+    refreshed_pocket = get_pocket(db_session, user.id, pocket.id)
+    refreshed_account = next(item for item in list_accounts(db_session, user.id) if item.id == account.id)
+
+    assert txn.pocket_id == pocket.id
+    assert txn.transaction_type == TransactionType.INCOME
+    assert txn.description == "Retiro de Bolsillo Emergencias"
+    assert refreshed_pocket.balance == Decimal("120")
+    assert refreshed_account.current_balance == Decimal("380")
+
+
+def test_withdraw_from_pocket_rejects_insufficient_balance(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="pocket-withdraw-insuf@test.com", full_name="Withdraw Insuf", password=TEST_PASSWORD),
+    )
+    bank = create_bank(db_session, user.id, BankCreate(name="Banco Insuf", country_code="CO"))
+    account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Cuenta Insuf",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("500"),
+            bank_id=bank.id,
+        ),
+    )
+    pocket = create_pocket(
+        db_session,
+        user.id,
+        PocketCreate(name="Pequeño", balance=Decimal("50"), currency=Currency.COP, account_id=account.id),
+    )
+
+    with pytest.raises(ValueError, match="Insufficient pocket balance"):
+        withdraw_amount_from_pocket(
+            db_session,
+            user.id,
+            PocketWithdrawCreate(
+                amount=Decimal("100"),
+                pocket_id=pocket.id,
+                occurred_at=datetime.now(timezone.utc),
+            ),
+        )
 
 
 def test_categories_are_global_and_reusable_across_users(db_session):

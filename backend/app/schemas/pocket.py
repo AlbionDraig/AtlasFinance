@@ -29,6 +29,13 @@ class PocketMoveCreate(BaseModel):
     occurred_at: datetime
 
 
+class PocketWithdrawCreate(BaseModel):
+    """Payload used to withdraw funds from a pocket back into the account balance."""
+    amount: Decimal = Field(gt=0)
+    pocket_id: int
+    occurred_at: datetime
+
+
 class PocketRead(BaseModel):
     """Serialized pocket response exposed by the API."""
     id: int

@@ -7,7 +7,7 @@ from app.models.transaction import Transaction
 from app.repositories.accounts import AccountRepository
 from app.repositories.pockets import PocketRepository
 from app.repositories.transactions import TransactionRepository
-from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
+from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate, PocketWithdrawCreate
 from app.services._common import (
     apply_transaction_effect,
     commit_and_refresh,
@@ -123,6 +123,43 @@ def move_amount_to_pocket(
 
     apply_transaction_effect(account, TransactionType.EXPENSE, payload.amount)
     pocket.balance += payload.amount
+
+    created_txn = commit_and_refresh(db, txn)
+    invalidate_metrics_cache(user_id)
+    return created_txn
+
+
+def withdraw_amount_from_pocket(
+    db: Session, user_id: int, payload: PocketWithdrawCreate
+) -> Transaction:
+    """Retirar fondos de un bolsillo y devolverlos al saldo de la cuenta, registrado como ingreso."""
+    pocket = PocketRepository(db).get_owned(user_id, payload.pocket_id)
+    if pocket is None:
+        raise ValueError("Pocket not found")
+
+    if payload.amount > pocket.balance:
+        raise ValueError("Insufficient pocket balance")
+
+    account = AccountRepository(db).get_owned(user_id, pocket.account_id)
+    if account is None:
+        raise ValueError("Invalid account for user")
+
+    description = f"Retiro de Bolsillo {pocket.name}"
+    txn = Transaction(
+        description=description,
+        amount=payload.amount,
+        currency=account.currency,
+        transaction_type=TransactionType.INCOME,
+        occurred_at=payload.occurred_at,
+        user_id=user_id,
+        account_id=pocket.account_id,
+        category_id=None,
+        pocket_id=payload.pocket_id,
+    )
+    TransactionRepository(db).add_pending(txn)
+
+    apply_transaction_effect(account, TransactionType.INCOME, payload.amount)
+    pocket.balance -= payload.amount
 
     created_txn = commit_and_refresh(db, txn)
     invalidate_metrics_cache(user_id)

@@ -19,6 +19,7 @@ import Select from '@/components/ui/Select'
 import AmountInput from '@/components/ui/AmountInput'
 import InlineAlert from '@/components/ui/InlineAlert'
 import PocketsFiltersCard, { type PocketFiltersState } from './components/PocketsFiltersCard'
+import WithdrawFromPocketModal, { type WithdrawFromPocketFormData } from './components/WithdrawFromPocketModal'
 
 interface PocketFormState {
   name: string
@@ -222,6 +223,7 @@ export default function PocketsPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [editingPocket, setEditingPocket] = useState<Pocket | null>(null)
   const [deletingPocket, setDeletingPocket] = useState<Pocket | null>(null)
+  const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [form, setForm] = useState<PocketFormState>(EMPTY_FORM)
 
   const accountById = useMemo(() => {
@@ -435,6 +437,26 @@ export default function PocketsPage() {
     }
   }
 
+  async function handleWithdraw(formData: WithdrawFromPocketFormData) {
+    const occurredAt = `${formData.occurredDate}T${formData.occurredTime}:00`
+    setSaving(true)
+    try {
+      await pocketsApi.withdraw({
+        amount: Number(formData.amount),
+        pocket_id: Number(formData.pocketId),
+        occurred_at: occurredAt,
+      })
+      setWithdrawOpen(false)
+      toast(t('pockets.toast_withdraw_ok'))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
+    } catch (error) {
+      toast(getApiErrorMessage(error, t('pockets.toast_withdraw_error')), 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) {
     return <PageSkeleton cards={2} rows={5} columns={4} />
   }
@@ -488,6 +510,16 @@ export default function PocketsPage() {
           loading={saving}
           onConfirm={handleDelete}
           onClose={() => setDeletingPocket(null)}
+        />
+      )}
+
+      {withdrawOpen && (
+        <WithdrawFromPocketModal
+          pockets={pockets}
+          saving={saving}
+          maxDate={new Date().toISOString().slice(0, 10)}
+          onSubmit={handleWithdraw}
+          onClose={() => setWithdrawOpen(false)}
         />
       )}
 
@@ -575,7 +607,7 @@ export default function PocketsPage() {
       )}
 
       <FloatingActionMenu
-        hidden={createOpen || editingPocket !== null || accounts.length === 0}
+        hidden={createOpen || editingPocket !== null || withdrawOpen || accounts.length === 0}
         ariaLabel={t('pockets.fab_menu_label')}
         items={[
           {
@@ -585,6 +617,18 @@ export default function PocketsPage() {
             icon: (
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
                 <path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+              </svg>
+            ),
+          },
+          {
+            key: 'withdraw-pocket',
+            label: t('pockets.fab_withdraw'),
+            onClick: () => setWithdrawOpen(true),
+            disabled: pockets.length === 0,
+            icon: (
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+                <path d="M16 10H4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                <path d="M9 7l-3 3 3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             ),
           },

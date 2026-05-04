@@ -21,6 +21,12 @@ export interface PocketMovePayload {
   occurred_at: string
 }
 
+export interface PocketWithdrawPayload {
+  amount: number
+  pocket_id: number
+  occurred_at: string
+}
+
 // Endpoint wrapper for pockets operations and move-funds transaction.
 export const pocketsApi = {
   list: () => apiClient.get<Pocket[]>('/pockets'),
@@ -30,5 +36,7 @@ export const pocketsApi = {
     apiClient.put<Pocket>(`/pockets/${id}`, data),
   moveFunds: (data: PocketMovePayload) =>
     apiClient.post<Transaction>('/pockets/move-funds', data),
+  withdraw: (data: PocketWithdrawPayload) =>
+    apiClient.post<Transaction>('/pockets/withdraw', data),
   delete: (id: number) => apiClient.delete(`/pockets/${id}`),
 }

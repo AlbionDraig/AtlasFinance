@@ -266,6 +266,93 @@ def test_move_funds_returns_404_for_missing_pocket(client):
 
 
 # ---------------------------------------------------------------------------
+# /api/v1/pockets/withdraw
+# ---------------------------------------------------------------------------
+
+
+def test_withdraw_from_pocket_updates_balances(client):
+    headers = _auth_headers(client, email=f"withdraw-ok-{uuid4().hex}@test.com")
+    account_id = _create_bank_and_account(client, headers, name="Cuenta", balance=1000)
+
+    pocket_resp = client.post(
+        "/api/v1/pockets/",
+        json={"name": "Retiro Test", "balance": 0, "currency": "COP", "account_id": account_id},
+        headers=headers,
+    )
+    assert pocket_resp.status_code == 201
+    pocket_id = pocket_resp.json()["id"]
+
+    # First move funds into the pocket.
+    client.post(
+        "/api/v1/pockets/move-funds",
+        json={
+            "amount": 300,
+            "account_id": account_id,
+            "pocket_id": pocket_id,
+            "occurred_at": "2026-04-15T10:00:00Z",
+        },
+        headers=headers,
+    )
+
+    # Then withdraw part of it back.
+    withdraw_resp = client.post(
+        "/api/v1/pockets/withdraw",
+        json={
+            "amount": 100,
+            "pocket_id": pocket_id,
+            "occurred_at": "2026-04-15T11:00:00Z",
+        },
+        headers=headers,
+    )
+    assert withdraw_resp.status_code == 201
+    body = withdraw_resp.json()
+    assert body["transaction_type"] == "income"
+    assert body["pocket_id"] == pocket_id
+    assert body["account_id"] == account_id
+
+    pocket_after = client.get(f"/api/v1/pockets/{pocket_id}", headers=headers).json()
+    assert float(pocket_after["balance"]) == 200
+
+
+def test_withdraw_rejects_insufficient_pocket_balance(client):
+    headers = _auth_headers(client, email=f"withdraw-insuf-{uuid4().hex}@test.com")
+    account_id = _create_bank_and_account(client, headers, name="Cuenta", balance=500)
+
+    pocket_resp = client.post(
+        "/api/v1/pockets/",
+        json={"name": "Vacio", "balance": 0, "currency": "COP", "account_id": account_id},
+        headers=headers,
+    )
+    pocket_id = pocket_resp.json()["id"]
+
+    resp = client.post(
+        "/api/v1/pockets/withdraw",
+        json={
+            "amount": 1,
+            "pocket_id": pocket_id,
+            "occurred_at": "2026-04-15T10:00:00Z",
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 400
+
+
+def test_withdraw_returns_404_for_missing_pocket(client):
+    headers = _auth_headers(client, email=f"withdraw-404-{uuid4().hex}@test.com")
+
+    resp = client.post(
+        "/api/v1/pockets/withdraw",
+        json={
+            "amount": 50,
+            "pocket_id": 999_999,
+            "occurred_at": "2026-04-15T10:00:00Z",
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
 # /api/v1/transactions/export
 # ---------------------------------------------------------------------------
 

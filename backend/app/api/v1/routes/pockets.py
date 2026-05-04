@@ -14,7 +14,13 @@ from app.api.deps import get_current_user
 from app.api.error_handlers import raise_bad_request_from_value_error, raise_domain_value_error
 from app.db.base import get_db
 from app.models.user import User
-from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketRead, PocketUpdate
+from app.schemas.pocket import (
+    PocketCreate,
+    PocketMoveCreate,
+    PocketRead,
+    PocketUpdate,
+    PocketWithdrawCreate,
+)
 from app.schemas.transaction import TransactionRead
 from app.services.pockets_service import (
     create_pocket,
@@ -23,6 +29,7 @@ from app.services.pockets_service import (
     list_pockets,
     move_amount_to_pocket,
     update_pocket,
+    withdraw_amount_from_pocket,
 )
 
 router = APIRouter()
@@ -61,6 +68,21 @@ def move_funds_to_pocket_endpoint(
     try:
         return TransactionRead.model_validate(
             move_amount_to_pocket(db, current_user.id, payload)
+        )
+    except ValueError as exc:
+        raise_domain_value_error(exc, not_found_messages={"Pocket not found"})
+
+
+@router.post("/withdraw", status_code=status.HTTP_201_CREATED, responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}})
+def withdraw_from_pocket_endpoint(
+    payload: PocketWithdrawCreate,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> TransactionRead:
+    """Withdraw funds from a pocket back into the account balance and register income transaction."""
+    try:
+        return TransactionRead.model_validate(
+            withdraw_amount_from_pocket(db, current_user.id, payload)
         )
     except ValueError as exc:
         raise_domain_value_error(exc, not_found_messages={"Pocket not found"})
