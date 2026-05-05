@@ -24,6 +24,7 @@ const apiClient = axios.create({
 // en cuanto el nuevo access token queda disponible en la cookie.
 
 let _refreshPromise: Promise<void> | null = null
+let _loggingOut = false
 
 // Marca en la config de la petición para detectar reintentos y evitar bucles.
 interface RetryableConfig extends AxiosRequestConfig {
@@ -31,6 +32,8 @@ interface RetryableConfig extends AxiosRequestConfig {
 }
 
 function forceLogout() {
+  if (_loggingOut) return
+  _loggingOut = true
   useAuthStore.getState().logout()
   sessionStorage.setItem('session_expired', '1')
   window.location.href = '/login'
