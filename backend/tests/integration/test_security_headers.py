@@ -42,8 +42,8 @@ def test_csp_is_relaxed_for_docs():
     }
     script_sources = set(directives.get("script-src", "").split())
     style_sources = set(directives.get("style-src", "").split())
-    assert "https://cdn.jsdelivr.net" in script_sources
-    assert "https://cdn.jsdelivr.net" in style_sources
+    assert any(source == "https://cdn.jsdelivr.net" for source in script_sources)
+    assert any(source == "https://cdn.jsdelivr.net" for source in style_sources)
 
 
 def test_security_headers_present_on_openapi():

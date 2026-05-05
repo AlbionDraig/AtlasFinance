@@ -256,6 +256,7 @@ export default function AppLayout() {
             )}
             <button
               onClick={handleLogout}
+              aria-label={t('nav.logout')}
               className={`w-full flex items-center ${collapsed ? 'justify-center h-9 w-9 mx-auto px-0' : 'px-3 py-2'} rounded-lg text-sm font-medium text-neutral-400 hover:text-neutral-50 hover:bg-white/10 transition-colors`}
               title={collapsed ? t('nav.logout') : undefined}
             >

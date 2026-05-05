@@ -80,14 +80,19 @@ test.describe('Transactions page', () => {
   })
 
   test('can open the new transaction modal', async ({ page }) => {
-    // FloatingActionMenu or direct button to create a transaction
-    const fab = page.getByRole('button', { name: /nuevo movimiento|nueva transacción|add/i })
-    if (await fab.isVisible()) {
-      await fab.click()
+    // In this screen, creation can be direct or inside the floating actions menu.
+    const registerAction = page.getByRole('button', {
+      name: /registrar movimiento|register transaction|nuevo movimiento|nueva transacci[oó]n|add/i,
+    })
+
+    if (await registerAction.first().isVisible()) {
+      await registerAction.first().click()
     } else {
-      // May be inside a FAB menu
-      await page.locator('[aria-label*="menú"]').click()
-      await page.getByRole('menuitem', { name: /movimiento|transacción/i }).click()
+      const actionsMenu = page.getByRole('button', {
+        name: /abrir acciones de movimientos|open transaction actions|acciones de movimientos|transaction actions/i,
+      })
+      await actionsMenu.click()
+      await page.getByRole('button', { name: /registrar movimiento|register transaction/i }).click()
     }
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 })
   })
@@ -99,7 +104,8 @@ test.describe('Transactions page', () => {
 test.describe('Logout', () => {
   test('can log out and is redirected to login', async ({ page }) => {
     await login(page)
-    // Logout button can be in a user menu or sidebar
+    // Hover expands the sidebar and exposes stable labels for nav actions.
+    await page.locator('aside').hover()
     const logoutBtn = page.getByRole('button', { name: /cerrar sesión|log out|logout|salir/i })
     await logoutBtn.click()
     await expect(page).toHaveURL(/\/login/, { timeout: 8_000 })
