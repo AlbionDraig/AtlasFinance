@@ -104,13 +104,13 @@ test.describe('Transactions page', () => {
 test.describe('Logout', () => {
   test('can log out and is redirected to login', async ({ page }) => {
     await login(page)
-    // Hover expands the sidebar and exposes stable labels for nav actions.
-    await page.locator('aside').hover()
-    const logoutBtn = page.getByRole('button', { name: /cerrar sesión|sign out|log out|logout|salir/i })
-    // waitForURL must be registered before click to avoid missing the navigation event.
-    await Promise.all([
-      page.waitForURL(/\/login/, { timeout: 8_000 }),
-      logoutBtn.click(),
-    ])
+    // Locate by data-testid: works regardless of sidebar collapsed/expanded state
+    // and independent of i18n label, making the test resilient to timing and locale.
+    const logoutBtn = page.getByTestId('logout-button')
+    await logoutBtn.waitFor({ state: 'visible', timeout: 5_000 })
+    await logoutBtn.click()
+    // toHaveURL polls with retries — more reliable for SPA client-side navigation
+    // than waitForURL which requires a 'load' event that never fires in React Router.
+    await expect(page).toHaveURL(/\/login/, { timeout: 10_000 })
   })
 })
