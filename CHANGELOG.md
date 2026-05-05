@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+---
+
+## [1.0.2] - 2026-05-04
+
 ### Tests
 
 - Added unit tests for `useDashboardData`, `useTransactionsCatalogs` and `useTransactionsList` covering happy path, API failure fallback, paramsKey-driven refetch and `reload()` semantics.
