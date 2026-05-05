@@ -1,36 +1,36 @@
 ---
 agent: 'ask'
 description: 'Revisa el código del archivo o PR actual'
+tools: [read, search]
+argument-hint: "Archivo o área a revisar (Ej: app/services/auth_service.py, o 'cambios del PR')"
 ---
 
-Haz una revisión de código del archivo activo o los cambios recientes.
+Haz una revisión técnica del archivo activo o de los cambios recientes.
 
-Revisa el código en el contexto del proyecto y reporta en estas categorías:
+#file:./_engineering-principles.md
 
-**Seguridad**
-- Inputs sin validar o sanitizar
-- Queries SQL con riesgo de inyección
-- Secretos o credenciales hardcodeadas
-- Endpoints sin autenticación que deberían tenerla
-- Datos sensibles expuestos en responses o logs
+Evalúa con foco en:
 
-**Performance**
-- Queries N+1 a la base de datos
-- Operaciones síncronas bloqueantes en código async
-- Cálculos costosos que deberían cachearse
-- Respuestas grandes sin paginación
+1. Correctitud funcional
+- Bugs lógicos, regresiones, casos borde y supuestos incorrectos.
 
-**Consistencia con el proyecto**
-- Convenciones de nombres que no se siguen
-- Patrones que difieren del resto del codebase
-- Imports no utilizados o innecesarios
-- Tipos `Any` o `dict` sin tipar
+2. Arquitectura y diseño
+- Violaciones a DRY, SRP o separación de capas (UI/app/dominio/infra).
+- Acoplamiento innecesario a framework o infraestructura.
 
-**Manejo de errores**
-- Excepciones capturadas sin manejo real (`pass` o `print`)
-- Errores que deberían propagarse pero se silencian
-- Mensajes de error que exponen detalles internos al cliente
+3. Seguridad
+- Validación insuficiente de inputs, inyección, secretos expuestos, auth/autz incompleta.
 
-Para cada problema encontrado: indica el archivo, la línea aproximada, qué está mal y cómo corregirlo. Clasifica cada item como `crítico`, `importante` o `sugerencia`.
+4. Rendimiento
+- N+1, consultas/IO redundantes, cálculos costosos, falta de paginación o caché donde aplica.
 
-Al final da un resumen de cuántos items hay por categoría.
+5. Mantenibilidad
+- Nombres poco claros, funciones largas, duplicación, tipos débiles, código muerto.
+
+6. Pruebas
+- Cobertura faltante para rutas críticas y manejo de errores.
+
+Formato de salida:
+- Lista de hallazgos ordenada por severidad: crítico, importante, sugerencia.
+- Cada hallazgo debe incluir archivo, línea aproximada, impacto y recomendación concreta.
+- Si no hay hallazgos, dilo explícitamente y menciona riesgos residuales o gaps de testing.

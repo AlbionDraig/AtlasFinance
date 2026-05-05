@@ -1,25 +1,29 @@
 ---
-agent: 'ask'
-description: 'Crea modelos Pydantic para un recurso de la API'
+agent: 'agent'
+description: 'Crea schemas/DTOs para un recurso'
+tools: [read, search, edit]
+argument-hint: "Nombre del recurso y campos principales (Ej: Transaction — amount, category, date)"
 ---
 
-Crea los schemas Pydantic en `app/schemas/` para el siguiente recurso.
+Crea los schemas/DTOs/contratos para el recurso indicado.
+
+#file:./_engineering-principles.md
 
 Nombre del recurso: ${input:resource:Ej: Transaction, User, Budget}
 Campos del modelo: ${input:fields:Ej: amount: float, category: str, date: datetime, description: str opcional}
-¿Tiene modelo en la DB (SQLAlchemy)?: ${input:has_db_model:sí | no}
+Tecnología de schema (si se conoce): ${input:schema_tech:pydantic | zod | joi | marshmallow | class-validator | auto}
+¿Tiene modelo en persistencia?: ${input:has_db_model:sí | no}
 
-Genera `app/schemas/{resource_lower}.py` con:
+Genera contratos con esta estructura (adaptada al stack):
 
 1. `{Resource}Base` — campos comunes compartidos
-2. `{Resource}Create` — campos requeridos para crear (hereda de Base)
-3. `{Resource}Update` — todos los campos opcionales para PATCH (usar `Optional` en todos)
-4. `{Resource}Response` — lo que retorna la API, incluir `id` y timestamps si aplican
-5. `{Resource}ListResponse` — wrapper para listas: `items: list[{Resource}Response]` + `total: int`
+2. `{Resource}Create` — entrada para creación
+3. `{Resource}Update` — entrada parcial para actualización
+4. `{Resource}Response` — salida pública de API/capa de aplicación
+5. `{Resource}ListResponse` — lista paginada o agregada (si aplica)
 
 Convenciones:
-- Usar `model_config = ConfigDict(from_attributes=True)` en los schemas de respuesta
-- Validaciones con `@field_validator` donde tenga sentido (ej: amount > 0, email válido)
-- Agregar `json_schema_extra` con un ejemplo para que aparezca en la documentación de Swagger
-- Usar `Annotated` con `Field()` para describir cada campo
-- Fechas siempre como `datetime` con timezone aware
+- Tipos estrictos y validaciones de dominio.
+- Campos opcionales solo donde negocio lo permita.
+- No exponer campos internos/sensibles en responses.
+- Incluir ejemplos/documentación del contrato cuando el stack lo soporte.

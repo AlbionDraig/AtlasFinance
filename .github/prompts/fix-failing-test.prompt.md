@@ -1,27 +1,21 @@
 ---
-agent: 'ask'
+agent: 'agent'
 description: 'Analiza un test fallando y propone el fix'
+tools: [read, search, edit, execute]
+argument-hint: "Nombre del test o comando que falla (Ej: pytest tests/unit/test_auth.py)"
 ---
 
-Analiza el siguiente test fallando y propón el fix.
+Analiza un test fallando y corrige la causa raíz.
 
-Ejecuta primero los tests para ver el estado actual:
-```bash
-pytest -q tests/ --tb=short 2>&1 | head -80
-```
+#file:./_engineering-principles.md
+
+Comando de tests (si se conoce): ${input:test_command:Ej: pytest -q, npm test, pnpm vitest, go test ./...}
 
 Con el output del error:
-1. Identifica si el problema está en el test o en el código de producción
-2. Muestra el traceback relevante y explica la causa raíz en términos simples
-3. Propón el fix en el archivo correcto (no parches — arregla el problema real)
-4. Aplica el fix
-5. Vuelve a correr solo el test afectado para confirmar que pasa:
-```bash
-pytest {archivo_del_test}::{nombre_del_test} -v
-```
-6. Corre la suite completa para asegurarse de que no se rompió nada más:
-```bash
-pytest -q tests/ --tb=short
-```
+1. Determina si falla por test incorrecto o por bug de producción.
+2. Explica causa raíz con evidencia del traceback y código.
+3. Aplica fix en el lugar correcto, evitando sobreajuste al test.
+4. Ejecuta test afectado.
+5. Ejecuta suite relevante para descartar regresiones.
 
-Si el problema es un cambio de comportamiento intencional (refactor, nueva feature), actualiza el test para reflejar el comportamiento nuevo — pero solo si el comportamiento nuevo es correcto.
+Si el comportamiento cambió intencionalmente, actualiza el test solo cuando el nuevo comportamiento sea correcto y esté documentado.

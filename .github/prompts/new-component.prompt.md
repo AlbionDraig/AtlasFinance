@@ -1,28 +1,31 @@
 ---
-agent: 'ask'
-description: 'Crea un componente React para Atlas Finance'
+agent: 'agent'
+description: 'Crea un componente frontend reutilizable'
+tools: [read, search, edit]
+argument-hint: "Nombre y propósito del componente (Ej: TransactionCard — muestra monto, categoría y fecha)"
 ---
 
-Crea un componente React para Atlas Finance siguiendo el sistema de diseño del proyecto.
+Crea un componente frontend siguiendo convenciones del proyecto.
 
-#file:../copilot-instructions.md
+#file:./_engineering-principles.md
 
-Nombre del componente: ${input:name:Ej: TransactionCard, BudgetBar, AccountSummary}
-Qué hace: ${input:description:Ej: Muestra una transacción con ícono, categoría, monto y fecha}
-Props que recibe: ${input:props:Ej: amount: number, category: string, date: string, type: income | expense}
+Framework (si se conoce): ${input:framework:react | vue | svelte | angular | auto}
+Nombre del componente: ${input:name:Ej: TransactionCard, UserRow, ProductBadge}
+Qué hace: ${input:description:Ej: Muestra resumen con estado, metadata y acciones}
+Props/inputs: ${input:props:Ej: amount: number, status: string, createdAt: string}
 ¿Tiene estado interno?: ${input:has_state:sí | no}
-¿Llama a la API?: ${input:calls_api:sí — indica el endpoint | no}
+¿Consume datos remotos?: ${input:calls_api:sí | no}
 
-Genera `src/components/{Name}/{Name}.tsx` con:
+Genera o actualiza componente en la ruta estándar del proyecto con:
 
-1. Interface TypeScript para las props
-2. Componente funcional con Tailwind usando los tokens del design system
-3. Si llama a la API, usar React Query (`useQuery` o `useMutation`)
-4. Estados de loading y error si aplica
-5. Exportación named y default
+1. Tipos/props explícitos.
+2. Estructura visual desacoplada de la lógica de datos.
+3. Integración con capa de datos existente del proyecto (hook/store/service).
+4. Estados loading/error/empty si aplica.
+5. Exportaciones consistentes con el codebase.
 
 Convenciones:
-- Solo `font-normal` y `font-medium` — nunca `font-bold` ni `font-semibold`
-- No usar colores arbitrarios de Tailwind — solo los tokens del design system
-- Componente debe ser accesible (roles ARIA donde aplique)
-- Exportar también los tipos si otros componentes los necesitan
+- Reutilizar design system/tokens del proyecto; no introducir estilos arbitrarios.
+- Accesibilidad básica: semántica, labels, focus y navegación por teclado.
+- Evitar lógica de negocio en capa visual.
+- Si se repite UI, extraer subcomponentes reutilizables.
