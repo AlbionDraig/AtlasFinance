@@ -64,7 +64,7 @@ jobs:
 
       - name: TypeScript type check
         working-directory: frontend
-        run: npm run typecheck
+        run: npm run type-check
 
       - name: Test coverage
         working-directory: frontend
