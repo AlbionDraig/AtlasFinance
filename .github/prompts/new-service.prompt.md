@@ -1,25 +1,27 @@
 ---
 agent: 'ask'
-description: 'Crea un service de FastAPI con inyección de dependencias'
+description: 'Crea un service/caso de uso con inyección de dependencias'
 ---
 
-Crea un service en `app/services/` siguiendo el patrón de inyección de dependencias del proyecto.
+Crea un service/caso de uso siguiendo Clean Architecture.
+
+#file:./_engineering-principles.md
 
 Nombre del service: ${input:name:Ej: FinanceService, AuthService}
 Responsabilidad principal: ${input:responsibility:Ej: Calcular métricas financieras del usuario}
 ¿Depende de la base de datos?: ${input:uses_db:sí | no}
 ¿Depende de otro service?: ${input:dependencies:Ej: CurrencyService, ninguno}
 
-Genera `app/services/{name_snake}.py` con:
+Genera módulo de servicio (ruta según convención del proyecto) con:
 
 1. Clase del service con `__init__` que recibe dependencias por parámetro
-2. Métodos `async` para cada operación
-3. Excepciones propias en `app/exceptions.py` si necesita errores de dominio
-4. Función `get_{name_snake}` para usar como `Depends()` en los routers
-5. Tipado completo — sin `Any`, sin `dict` sin tipar
+2. Métodos por caso de uso con contratos explícitos
+3. Excepciones de dominio propias si aplica
+4. Adaptador/factory de inyección de dependencias si el framework lo requiere
+5. Tipado completo sin tipos ambiguos
 
 Convenciones:
-- Toda lógica de negocio va en el service, nunca en el router
-- Si accede a la DB, recibir la sesión como dependencia (`db: AsyncSession = Depends(get_db)`)
-- Los métodos deben ser testeables de forma aislada (sin estado global)
-- Incluir docstring en la clase y en cada método público
+- Lógica de negocio en servicio, no en controller/UI.
+- Dependencias invertidas mediante interfaces cuando sea viable.
+- Diseñar para test unitario aislado.
+- Mantener side effects encapsulados en infraestructura.

@@ -1,31 +1,28 @@
 ---
 agent: 'ask'
-description: 'Genera y ejecuta una migración Alembic'
+description: 'Genera y ejecuta una migración de base de datos'
 ---
 
-Genera y aplica una migración de base de datos con Alembic.
+Genera y aplica una migración de base de datos de forma segura.
 
-Descripción del cambio: ${input:change:Ej: Agregar columna currency a la tabla transactions}
+#file:./_engineering-principles.md
 
-Pasos a ejecutar:
+Descripción del cambio: ${input:change:Ej: agregar columna currency a tabla transactions}
+Herramienta de migración (si se conoce): ${input:migration_tool:alembic | prisma | knex | typeorm | django | liquibase | flyway | auto}
 
-1. Revisa los modelos SQLAlchemy en `app/models/` para entender el cambio necesario
-2. Si el modelo aún no tiene el cambio, actualízalo primero
-3. Genera la migración automática:
-```bash
-alembic revision --autogenerate -m "${input:change}"
-```
-4. Abre el archivo de migración generado en `alembic/versions/` y verifica que:
-   - El `upgrade()` y `downgrade()` son correctos
-   - No hay operaciones peligrosas sin confirmación (drop de columnas con datos)
-   - Los índices necesarios están incluidos
-5. Si todo se ve bien, aplica la migración:
-```bash
-alembic upgrade head
-```
-6. Confirma el estado final con:
-```bash
-alembic current
-```
+Flujo:
+1. Detecta la herramienta del proyecto si está en auto.
+2. Actualiza modelos/schemas antes de generar la migración.
+3. Genera migración con mensaje claro y trazable.
+4. Revisa manualmente:
+- `up`/`down` o `upgrade`/`downgrade` correctos.
+- Cambios destructivos protegidos o explícitos.
+- Índices/constraints esperados.
+- Backfill o defaults cuando haga falta.
+5. Ejecuta la migración en entorno local/test.
+6. Verifica estado final y consistencia de esquema.
 
-Si hay algún problema con la migración generada, corrígelo antes de aplicarla. Nunca aplicar una migración con `downgrade()` vacío o incorrecto.
+Reglas:
+- No aplicar migraciones con rollback incompleto.
+- Si hay riesgo de pérdida de datos, documenta plan de mitigación.
+- Si el proyecto requiere seed/backfill, créalo en el mismo cambio.

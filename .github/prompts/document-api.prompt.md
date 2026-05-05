@@ -1,27 +1,26 @@
 ---
 agent: 'ask'
-description: 'Documenta un endpoint o módulo del proyecto'
+description: 'Documenta un endpoint, módulo o contrato API'
 ---
 
 Documenta el archivo activo o el módulo indicado.
 
-Archivo a documentar: ${input:file:Ej: app/routers/transactions.py — o "el archivo activo"}
+#file:./_engineering-principles.md
 
-Genera la documentación en estos niveles:
+Archivo o módulo a documentar: ${input:file:Ej: src/api/users.ts, app/controllers/order.py o "archivo activo"}
 
-**1. Docstrings en el código**
-- Docstring de módulo al inicio del archivo
-- Docstring en cada función/clase pública con: descripción, parámetros, retorno y excepciones posibles
-- Usar formato compatible con FastAPI/OpenAPI (para que aparezca en `/docs`)
+Genera documentación en niveles:
 
-**2. Anotaciones OpenAPI en los endpoints FastAPI**
-- `summary` y `description` en cada endpoint
-- `responses` con los códigos HTTP posibles y su descripción
-- `tags` para agrupar en la documentación
-- Ejemplos en los schemas Pydantic si no los tienen
+1. Código
+- Docstring/comentario de módulo.
+- Docstring en funciones/clases públicas: propósito, entradas, salida, errores.
 
-**3. Actualización del README**
-- Si el archivo es un router, agrega o actualiza la sección de endpoints en el README
-- Formato de tabla: Método | Ruta | Descripción | Auth requerida
+2. Contrato API (si aplica)
+- Documentar rutas, método, auth, request/response, errores y ejemplos.
+- Si usa OpenAPI/Swagger, completar summary/description/responses/tags/examples.
 
-No cambies la lógica del código — solo agrega documentación. Si ya existe documentación, actualízala para que sea precisa con el código actual.
+3. Documentación de proyecto
+- Actualiza README o docs técnicas con tabla de endpoints/operaciones.
+- Incluir decisiones importantes y supuestos.
+
+No cambies la lógica funcional. Si hay documentación desactualizada, corrígela para que refleje el estado real del código.
