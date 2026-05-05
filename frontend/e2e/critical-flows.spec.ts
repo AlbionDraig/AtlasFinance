@@ -104,13 +104,16 @@ test.describe('Transactions page', () => {
 test.describe('Logout', () => {
   test('can log out and is redirected to login', async ({ page }) => {
     await login(page)
-    // Locate by data-testid: works regardless of sidebar collapsed/expanded state
-    // and independent of i18n label, making the test resilient to timing and locale.
+    // Wait for all in-flight requests (e.g. authApi.me()) to settle so the user
+    // state is stable before we trigger logout.
+    await page.waitForLoadState('networkidle')
+    // Use evaluate() to fire a programmatic click — bypasses Playwright's
+    // pointer simulation which triggers mouseenter/onFocusCapture on the aside,
+    // causing the sidebar to expand mid-click and potentially swallowing the event.
     const logoutBtn = page.getByTestId('logout-button')
     await logoutBtn.waitFor({ state: 'visible', timeout: 5_000 })
-    await logoutBtn.click()
-    // toHaveURL polls with retries — more reliable for SPA client-side navigation
-    // than waitForURL which requires a 'load' event that never fires in React Router.
+    await logoutBtn.evaluate((el: HTMLElement) => el.click())
+    // toHaveURL polls with retries — reliable for SPA client-side navigation.
     await expect(page).toHaveURL(/\/login/, { timeout: 10_000 })
   })
 })
