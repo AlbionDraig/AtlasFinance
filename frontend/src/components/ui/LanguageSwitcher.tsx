@@ -6,13 +6,42 @@ const LANGUAGES = [
   { code: 'en', label: 'English' },
 ]
 
-export default function LanguageSwitcher() {
-  const { i18n } = useTranslation()
+interface LanguageSwitcherProps {
+  variant?: 'sidebar' | 'panel'
+}
+
+export default function LanguageSwitcher({ variant = 'sidebar' }: LanguageSwitcherProps) {
+  const { i18n, t } = useTranslation()
   const lang = i18n.language.split('-')[0]
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   const current = LANGUAGES.find(l => l.code === lang) ?? LANGUAGES[0]
+  const isPanel = variant === 'panel'
+
+  const triggerClassName = isPanel
+    ? 'w-full flex items-center gap-3 rounded-lg border border-neutral-100 bg-white px-3 py-2 text-sm text-neutral-700 shadow-sm transition-colors hover:border-neutral-400 hover:bg-neutral-50'
+    : 'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-neutral-400 hover:text-neutral-50 hover:bg-white/10 transition-colors text-sm font-medium'
+
+  const menuClassName = isPanel
+    ? 'absolute top-full mt-1.5 left-0 right-0 rounded-lg border border-neutral-100 bg-white overflow-hidden shadow-lg z-50'
+    : 'absolute bottom-full mb-1 left-0 right-0 bg-neutral-900 border border-white/10 rounded-lg overflow-hidden shadow-lg z-50'
+
+  const optionClassName = (code: string) => {
+    if (isPanel) {
+      return `w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors ${
+        code === lang
+          ? 'bg-brand-light text-brand'
+          : 'text-neutral-700 hover:bg-neutral-50'
+      }`
+    }
+
+    return `w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors ${
+      code === lang
+        ? 'bg-brand text-white font-medium'
+        : 'text-neutral-400 hover:text-neutral-50 hover:bg-white/10'
+    }`
+  }
 
   function handleSelect(code: string) {
     void i18n.changeLanguage(code)
@@ -31,8 +60,10 @@ export default function LanguageSwitcher() {
   return (
     <div ref={ref} className="relative">
       <button
+        type="button"
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-neutral-400 hover:text-neutral-50 hover:bg-white/10 transition-colors text-sm font-medium"
+        aria-label={t('lang.selector_label')}
+        className={triggerClassName}
       >
         {/* Globe icon */}
         <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -49,20 +80,17 @@ export default function LanguageSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute bottom-full mb-1 left-0 right-0 bg-neutral-900 border border-white/10 rounded-lg overflow-hidden shadow-lg z-50">
+        <div className={menuClassName}>
           {LANGUAGES.map(({ code, label }) => (
             <button
               key={code}
+              type="button"
               onClick={() => handleSelect(code)}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors ${
-                code === lang
-                  ? 'bg-brand text-white font-medium'
-                  : 'text-neutral-400 hover:text-neutral-50 hover:bg-white/10'
-              }`}
+              className={optionClassName(code)}
             >
               <span>{label}</span>
               {code === lang && (
-                <svg className="w-3 h-3 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <svg className={`w-3 h-3 ml-auto ${isPanel ? 'text-brand' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               )}

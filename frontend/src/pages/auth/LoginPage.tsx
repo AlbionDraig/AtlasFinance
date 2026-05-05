@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { authApi } from '@/api/auth'
 import AuthLoadingOverlay from '@/components/ui/AuthLoadingOverlay'
 import FormField from '@/components/ui/FormField'
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
 import { useAuthStore } from '@/store/authStore'
 import { useToast } from '@/hooks/useToast'
 
@@ -79,8 +80,12 @@ export default function LoginPage() {
       )}
 
       <div className="relative w-full max-w-sm app-panel p-8">
+        <div className="absolute right-4 top-4 w-32">
+          <LanguageSwitcher variant="panel" />
+        </div>
+
         {/* Logo */}
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-4 pt-8">
           <div className="w-12 h-12 rounded-xl bg-[var(--af-accent)] flex items-center justify-center">
             <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V17a1 1 0 11-2 0v-.07A7.003 7.003 0 015 10h1a6 6 0 0012 0h1a7.003 7.003 0 01-6 6.93z" />
