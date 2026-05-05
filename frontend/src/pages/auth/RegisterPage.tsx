@@ -161,16 +161,16 @@ export default function RegisterPage() {
 
             <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs">
               <li className={checks.minLength ? 'tone-positive' : 'app-subtitle'}>
-                {checks.minLength ? 'âœ“' : 'â€¢'} {t('auth.register.req_length')}
+                {checks.minLength ? '\u2713' : '\u2022'} {t('auth.register.req_length')}
               </li>
               <li className={checks.hasUpper ? 'tone-positive' : 'app-subtitle'}>
-                {checks.hasUpper ? 'âœ“' : 'â€¢'} {t('auth.register.req_uppercase')}
+                {checks.hasUpper ? '\u2713' : '\u2022'} {t('auth.register.req_uppercase')}
               </li>
               <li className={checks.hasNumber ? 'tone-positive' : 'app-subtitle'}>
-                {checks.hasNumber ? 'âœ“' : 'â€¢'} {t('auth.register.req_number')}
+                {checks.hasNumber ? '\u2713' : '\u2022'} {t('auth.register.req_number')}
               </li>
               <li className={checks.hasSymbol ? 'tone-positive' : 'app-subtitle'}>
-                {checks.hasSymbol ? 'âœ“' : 'â€¢'} {t('auth.register.req_symbol')}
+                {checks.hasSymbol ? '\u2713' : '\u2022'} {t('auth.register.req_symbol')}
               </li>
             </ul>
           </FormField>
