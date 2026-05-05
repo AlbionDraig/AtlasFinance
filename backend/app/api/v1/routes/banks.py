@@ -1,3 +1,9 @@
+"""Endpoints REST para bancos del usuario.
+
+Cada cuenta requiere un banco; los bancos son por-usuario (no globales)
+para permitir nombres personalizados ("Mi Bancolombia personal") sin
+colisionar entre usuarios.
+"""
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
@@ -8,7 +14,7 @@ from app.api.error_handlers import raise_bad_request_from_value_error
 from app.db.base import get_db
 from app.models.user import User
 from app.schemas.bank import BankCreate, BankRead, BankUpdate
-from app.services.finance_service import create_bank, delete_bank, list_banks, update_bank
+from app.services.banks_service import create_bank, delete_bank, list_banks, update_bank
 
 router = APIRouter()
 
@@ -21,7 +27,7 @@ def create_bank_endpoint(
 ) -> BankRead:
     """Create a bank for the authenticated user."""
     try:
-        return create_bank(db, current_user.id, payload)
+        return BankRead.model_validate(create_bank(db, current_user.id, payload))
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 
@@ -45,7 +51,7 @@ def update_bank_endpoint(
 ) -> BankRead:
     """Update a bank owned by the authenticated user."""
     try:
-        return update_bank(db, current_user.id, bank_id, payload)
+        return BankRead.model_validate(update_bank(db, current_user.id, bank_id, payload))
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 

@@ -8,7 +8,7 @@ from app.api.error_handlers import raise_bad_request_from_value_error
 from app.db.base import get_db
 from app.models.user import User
 from app.schemas.category import CategoryCreate, CategoryRead, CategoryUpdate
-from app.services.finance_service import (
+from app.services.categories_service import (
     create_category,
     delete_category,
     list_categories,
@@ -26,7 +26,7 @@ def create_category_endpoint(
 ) -> CategoryRead:
     """Create a global spending category."""
     try:
-        return create_category(db, payload)
+        return CategoryRead.model_validate(create_category(db, payload))
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 

@@ -2,33 +2,51 @@
 
 ## Reportar vulnerabilidades
 
-Si encuentras una vulnerabilidad de seguridad, no abras un issue publico con detalles sensibles.
+Si encontrás una vulnerabilidad de seguridad, **no abras un issue público con detalles sensibles**.
 
-Por favor reporta de forma privada al mantenedor del repositorio:
+Reportá de forma privada por uno de estos canales:
 
-- Repositorio: https://github.com/AlbionDraig/AtlasFinance
-- Canal recomendado: Security Advisory de GitHub o contacto privado del owner
+- **GitHub Security Advisory** (recomendado): <https://github.com/AlbionDraig/AtlasFinance/security/advisories/new>
+- Contacto privado del owner del repositorio.
+
+Esperá una respuesta inicial dentro de los próximos días hábiles. Te pediremos pasos de reproducción y la versión/commit afectados.
+
+## Versiones soportadas
+
+Solo `main` recibe parches de seguridad mientras el proyecto esté en fase pre-1.0.
 
 ## Alcance
 
 Este proyecto incluye:
 
-- API backend (FastAPI)
-- ETL de archivos CSV/XLSX
-- Dashboard local (Streamlit)
-- Configuracion Docker/CI
+- API backend (FastAPI + SQLAlchemy + PostgreSQL).
+- ETL de archivos CSV/XLSX (parsers bancarios).
+- Frontend SPA (React 19 + Vite + TypeScript).
+- Configuración Docker / docker-compose.
+- Pipeline GitHub Actions (CI, security scans, CodeQL).
 
-## Buenas practicas actuales
+## Buenas prácticas activas
 
-- Autenticacion JWT
-- Hash de contrasenas
-- Variables de entorno para configuracion sensible
-- Exclusion de `.env` del control de versiones
+- **Autenticación JWT** con `access_token` + `refresh_token` y blacklist en `revoked_tokens`.
+- **Hashing bcrypt** vía `passlib`.
+- **Rate limiting** (`slowapi`) en endpoints de auth.
+- **CORS** configurable por variable de entorno.
+- **Variables de entorno** para configuración sensible; `.env` excluido del control de versiones.
+- **Bandit** (SAST) + **pip-audit** (CVEs en dependencias) en CI.
+- **CodeQL** scheduled scans para Python y TypeScript/JavaScript.
+- **Pre-commit hooks** con ruff y bandit.
 
-## Recomendaciones de hardening para produccion
+## Recomendaciones de hardening para producción
 
-- Rotar `SECRET_KEY` periodicamente
-- Usar HTTPS en todos los entornos expuestos
-- Limitar CORS por dominio confiable
-- Agregar rate limiting y auditoria de acceso
-- Escaneo de dependencias en CI
+- Rotar `SECRET_KEY` periódicamente.
+- Usar HTTPS en todos los entornos expuestos.
+- Limitar CORS a dominios confiables explícitos.
+- Habilitar logging estructurado (`structlog`) y auditoría de accesos.
+- Rate-limit más estricto en producción y WAF/CDN delante.
+- Escaneo automático de dependencias y SBOM en cada release.
+- Aplicar `alembic upgrade head` como paso explícito del pipeline de deploy (no confiar en el auto-migrate del startup).
+- Backups y rotación de credenciales de PostgreSQL.
+
+## Disclosure
+
+Una vez confirmada y corregida la vulnerabilidad, publicaremos un **GitHub Security Advisory** con los detalles, los commits que la corrigen y el crédito al reporter (si así lo desea).

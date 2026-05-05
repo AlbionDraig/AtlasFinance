@@ -4,6 +4,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import Currency
+from app.schemas.common import MoneyDecimal
 
 
 class PocketCreate(BaseModel):
@@ -28,13 +29,21 @@ class PocketMoveCreate(BaseModel):
     occurred_at: datetime
 
 
+class PocketWithdrawCreate(BaseModel):
+    """Payload used to withdraw funds from a pocket back into the account balance."""
+    amount: Decimal = Field(gt=0)
+    pocket_id: int
+    occurred_at: datetime
+
+
 class PocketRead(BaseModel):
     """Serialized pocket response exposed by the API."""
     id: int
     name: str
-    balance: Decimal
+    balance: MoneyDecimal
     currency: Currency
     account_id: int
     created_at: datetime
 
-    model_config = ConfigDict(from_attributes=True, json_encoders={Decimal: float})
+    model_config = ConfigDict(from_attributes=True)
+

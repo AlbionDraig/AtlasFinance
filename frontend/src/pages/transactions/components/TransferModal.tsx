@@ -105,9 +105,9 @@ export default function TransferModal({
 
   return (
     <Modal onClose={onClose} maxWidth="max-w-md">
-      <div className="bg-white rounded-2xl shadow-2xl w-full border border-neutral-100 overflow-visible">
+      <div className="w-full rounded-2xl border border-neutral-100 border-t-4 border-t-brand bg-white shadow-xl overflow-visible">
         {/* Header */}
-        <div className="bg-brand-light border-b border-brand/10 px-6 py-4 flex items-start gap-3">
+        <div className="flex items-start gap-3 border-b border-brand/10 bg-brand-light px-6 py-4">
           <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white shadow-[0_0_0_5px_rgba(202,11,11,0.10)]">
             <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
               <path d="M3 10h14M13 6l4 4-4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />

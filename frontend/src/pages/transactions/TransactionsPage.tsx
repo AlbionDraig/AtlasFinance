@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { accountsApi } from '@/api/accounts'
-import { categoriesApi, type Category } from '@/api/categories'
+import { useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { type Category } from '@/api/categories'
 import { pocketsApi } from '@/api/pockets'
 import { transactionsApi, type TransactionFilters } from '@/api/transactions'
-import type { Account, Pocket, Transaction } from '@/types'
+import type { Account, Transaction } from '@/types'
 import TransactionEditModal from './components/TransactionEditModal'
 import MoveToPocketModal from './components/MoveToPocketModal'
 import TransactionsFiltersCard from './components/TransactionsFiltersCard'
@@ -12,8 +13,10 @@ import TransactionsHistoryCard from './components/TransactionsHistoryCard'
 import TransferModal from './components/TransferModal'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import PageSkeleton from '@/components/ui/PageSkeleton'
 import { useToast } from '@/hooks/useToast'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
+import { useTransactionsCatalogs, useTransactionsList } from '@/hooks/useTransactionsData'
 import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
 
@@ -46,6 +49,49 @@ function buildDefaultFilters(): FiltersState {
     to: toDateInputValue(today),
     pageSize: 25,
   }
+}
+
+/**
+ * Hidrata los filtros desde la URL. Los valores ausentes caen al default,
+ * de modo que enlaces compartidos sólo necesitan transportar lo no-default.
+ */
+function buildFiltersFromParams(params: URLSearchParams): FiltersState {
+  const defaults = buildDefaultFilters()
+  const transactionType = params.get('type')
+  const currency = params.get('currency')
+  const period = params.get('period')
+  const pageSizeRaw = Number(params.get('pageSize'))
+  return {
+    query: params.get('q') ?? defaults.query,
+    transactionType: transactionType === 'INCOME' || transactionType === 'EXPENSE' ? transactionType : 'all',
+    currency: currency === 'COP' || currency === 'USD' ? currency : 'all',
+    accountId: params.get('account') ?? defaults.accountId,
+    period: ['all', 'today', '7d', '30d', 'month', 'custom'].includes(String(period))
+      ? (period as PeriodFilter)
+      : defaults.period,
+    from: params.get('from') ?? defaults.from,
+    to: params.get('to') ?? defaults.to,
+    pageSize: Number.isFinite(pageSizeRaw) && pageSizeRaw > 0 ? pageSizeRaw : defaults.pageSize,
+  }
+}
+
+/**
+ * Serializa sólo los filtros que difieren del default, para mantener URLs cortas.
+ */
+function filtersToSearchParams(filters: FiltersState): URLSearchParams {
+  const defaults = buildDefaultFilters()
+  const params = new URLSearchParams()
+  if (filters.query.trim() !== defaults.query) params.set('q', filters.query.trim())
+  if (filters.transactionType !== defaults.transactionType) params.set('type', filters.transactionType)
+  if (filters.currency !== defaults.currency) params.set('currency', filters.currency)
+  if (filters.accountId !== defaults.accountId) params.set('account', filters.accountId)
+  if (filters.period !== defaults.period) params.set('period', filters.period)
+  if (filters.period === 'custom') {
+    if (filters.from) params.set('from', filters.from)
+    if (filters.to) params.set('to', filters.to)
+  }
+  if (filters.pageSize !== defaults.pageSize) params.set('pageSize', String(filters.pageSize))
+  return params
 }
 
 function buildDefaultForm(): FormState {
@@ -109,9 +155,14 @@ function resolvePeriodRange(period: PeriodFilter, fallbackFrom: string, fallback
   return { from: fallbackFrom, to: fallbackTo }
 }
 
-function buildTransactionParams(filters: FiltersState, query: string): TransactionFilters {
+function buildTransactionParams(
+  filters: FiltersState,
+  query: string,
+  page: number,
+): TransactionFilters {
   const range = resolvePeriodRange(filters.period, filters.from, filters.to)
-  // Convert UI state into API contract expected by backend list endpoint.
+  const skip = (page - 1) * filters.pageSize
+  // Convert UI state + current page into API contract for server-side pagination.
   return {
     start_date: range.from ? `${range.from}T00:00:00` : undefined,
     end_date: range.to ? `${range.to}T23:59:59` : undefined,
@@ -119,21 +170,21 @@ function buildTransactionParams(filters: FiltersState, query: string): Transacti
     transaction_type: filters.transactionType !== 'all' ? filters.transactionType.toLowerCase() : undefined,
     currency: filters.currency !== 'all' ? filters.currency : undefined,
     search: query.trim() || undefined,
+    skip,
+    limit: filters.pageSize,
   }
 }
 
 export default function TransactionsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [pockets, setPockets] = useState<Pocket[]>([])
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [form, setForm] = useState<FormState>(() => buildDefaultForm())
-  const [filters, setFilters] = useState<FiltersState>(() => buildDefaultFilters())
+  const [filters, setFilters] = useState<FiltersState>(() => buildFiltersFromParams(searchParams))
   const [debouncedQuery, setDebouncedQuery] = useState('')
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -142,58 +193,43 @@ export default function TransactionsPage() {
   const [transferOpen, setTransferOpen] = useState(false)
   const [moveToPocketOpen, setMoveToPocketOpen] = useState(false)
 
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true)
+  // Catálogos: carga única tras montar.
+  const { accounts, categories, pockets, loading: catalogsLoading } = useTransactionsCatalogs()
 
-      try {
-        const [accountsResponse, categoriesResponse] = await Promise.all([
-          accountsApi.list(),
-          categoriesApi.list(),
-        ])
-
-        setAccounts(accountsResponse.data)
-        setCategories(categoriesResponse.data)
-        setForm((current) => current.accountId ? current : buildDefaultForm())
-
-        try {
-          const pocketsResponse = await pocketsApi.list()
-          setPockets(pocketsResponse.data)
-        } catch {
-          // Keep transactions usable even if pockets endpoint is unavailable.
-          setPockets([])
-        }
-      } catch (loadError) {
-        toast(getApiErrorMessage(loadError, t('transactions.toast_load_error')), 'error')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    void loadData()
-  }, [])
+  // Parámetros de la API derivados de filtros + query debounceado + página actual.
+  const transactionParams = useMemo(
+    () => buildTransactionParams(filters, debouncedQuery, page),
+    [filters, debouncedQuery, page],
+  )
+  const transactionParamsKey = useMemo(
+    () => JSON.stringify(transactionParams),
+    [transactionParams],
+  )
+  const { transactions, total, loading: listLoading, reload: reloadTransactions } = useTransactionsList(
+    transactionParams as Record<string, unknown>,
+    transactionParamsKey,
+  )
+  // loading combinado ya no se usa directamente; se usan catalogsLoading y listLoading por separado.
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(filters.query), 400)
     return () => clearTimeout(timer)
   }, [filters.query])
 
-  async function reloadTransactions() {
-    setLoading(true)
-    try {
-      const response = await transactionsApi.list(buildTransactionParams(filters, debouncedQuery))
-      setTransactions(response.data)
-    } catch (error) {
-      toast(getApiErrorMessage(error, t('transactions.toast_load_movements_error')), 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
     setPage(1)
-    void reloadTransactions()
-  }, [debouncedQuery, filters.transactionType, filters.currency, filters.accountId, filters.period, filters.from, filters.to])
+  }, [debouncedQuery, filters.transactionType, filters.currency, filters.accountId, filters.period, filters.from, filters.to, filters.pageSize])
+
+  // Sync filters to URL search params (replace history to avoid polluting it on every keystroke).
+  useEffect(() => {
+    const next = filtersToSearchParams(filters)
+    const current = searchParams.toString()
+    if (next.toString() !== current) {
+      setSearchParams(next, { replace: true })
+    }
+    // Intentionally exclude searchParams/setSearchParams to avoid feedback loop.
+
+  }, [filters])
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -220,11 +256,12 @@ export default function TransactionsPage() {
   const expenseTotal = transactions
     .filter((transaction) => normalizeTransactionType(String(transaction.transaction_type)) === 'EXPENSE')
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0)
-  const totalPages = Math.max(1, Math.ceil(transactions.length / filters.pageSize))
+  // totalPages derived from server total; paginatedTransactions IS the full page (no client slice).
+  const totalPages = Math.max(1, Math.ceil(total / filters.pageSize))
   const currentPage = Math.min(page, totalPages)
   const startIndex = (currentPage - 1) * filters.pageSize
-  const endIndex = Math.min(startIndex + filters.pageSize, transactions.length)
-  const paginatedTransactions = transactions.slice(startIndex, endIndex)
+  const endIndex = Math.min(startIndex + transactions.length, total)
+  const paginatedTransactions = transactions
   const noCategoryLabel = t('transactions.no_category')
   const activeFilters = [
     filters.transactionType !== 'all' ? t(filters.transactionType === 'INCOME' ? 'transactions.chip_type_income' : 'transactions.chip_type_expense') : null,
@@ -238,6 +275,32 @@ export default function TransactionsPage() {
     setEditingId(null)
     setModalOpen(false)
     setForm(buildDefaultForm())
+  }
+
+  async function handleExportCSV() {
+    setExporting(true)
+    try {
+      const range = resolvePeriodRange(filters.period, filters.from, filters.to)
+      const params = {
+        start_date: range.from ? `${range.from}T00:00:00` : undefined,
+        end_date: range.to ? `${range.to}T23:59:59` : undefined,
+        account_id: filters.accountId !== 'all' ? Number(filters.accountId) : undefined,
+        transaction_type: filters.transactionType !== 'all' ? filters.transactionType.toLowerCase() : undefined,
+        currency: filters.currency !== 'all' ? filters.currency : undefined,
+        search: debouncedQuery.trim() || undefined,
+      }
+      const response = await transactionsApi.export(params)
+      const url = URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }))
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = 'transactions.csv'
+      anchor.click()
+      URL.revokeObjectURL(url)
+    } catch (exportError) {
+      toast(getApiErrorMessage(exportError, t('transactions.toast_export_error')), 'error')
+    } finally {
+      setExporting(false)
+    }
   }
 
   function handleEdit(transaction: Transaction) {
@@ -322,6 +385,9 @@ export default function TransactionsPage() {
       }
       resetForm()
       await reloadTransactions()
+      // Balances and pocket totals depend on transactions — keep their caches fresh.
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
     } catch (submitError) {
       toast(getApiErrorMessage(submitError, t('transactions.toast_save_error')), 'error')
     } finally {
@@ -344,6 +410,7 @@ export default function TransactionsPage() {
       toast(t('transactions.toast_transfer_ok'))
       setTransferOpen(false)
       await reloadTransactions()
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
     } catch (transferError) {
       toast(getApiErrorMessage(transferError, t('transactions.toast_transfer_error')), 'error')
     } finally {
@@ -371,6 +438,8 @@ export default function TransactionsPage() {
       setMoveToPocketOpen(false)
       toast(t('transactions.toast_pocket_ok'))
       await reloadTransactions()
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
     } catch (moveError) {
       toast(getApiErrorMessage(moveError, t('transactions.toast_pocket_error')), 'error')
     } finally {
@@ -387,6 +456,8 @@ export default function TransactionsPage() {
       if (editingId === transactionId) resetForm()
       toast(t('transactions.toast_deleted'))
       await reloadTransactions()
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
     } catch (deleteError) {
       toast(getApiErrorMessage(deleteError, t('transactions.toast_delete_error')), 'error')
     } finally {
@@ -394,20 +465,29 @@ export default function TransactionsPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="app-panel p-6 flex min-h-72 items-center justify-center">
-        <LoadingSpinner text={t('transactions.loading')} />
-      </div>
-    )
+  if (catalogsLoading) {
+    return <PageSkeleton cards={3} rows={8} columns={6} />
   }
 
   return (
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       {/* Page header */}
-      <div>
-        <h1 className="app-title text-xl">{t('transactions.title')}</h1>
-        <p className="app-subtitle text-sm mt-0.5">{t('transactions.subtitle')}</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="app-title text-xl">{t('transactions.title')}</h1>
+          <p className="app-subtitle text-sm mt-0.5">{t('transactions.subtitle')}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => { void handleExportCSV() }}
+          disabled={exporting}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-brand text-brand hover:bg-brand-light px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11" />
+          </svg>
+          {exporting ? t('common.loading') : t('transactions.export_csv')}
+        </button>
       </div>
 
       {modalOpen && (
@@ -469,6 +549,8 @@ export default function TransactionsPage() {
       <TransactionsHistoryCard
         filteredTransactions={transactions}
         paginatedTransactions={paginatedTransactions}
+        total={total}
+        loading={listLoading}
         currentPage={currentPage}
         totalPages={totalPages}
         startIndex={startIndex}

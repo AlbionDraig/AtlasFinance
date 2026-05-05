@@ -10,47 +10,60 @@ from app.schemas.category import CategoryCreate
 from app.schemas.country import CountryCreate, CountryUpdate
 from app.schemas.investment import InvestmentCreate, InvestmentUpdate
 from app.schemas.investment_entity import InvestmentEntityCreate, InvestmentEntityUpdate
-from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate
+from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate, PocketWithdrawCreate
 from app.schemas.transaction import TransactionCreate, TransferCreate
 from app.schemas.user import UserCreate
-from app.services.auth_service import create_user
-from app.services.finance_service import (
+from app.services.accounts_service import (
     create_account,
-    create_bank,
-    create_category,
-    create_country,
-    create_investment,
-    create_investment_entity,
-    create_pocket,
-    create_transfer,
     delete_account,
-    delete_bank,
+    list_accounts,
+    update_account,
+)
+from app.services.auth_service import create_user
+from app.services.banks_service import create_bank, delete_bank, update_bank
+from app.services.categories_service import (
+    create_category,
     delete_category,
+    list_categories,
+    update_category,
+)
+from app.services.countries_service import (
+    create_country,
     delete_country,
-    delete_investment,
+    list_countries,
+    update_country,
+)
+from app.services.investment_entities_service import (
+    create_investment_entity,
     delete_investment_entity,
-    delete_pocket,
-    delete_transaction,
+    list_investment_entities,
+    update_investment_entity,
+)
+from app.services.investments_service import (
+    create_investment,
+    delete_investment,
+    get_investment,
+    list_investments,
+    update_investment,
+)
+from app.services.metrics_service import (
     get_dashboard_aggregates,
     get_dashboard_metrics,
-    get_investment,
+)
+from app.services.pockets_service import (
+    create_pocket,
+    delete_pocket,
     get_pocket,
-    list_accounts,
-    list_categories,
-    list_countries,
-    list_investment_entities,
-    list_investments,
     list_pockets,
-    list_transactions,
     move_amount_to_pocket,
-    register_transaction,
-    update_account,
-    update_bank,
-    update_category,
-    update_country,
-    update_investment,
-    update_investment_entity,
     update_pocket,
+    withdraw_amount_from_pocket,
+)
+from app.services.transactions_service import (
+    create_transfer,
+    delete_transaction,
+    list_transactions,
+    register_transaction,
     update_transaction,
 )
 
@@ -275,6 +288,109 @@ def test_move_amount_to_pocket_updates_pocket_and_account_balance(db_session):
     assert txn.description == "Movimiento a Bolsillo Vacaciones"
     assert refreshed_pocket.balance == Decimal("120")
     assert refreshed_account.current_balance == Decimal("380")
+
+
+def test_withdraw_amount_from_pocket_updates_pocket_and_account_balance(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="pocket-withdraw@test.com", full_name="Pocket Withdraw", password=TEST_PASSWORD),
+    )
+    bank = create_bank(db_session, user.id, BankCreate(name="Banco Retiro", country_code="CO"))
+    account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Cuenta Retiro",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=bank.id,
+        ),
+    )
+
+    register_transaction(
+        db_session,
+        user.id,
+        TransactionCreate(
+            description="Fondeo",
+            amount=Decimal("500"),
+            currency=Currency.COP,
+            transaction_type=TransactionType.INCOME,
+            occurred_at=datetime.now(timezone.utc),
+            account_id=account.id,
+        ),
+    )
+
+    pocket = create_pocket(
+        db_session,
+        user.id,
+        PocketCreate(name="Emergencias", balance=Decimal("0"), currency=Currency.COP, account_id=account.id),
+    )
+
+    move_amount_to_pocket(
+        db_session,
+        user.id,
+        PocketMoveCreate(
+            amount=Decimal("200"),
+            account_id=account.id,
+            pocket_id=pocket.id,
+            occurred_at=datetime.now(timezone.utc),
+        ),
+    )
+
+    txn = withdraw_amount_from_pocket(
+        db_session,
+        user.id,
+        PocketWithdrawCreate(
+            amount=Decimal("80"),
+            pocket_id=pocket.id,
+            occurred_at=datetime.now(timezone.utc),
+        ),
+    )
+
+    refreshed_pocket = get_pocket(db_session, user.id, pocket.id)
+    refreshed_account = next(item for item in list_accounts(db_session, user.id) if item.id == account.id)
+
+    assert txn.pocket_id == pocket.id
+    assert txn.transaction_type == TransactionType.INCOME
+    assert txn.description == "Retiro de Bolsillo Emergencias"
+    assert refreshed_pocket.balance == Decimal("120")
+    assert refreshed_account.current_balance == Decimal("380")
+
+
+def test_withdraw_from_pocket_rejects_insufficient_balance(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="pocket-withdraw-insuf@test.com", full_name="Withdraw Insuf", password=TEST_PASSWORD),
+    )
+    bank = create_bank(db_session, user.id, BankCreate(name="Banco Insuf", country_code="CO"))
+    account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Cuenta Insuf",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("500"),
+            bank_id=bank.id,
+        ),
+    )
+    pocket = create_pocket(
+        db_session,
+        user.id,
+        PocketCreate(name="Pequeño", balance=Decimal("50"), currency=Currency.COP, account_id=account.id),
+    )
+
+    with pytest.raises(ValueError, match="Insufficient pocket balance"):
+        withdraw_amount_from_pocket(
+            db_session,
+            user.id,
+            PocketWithdrawCreate(
+                amount=Decimal("100"),
+                pocket_id=pocket.id,
+                occurred_at=datetime.now(timezone.utc),
+            ),
+        )
 
 
 def test_categories_are_global_and_reusable_across_users(db_session):
@@ -526,7 +642,7 @@ def test_delete_transaction_allows_transfer_transactions(db_session):
 
     delete_transaction(db_session, user.id, transfer_income.id)
 
-    remaining_transactions = list_transactions(db_session, user.id)
+    remaining_transactions, _ = list_transactions(db_session, user.id)
     assert all(item.id != transfer_income.id for item in remaining_transactions)
 
 
@@ -667,7 +783,7 @@ def test_transaction_listing_update_and_delete_success_paths(db_session):
     )
     assert updated_txn.description == "Compra ajustada"
 
-    filtered_transactions = list_transactions(
+    filtered_transactions, _ = list_transactions(
         db_session,
         user.id,
         start_date=datetime(2026, 4, 2, tzinfo=timezone.utc),
@@ -677,7 +793,7 @@ def test_transaction_listing_update_and_delete_success_paths(db_session):
 
     delete_transaction(db_session, user.id, updated_txn.id)
 
-    remaining_transactions = list_transactions(db_session, user.id)
+    remaining_transactions, _ = list_transactions(db_session, user.id)
     assert [txn.id for txn in remaining_transactions] == [opening_txn.id]
 
 

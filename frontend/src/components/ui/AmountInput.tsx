@@ -1,6 +1,12 @@
+// AmountInput — input de montos con formato "thousand-separator" en vivo.
+// El reto: mantener el cursor del usuario sobre el dígito correcto cuando se
+// inserta/elimina una coma de miles automáticamente. Por eso trabajamos con
+// dos representaciones (raw vs display) y mapeamos la posición del caret entre ambas.
 import { useState, useEffect, useRef } from 'react'
 import type { KeyboardEvent, ClipboardEvent } from 'react'
 
+// Símbolos por moneda. COP usa $ porque visualmente es más familiar para usuarios
+// colombianos que "COP"; el código se muestra en otros lugares para evitar ambigüedad.
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$',
   COP: '$',
@@ -20,12 +26,16 @@ interface AmountInputProps {
 /** Format a raw number string (dot = decimal) → comma thousands, dot decimal. e.g. "1250000.5" → "1,250,000.5" */
 function formatDisplay(raw: string): string {
   if (!raw) return ''
+  // Si el usuario escribe ".5" (sin entero) prefijamos 0 para no mostrar ",5" raro tras formatear.
   const normalized = raw.startsWith('.') ? '0' + raw : raw
   const parts = normalized.split('.')
+  // Regex estándar para insertar separador de miles cada 3 dígitos desde la derecha.
   const intFormatted = (parts[0] || '').replace(/\B(?=(\d{3})+(?!\d))/g, ',')
   return parts.length > 1 ? intFormatted + '.' + parts[1] : intFormatted
 }
 
+// Mapea posición del caret en el string mostrado (con comas) a la posición en el raw.
+// Las comas no cuentan como caracteres en el raw, así que las saltamos.
 function displayToRawCursor(displayCursor: number, display: string): number {
   let raw = 0
   for (let i = 0; i < displayCursor && i < display.length; i++) {
@@ -34,6 +44,7 @@ function displayToRawCursor(displayCursor: number, display: string): number {
   return raw
 }
 
+// Inverso: dada una posición raw, calcula la posición en el display sumando las comas que la preceden.
 function rawToDisplayCursor(rawCursor: number, display: string): number {
   let raw = 0
   let disp = 0
@@ -167,7 +178,8 @@ export default function AmountInput({
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         disabled={disabled}
-        className="h-full min-w-0 flex-1 border-0 bg-transparent px-1 text-sm text-[var(--af-text)] outline-none placeholder:text-[var(--af-text-soft)]"
+        className="h-full min-w-0 flex-1 border-0 bg-transparent px-1 text-sm text-[var(--af-text)] placeholder:text-[var(--af-text-soft)]"
+        style={{ outline: 'none', boxShadow: 'none' }}
         placeholder={placeholder}
       />
       {currency && (

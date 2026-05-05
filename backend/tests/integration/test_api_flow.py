@@ -135,8 +135,8 @@ def test_api_main_flow(client):
 
     list_resp = client.get("/api/v1/transactions/", headers=headers)
     assert list_resp.status_code == 200
-    assert len(list_resp.json()) == 2
-    assert any(item["amount"] == 75 for item in list_resp.json())
+    assert len(list_resp.json()["items"]) == 2
+    assert any(item["amount"] == 75 for item in list_resp.json()["items"])
 
     delete_txn_resp = client.delete(f"/api/v1/transactions/{txn_id}", headers=headers)
     assert delete_txn_resp.status_code == 204
@@ -146,7 +146,7 @@ def test_api_main_flow(client):
 
     list_after_delete_resp = client.get("/api/v1/transactions/", headers=headers)
     assert list_after_delete_resp.status_code == 200
-    assert len(list_after_delete_resp.json()) == 0
+    assert len(list_after_delete_resp.json()["items"]) == 0
 
     delete_missing_resp = client.delete(f"/api/v1/transactions/{txn_id}", headers=headers)
     assert delete_missing_resp.status_code == 404

@@ -21,10 +21,20 @@ export interface TransferPayload {
   occurred_at: string
 }
 
+// Paginated response returned by GET /transactions.
+export interface TransactionPage {
+  items: Transaction[]
+  total: number
+  skip: number
+  limit: number
+}
+
 // Thin API wrapper to centralize endpoint paths and response typing.
 export const transactionsApi = {
   list: (params?: TransactionFilters) =>
-    apiClient.get<Transaction[]>('/transactions', { params }),
+    apiClient.get<TransactionPage>('/transactions', { params }),
+  export: (params?: Omit<TransactionFilters, 'skip' | 'limit'>) =>
+    apiClient.get<Blob>('/transactions/export', { params, responseType: 'blob' }),
   get: (id: number) => apiClient.get<Transaction>(`/transactions/${id}`),
   create: (data: Omit<Transaction, 'id'>) =>
     apiClient.post<Transaction>('/transactions', data),

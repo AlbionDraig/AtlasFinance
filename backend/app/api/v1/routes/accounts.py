@@ -1,3 +1,8 @@
+"""Endpoints REST para cuentas bancarias del usuario.
+
+La capa solo enrutado HTTP → servicio + traducción de errores. Las reglas
+de propiedad (un usuario solo accede a sus cuentas) viven en `accounts_service`.
+"""
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
@@ -9,7 +14,7 @@ from app.db.base import get_db
 from app.models.enums import AccountType, Currency
 from app.models.user import User
 from app.schemas.account import AccountCreate, AccountRead, AccountUpdate
-from app.services.finance_service import (
+from app.services.accounts_service import (
     create_account,
     delete_account,
     list_accounts,
@@ -27,7 +32,7 @@ def create_account_endpoint(
 ) -> AccountRead:
     """Create an account linked to a bank owned by the current user."""
     try:
-        return create_account(db, current_user.id, payload)
+        return AccountRead.model_validate(create_account(db, current_user.id, payload))
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 
@@ -61,7 +66,9 @@ def update_account_endpoint(
 ) -> AccountRead:
     """Update an account owned by the authenticated user."""
     try:
-        return update_account(db, current_user.id, account_id, payload)
+        return AccountRead.model_validate(
+            update_account(db, current_user.id, account_id, payload)
+        )
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 

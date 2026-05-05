@@ -2,32 +2,83 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is inspired by Keep a Changelog and semantic versioning.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Added
+### Tests
 
-- Base architecture for Atlas Finance (FastAPI, SQLAlchemy, ETL, Streamlit)
-- JWT auth and password hashing
-- Docker setup for backend + PostgreSQL
-- Docker setup for frontend integrated in `docker-compose.yml`
-- CI workflow with lint, tests, and coverage gate
-- Coverage upload to Codecov
-- Project governance docs: CONTRIBUTING, SECURITY, LICENSE
-- API list endpoints for banks, accounts, and categories
-- API update/delete endpoints for transactions
-- Integration tests for list/update/delete transaction API flow
+- Added unit tests for `useDashboardData`, `useTransactionsCatalogs` and `useTransactionsList` covering happy path, API failure fallback, paramsKey-driven refetch and `reload()` semantics.
+- Added new tests for `Modal` and `useToast` (focus trap, auto-focus/restore focus, dismiss/autodismiss and max-3 toasts behavior).
+- Frontend Vitest suite is now **37 tests / 10 files**.
+- E2E login helpers were hardened to support both associated labels and placeholder-based fields.
+
+### Accessibility
+
+- **Modal focus management**: focus the first interactive element on open, trap Tab/Shift+Tab inside the dialog, and restore focus to the previously-active element on close. Mirrors native `<dialog>` semantics.
+- **Global `:focus-visible` outline** in `index.css` so keyboard users always see where focus is, without affecting mouse users.
 
 ### Changed
 
-- Frontend authentication flow now supports in-app login/registration and JWT session handling
-- Frontend UX now follows auth-first flow (login first, app modules after authentication)
-- Frontend movement module now supports create/edit/delete operations from UI
-- Documentation updated to reflect dockerized frontend and current API flow
+- **Playwright E2E in CI now runs against a real backend.** The `e2e` job in `frontend-ci.yml` boots the FastAPI app with SQLite + `SEED_DEMO_DATA=true`, waits for `/openapi.json`, then starts the Vite dev server and runs the suite. Removed the previous `continue-on-error: true` so failures actually fail the pipeline. Browser binaries are cached between runs.
+
+### Added
+
+- **Route-level code splitting**: every private page (Dashboard, Transactions, Accounts, Pockets, Investments, Admin, Management, Profile) is now lazy-loaded with `React.lazy` + `Suspense`, falling back to `PageSkeleton`. The Dashboard chunk (~436 KB, dominated by `recharts`) no longer ships in the initial bundle — measured locally the main chunk dropped from ~870 KB to ~440 KB.
+- **Optimistic delete** in Accounts, Pockets and Investments. The row disappears and the confirm modal closes immediately; on API failure the previous list is restored from a snapshot and an error toast is shown.
+- **Optional Sentry integration** for the backend. `sentry-sdk[fastapi]` is now a runtime dependency; when `SENTRY_DSN` is set the SDK boots in `app/main.py` with the FastAPI/Starlette integrations. Sample rates default to 0.0 so it stays fully off until a deployment opts in. New env vars: `SENTRY_DSN`, `SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_PROFILES_SAMPLE_RATE` (documented in `backend/example.env`).
+- **OpenAPI codegen pipeline** (opt-in): `backend/scripts/export_openapi.py` dumps the FastAPI schema to `frontend/openapi.json`, and `openapi-typescript` regenerates `frontend/src/api/generated.ts`. Run it all with `npm run openapi` from `frontend/`. The generated file is excluded from ESLint and Vitest coverage. Existing hand-written wrappers under `src/api/*.ts` keep working unchanged; the generated `paths`/`components` types are available for gradual migration.
+- **Per-file coverage thresholds** in `frontend/vitest.config.ts` for `ProtectedRoute.tsx` and `ErrorBoundary.tsx` (95% lines/functions/statements). Joins the existing thresholds for `lib/utils.ts` and `lib/passwordStrength.ts`.
+- **`authStore` unit tests** (`src/store/authStore.test.ts`) covering `setUser`/`logout`/initial state — bumps the file from 50% → 100% line coverage.
+- **i18n in error boundaries**: `ErrorBoundary` and `PageErrorBoundary` now read their copy from `errors.*` keys in `i18n/locales/{es,en}.json` instead of having hardcoded Spanish strings. `PageErrorBoundary` accepts a `labelKey` prop (e.g. `errors.page_label_dashboard`).
+- **i18next bootstrapped in test setup** (`src/test/setup.ts`) so components using `useTranslation()` render real translations during Vitest runs.
+- **Pre-commit manual hooks** for the frontend: `tsc-frontend` (`npm run type-check`) and `eslint-frontend` (`npm run lint`). Run them with `pre-commit run --hook-stage manual <id>`.
+- **PageSkeleton** component (`components/ui/PageSkeleton.tsx`) used by Accounts, Transactions, Categories, Pockets and Investments pages. Replaces the centred `LoadingSpinner` with a layout-stable skeleton (header + cards + table) so content no longer "jumps" when data arrives.
+- **URL-persisted filters** in the Transactions page: `q`, `type`, `currency`, `account`, `period`, `from`, `to`, `pageSize` are reflected in the URL via `useSearchParams`, so links and reloads keep the active filter state.
+- **Additional Playwright E2E specs** (`frontend/e2e/additional-flows.spec.ts`) covering Pockets, Investments and Accounts smoke renders, Transactions URL filter persistence, and a no-error-boundary navigation walk through all private routes.
+- **Per-page error boundary** (`PageErrorBoundary`) with `Reintentar` button that invalidates the relevant React Query keys before re-rendering the subtree. Wired into all private routes in `App.tsx`.
+- **Integration tests** for `/transactions/transfer`, `/pockets/move-funds` and `/transactions/export` (`tests/integration/test_transfers_and_export.py`, +12 tests, total 133 backend tests).
+- **Cache invalidation** in mutations across Banks, Countries, Investment Entities, Investments, Pockets and Transactions pages — keeps catalog data and balances in sync across views.
+- **Strict TypeScript** (`strict: true`) enabled in `tsconfig.app.json`; CI already runs `npm run type-check` so the gate is enforced on every PR.
+- **Alembic migrations** wired into FastAPI startup (`_apply_migrations()` in `db/init_db.py`) with three strategies: fresh DB, alembic-managed DB, and legacy DB stamping.
+- **React Query DevTools** mounted in dev only (`buttonPosition="bottom-left"`).
+- **`EmptyState` component** in `frontend/src/components/ui/` with icon + title + description, used in Investments and Pockets.
+- **Cache invalidation after mutations** in Categories and Accounts pages via `queryClient.invalidateQueries({ queryKey: QUERY_KEYS.<x> })`.
+- **CSV export** for transactions: backend endpoint `GET /api/v1/transactions/export` + UI button respecting active filters.
+- **Server-side pagination** for transactions (`skip`, `limit`).
+- **Skeleton loaders** (`SkeletonCard`) on dashboard and lists while React Query fetches.
+- **Global Error Boundary** in `App.tsx` with i18n fallback UI.
+- **Playwright E2E** test suite (`frontend/e2e/`) covering login, navigation and transaction creation.
+- **Vitest coverage thresholds** per file in `vitest.config.ts` (`lib/utils.ts` 90%, `passwordStrength.ts` 90%).
+- **CI coverage gate** for backend (≥ 85%) and frontend with Codecov upload.
+
+### Changed
+
+- **Frontend stack migrated** from Streamlit to React 19 + TypeScript + Vite. Legacy code preserved under `frontend_old/`.
+- **Catalog data layer** unified through React Query (`useCatalogQueries`) replacing ad-hoc `useEffect` fetches.
+- **Auth flow** uses access + refresh tokens with revoked-token blacklist.
+- **Documentation overhaul**: README, CONTRIBUTING, frontend/README rewritten to reflect current architecture (React + Vite, Alembic, Playwright, server-side pagination).
 
 ### Fixed
 
-- Streamlit startup fallback when `secrets.toml` is missing
-- Compatibility adjustments for local Python 3.14 environment
-- Coverage gate restored above target after endpoint expansion (91.25%)
+- Stale `node_modules` after dependency changes in Docker (documented Docker volume rebuild workflow).
+- Form state cleanup after save (achieved through conditional modal mounting `{showCreate && <Modal>}`).
+
+---
+
+## [0.1.0] - Initial baseline
+
+### Added
+
+- Base architecture (FastAPI + SQLAlchemy 2.0 + PostgreSQL).
+- JWT authentication and bcrypt password hashing.
+- Domain models: User, Bank, Account, Pocket, Transaction, Category, Investment, InvestmentEntity, Country, RevokedToken.
+- ETL pipeline for CSV/Excel bank statements (Bancolombia, Nequi).
+- Streamlit dashboard (deprecated, see `frontend_old/`).
+- Docker Compose stack: PostgreSQL + backend + frontend.
+- CI workflow with Ruff lint, pytest, coverage gate (≥ 85%) and Codecov upload.
+- Project governance docs: CONTRIBUTING, SECURITY, LICENSE.
+- API endpoints CRUD for banks, accounts, pockets, categories, countries, investments, investment entities, transactions.
+- Metrics endpoints: `/metrics/dashboard`, `/metrics/aggregates`.
+- Pocket transfer endpoint `/pockets/move-funds` and account transfer `/transactions/transfer`.
+- Integration tests for full API flow.

@@ -66,6 +66,7 @@ def test_refresh_missing_sub_returns_401(client):
 def test_refresh_unknown_user_returns_401(client):
     payload = {
         "sub": "999999",
+        "type": "refresh",
         "exp": int((datetime.now(timezone.utc) + timedelta(minutes=5)).timestamp()),
     }
     token = jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
@@ -73,8 +74,10 @@ def test_refresh_unknown_user_returns_401(client):
 
     response = client.post("/api/v1/auth/refresh")
 
+    # Sin registro previo en BD el token nunca fue emitido por el sistema:
+    # respondemos genérico para no filtrar existencia del usuario.
     assert response.status_code == 401
-    assert response.json()["detail"] == "User not found"
+    assert response.json()["detail"] == "Invalid refresh token"
 
 
 def test_refresh_expired_token_returns_401(client):
@@ -103,3 +106,36 @@ def test_logout_invalid_token_returns_401_when_user_dependency_overridden(client
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid token"
+
+
+def test_login_emits_refresh_cookie_and_rotation_revokes_previous(client):
+    """Verifica el flujo completo: login persiste refresh, refresh rota e invalida el anterior."""
+    register = _register(client, email="rotation@test.com")
+    assert register.status_code == 201
+
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "rotation@test.com", "password": TEST_PASSWORD},
+    )
+    assert login.status_code == 200
+
+    first_refresh = client.cookies.get("refresh_token")
+    assert first_refresh, "Login debe emitir cookie refresh_token"
+
+    # Primera rotación: emite uno nuevo y revoca el anterior.
+    rotated = client.post("/api/v1/auth/refresh")
+    assert rotated.status_code == 200
+    second_refresh = client.cookies.get("refresh_token")
+    assert second_refresh and second_refresh != first_refresh
+
+    # Reutilizar el primero (ya revocado) debe fallar con detección de reuso.
+    client.cookies.set("refresh_token", first_refresh)
+    reused = client.post("/api/v1/auth/refresh")
+    assert reused.status_code == 401
+    assert reused.json()["detail"] == "Refresh token reuse detected"
+
+    # Tras detectar reuso, el segundo (que era válido) también queda revocado.
+    client.cookies.set("refresh_token", second_refresh)
+    after_reuse = client.post("/api/v1/auth/refresh")
+    assert after_reuse.status_code == 401
+

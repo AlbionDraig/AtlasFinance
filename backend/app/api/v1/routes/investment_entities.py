@@ -1,3 +1,9 @@
+"""Endpoints REST para entidades de inversión (banco/broker/exchange).
+
+Se modelan separadas de los bancos porque una entidad puede ser un broker
+o exchange que no opera como banco; mantener tablas distintas evita
+mezclar dominios y mantiene las consultas específicas (ej. listar exchanges).
+"""
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
@@ -12,7 +18,7 @@ from app.schemas.investment_entity import (
     InvestmentEntityRead,
     InvestmentEntityUpdate,
 )
-from app.services.finance_service import (
+from app.services.investment_entities_service import (
     create_investment_entity,
     delete_investment_entity,
     list_investment_entities,
@@ -30,7 +36,9 @@ def create_investment_entity_endpoint(
 ) -> InvestmentEntityRead:
     """Create an investment entity for the authenticated user."""
     try:
-        return create_investment_entity(db, current_user.id, payload)
+        return InvestmentEntityRead.model_validate(
+            create_investment_entity(db, current_user.id, payload)
+        )
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 
@@ -57,7 +65,9 @@ def update_investment_entity_endpoint(
 ) -> InvestmentEntityRead:
     """Update an investment entity owned by the authenticated user."""
     try:
-        return update_investment_entity(db, current_user.id, investment_entity_id, payload)
+        return InvestmentEntityRead.model_validate(
+            update_investment_entity(db, current_user.id, investment_entity_id, payload)
+        )
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 

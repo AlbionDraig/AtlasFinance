@@ -1,22 +1,25 @@
-import { useEffect, useMemo, useState, type CSSProperties, type Dispatch, type FormEvent, type SetStateAction } from 'react'
+import { useMemo, useState, type CSSProperties, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
-import { accountsApi } from '@/api/accounts'
-import { banksApi, type Bank } from '@/api/banks'
+import { useQueryClient } from '@tanstack/react-query'
 import { pocketsApi, type PocketPayload, type PocketUpdatePayload } from '@/api/pockets'
 import type { Account, Pocket } from '@/types'
 import { useToast } from '@/hooks/useToast'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
+import { usePocketsData } from '@/hooks/usePocketsData'
+import PageSkeleton from '@/components/ui/PageSkeleton'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
+import EmptyState from '@/components/ui/EmptyState'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 import Select from '@/components/ui/Select'
 import AmountInput from '@/components/ui/AmountInput'
 import InlineAlert from '@/components/ui/InlineAlert'
 import PocketsFiltersCard, { type PocketFiltersState } from './components/PocketsFiltersCard'
+import WithdrawFromPocketModal, { type WithdrawFromPocketFormData } from './components/WithdrawFromPocketModal'
 
 interface PocketFormState {
   name: string
@@ -115,22 +118,37 @@ function PocketModal({
 
   return (
     <Modal onClose={onClose} maxWidth="max-w-md">
-      <div className="w-full rounded-2xl bg-white border border-neutral-100 shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
-          <h2 className="text-sm font-medium text-neutral-900">{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-            aria-label={t('common.close')}
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+      <div className="w-full rounded-2xl border border-neutral-100 border-t-4 border-t-brand bg-white shadow-xl overflow-visible">
+        <div className="flex items-center justify-between border-b border-brand/10 bg-brand-light px-6 py-4">
+          <div className="flex items-start gap-3 w-full">
+            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white shadow-[0_0_0_5px_rgba(202,11,11,0.10)]">
+              {isEditing ? (
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
+                  <path d="M4 13.5V16h2.5l7.06-7.06-2.5-2.5L4 13.5zM15.71 6.29a1 1 0 000-1.41l-1.58-1.58a1 1 0 00-1.41 0l-1.24 1.24 2.99 2.99 1.24-1.24z" fill="currentColor" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
+                  <path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              )}
+            </div>
+            <div>
+              <h2 className="app-section-title text-brand-text">{title}</h2>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+              aria-label={t('common.close')}
+            >
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-4 w-4">
+                <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <form onSubmit={onSubmit} className="px-5 py-4 space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4 p-6">
           <FormField label={t('pockets.field_name')}>
             <input
               className="app-control"
@@ -185,20 +203,20 @@ function PocketModal({
             {t('pockets.currency_note', { currency: selectedAccount?.currency ?? 'N/A' })}
           </p>
 
-          <div className="flex justify-end gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm rounded-lg border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand transition-colors"
-            >
-              {t('common.cancel')}
-            </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 text-sm rounded-lg bg-brand text-white hover:bg-brand-hover disabled:opacity-50 transition-colors"
+              className="app-btn-primary"
             >
               {saving ? t('pockets.submitting') : submitLabel}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="app-btn-secondary"
+            >
+              {t('common.cancel')}
             </button>
           </div>
         </form>
@@ -210,41 +228,18 @@ function PocketModal({
 export default function PocketsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [filters, setFilters] = useState<PocketFiltersState>(DEFAULT_FILTERS)
 
-  const [pockets, setPockets] = useState<Pocket[]>([])
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [banks, setBanks] = useState<Bank[]>([])
+  const { pockets, setPockets, accounts, banks, loading } = usePocketsData()
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editingPocket, setEditingPocket] = useState<Pocket | null>(null)
   const [deletingPocket, setDeletingPocket] = useState<Pocket | null>(null)
+  const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [form, setForm] = useState<PocketFormState>(EMPTY_FORM)
-
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true)
-      try {
-        const [pocketsResponse, accountsResponse, banksResponse] = await Promise.all([
-          pocketsApi.list(),
-          accountsApi.list(),
-          banksApi.list(),
-        ])
-        setPockets(pocketsResponse.data)
-        setAccounts(accountsResponse.data)
-        setBanks(banksResponse.data)
-      } catch (error) {
-        toast(getApiErrorMessage(error, t('pockets.toast_load_error')), 'error')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    void loadData()
-  }, [])
 
   const accountById = useMemo(() => {
     // Precompute lookup maps to avoid repeated O(n) searches in render/filter logic.
@@ -403,6 +398,8 @@ export default function PocketsPage() {
     try {
       const response = await pocketsApi.create(payload)
       setPockets(current => [response.data, ...current])
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
       closeCreateModal()
       toast(t('pockets.toast_created'))
     } catch (error) {
@@ -422,6 +419,7 @@ export default function PocketsPage() {
     try {
       const response = await pocketsApi.update(editingPocket.id, payload)
       setPockets(current => current.map(pocket => (pocket.id === editingPocket.id ? response.data : pocket)))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
       setEditingPocket(null)
       resetForm()
       toast(t('pockets.toast_updated'))
@@ -434,25 +432,48 @@ export default function PocketsPage() {
 
   async function handleDelete() {
     if (!deletingPocket) return
+    // Optimistic delete: drop from the list and close the confirm modal
+    // before the network round-trip; restore from snapshot on failure.
+    const target = deletingPocket
+    const snapshot = pockets
+    setPockets(current => current.filter(pocket => pocket.id !== target.id))
+    setDeletingPocket(null)
     setSaving(true)
     try {
-      await pocketsApi.delete(deletingPocket.id)
-      setPockets(current => current.filter(pocket => pocket.id !== deletingPocket.id))
-      setDeletingPocket(null)
+      await pocketsApi.delete(target.id)
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
       toast(t('pockets.toast_deleted'))
     } catch (error) {
+      setPockets(snapshot)
       toast(getApiErrorMessage(error, t('pockets.toast_delete_error')), 'error')
     } finally {
       setSaving(false)
     }
   }
 
+  async function handleWithdraw(formData: WithdrawFromPocketFormData) {
+    const occurredAt = `${formData.occurredDate}T${formData.occurredTime}:00`
+    setSaving(true)
+    try {
+      await pocketsApi.withdraw({
+        amount: Number(formData.amount),
+        pocket_id: Number(formData.pocketId),
+        occurred_at: occurredAt,
+      })
+      setWithdrawOpen(false)
+      toast(t('pockets.toast_withdraw_ok'))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
+    } catch (error) {
+      toast(getApiErrorMessage(error, t('pockets.toast_withdraw_error')), 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) {
-    return (
-      <div className="app-panel p-6 flex min-h-72 items-center justify-center">
-        <LoadingSpinner text={t('pockets.loading')} />
-      </div>
-    )
+    return <PageSkeleton cards={2} rows={5} columns={4} />
   }
 
   return (
@@ -507,6 +528,17 @@ export default function PocketsPage() {
         />
       )}
 
+      {withdrawOpen && (
+        <WithdrawFromPocketModal
+          accounts={accounts}
+          pockets={pockets}
+          saving={saving}
+          maxDate={new Date().toISOString().slice(0, 10)}
+          onSubmit={handleWithdraw}
+          onClose={() => setWithdrawOpen(false)}
+        />
+      )}
+
       <PocketsFiltersCard
         filters={filters}
         setFilters={setFilters}
@@ -517,20 +549,24 @@ export default function PocketsPage() {
       />
 
       {accounts.length === 0 ? (
-        <div className="app-card p-8 text-center space-y-2">
-          <p className="text-sm text-neutral-700">{t('pockets.empty_no_accounts_title')}</p>
-          <p className="text-xs text-neutral-400">{t('pockets.empty_no_accounts_desc')}</p>
+        <div className="app-card">
+          <EmptyState
+            title={t('pockets.empty_no_accounts_title')}
+            description={t('pockets.empty_no_accounts_desc')}
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <rect x="3" y="6" width="18" height="12" rx="2" ry="2" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18" />
+              </svg>
+            }
+          />
         </div>
       ) : filteredPockets.length === 0 ? (
-        <div className="app-card p-10 text-center space-y-2">
-          <p className="text-sm text-neutral-700">
-            {pockets.length === 0 ? t('pockets.empty_no_pockets') : t('pockets.empty_no_results')}
-          </p>
-          <p className="text-xs text-neutral-400">
-            {pockets.length === 0
-              ? t('pockets.empty_create_hint')
-              : t('pockets.empty_filter_hint')}
-          </p>
+        <div className="app-card">
+          <EmptyState
+            title={pockets.length === 0 ? t('pockets.empty_no_pockets') : t('pockets.empty_no_results')}
+            description={pockets.length === 0 ? t('pockets.empty_create_hint') : t('pockets.empty_filter_hint')}
+          />
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -587,7 +623,7 @@ export default function PocketsPage() {
       )}
 
       <FloatingActionMenu
-        hidden={createOpen || editingPocket !== null || accounts.length === 0}
+        hidden={createOpen || editingPocket !== null || withdrawOpen || accounts.length === 0}
         ariaLabel={t('pockets.fab_menu_label')}
         items={[
           {
@@ -597,6 +633,18 @@ export default function PocketsPage() {
             icon: (
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
                 <path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+              </svg>
+            ),
+          },
+          {
+            key: 'withdraw-pocket',
+            label: t('pockets.fab_withdraw'),
+            onClick: () => setWithdrawOpen(true),
+            disabled: pockets.length === 0,
+            icon: (
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+                <path d="M16 10H4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                <path d="M9 7l-3 3 3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             ),
           },

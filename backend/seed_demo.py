@@ -3,9 +3,10 @@ Seed script for Jane Doe demo data.
 Run from inside the atlas-backend container:
   docker exec atlas-backend python seed_demo.py
 """
-import httpx
-from datetime import datetime, timedelta
 import random
+from datetime import datetime
+
+import httpx
 
 BASE = "http://localhost:8000/api/v1"
 EMAIL = "demo_20260420152605@gmail.com"

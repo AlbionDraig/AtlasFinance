@@ -1,3 +1,9 @@
+"""Endpoints REST para inversiones del usuario.
+
+Las inversiones son un registro contable: se asocian a una InvestmentEntity
+(banco/broker/exchange) y guardan monto invertido + valor actual para que
+el dashboard pueda calcular rendimiento. No mueven saldo de cuentas.
+"""
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
@@ -8,7 +14,7 @@ from app.api.error_handlers import raise_domain_value_error
 from app.db.base import get_db
 from app.models.user import User
 from app.schemas.investment import InvestmentCreate, InvestmentRead, InvestmentUpdate
-from app.services.finance_service import (
+from app.services.investments_service import (
     create_investment,
     delete_investment,
     get_investment,
@@ -27,7 +33,9 @@ def create_investment_endpoint(
 ) -> InvestmentRead:
     """Register a new investment for the authenticated user."""
     try:
-        return create_investment(db, current_user.id, payload)
+        return InvestmentRead.model_validate(
+            create_investment(db, current_user.id, payload)
+        )
     except ValueError as exc:
         raise_domain_value_error(exc, not_found_messages=set())
 
@@ -50,7 +58,9 @@ def get_investment_endpoint(
 ) -> InvestmentRead:
     """Return a single investment owned by the authenticated user."""
     try:
-        return get_investment(db, current_user.id, investment_id)
+        return InvestmentRead.model_validate(
+            get_investment(db, current_user.id, investment_id)
+        )
     except ValueError as exc:
         raise_domain_value_error(exc, not_found_messages={"Investment not found"})
 
@@ -64,7 +74,9 @@ def update_investment_endpoint(
 ) -> InvestmentRead:
     """Update an investment owned by the authenticated user."""
     try:
-        return update_investment(db, current_user.id, investment_id, payload)
+        return InvestmentRead.model_validate(
+            update_investment(db, current_user.id, investment_id, payload)
+        )
     except ValueError as exc:
         raise_domain_value_error(exc, not_found_messages={"Investment not found"})
 

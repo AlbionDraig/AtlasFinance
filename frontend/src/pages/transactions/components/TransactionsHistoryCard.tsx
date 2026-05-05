@@ -3,6 +3,7 @@ import Badge from '@/components/ui/Badge'
 import Tooltip from '@/components/ui/Tooltip'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
+import SkeletonTable from '@/components/ui/SkeletonTable'
 import { useTranslation } from 'react-i18next'
 import type { Category } from '@/api/categories'
 import type { Account, Transaction } from '@/types'
@@ -10,6 +11,8 @@ import type { Account, Transaction } from '@/types'
 interface TransactionsHistoryCardProps {
   filteredTransactions: Transaction[]
   paginatedTransactions: Transaction[]
+  total: number
+  loading?: boolean
   currentPage: number
   totalPages: number
   startIndex: number
@@ -35,6 +38,8 @@ interface TransactionsHistoryCardProps {
 export default function TransactionsHistoryCard({
   filteredTransactions,
   paginatedTransactions,
+  total,
+  loading = false,
   currentPage,
   totalPages,
   startIndex,
@@ -106,8 +111,8 @@ export default function TransactionsHistoryCard({
           <div>
             <h2 className="text-sm font-medium text-neutral-900">{t('transactions.table_title')}</h2>
             <p className="text-xs text-neutral-400">
-              {filteredTransactions.length
-                ? t('transactions.table_range', { start: startIndex + 1, end: endIndex, total: filteredTransactions.length })
+              {total
+                ? t('transactions.table_range', { start: startIndex + 1, end: endIndex, total })
                 : t('common.noResults')}
             </p>
           </div>
@@ -138,6 +143,10 @@ export default function TransactionsHistoryCard({
             <p className="text-sm font-medium text-neutral-900">{t('transactions.table_empty_title')}</p>
             <p className="mt-1 text-xs text-neutral-400">{t('transactions.table_empty_desc')}</p>
           </div>
+        </div>
+      ) : loading ? (
+        <div className="p-2">
+          <SkeletonTable rows={8} columns={6} />
         </div>
       ) : (
         <div className="overflow-x-auto">

@@ -1,17 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import { accountsApi } from '@/api/accounts'
-import { banksApi, type Bank } from '@/api/banks'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import PageSkeleton from '@/components/ui/PageSkeleton'
 import { useToast } from '@/hooks/useToast'
+import { useAccountsList, useBanks } from '@/hooks/useAccountsData'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import type { Account } from '@/types'
 import AccountCreateModal from './components/AccountCreateModal'
 import AccountEditModal from './components/AccountEditModal'
 import AccountsFiltersCard, { type AccountsFiltersState } from './components/AccountsFiltersCard'
 import AccountsTableCard from './components/AccountsTableCard'
-
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 
 interface AccountFormState {
@@ -42,10 +43,8 @@ function buildDefaultFilters(): AccountsFiltersState {
 export default function AccountsPage() {
   const { toast } = useToast()
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
 
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [banks, setBanks] = useState<Bank[]>([])
-  const [loading, setLoading] = useState(true)
   const [savingAccount, setSavingAccount] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
@@ -55,33 +54,9 @@ export default function AccountsPage() {
   const [accountForm, setAccountForm] = useState<AccountFormState>(EMPTY_ACCOUNT_FORM)
   const [filters, setFilters] = useState<AccountsFiltersState>(() => buildDefaultFilters())
 
-  // Load banks once on mount
-  useEffect(() => {
-    banksApi.list()
-      .then((res) => setBanks(res.data))
-      .catch((error) => toast(getApiErrorMessage(error, t('accounts.toast_load_banks_error')), 'error'))
-  }, [])
-
-  // Reload accounts from server whenever filters change (debounce query text)
-  useEffect(() => {
-    let cancelled = false
-    const delayMs = filters.query.trim() ? 350 : 0
-
-    const timer = setTimeout(() => {
-      setLoading(true)
-      accountsApi.list({
-        search: filters.query.trim() || undefined,
-        account_type: filters.accountType !== 'all' ? (filters.accountType as 'savings' | 'checking') : undefined,
-        currency: filters.currency !== 'all' ? (filters.currency as 'COP' | 'USD') : undefined,
-        bank_id: filters.bankId !== 'all' ? Number(filters.bankId) : undefined,
-      })
-        .then((res) => { if (!cancelled) { setAccounts(res.data); setPage(1) } })
-        .catch((error) => { if (!cancelled) toast(getApiErrorMessage(error, t('accounts.toast_load_error')), 'error') })
-        .finally(() => { if (!cancelled) setLoading(false) })
-    }, delayMs)
-
-    return () => { cancelled = true; clearTimeout(timer) }
-  }, [filters.query, filters.accountType, filters.currency, filters.bankId])
+  // Catálogos y lista vienen de hooks dedicados (separación de responsabilidades).
+  const { banks } = useBanks()
+  const { accounts, setAccounts, loading } = useAccountsList(filters, () => setPage(1))
 
   const totalPages = Math.max(1, Math.ceil(accounts.length / filters.pageSize))
   const currentPage = Math.min(page, totalPages)
@@ -144,6 +119,7 @@ export default function AccountsPage() {
         bank_id: Number(accountForm.bankId),
       })
       setAccounts((current) => [response.data, ...current])
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
       closeCreateModal()
       toast(t('accounts.toast_created'))
     } catch (error) {
@@ -161,6 +137,7 @@ export default function AccountsPage() {
     try {
       const response = await accountsApi.update(id, data)
       setAccounts((current) => current.map((acc) => (acc.id === id ? response.data : acc)))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
       setEditingAccount(null)
       toast(t('accounts.toast_updated'))
     } catch (error) {
@@ -172,13 +149,20 @@ export default function AccountsPage() {
 
   async function handleDeleteAccount() {
     if (!deletingAccount) return
+    // Optimistic update: snapshot the current list, remove the row
+    // immediately, and close the confirm modal so the UI feels instant.
+    // On error we restore the snapshot to keep the table consistent.
+    const target = deletingAccount
+    const snapshot = accounts
+    setAccounts((current) => current.filter((acc) => acc.id !== target.id))
+    setDeletingAccount(null)
     setSavingAccount(true)
     try {
-      await accountsApi.delete(deletingAccount.id)
-      setAccounts((current) => current.filter((acc) => acc.id !== deletingAccount.id))
-      setDeletingAccount(null)
+      await accountsApi.delete(target.id)
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
       toast(t('accounts.toast_deleted'))
     } catch (error) {
+      setAccounts(snapshot)
       toast(getApiErrorMessage(error, t('accounts.toast_delete_error')), 'error')
     } finally {
       setSavingAccount(false)
@@ -186,11 +170,7 @@ export default function AccountsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="app-panel p-6 flex min-h-72 items-center justify-center">
-        <LoadingSpinner text={t('accounts.loading')} />
-      </div>
-    )
+    return <PageSkeleton cards={2} rows={5} columns={5} />
   }
 
   return (

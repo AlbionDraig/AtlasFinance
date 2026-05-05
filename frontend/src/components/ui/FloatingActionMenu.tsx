@@ -5,6 +5,7 @@ interface FloatingActionItem {
   label: string
   onClick: () => void
   icon?: ReactNode
+  disabled?: boolean
 }
 
 interface FloatingActionMenuProps {
@@ -23,6 +24,7 @@ export default function FloatingActionMenu({
   if (hidden || items.length === 0) return null
 
   function handleItemClick(action: FloatingActionItem) {
+    if (action.disabled) return
     setOpen(false)
     action.onClick()
   }
@@ -38,7 +40,8 @@ export default function FloatingActionMenu({
                 key={item.key}
                 type="button"
                 onClick={() => handleItemClick(item)}
-                className="flex items-center gap-2 bg-white border border-neutral-100 hover:border-brand hover:text-brand text-neutral-700 text-sm font-medium px-4 py-2.5 rounded-full shadow-md transition-colors whitespace-nowrap"
+                disabled={item.disabled}
+                className="flex items-center gap-2 bg-white border border-neutral-100 hover:border-brand hover:text-brand text-neutral-700 text-sm font-medium px-4 py-2.5 rounded-full shadow-md transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-neutral-100 disabled:hover:text-neutral-700"
               >
                 {item.icon && <span className="flex h-4 w-4 shrink-0 items-center justify-center">{item.icon}</span>}
                 {item.label}

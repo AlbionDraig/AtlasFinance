@@ -1,6 +1,11 @@
+// Pagination — control reutilizable de paginación.
+// Es "controlled": el padre lleva currentPage/pageSize y reacciona a los callbacks.
+// Esto permite que el estado de paginación viva junto al filtrado/ordenamiento
+// del padre y se sincronice con la URL si fuera necesario.
 import Select from './Select'
 import { useTranslation } from 'react-i18next'
 
+// Tamaños pre-aprobados; mantenerlos aquí evita que cada página invente su propia lista.
 const PAGE_SIZE_OPTIONS = [
   { value: '5', label: '5' },
   { value: '10', label: '10' },

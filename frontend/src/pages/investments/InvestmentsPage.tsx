@@ -1,16 +1,20 @@
-import { useEffect, useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
+import { useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
-import { investmentEntitiesApi, type InvestmentEntity } from '@/api/investmentEntities'
+import { useQueryClient } from '@tanstack/react-query'
+import { type InvestmentEntity } from '@/api/investmentEntities'
 import { investmentsApi, INSTRUMENT_TYPES, type InvestmentPayload, type InvestmentUpdatePayload } from '@/api/investments'
 import type { Investment } from '@/types'
 import { useToast } from '@/hooks/useToast'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
+import { useInvestmentsData } from '@/hooks/useInvestmentsData'
+import PageSkeleton from '@/components/ui/PageSkeleton'
 import Modal from '@/components/ui/Modal'
 import FilterCard from '@/components/ui/FilterCard'
 import SearchInput from '@/components/ui/SearchInput'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
+import EmptyState from '@/components/ui/EmptyState'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 import Select from '@/components/ui/Select'
@@ -248,10 +252,9 @@ function KpiCard({ label, value, accent, sub, subColor }: KpiCardProps) {
 export default function InvestmentsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
-  const [investments, setInvestments] = useState<Investment[]>([])
-  const [entities, setEntities] = useState<InvestmentEntity[]>([])
-  const [loading, setLoading] = useState(true)
+  const { investments, setInvestments, entities, loading } = useInvestmentsData()
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null)
@@ -264,16 +267,6 @@ export default function InvestmentsPage() {
   const [filterEntity, setFilterEntity] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filterCurrency, setFilterCurrency] = useState('')
-
-  useEffect(() => {
-    Promise.all([investmentsApi.list(), investmentEntitiesApi.list()])
-      .then(([invRes, entityRes]) => {
-        setInvestments(invRes.data)
-        setEntities(entityRes.data)
-      })
-      .catch(() => toast(t('investments.toast_load_error'), 'error'))
-      .finally(() => setLoading(false))
-  }, [])
 
   const entityById = useMemo(() => new Map(entities.map(entity => [entity.id, entity])), [entities])
 
@@ -375,6 +368,7 @@ export default function InvestmentsPage() {
     try {
       const res = await investmentsApi.create(payload)
       setInvestments(prev => [res.data, ...prev])
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investments })
       setCreateOpen(false)
       toast(t('investments.toast_created'), 'success')
     } catch (err) {
@@ -394,6 +388,7 @@ export default function InvestmentsPage() {
     try {
       const res = await investmentsApi.update(editingInvestment.id, payload)
       setInvestments(prev => prev.map(inv => inv.id === editingInvestment.id ? res.data : inv))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investments })
       setEditingInvestment(null)
       toast(t('investments.toast_updated'), 'success')
     } catch (err) {
@@ -406,13 +401,19 @@ export default function InvestmentsPage() {
 
   async function handleDelete() {
     if (!deletingInvestment) return
+    // Optimistic delete: remove from local state and dismiss the modal
+    // immediately; restore from snapshot if the API call fails.
+    const target = deletingInvestment
+    const snapshot = investments
+    setInvestments(prev => prev.filter(inv => inv.id !== target.id))
+    setDeletingInvestment(null)
     setSaving(true)
     try {
-      await investmentsApi.delete(deletingInvestment.id)
-      setInvestments(prev => prev.filter(inv => inv.id !== deletingInvestment.id))
-      setDeletingInvestment(null)
+      await investmentsApi.delete(target.id)
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investments })
       toast(t('investments.toast_deleted'), 'success')
     } catch {
+      setInvestments(snapshot)
       toast(t('investments.toast_delete_error'), 'error')
     } finally {
       setSaving(false)
@@ -434,11 +435,7 @@ export default function InvestmentsPage() {
   ]
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner />
-      </div>
-    )
+    return <PageSkeleton cards={2} rows={5} columns={5} />
   }
 
   return (
@@ -518,10 +515,16 @@ export default function InvestmentsPage() {
 
       {/* Cards grid */}
       {filtered.length === 0 ? (
-        <div className="bg-white border border-neutral-100 rounded-xl p-10 text-center text-neutral-400">
-          {investments.length === 0
-            ? t('investments.empty_no_investments')
-            : t('investments.empty_no_results')}
+        <div className="app-card">
+          <EmptyState
+            title={investments.length === 0 ? t('investments.empty_no_investments') : t('investments.empty_no_results')}
+            description={investments.length === 0 ? t('investments.empty_create_hint') : t('investments.empty_filter_hint')}
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+            }
+          />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -10,6 +10,23 @@
     "myProfile": "Mi perfil",
     "logout": "Cerrar sesión"
   },
+  "errors": {
+    "app_title": "Algo salió mal",
+    "app_message": "La página encontró un error inesperado. Tu sesión y datos están seguros.",
+    "app_action": "Volver al inicio",
+    "page_title": "No pudimos cargar {{label}}",
+    "page_message": "Ocurrió un error inesperado. Tus datos están seguros; intenta nuevamente.",
+    "page_action": "Reintentar",
+    "page_label_default": "esta página",
+    "page_label_dashboard": "el dashboard",
+    "page_label_transactions": "las transacciones",
+    "page_label_accounts": "las cuentas",
+    "page_label_pockets": "los bolsillos",
+    "page_label_investments": "las inversiones",
+    "page_label_admin": "la administración",
+    "page_label_management": "la gestión",
+    "page_label_profile": "el perfil"
+  },
   "common": {
     "save": "Guardar cambios",
     "saving": "Guardando...",
@@ -45,7 +62,12 @@
     "atlasFinance": "Atlas Finance",
     "confirmDelete": "Sí, eliminar",
     "defaultDeleteTitle": "Eliminar movimiento",
-    "defaultDeleteDesc": "Esta acción no se puede deshacer. El movimiento será eliminado permanentemente."
+    "defaultDeleteDesc": "Esta acción no se puede deshacer. El movimiento será eliminado permanentemente.",
+    "edit_item": "Editar {{name}}",
+    "delete_item": "Eliminar {{name}}",
+    "no_results": "Sin resultados",
+    "description": "Descripción",
+    "entity": "Entidad"
   },
   "auth": {
     "login": {
@@ -439,6 +461,8 @@
     "toast_transfer_error": "No se pudo registrar la transferencia.",
     "toast_pocket_ok": "Monto movido al bolsillo con éxito.",
     "toast_pocket_error": "No se pudo mover el monto al bolsillo.",
+    "toast_withdraw_ok": "Monto retirado del bolsillo con éxito.",
+    "toast_withdraw_error": "No se pudo retirar el monto del bolsillo.",
     "toast_deleted": "Movimiento eliminado con éxito.",
     "toast_delete_error": "No se pudo eliminar el movimiento.",
     "toast_transfer_select_from": "Selecciona la cuenta de origen.",
@@ -451,7 +475,10 @@
     "toast_pocket_select_pocket": "Selecciona el bolsillo destino.",
     "toast_pocket_amount_zero": "El monto debe ser mayor que 0.",
     "toast_pocket_select_date": "Selecciona la fecha.",
-    "toast_pocket_select_time": "Selecciona la hora."
+    "toast_pocket_select_time": "Selecciona la hora.",
+    "table_range": "Mostrando {{start}}\u2013{{end}} de {{total}}",
+    "export_csv": "Exportar CSV",
+    "toast_export_error": "No se pudo exportar las transacciones."
   },
   "investments": {
     "title": "Inversiones",
@@ -488,6 +515,8 @@
     "card_since": "Desde {{date}}",
     "empty_no_investments": "Aún no tienes inversiones registradas. Crea una con el botón +.",
     "empty_no_results": "No hay inversiones que coincidan con los filtros.",
+    "empty_create_hint": "Registra tu primera inversión con el botón +.",
+    "empty_filter_hint": "Prueba con otro término o limpia los filtros.",
     "toast_load_error": "Error al cargar inversiones.",
     "toast_name_short": "El nombre debe tener al menos 2 caracteres.",
     "toast_select_entity": "Selecciona una entidad.",
@@ -506,6 +535,7 @@
     "subtitle": "Asocia bolsillos a tus cuentas para separar dinero por propósito.",
     "loading": "Cargando bolsillos...",
     "fab_create": "Crear bolsillo",
+    "fab_withdraw": "Retirar de bolsillo",
     "fab_menu_label": "Abrir acciones de bolsillos",
     "create_title": "Crear bolsillo",
     "edit_title": "Editar bolsillo",
@@ -547,7 +577,24 @@
     "toast_updated": "Bolsillo actualizado con éxito.",
     "toast_update_error": "No se pudo actualizar el bolsillo.",
     "toast_deleted": "Bolsillo eliminado.",
-    "toast_delete_error": "No se pudo eliminar el bolsillo."
+    "toast_delete_error": "No se pudo eliminar el bolsillo.",
+    "withdraw_title": "Retirar de bolsillo",
+    "withdraw_desc": "Devuelve dinero de un bolsillo al saldo disponible de su cuenta.",
+    "withdraw_field_account": "Cuenta asociada",
+    "withdraw_select_account": "Selecciona una cuenta",
+    "withdraw_no_pockets": "Sin bolsillos en esta cuenta",
+    "withdraw_field_pocket": "Bolsillo origen",
+    "withdraw_select_pocket": "Selecciona un bolsillo",
+    "withdraw_submit": "Retirar de bolsillo",
+    "withdraw_submitting": "Retirando...",
+    "toast_withdraw_ok": "Monto retirado del bolsillo con \u00e9xito.",
+    "toast_withdraw_error": "No se pudo retirar el monto del bolsillo.",
+    "toast_withdraw_select_pocket": "Selecciona el bolsillo.",
+    "toast_withdraw_select_account": "Selecciona la cuenta.",
+    "toast_withdraw_amount_zero": "El monto debe ser mayor que 0.",
+    "toast_withdraw_exceeds_balance": "El monto supera el saldo del bolsillo.",
+    "toast_withdraw_select_date": "Selecciona la fecha.",
+    "toast_withdraw_select_time": "Selecciona la hora."
   },
   "categories": {
     "loading": "Cargando categorías...",

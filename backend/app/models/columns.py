@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import DateTime, ForeignKey, Integer, text
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -12,7 +14,7 @@ def required_fk_column(target: str) -> Mapped[int]:
     )
 
 
-def created_at_column() -> Mapped[DateTime]:
+def created_at_column() -> Mapped[datetime]:
     """Return a timezone-aware created_at timestamp column."""
     return mapped_column(
         DateTime(timezone=True),

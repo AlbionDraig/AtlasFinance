@@ -1,7 +1,16 @@
+"""Endpoints REST para transacciones y transferencias entre cuentas.
+
+Esta capa es delgada a propósito: solo traduce HTTP ↔ servicios.
+La lógica de negocio (impacto en saldos, validaciones de propiedad) vive en
+`transactions_service` para que sea testeable sin levantar FastAPI.
+"""
+import csv
+import io
 from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -13,8 +22,13 @@ from app.api.error_handlers import (
 from app.db.base import get_db
 from app.models.enums import Currency, TransactionType
 from app.models.user import User
-from app.schemas.transaction import TransactionCreate, TransactionRead, TransferCreate
-from app.services.finance_service import (
+from app.schemas.transaction import (
+    TransactionCreate,
+    TransactionPage,
+    TransactionRead,
+    TransferCreate,
+)
+from app.services.transactions_service import (
     create_transfer,
     delete_transaction,
     list_transactions,
@@ -33,7 +47,9 @@ def create_transaction_endpoint(
 ) -> TransactionRead:
     """Create a transaction and update account balance accordingly."""
     try:
-        return register_transaction(db, current_user.id, payload)
+        return TransactionRead.model_validate(
+            register_transaction(db, current_user.id, payload)
+        )
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
 
@@ -63,10 +79,11 @@ def list_transactions_endpoint(
     currency: Annotated[Currency | None, Query()] = None,
     search: Annotated[str | None, Query(max_length=255)] = None,
     skip: Annotated[int, Query(ge=0)] = 0,
-    limit: Annotated[int, Query(ge=1, le=1000)] = 500,
-) -> list[TransactionRead]:
-    """List user transactions with optional filtering by date, account, type, currency and text search."""
-    transactions = list_transactions(
+    # limit acotado a 500 para evitar payloads gigantes que degradan el dashboard.
+    limit: Annotated[int, Query(ge=1, le=500)] = 50,
+) -> TransactionPage:
+    """List user transactions with pagination metadata (total, skip, limit)."""
+    items, total = list_transactions(
         db, current_user.id,
         start_date=start_date,
         end_date=end_date,
@@ -77,7 +94,59 @@ def list_transactions_endpoint(
         skip=skip,
         limit=limit,
     )
-    return [TransactionRead.model_validate(t) for t in transactions]
+    return TransactionPage(
+        items=[TransactionRead.model_validate(t) for t in items],
+        total=total,
+        skip=skip,
+        limit=limit,
+    )
+
+
+@router.get("/export")
+def export_transactions_csv(
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
+    account_id: Annotated[int | None, Query()] = None,
+    transaction_type: Annotated[TransactionType | None, Query()] = None,
+    currency: Annotated[Currency | None, Query()] = None,
+    search: Annotated[str | None, Query(max_length=255)] = None,
+) -> StreamingResponse:
+    """Export all matching transactions as a UTF-8 CSV file (no pagination limit)."""
+    items, _ = list_transactions(
+        db, current_user.id,
+        start_date=start_date,
+        end_date=end_date,
+        account_id=account_id,
+        transaction_type=transaction_type,
+        currency=currency,
+        search=search,
+        skip=0,
+        limit=100_000,
+    )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["id", "occurred_at", "description", "amount", "currency", "transaction_type", "account_id", "category_id"])
+    for item in items:
+        writer.writerow([
+            item.id,
+            item.occurred_at.isoformat() if item.occurred_at else "",
+            item.description,
+            item.amount,
+            item.currency.value if item.currency else "",
+            item.transaction_type.value if item.transaction_type else "",
+            item.account_id,
+            item.category_id if item.category_id is not None else "",
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=transactions.csv"},
+    )
 
 
 @router.put("/{transaction_id}", responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}})
@@ -89,7 +158,9 @@ def update_transaction_endpoint(
 ) -> TransactionRead:
     """Update a transaction and keep balances consistent."""
     try:
-        return update_transaction(db, current_user.id, transaction_id, payload)
+        return TransactionRead.model_validate(
+            update_transaction(db, current_user.id, transaction_id, payload)
+        )
     except ValueError as exc:
         raise_domain_value_error(exc, not_found_messages={"Transaction not found"})
 

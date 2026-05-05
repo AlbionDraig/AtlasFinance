@@ -1,3 +1,7 @@
+// Select — dropdown personalizado con apertura inteligente.
+// Reimplementamos en lugar de usar <select> nativo para que el estilo coincida con
+// el resto del design system y para soportar abrir hacia arriba si no hay espacio abajo
+// (importante en filtros dentro de modales o cards cercanas al pie de página).
 import { useEffect, useRef, useState } from 'react'
 
 interface SelectOption {
@@ -17,10 +21,13 @@ interface SelectProps {
 
 export default function Select({ value, onChange, options, className = '', disabled = false, visibleItems, active = false }: SelectProps) {
   const [open, setOpen] = useState(false)
+  // openUpward: true cuando no hay espacio suficiente abajo y sí arriba.
+  // Lo guardamos en estado para que el primer render del dropdown ya use la posición correcta
+  // y evitar el "salto" visual de re-medir después del mount.
   const [openUpward, setOpenUpward] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  // Close when clicking outside
+  // Cierre al click-outside: convención de UX para popovers/dropdowns.
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
@@ -29,6 +36,7 @@ export default function Select({ value, onChange, options, className = '', disab
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  // Si options está vacío evitamos que el componente se rompa: mostramos placeholder sin error.
   const selected = options.find(o => o.value === value) ?? options[0] ?? { value: '', label: 'Sin opciones' }
   const isDisabled = disabled || options.length === 0
 
@@ -36,7 +44,9 @@ export default function Select({ value, onChange, options, className = '', disab
     if (isDisabled) return
     setOpen(prev => {
       if (!prev && ref.current) {
+        // Calculamos espacio disponible al abrir (no en cada render) para minimizar trabajo.
         const rect = ref.current.getBoundingClientRect()
+        // Tope de 208px ~= 6 items: balance entre densidad y legibilidad.
         const estimatedHeight = Math.min(options.length * 36 + 8, 208)
         setOpenUpward(window.innerHeight - rect.bottom < estimatedHeight && rect.top > estimatedHeight)
       }

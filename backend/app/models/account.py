@@ -1,6 +1,7 @@
+from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, Enum, Integer, Numeric, String
+from sqlalchemy import Enum, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -18,7 +19,7 @@ class Account(Base):
     currency: Mapped[Currency] = mapped_column(Enum(Currency), nullable=False)
     current_balance: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=0)
     bank_id: Mapped[int] = required_fk_column("banks.id")
-    created_at: Mapped[DateTime] = created_at_column()
+    created_at: Mapped[datetime] = created_at_column()
 
     bank = relationship("Bank", back_populates="accounts")
     pockets = relationship(

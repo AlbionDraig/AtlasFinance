@@ -34,8 +34,9 @@ jobs:
         env:
           DATABASE_URL: "sqlite+pysqlite:///:memory:"
           SECRET_KEY: "ci-secret-key"
+          ENVIRONMENT: "test"
         run: |
-          pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-report=xml:backend/coverage.xml --cov-fail-under=85
+          pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-report=xml:backend/coverage.xml --cov-fail-under=92
 
       - name: Upload coverage to Codecov (CLI)
         shell: bash
@@ -47,3 +48,13 @@ jobs:
       - name: Build smoke check
         run: |
           python -m compileall backend/app
+
+      - name: Alembic migrations smoke check
+        env:
+          DATABASE_URL: "sqlite+pysqlite:///./ci_alembic.db"
+          SECRET_KEY: "ci-secret-key"
+        run: |
+          cd backend
+          python -m alembic upgrade head
+          python -m alembic downgrade -1
+          python -m alembic upgrade head

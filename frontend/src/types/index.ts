@@ -110,3 +110,7 @@ export interface DashboardAggregates {
   prev_income: number
   prev_expenses: number
 }
+
+// Re-exports from api modules to allow single-import patterns in hooks/pages.
+export type { Category, CategoryPayload } from '@/api/categories'
+export type { InvestmentEntity, InvestmentEntityPayload, InvestmentEntityType } from '@/api/investmentEntities'

@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional
 
 from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -33,12 +34,12 @@ class Transaction(Base):
         nullable=False,
         index=True,
     )
-    category_id: Mapped[int] = mapped_column(
+    category_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("categories.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
-    pocket_id: Mapped[int] = mapped_column(
+    pocket_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("pockets.id", ondelete="SET NULL"),
         nullable=True,
         index=True,

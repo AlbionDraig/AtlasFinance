@@ -49,12 +49,12 @@ export default function ConfirmDeleteModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-5 py-3">
           <button
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className="flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-hover disabled:pointer-events-none disabled:opacity-60"
+            className="app-btn-primary flex items-center justify-center gap-1.5 disabled:pointer-events-none"
           >
             {loading && (
               <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -67,7 +67,7 @@ export default function ConfirmDeleteModal({
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="rounded-lg border border-neutral-100 px-3.5 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:pointer-events-none disabled:opacity-60"
+            className="app-btn-secondary disabled:pointer-events-none"
           >
             {t('common.cancel')}
           </button>

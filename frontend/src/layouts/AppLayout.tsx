@@ -1,3 +1,7 @@
+// AppLayout — chrome compartido por todas las páginas privadas.
+// Aporta sidebar (navegación + perfil + logout) y un área principal con <Outlet/>.
+// El sidebar usa hover-expansion (icon-only → expandido) para maximizar área
+// útil en desktop sin sacrificar acceso rápido al menú.
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -5,6 +9,8 @@ import { useAuthStore } from '@/store/authStore'
 import { authApi } from '@/api/auth'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
 
+// Catálogo declarativo de items del sidebar. Mantenerlo aquí (vs. en cada NavLink)
+// permite reordenar/agregar entradas sin tocar el JSX del render.
 const navItems = [
   {
     to: '/dashboard',
@@ -79,13 +85,25 @@ const navItems = [
 ]
 
 export default function AppLayout() {
-  const { logout, user } = useAuthStore()
+  const { logout, user, setUser } = useAuthStore()
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
+  // Refs (no state) para los timers porque su mutación no debe disparar re-render
+  // y debemos poder cancelarlos sincrónicamente desde otros handlers.
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Hidrata el perfil desde el servidor al montar para reflejar cambios hechos
+  // en otras sesiones (e.g. email/nombre actualizados).
+  useEffect(() => {
+    authApi.me().then((res) => setUser(res.data)).catch(() => {
+      // Silencioso: si falla (401) el interceptor de axios maneja la sesión.
+    })
+  }, [])
+
+  // Delays pequeños para evitar parpadeos cuando el cursor cruza el sidebar
+  // accidentalmente (e.g. moverse hacia el menú desde el contenido).
   const OPEN_DELAY_MS = 140
   const CLOSE_DELAY_MS = 180
 
@@ -126,13 +144,12 @@ export default function AppLayout() {
 
   useEffect(() => clearTimers, [])
 
-  async function handleLogout() {
-    try {
-      await authApi.logout()
-    } catch {
-      // Even if the server call fails, clear local state and redirect
-    }
+  function handleLogout() {
+    // Fire-and-forget: revocamos el token en el backend pero no bloqueamos
+    // la navegación esperando la respuesta. El usuario sale inmediatamente.
+    authApi.logout().catch(() => {})
     logout()
+    // replace: true evita que "atrás" en el navegador regrese a la app autenticada.
     navigate('/login', { replace: true })
   }
 
@@ -236,6 +253,8 @@ export default function AppLayout() {
             )}
             <button
               onClick={handleLogout}
+              data-testid="logout-button"
+              aria-label={t('nav.logout')}
               className={`w-full flex items-center ${collapsed ? 'justify-center h-9 w-9 mx-auto px-0' : 'px-3 py-2'} rounded-lg text-sm font-medium text-neutral-400 hover:text-neutral-50 hover:bg-white/10 transition-colors`}
               title={collapsed ? t('nav.logout') : undefined}
             >

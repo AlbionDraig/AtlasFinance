@@ -10,6 +10,23 @@
     "myProfile": "My profile",
     "logout": "Sign out"
   },
+  "errors": {
+    "app_title": "Something went wrong",
+    "app_message": "The page hit an unexpected error. Your session and data are safe.",
+    "app_action": "Back to home",
+    "page_title": "We couldn't load {{label}}",
+    "page_message": "An unexpected error happened. Your data is safe; please try again.",
+    "page_action": "Retry",
+    "page_label_default": "this page",
+    "page_label_dashboard": "the dashboard",
+    "page_label_transactions": "transactions",
+    "page_label_accounts": "accounts",
+    "page_label_pockets": "pockets",
+    "page_label_investments": "investments",
+    "page_label_admin": "the admin area",
+    "page_label_management": "the management area",
+    "page_label_profile": "the profile"
+  },
   "common": {
     "save": "Save changes",
     "saving": "Saving...",
@@ -45,7 +62,12 @@
     "atlasFinance": "Atlas Finance",
     "confirmDelete": "Yes, delete",
     "defaultDeleteTitle": "Delete transaction",
-    "defaultDeleteDesc": "This action cannot be undone. The transaction will be permanently deleted."
+    "defaultDeleteDesc": "This action cannot be undone. The transaction will be permanently deleted.",
+    "edit_item": "Edit {{name}}",
+    "delete_item": "Delete {{name}}",
+    "no_results": "No results",
+    "description": "Description",
+    "entity": "Entity"
   },
   "auth": {
     "login": {
@@ -437,6 +459,8 @@
     "toast_transfer_error": "Could not register the transfer.",
     "toast_pocket_ok": "Amount moved to pocket successfully.",
     "toast_pocket_error": "Could not move amount to pocket.",
+    "toast_withdraw_ok": "Amount withdrawn from pocket successfully.",
+    "toast_withdraw_error": "Could not withdraw amount from pocket.",
     "toast_deleted": "Transaction deleted successfully.",
     "toast_delete_error": "Could not delete the transaction.",
     "toast_transfer_select_from": "Select the source account.",
@@ -449,7 +473,10 @@
     "toast_pocket_select_pocket": "Select the destination pocket.",
     "toast_pocket_amount_zero": "Amount must be greater than 0.",
     "toast_pocket_select_date": "Select the date.",
-    "toast_pocket_select_time": "Select the time."
+    "toast_pocket_select_time": "Select the time.",
+    "table_range": "Showing {{start}}\u2013{{end}} of {{total}}",
+    "export_csv": "Export CSV",
+    "toast_export_error": "Could not export transactions."
   },
   "investments": {
     "title": "Investments",
@@ -486,6 +513,8 @@
     "card_since": "Since {{date}}",
     "empty_no_investments": "You have no investments registered yet. Create one with the + button.",
     "empty_no_results": "No investments match the current filters.",
+    "empty_create_hint": "Register your first investment with the + button.",
+    "empty_filter_hint": "Try a different term or clear the filters.",
     "toast_load_error": "Error loading investments.",
     "toast_name_short": "Name must be at least 2 characters.",
     "toast_select_entity": "Select an entity.",
@@ -504,6 +533,7 @@
     "subtitle": "Associate pockets with your accounts to separate money by purpose.",
     "loading": "Loading pockets...",
     "fab_create": "Create pocket",
+    "fab_withdraw": "Withdraw from pocket",
     "fab_menu_label": "Open pocket actions",
     "create_title": "Create pocket",
     "edit_title": "Edit pocket",
@@ -545,7 +575,24 @@
     "toast_updated": "Pocket updated successfully.",
     "toast_update_error": "Could not update the pocket.",
     "toast_deleted": "Pocket deleted.",
-    "toast_delete_error": "Could not delete the pocket."
+    "toast_delete_error": "Could not delete the pocket.",
+    "withdraw_title": "Withdraw from pocket",
+    "withdraw_desc": "Return money from a pocket to its account's available balance.",
+    "withdraw_field_account": "Associated account",
+    "withdraw_select_account": "Select an account",
+    "withdraw_no_pockets": "No pockets in this account",
+    "withdraw_field_pocket": "Source pocket",
+    "withdraw_select_pocket": "Select a pocket",
+    "withdraw_submit": "Withdraw from pocket",
+    "withdraw_submitting": "Withdrawing...",
+    "toast_withdraw_ok": "Amount withdrawn from pocket successfully.",
+    "toast_withdraw_error": "Could not withdraw amount from pocket.",
+    "toast_withdraw_select_pocket": "Select the pocket.",
+    "toast_withdraw_select_account": "Select the account.",
+    "toast_withdraw_amount_zero": "Amount must be greater than 0.",
+    "toast_withdraw_exceeds_balance": "Amount exceeds pocket balance.",
+    "toast_withdraw_select_date": "Select the date.",
+    "toast_withdraw_select_time": "Select the time."
   },
   "categories": {
     "loading": "Loading categories...",
