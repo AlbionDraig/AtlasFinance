@@ -144,13 +144,10 @@ export default function AppLayout() {
 
   useEffect(() => clearTimers, [])
 
-  async function handleLogout() {
-    try {
-      await authApi.logout()
-    } catch {
-      // Aunque la llamada al servidor falle (red caída, token ya expirado),
-      // limpiamos el estado local: el usuario espera salir sí o sí.
-    }
+  function handleLogout() {
+    // Fire-and-forget: revocamos el token en el backend pero no bloqueamos
+    // la navegación esperando la respuesta. El usuario sale inmediatamente.
+    authApi.logout().catch(() => {})
     logout()
     // replace: true evita que "atrás" en el navegador regrese a la app autenticada.
     navigate('/login', { replace: true })
