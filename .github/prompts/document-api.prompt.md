@@ -1,6 +1,8 @@
 ---
-agent: 'ask'
+agent: 'agent'
 description: 'Documenta un endpoint, módulo o contrato API'
+tools: [read, search, edit]
+argument-hint: "Archivo o módulo a documentar (Ej: app/api/v1/transactions.py)"
 ---
 
 Documenta el archivo activo o el módulo indicado.

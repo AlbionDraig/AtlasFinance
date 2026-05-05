@@ -1,6 +1,8 @@
 ---
-agent: 'ask'
+agent: 'agent'
 description: 'Crea schemas/DTOs para un recurso'
+tools: [read, search, edit]
+argument-hint: "Nombre del recurso y campos principales (Ej: Transaction — amount, category, date)"
 ---
 
 Crea los schemas/DTOs/contratos para el recurso indicado.

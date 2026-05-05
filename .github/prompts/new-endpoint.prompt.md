@@ -1,6 +1,8 @@
 ---
-agent: 'ask'
+agent: 'agent'
 description: 'Crea un endpoint backend completo con arquitectura limpia'
+tools: [read, search, edit, execute]
+argument-hint: "Recurso y método (Ej: GET /api/transactions — lista paginada del usuario autenticado)"
 ---
 
 Crea un endpoint backend completo respetando la arquitectura del proyecto.

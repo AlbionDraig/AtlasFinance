@@ -1,6 +1,8 @@
 ---
-agent: 'ask'
+agent: 'agent'
 description: 'Crea una abstracción de datos para frontend (hook/composable)'
+tools: [read, search, edit]
+argument-hint: "Nombre y endpoint (Ej: useTransactions — GET /api/transactions)"
 ---
 
 Crea un hook/composable para acceso a datos en frontend.

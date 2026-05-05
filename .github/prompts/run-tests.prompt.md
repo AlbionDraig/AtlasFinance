@@ -1,6 +1,8 @@
 ---
-agent: 'ask'
+agent: 'agent'
 description: 'Ejecuta tests y reporta calidad'
+tools: [execute, read]
+argument-hint: "Comando a ejecutar (Ej: pytest -q --cov, pnpm vitest run --coverage)"
 ---
 
 Ejecuta tests en el proyecto y reporta resultados.

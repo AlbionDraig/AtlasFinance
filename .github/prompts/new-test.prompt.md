@@ -1,6 +1,8 @@
 ---
-agent: 'ask'
+agent: 'agent'
 description: 'Genera tests unitarios y de integración para un service o endpoint'
+tools: [read, search, edit, execute]
+argument-hint: "Archivo a testear (Ej: app/services/finance_service.py)"
 ---
 
 Genera tests para el siguiente archivo del proyecto.

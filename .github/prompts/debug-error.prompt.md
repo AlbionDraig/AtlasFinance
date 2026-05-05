@@ -1,6 +1,8 @@
 ---
-agent: 'ask'
+agent: 'agent'
 description: 'Analiza un traceback y propone el fix con contexto del proyecto'
+tools: [read, search, edit, execute]
+argument-hint: "Pega el traceback o describe el error"
 ---
 
 Analiza el error y aplica el fix de causa raíz.

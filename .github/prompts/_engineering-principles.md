@@ -46,6 +46,11 @@ Aplica estas reglas en cualquier proyecto, independientemente del stack.
 - Si no existe convención, adopta una simple y consistente.
 - Evita cambios cosméticos no relacionados al objetivo.
 
+## Idioma en docstrings y comentarios
+- Docstrings de funciones, clases y módulos: **inglés** (compatibilidad con herramientas de generación de documentación: Sphinx, TypeDoc, JSDoc, etc.).
+- Comentarios inline sobre lógica de negocio o decisiones de diseño: **español o inglés**, consistente con el idioma predominante en el archivo.
+- Nunca mezclar idiomas dentro del mismo docstring o bloque de comentarios.
+
 ## Entrega
 - Explica brevemente qué cambió, por qué y riesgos residuales.
 - Si no puedes verificar algo (tests/build), indícalo explícitamente.

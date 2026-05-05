@@ -1,6 +1,8 @@
 ---
 agent: 'ask'
 description: 'Revisa el código del archivo o PR actual'
+tools: [read, search]
+argument-hint: "Archivo o área a revisar (Ej: app/services/auth_service.py, o 'cambios del PR')"
 ---
 
 Haz una revisión técnica del archivo activo o de los cambios recientes.

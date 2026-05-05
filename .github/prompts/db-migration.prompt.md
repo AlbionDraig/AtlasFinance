@@ -1,6 +1,8 @@
 ---
-agent: 'ask'
+agent: 'agent'
 description: 'Genera y ejecuta una migración de base de datos'
+tools: [read, edit, execute, search]
+argument-hint: "Describe el cambio de esquema (Ej: agregar columna currency a transactions)"
 ---
 
 Genera y aplica una migración de base de datos de forma segura.

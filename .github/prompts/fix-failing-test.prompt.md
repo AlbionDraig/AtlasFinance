@@ -1,6 +1,8 @@
 ---
-agent: 'ask'
+agent: 'agent'
 description: 'Analiza un test fallando y propone el fix'
+tools: [read, search, edit, execute]
+argument-hint: "Nombre del test o comando que falla (Ej: pytest tests/unit/test_auth.py)"
 ---
 
 Analiza un test fallando y corrige la causa raíz.

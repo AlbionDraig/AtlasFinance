@@ -32,6 +32,11 @@ applyTo: "backend/**/*.py"
 - No secrets or tokens in code — use env vars from `app/core/config.py`.
 - Validate and sanitize all external input at the schema layer.
 
+## Docstrings & comments
+- Module, class, and function docstrings: **English** (OpenAPI/Sphinx compatible).
+- Inline comments explaining business logic or non-obvious decisions: **Spanish or English**, consistent with the file's prevailing language.
+- Never mix languages within the same docstring or comment block.
+
 ## Tests
 - Unit (`tests/unit/`): mock DB with `AsyncMock`; test pure service logic.
 - Integration (`tests/integration/`): use `httpx.AsyncClient`; test HTTP contracts.

@@ -1,6 +1,8 @@
 ---
-agent: 'ask'
+agent: 'agent'
 description: 'Crea una pantalla/página frontend completa'
+tools: [read, search, edit]
+argument-hint: "Nombre y ruta (Ej: TransactionsPage en /transactions)"
 ---
 
 Crea una página/pantalla completa siguiendo la arquitectura del frontend.

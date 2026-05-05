@@ -1,6 +1,8 @@
 ---
-agent: 'ask'
+agent: 'agent'
 description: 'Crea un componente frontend reutilizable'
+tools: [read, search, edit]
+argument-hint: "Nombre y propósito del componente (Ej: TransactionCard — muestra monto, categoría y fecha)"
 ---
 
 Crea un componente frontend siguiendo convenciones del proyecto.

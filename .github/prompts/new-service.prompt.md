@@ -1,6 +1,8 @@
 ---
-agent: 'ask'
+agent: 'agent'
 description: 'Crea un service/caso de uso con inyección de dependencias'
+tools: [read, search, edit]
+argument-hint: "Nombre y responsabilidad (Ej: FinanceService — calcular métricas del usuario)"
 ---
 
 Crea un service/caso de uso siguiendo Clean Architecture.

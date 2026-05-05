@@ -36,6 +36,11 @@ applyTo: "frontend/src/**/*.{ts,tsx}"
 - Interactive elements must be keyboard-reachable with visible focus.
 - Form inputs require associated `<label>` or `aria-label`.
 
+## Docstrings & comments
+- JSDoc/TSDoc on exported functions, hooks, and components: **English**.
+- Inline comments explaining business logic or non-obvious behavior: **Spanish or English**, consistent with the file's prevailing language.
+- Never mix languages within the same JSDoc block or comment.
+
 ## Tests
 - Runner: `pnpm vitest run --coverage`
 - E2E: `pnpm playwright test` (located in `e2e/`)
