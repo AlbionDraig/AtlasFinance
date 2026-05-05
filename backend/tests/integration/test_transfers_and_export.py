@@ -6,6 +6,9 @@ streaming response, filter forwarding) so they live in their own module to keep
 """
 from uuid import uuid4
 
+from app.models.enums import UserRole
+from app.models.user import User
+
 TEST_PASSWORD = f"AtlasFinanceTestPwd-{uuid4().hex}"
 
 
@@ -65,6 +68,13 @@ def _create_bank_and_account(client, headers, *, name: str, currency: str = "COP
         assert funding_resp.status_code == 201
 
     return account_id
+
+
+def _set_user_role(db_session, email: str, role: UserRole) -> None:
+    user = db_session.query(User).filter(User.email == email).first()
+    assert user is not None
+    user.role = role
+    db_session.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -381,8 +391,10 @@ def _seed_transactions(client, headers, account_id, category_id):
         assert resp.status_code == 201
 
 
-def test_export_csv_returns_all_transactions_with_headers(client):
-    headers = _auth_headers(client, email=f"csv-all-{uuid4().hex}@test.com")
+def test_export_csv_returns_all_transactions_with_headers(client, db_session):
+    email = f"csv-all-{uuid4().hex}@test.com"
+    headers = _auth_headers(client, email=email)
+    _set_user_role(db_session, email, UserRole.ADMIN)
     account_id = _create_bank_and_account(client, headers, name="Cuenta", balance=0)
     cat_resp = client.post("/api/v1/categories/", json={"name": "transport"}, headers=headers)
     category_id = cat_resp.json()["id"]
@@ -411,8 +423,10 @@ def test_export_csv_returns_all_transactions_with_headers(client):
     assert "Taxi" in resp.text
 
 
-def test_export_csv_applies_filters(client):
-    headers = _auth_headers(client, email=f"csv-filter-{uuid4().hex}@test.com")
+def test_export_csv_applies_filters(client, db_session):
+    email = f"csv-filter-{uuid4().hex}@test.com"
+    headers = _auth_headers(client, email=email)
+    _set_user_role(db_session, email, UserRole.ADMIN)
     account_id = _create_bank_and_account(client, headers, name="Cuenta", balance=0)
     cat_resp = client.post("/api/v1/categories/", json={"name": "transport"}, headers=headers)
     category_id = cat_resp.json()["id"]
@@ -429,8 +443,10 @@ def test_export_csv_applies_filters(client):
     assert "Cena" in body
 
 
-def test_export_csv_with_search_filter(client):
-    headers = _auth_headers(client, email=f"csv-search-{uuid4().hex}@test.com")
+def test_export_csv_with_search_filter(client, db_session):
+    email = f"csv-search-{uuid4().hex}@test.com"
+    headers = _auth_headers(client, email=email)
+    _set_user_role(db_session, email, UserRole.ADMIN)
     account_id = _create_bank_and_account(client, headers, name="Cuenta", balance=0)
     cat_resp = client.post("/api/v1/categories/", json={"name": "transport"}, headers=headers)
     category_id = cat_resp.json()["id"]
