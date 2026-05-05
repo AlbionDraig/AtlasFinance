@@ -34,6 +34,7 @@ jobs:
         env:
           DATABASE_URL: "sqlite+pysqlite:///:memory:"
           SECRET_KEY: "ci-secret-key"
+          ENVIRONMENT: "test"
         run: |
           pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-report=xml:backend/coverage.xml --cov-fail-under=92
 
