@@ -13,14 +13,16 @@ Decisiones:
 
 from __future__ import annotations
 
-import logging
 import sys
+from importlib import import_module
 from typing import Any
 
 import structlog
 from structlog.contextvars import merge_contextvars
 
 from app.core.config import get_settings
+
+stdlib_logging = import_module("logging")
 
 
 def configure_logging() -> None:
@@ -53,7 +55,7 @@ def configure_logging() -> None:
 
     # Reconfiguramos el root logger para que uvicorn/sqlalchemy compartan
     # el mismo formato cuando emiten vía logging estándar.
-    handler = logging.StreamHandler(sys.stdout)
+    handler = stdlib_logging.StreamHandler(sys.stdout)
     handler.setFormatter(
         structlog.stdlib.ProcessorFormatter(
             processor=renderer,
@@ -61,12 +63,12 @@ def configure_logging() -> None:
         )
     )
 
-    root_logger = logging.getLogger()
+    root_logger = stdlib_logging.getLogger()
     root_logger.handlers = [handler]
-    root_logger.setLevel(logging.INFO)
+    root_logger.setLevel(stdlib_logging.INFO)
 
     # Silenciamos ruido de uvicorn.access (ya tenemos middleware propio).
-    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+    stdlib_logging.getLogger("uvicorn.access").setLevel(stdlib_logging.WARNING)
 
 
 def get_logger(name: str | None = None) -> structlog.stdlib.BoundLogger:

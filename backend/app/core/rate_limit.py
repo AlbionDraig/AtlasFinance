@@ -3,8 +3,6 @@
 Limita peticiones por IP en endpoints sensibles (auth) para mitigar fuerza bruta
 y spam de registros. Se desactiva en tests vía settings.rate_limit_enabled=False.
 """
-from collections.abc import Awaitable, Callable
-
 from fastapi import Request, Response
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
@@ -41,6 +39,3 @@ async def rate_limit_exceeded_handler(
 
 
 __all__ = ["limiter", "rate_limit_exceeded_handler", "RateLimitExceeded"]
-
-# Re-export type for FastAPI exception handler registration.
-ExceptionHandler = Callable[[Request, Exception], Awaitable[Response]]

@@ -8,16 +8,17 @@ Conecta con la app real:
   mismas variables de entorno que la app.
 """
 
+from importlib import import_module
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-
-# Importar modelos para que el metadata conozca todas las tablas.
-from app import models  # noqa: F401  (registra las clases en Base.metadata)
 from app.core.config import get_settings
 from app.db.base import Base
+
+# Importar modelos para que el metadata conozca todas las tablas.
+import_module("app.models")
 
 config = context.config
 
