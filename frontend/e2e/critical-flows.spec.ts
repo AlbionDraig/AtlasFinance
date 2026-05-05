@@ -106,7 +106,7 @@ test.describe('Logout', () => {
     await login(page)
     // Hover expands the sidebar and exposes stable labels for nav actions.
     await page.locator('aside').hover()
-    const logoutBtn = page.getByRole('button', { name: /cerrar sesión|log out|logout|salir/i })
+    const logoutBtn = page.getByRole('button', { name: /cerrar sesión|sign out|log out|logout|salir/i })
     await logoutBtn.click()
     await expect(page).toHaveURL(/\/login/, { timeout: 8_000 })
   })
