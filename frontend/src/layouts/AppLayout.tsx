@@ -65,6 +65,7 @@ const navItems = [
   {
     to: '/admin',
     labelKey: 'nav.admin',
+    adminOnly: true,
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9M10.5 12h9M10.5 18h9" />

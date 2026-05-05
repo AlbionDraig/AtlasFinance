@@ -98,9 +98,11 @@ export default function App() {
               <Route
                 path="/admin"
                 element={
-                  <PageErrorBoundary labelKey="errors.page_label_admin" invalidateKeys={[QUERY_KEYS.banks, QUERY_KEYS.countries, QUERY_KEYS.categories, QUERY_KEYS.investmentEntities]}>
-                    <LazyPage><AdminPage /></LazyPage>
-                  </PageErrorBoundary>
+                  <AdminRoute>
+                    <PageErrorBoundary labelKey="errors.page_label_admin" invalidateKeys={[QUERY_KEYS.banks, QUERY_KEYS.countries, QUERY_KEYS.categories, QUERY_KEYS.investmentEntities]}>
+                      <LazyPage><AdminPage /></LazyPage>
+                    </PageErrorBoundary>
+                  </AdminRoute>
                 }
               />
               <Route
