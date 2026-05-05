@@ -6,6 +6,7 @@ import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import PageSkeleton from '@/components/ui/PageSkeleton'
 import FilterCard from '@/components/ui/FilterCard'
 import SearchInput from '@/components/ui/SearchInput'
+import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import { useToast } from '@/hooks/useToast'
 import { useCategoriesData } from '@/hooks/useCategoriesData'
 import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
@@ -192,18 +193,17 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
         />
       )}
 
-      {!showCreate && !editing && !deleting && (
-        <button
-          type="button"
-          onClick={() => setShowCreate(true)}
-          className="fixed bottom-6 right-6 z-30 flex items-center gap-2 bg-brand hover:bg-brand-hover text-white text-sm font-medium px-5 py-3 rounded-full shadow-lg transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          {t('categories.fab_create')}
-        </button>
-      )}
+      <FloatingActionMenu
+        hidden={!!(showCreate || editing || deleting)}
+        ariaLabel={t('categories.fab_create')}
+        items={[
+          {
+            key: 'create-category',
+            label: t('categories.fab_create'),
+            onClick: () => setShowCreate(true),
+          },
+        ]}
+      />
     </>
   )
 
