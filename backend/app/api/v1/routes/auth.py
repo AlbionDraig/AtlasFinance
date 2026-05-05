@@ -17,6 +17,7 @@ from app.schemas.user import UserCreate, UserLogin, UserRead, UserRoleUpdate, Us
 from app.services.auth_service import (
     authenticate_user,
     create_user,
+    list_users,
     revoke_access_token,
     update_user,
     update_user_role,
@@ -102,6 +103,15 @@ def update_user_role_endpoint(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return UserRead.model_validate(user)
+
+
+@router.get("/users")
+def list_users_endpoint(
+    db: Annotated[Session, Depends(get_db)],
+    admin_user: Annotated[User, Depends(get_current_admin_user)],  # noqa: ARG001
+) -> list[UserRead]:
+    """Allow admins to list users and their current role assignments."""
+    return [UserRead.model_validate(user) for user in list_users(db)]
 
 
 @router.post("/refresh", responses={401: {"description": "Unauthorized"}})

@@ -111,6 +111,12 @@ def update_user_role(db: Session, user_id: int, payload: UserRoleUpdate) -> User
     return user
 
 
+def list_users(db: Session) -> list[User]:
+    """Return all users sorted by newest first for management screens."""
+
+    return list(db.scalars(select(User).order_by(User.created_at.desc(), User.id.desc())).all())
+
+
 def revoke_access_token(db: Session, token: str, expires_at: datetime) -> None:
     """Inserta el hash del token en la denylist hasta su expiración.
 

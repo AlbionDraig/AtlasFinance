@@ -196,6 +196,31 @@ def test_admin_can_update_user_role(client, db_session):
     assert response.json()["role"] == "admin"
 
 
+def test_user_list_requires_admin_permissions(client):
+    _register(client, "auth-rbac-list-user@test.com")
+    headers = _login_headers(client, "auth-rbac-list-user@test.com")
+
+    response = client.get("/api/v1/auth/users", headers=headers)
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Insufficient permissions"
+
+
+def test_admin_can_list_users(client, db_session):
+    _register(client, "auth-rbac-list-admin@test.com")
+    _set_user_role(db_session, "auth-rbac-list-admin@test.com", UserRole.ADMIN)
+
+    _register(client, "auth-rbac-list-target@test.com")
+
+    headers = _login_headers(client, "auth-rbac-list-admin@test.com")
+    response = client.get("/api/v1/auth/users", headers=headers)
+
+    assert response.status_code == 200
+    users = response.json()
+    assert any(user["email"] == "auth-rbac-list-admin@test.com" for user in users)
+    assert any(user["email"] == "auth-rbac-list-target@test.com" for user in users)
+
+
 def test_register_promotes_bootstrap_admin_when_no_admin_exists(client):
     get_settings.cache_clear()
     original_bootstrap_admin_email = os.environ.get("BOOTSTRAP_ADMIN_EMAIL")
