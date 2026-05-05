@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_admin_user
 from app.api.error_handlers import raise_bad_request_from_value_error
 from app.db.base import get_db
 from app.models.user import User
@@ -22,7 +22,7 @@ router = APIRouter()
 def create_category_endpoint(
     payload: CategoryCreate,
     db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_admin_user)],
 ) -> CategoryRead:
     """Create a global spending category."""
     try:
@@ -46,7 +46,7 @@ def update_category_endpoint(
     category_id: int,
     payload: CategoryUpdate,
     db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_admin_user)],
 ) -> CategoryRead:
     """Update a global category."""
     try:
@@ -59,7 +59,7 @@ def update_category_endpoint(
 def delete_category_endpoint(
     category_id: int,
     db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_admin_user)],
 ) -> None:
     """Delete a global category."""
     try:

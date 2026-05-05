@@ -9,7 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_admin_user, get_current_user
 from app.api.error_handlers import raise_bad_request_from_value_error
 from app.db.base import get_db
 from app.models.user import User
@@ -28,7 +28,7 @@ router = APIRouter()
 def create_country_endpoint(
     payload: CountryCreate,
     db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_admin_user)],
 ) -> CountryRead:
     """Create a global country entry."""
     try:
@@ -52,7 +52,7 @@ def update_country_endpoint(
     country_id: int,
     payload: CountryUpdate,
     db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_admin_user)],
 ) -> CountryRead:
     """Update a global country entry."""
     try:
@@ -71,7 +71,7 @@ def update_country_endpoint(
 def delete_country_endpoint(
     country_id: int,
     db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_admin_user)],
 ) -> None:
     """Delete a global country entry."""
     try:

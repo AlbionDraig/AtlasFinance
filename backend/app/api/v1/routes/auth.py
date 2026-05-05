@@ -5,7 +5,7 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 from jose import ExpiredSignatureError, JWTError, jwt
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_token_from_bearer_or_cookie
+from app.api.deps import get_current_admin_user, get_current_user, get_token_from_bearer_or_cookie
 from app.api.error_handlers import raise_bad_request_from_value_error
 from app.core.config import get_settings
 from app.core.rate_limit import limiter
@@ -13,12 +13,13 @@ from app.core.security import create_access_token, create_refresh_token
 from app.db.base import get_db
 from app.models.user import User
 from app.schemas.token import Token
-from app.schemas.user import UserCreate, UserLogin, UserRead, UserUpdate
+from app.schemas.user import UserCreate, UserLogin, UserRead, UserRoleUpdate, UserUpdate
 from app.services.auth_service import (
     authenticate_user,
     create_user,
     revoke_access_token,
     update_user,
+    update_user_role,
 )
 from app.services.refresh_token_service import (
     find_active_refresh_token,
@@ -85,6 +86,21 @@ def update_current_user(
         user = update_user(db, current_user, payload)
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
+    return UserRead.model_validate(user)
+
+
+@router.patch("/users/{user_id}/role", responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}})
+def update_user_role_endpoint(
+    user_id: int,
+    payload: UserRoleUpdate,
+    db: Annotated[Session, Depends(get_db)],
+    admin_user: Annotated[User, Depends(get_current_admin_user)],  # noqa: ARG001
+) -> UserRead:
+    """Allow admins to change another user's role."""
+    try:
+        user = update_user_role(db, user_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return UserRead.model_validate(user)
 
 

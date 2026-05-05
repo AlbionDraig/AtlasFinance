@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Annotated
 
@@ -8,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.db.base import get_db
+from app.models.enums import UserRole
 from app.models.user import User
 from app.services.auth_service import is_access_token_revoked
 
@@ -67,3 +69,27 @@ def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+
+def require_roles(*allowed_roles: UserRole) -> Callable[[User], User]:
+    """Build a dependency that allows access only to users with given roles."""
+
+    if not allowed_roles:
+        raise ValueError("At least one role is required")
+
+    allowed = set(allowed_roles)
+
+    def _dependency(
+        current_user: Annotated[User, Depends(get_current_user)],
+    ) -> User:
+        if current_user.role not in allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions",
+            )
+        return current_user
+
+    return _dependency
+
+
+get_current_admin_user = require_roles(UserRole.ADMIN)

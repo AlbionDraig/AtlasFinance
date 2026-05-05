@@ -11,10 +11,11 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.core.security import get_password_hash, hash_token, verify_password
+from app.models.enums import UserRole
 from app.models.revoked_token import RevokedToken
 from app.models.user import User
 from app.repositories.users import UserRepository
-from app.schemas.user import UserCreate, UserUpdate
+from app.schemas.user import UserCreate, UserRoleUpdate, UserUpdate
 
 
 def create_user(db: Session, payload: UserCreate) -> User:
@@ -32,6 +33,7 @@ def create_user(db: Session, payload: UserCreate) -> User:
     user = User(
         email=payload.email,
         full_name=payload.full_name,
+        role=UserRole.USER,
         # Nunca almacenamos la contraseña en claro: get_password_hash usa bcrypt.
         hashed_password=get_password_hash(payload.password),
     )
@@ -75,6 +77,19 @@ def update_user(db: Session, user: User, payload: UserUpdate) -> User:
             raise ValueError("Incorrect current password")
         user.hashed_password = get_password_hash(payload.new_password)
 
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def update_user_role(db: Session, user_id: int, payload: UserRoleUpdate) -> User:
+    """Update a user's role. Raises ValueError when user does not exist."""
+
+    user = db.get(User, user_id)
+    if user is None:
+        raise ValueError("User not found")
+
+    user.role = payload.role
     db.commit()
     db.refresh(user)
     return user
