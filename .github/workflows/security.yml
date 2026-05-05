@@ -31,3 +31,27 @@ jobs:
       - name: Dependency vulnerability scan
         run: |
           pip-audit -r backend/requirements.txt
+
+  frontend-security:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: npm audit (high severity)
+        working-directory: frontend
+        run: npm audit --audit-level=high
