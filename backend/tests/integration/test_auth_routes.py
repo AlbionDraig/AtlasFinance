@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from uuid import uuid4
@@ -193,4 +194,41 @@ def test_admin_can_update_user_role(client, db_session):
     assert response.status_code == 200
     assert response.json()["id"] == target_user.id
     assert response.json()["role"] == "admin"
+
+
+def test_register_promotes_bootstrap_admin_when_no_admin_exists(client):
+    get_settings.cache_clear()
+    original_bootstrap_admin_email = os.environ.get("BOOTSTRAP_ADMIN_EMAIL")
+    os.environ["BOOTSTRAP_ADMIN_EMAIL"] = "bootstrap-admin@test.com"
+
+    try:
+        register = _register(client, "bootstrap-admin@test.com")
+        assert register.status_code == 201
+        assert register.json()["role"] == "admin"
+    finally:
+        if original_bootstrap_admin_email is None:
+            os.environ.pop("BOOTSTRAP_ADMIN_EMAIL", None)
+        else:
+            os.environ["BOOTSTRAP_ADMIN_EMAIL"] = original_bootstrap_admin_email
+        get_settings.cache_clear()
+
+
+def test_register_does_not_promote_bootstrap_email_if_admin_already_exists(client, db_session):
+    get_settings.cache_clear()
+    original_bootstrap_admin_email = os.environ.get("BOOTSTRAP_ADMIN_EMAIL")
+    os.environ["BOOTSTRAP_ADMIN_EMAIL"] = "bootstrap-admin-2@test.com"
+
+    try:
+        _register(client, "existing-admin@test.com")
+        _set_user_role(db_session, "existing-admin@test.com", UserRole.ADMIN)
+
+        register = _register(client, "bootstrap-admin-2@test.com")
+        assert register.status_code == 201
+        assert register.json()["role"] == "user"
+    finally:
+        if original_bootstrap_admin_email is None:
+            os.environ.pop("BOOTSTRAP_ADMIN_EMAIL", None)
+        else:
+            os.environ["BOOTSTRAP_ADMIN_EMAIL"] = original_bootstrap_admin_email
+        get_settings.cache_clear()
 

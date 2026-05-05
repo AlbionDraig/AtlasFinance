@@ -10,12 +10,26 @@ from datetime import datetime, timezone
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.security import get_password_hash, hash_token, verify_password
 from app.models.enums import UserRole
 from app.models.revoked_token import RevokedToken
 from app.models.user import User
 from app.repositories.users import UserRepository
 from app.schemas.user import UserCreate, UserRoleUpdate, UserUpdate
+
+
+def _should_assign_admin_role(db: Session, email: str) -> bool:
+    """Return True when a registration should be promoted to initial admin."""
+
+    bootstrap_email = get_settings().bootstrap_admin_email.strip().lower()
+    if not bootstrap_email or email.lower() != bootstrap_email:
+        return False
+
+    existing_admin = db.scalar(
+        select(User.id).where(User.role == UserRole.ADMIN).limit(1)
+    )
+    return existing_admin is None
 
 
 def create_user(db: Session, payload: UserCreate) -> User:
@@ -30,10 +44,12 @@ def create_user(db: Session, payload: UserCreate) -> User:
     if repo.get_by_email(payload.email):
         raise ValueError("Email already registered")
 
+    role = UserRole.ADMIN if _should_assign_admin_role(db, payload.email) else UserRole.USER
+
     user = User(
         email=payload.email,
         full_name=payload.full_name,
-        role=UserRole.USER,
+        role=role,
         # Nunca almacenamos la contraseña en claro: get_password_hash usa bcrypt.
         hashed_password=get_password_hash(payload.password),
     )
