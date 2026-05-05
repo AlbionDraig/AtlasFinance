@@ -64,7 +64,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         path = request.url.path
         csp = _DOCS_CSP if any(path.startswith(p) for p in _DOCS_PATHS) else _API_CSP
-        response.headers.setdefault("Content-Security-Policy", csp)
+        # Use direct assignment (not setdefault) so our policy always wins,
+        # even when Starlette/FastAPI already set a CSP on the response.
+        response.headers["Content-Security-Policy"] = csp
 
         if self._hsts:
             response.headers.setdefault(
