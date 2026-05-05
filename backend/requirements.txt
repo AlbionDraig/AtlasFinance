@@ -13,7 +13,7 @@ openpyxl==3.1.5
 requests==2.33.0
 httpx==0.28.1
 slowapi==0.1.9
-structlog==24.4.0
+structlog==25.5.0
 sentry-sdk[fastapi]==2.18.0
 alembic==1.13.3
 pytest==9.0.3
