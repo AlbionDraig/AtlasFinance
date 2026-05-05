@@ -798,8 +798,21 @@
     "title": "Gestión",
     "subtitle": "Gestiona la operación interna de la plataforma, separada de la configuración de catálogos.",
     "users_title": "Usuarios",
-    "users_desc": "Aquí podrás administrar usuarios cuando habilitemos endpoints de listado y gestión.",
-    "current_session": "Sesión actual"
+    "users_desc": "Administra roles de usuarios con permisos de administración.",
+    "current_session": "Sesión actual",
+    "admin_only": "Solo los usuarios con rol admin pueden gestionar roles.",
+    "loading_users": "Cargando usuarios...",
+    "empty_users": "No hay usuarios para mostrar.",
+    "col_name": "Nombre",
+    "col_email": "Correo",
+    "col_role": "Rol",
+    "role_admin": "Administrador",
+    "role_user": "Usuario",
+    "change_role_aria": "Cambiar rol de {{name}}",
+    "current_user_locked": "No puedes cambiar tu propio rol desde esta pantalla.",
+    "toast_role_updated": "Rol actualizado correctamente.",
+    "toast_role_update_error": "No se pudo actualizar el rol.",
+    "toast_forbidden": "No tienes permisos para realizar esta acción."
   },
   "lang": {
     "selector_label": "Idioma",

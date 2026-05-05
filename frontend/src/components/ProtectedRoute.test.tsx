@@ -12,7 +12,7 @@ beforeEach(() => {
 describe('ProtectedRoute', () => {
   it('renders child route when user is authenticated', () => {
     useAuthStore.setState({
-      user: { id: 1, email: 'test@example.com', full_name: 'Test User' },
+      user: { id: 1, email: 'test@example.com', full_name: 'Test User', role: 'user' },
     })
 
     render(

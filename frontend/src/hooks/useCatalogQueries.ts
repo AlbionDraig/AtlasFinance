@@ -25,6 +25,7 @@ export const QUERY_KEYS = {
   investments: ['investments'] as const,
   investmentEntities: ['investmentEntities'] as const,
   pockets: ['pockets'] as const,
+  managementUsers: ['managementUsers'] as const,
 } as const
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────

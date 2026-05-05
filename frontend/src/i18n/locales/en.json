@@ -796,8 +796,21 @@
     "title": "Management",
     "subtitle": "Manage the internal operation of the platform, separate from catalog configuration.",
     "users_title": "Users",
-    "users_desc": "Here you will be able to manage users when we enable listing and management endpoints.",
-    "current_session": "Current session"
+    "users_desc": "Manage user roles with administration permissions.",
+    "current_session": "Current session",
+    "admin_only": "Only admin users can manage roles.",
+    "loading_users": "Loading users...",
+    "empty_users": "No users to display.",
+    "col_name": "Name",
+    "col_email": "Email",
+    "col_role": "Role",
+    "role_admin": "Administrator",
+    "role_user": "User",
+    "change_role_aria": "Change role for {{name}}",
+    "current_user_locked": "You cannot change your own role from this screen.",
+    "toast_role_updated": "Role updated successfully.",
+    "toast_role_update_error": "Could not update role.",
+    "toast_forbidden": "You do not have permission to perform this action."
   },
   "lang": {
     "selector_label": "Language",

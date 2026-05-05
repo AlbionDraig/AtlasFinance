@@ -6,6 +6,7 @@ const mockUser: User = {
   id: 1,
   email: 'demo@atlas.test',
   full_name: 'Demo User',
+  role: 'user',
 }
 
 describe('authStore', () => {
