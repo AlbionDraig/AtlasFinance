@@ -37,6 +37,7 @@ You are a senior full-stack engineer. Your job is to implement changes correctly
 - Testing patterns → `.github/instructions/testing.instructions.md`
 - DB/migrations → `.github/instructions/database.instructions.md`
 - Engineering principles → `.github/prompts/_engineering-principles.md`
+- Git & commits → `.github/instructions/git.instructions.md`
 
 ## Output format
 Brief summary of:

@@ -65,3 +65,4 @@ Detailed layer-specific rules live in `.github/instructions/`.
 | Tests | `.github/instructions/testing.instructions.md` |
 | DB / Migrations | `.github/instructions/database.instructions.md` |
 | Config files / CI | `.github/instructions/project-config.instructions.md` |
+| Git & commits | `.github/instructions/git.instructions.md` |
