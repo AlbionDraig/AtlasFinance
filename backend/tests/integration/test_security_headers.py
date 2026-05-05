@@ -32,14 +32,18 @@ def test_csp_is_relaxed_for_docs():
     assert response.status_code == 200
     csp = response.headers["Content-Security-Policy"]
     # En /docs necesitamos permitir scripts/styles externos para Swagger UI.
-    directives = {
-        key.strip(): value.strip()
-        for key, value in (
-            directive.split(" ", 1) if " " in directive else (directive, "")
-            for directive in csp.split(";")
-            if directive.strip()
-        )
-    }
+    # Hacemos strip() en cada directiva antes de particionar para manejar
+    # correctamente los espacios después de ";" en el valor de la cabecera.
+    directives = {}
+    for raw in csp.split(";"):
+        part = raw.strip()
+        if not part:
+            continue
+        if " " in part:
+            key, _, val = part.partition(" ")
+            directives[key] = val.strip()
+        else:
+            directives[part] = ""
     script_sources = set(directives.get("script-src", "").split())
     style_sources = set(directives.get("style-src", "").split())
     assert any(source == "https://cdn.jsdelivr.net" for source in script_sources)

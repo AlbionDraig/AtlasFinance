@@ -17,11 +17,10 @@ FastAPI sirve por defecto.
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
+from typing import Any
 
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
+from starlette.datastructures import MutableHeaders
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 # CSP estricta para endpoints JSON: ningún recurso externo permitido.
 _API_CSP = "default-src 'none'; frame-ancestors 'none'"
@@ -38,40 +37,49 @@ _DOCS_CSP = (
 
 _DOCS_PATHS = ("/docs", "/redoc", "/openapi.json")
 
+_PERMISSIONS_POLICY = (
+    "accelerometer=(), camera=(), geolocation=(), gyroscope=(), "
+    "magnetometer=(), microphone=(), payment=(), usb=()"
+)
 
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """Inyecta cabeceras de seguridad en toda respuesta saliente."""
 
-    def __init__(self, app: Callable[..., Awaitable[None]], *, hsts: bool = False) -> None:
-        super().__init__(app)
+class SecurityHeadersMiddleware:
+    """Middleware ASGI puro que inyecta cabeceras de seguridad.
+
+    Implementado como middleware ASGI puro (no BaseHTTPMiddleware) para
+    interceptar el mensaje ``http.response.start`` antes de que los headers
+    salgan al cliente. Esto garantiza que nuestra CSP siempre se aplica,
+    incluso en rutas servidas por sub-aplicaciones montadas (p.ej. /docs).
+    """
+
+    def __init__(self, app: ASGIApp, *, hsts: bool = False) -> None:
+        self.app = app
         self._hsts = hsts
 
-    async def dispatch(
-        self,
-        request: Request,
-        call_next: Callable[[Request], Awaitable[Response]],
-    ) -> Response:
-        response = await call_next(request)
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
 
-        response.headers.setdefault("X-Content-Type-Options", "nosniff")
-        response.headers.setdefault("X-Frame-Options", "DENY")
-        response.headers.setdefault("Referrer-Policy", "no-referrer")
-        response.headers.setdefault(
-            "Permissions-Policy",
-            "accelerometer=(), camera=(), geolocation=(), gyroscope=(), "
-            "magnetometer=(), microphone=(), payment=(), usb=()",
-        )
-
-        path = request.url.path
+        path: str = scope.get("path", "")
         csp = _DOCS_CSP if any(path.startswith(p) for p in _DOCS_PATHS) else _API_CSP
-        # Use direct assignment (not setdefault) so our policy always wins,
-        # even when Starlette/FastAPI already set a CSP on the response.
-        response.headers["Content-Security-Policy"] = csp
+        hsts = self._hsts
 
-        if self._hsts:
-            response.headers.setdefault(
-                "Strict-Transport-Security",
-                "max-age=63072000; includeSubDomains; preload",
-            )
+        async def send_with_security_headers(message: Any) -> None:
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(scope=message)
+                headers.setdefault("X-Content-Type-Options", "nosniff")
+                headers.setdefault("X-Frame-Options", "DENY")
+                headers.setdefault("Referrer-Policy", "no-referrer")
+                headers.setdefault("Permissions-Policy", _PERMISSIONS_POLICY)
+                # Siempre sobreescribimos CSP: nuestra política gana sobre
+                # cualquier header que la app haya puesto previamente.
+                headers["Content-Security-Policy"] = csp
+                if hsts:
+                    headers.setdefault(
+                        "Strict-Transport-Security",
+                        "max-age=63072000; includeSubDomains; preload",
+                    )
+            await send(message)
 
-        return response
+        await self.app(scope, receive, send_with_security_headers)
