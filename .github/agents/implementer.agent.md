@@ -2,6 +2,7 @@
 description: "Use when implementing new features, fixing bugs, creating endpoints, components, services, schemas, migrations, or tests. Triggers on: implement, create, add, fix, build, generate, write. Full edit and execute access."
 name: "Implementer"
 tools: [read, edit, search, execute, todo]
+agents: [Explore]
 user-invocable: true
 hooks:
   PreToolUse:
