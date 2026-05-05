@@ -127,7 +127,7 @@ body {
 /* Accesibilidad: estilo de foco visible global solo para navegación con
    teclado (no se muestra al hacer click con mouse). Aplica a cualquier
    elemento interactivo que no tenga su propio :focus-visible custom. */
-*:focus-visible {
+*:focus-visible:not(.app-control) {
   outline: 2px solid var(--af-accent);
   outline-offset: 2px;
   border-radius: 0.25rem;
@@ -216,7 +216,7 @@ body {
     border-color: var(--af-border-strong);
   }
 
-  .app-control:focus {
+  .app-control:focus, .app-control:focus-visible {
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--af-accent) 35%, transparent);
     border-color: var(--af-accent);
   }
