@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { AxiosError } from 'axios'
 import { useTranslation } from 'react-i18next'
 import EmptyState from '@/components/ui/EmptyState'
@@ -8,6 +8,7 @@ import SkeletonTable from '@/components/ui/SkeletonTable'
 import { useToast } from '@/hooks/useToast'
 import { useManagementUsersQuery, useUpdateUserRoleMutation } from '@/hooks/useManagementUsers'
 import { useAuthStore } from '@/store/authStore'
+import ManagementFiltersCard, { type ManagementFiltersState } from './components/ManagementFiltersCard'
 
 const ROLE_VALUES = ['admin', 'user'] as const
 type UserRole = (typeof ROLE_VALUES)[number]
@@ -23,11 +24,29 @@ export default function ManagementPage() {
   const isAdmin = user?.role === 'admin'
   const { data: users = [], isLoading } = useManagementUsersQuery(isAdmin)
   const updateRoleMutation = useUpdateUserRoleMutation()
+  const [filters, setFilters] = useState<ManagementFiltersState>({
+    query: '',
+    role: 'all',
+  })
 
-  const sortedUsers = useMemo(
-    () => [...users].sort((a, b) => a.full_name.localeCompare(b.full_name)),
-    [users],
-  )
+  const query = filters.query.trim().toLocaleLowerCase()
+
+  const filteredUsers = useMemo(() => {
+    return [...users]
+      .filter((managedUser) => {
+        if (filters.role !== 'all' && managedUser.role !== filters.role) {
+          return false
+        }
+
+        if (!query) {
+          return true
+        }
+
+        const searchable = `${managedUser.full_name} ${managedUser.email}`.toLocaleLowerCase()
+        return searchable.includes(query)
+      })
+      .sort((a, b) => a.full_name.localeCompare(b.full_name))
+  }, [users, filters.role, query])
 
   const roleOptions = useMemo(
     () => [
@@ -36,6 +55,23 @@ export default function ManagementPage() {
     ],
     [t],
   )
+
+  const activeFilters = useMemo(() => {
+    const filtersList: string[] = []
+
+    if (filters.query.trim()) {
+      filtersList.push(`${t('common.search')}: ${filters.query.trim()}`)
+    }
+
+    if (filters.role !== 'all') {
+      const selectedRoleLabel = filters.role === 'admin' ? t('management.role_admin') : t('management.role_user')
+      filtersList.push(`${t('management.filter_role_label')}: ${selectedRoleLabel}`)
+    }
+
+    return filtersList
+  }, [filters.query, filters.role, t])
+
+  const hasActiveFilters = activeFilters.length > 0
 
   async function handleRoleChange(userId: number, role: UserRole) {
     try {
@@ -57,6 +93,17 @@ export default function ManagementPage() {
         <p className="app-subtitle text-sm mt-0.5">{t('management.subtitle')}</p>
       </div>
 
+      {isAdmin && (
+        <ManagementFiltersCard
+          filters={filters}
+          setFilters={setFilters}
+          activeFilters={activeFilters}
+          onResetFilters={() => {
+            setFilters({ query: '', role: 'all' })
+          }}
+        />
+      )}
+
       <section className="app-card overflow-visible">
         <div className="flex items-center justify-between gap-4 border-b border-neutral-100 bg-neutral-50 px-6 py-4">
           <div className="flex items-center gap-3">
@@ -72,30 +119,23 @@ export default function ManagementPage() {
           </div>
         </div>
 
-        {user && (
-          <div className="m-4 rounded-xl border border-neutral-100 bg-neutral-50 p-4">
-            <p className="text-xs font-medium tracking-widest uppercase text-neutral-700">{t('management.current_session')}</p>
-            <p className="mt-1 text-sm text-neutral-900">{user.full_name}</p>
-            <p className="text-xs text-neutral-400">{user.email}</p>
-          </div>
-        )}
-
         {!isAdmin && (
-          <div className="px-4 pb-4">
+          <div className="p-4">
             <InlineAlert message={t('management.admin_only')} />
           </div>
         )}
 
         {isAdmin && (
-          <div className="mx-4 mb-4 rounded-xl border border-neutral-100 overflow-visible">
+          <div className="p-4 overflow-visible">
+            <div className="rounded-xl border border-neutral-100 overflow-visible">
             {isLoading ? (
               <div className="p-2">
                 <SkeletonTable rows={6} columns={3} />
               </div>
-            ) : sortedUsers.length === 0 ? (
+            ) : filteredUsers.length === 0 ? (
               <EmptyState
-                title={t('management.empty_users')}
-                description={t('management.loading_users')}
+                title={hasActiveFilters ? t('common.no_results') : t('management.empty_users')}
+                description={hasActiveFilters ? t('management.empty_filtered_desc') : t('management.loading_users')}
                 icon={(
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5V4H2v16h5m10 0v-5a3 3 0 10-6 0v5m6 0H11" />
@@ -118,7 +158,7 @@ export default function ManagementPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedUsers.map((managedUser) => {
+                    {filteredUsers.map((managedUser) => {
                       const isOwnSession = user?.id === managedUser.id
                       const roleBusy = updateRoleMutation.isPending && updateRoleMutation.variables?.userId === managedUser.id
                       return (
@@ -155,6 +195,7 @@ export default function ManagementPage() {
                 </table>
               </div>
             )}
+            </div>
           </div>
         )}
       </section>
