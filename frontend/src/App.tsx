@@ -7,6 +7,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import AdminRoute from '@/components/AdminRoute'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import AppLayout from '@/layouts/AppLayout'
 import PageSkeleton from '@/components/ui/PageSkeleton'
@@ -105,9 +106,11 @@ export default function App() {
               <Route
                 path="/management"
                 element={
-                  <PageErrorBoundary labelKey="errors.page_label_management">
-                    <LazyPage><ManagementPage /></LazyPage>
-                  </PageErrorBoundary>
+                  <AdminRoute>
+                    <PageErrorBoundary labelKey="errors.page_label_management">
+                      <LazyPage><ManagementPage /></LazyPage>
+                    </PageErrorBoundary>
+                  </AdminRoute>
                 }
               />
               <Route

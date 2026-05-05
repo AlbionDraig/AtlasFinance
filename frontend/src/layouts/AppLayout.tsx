@@ -75,6 +75,7 @@ const navItems = [
   {
     to: '/management',
     labelKey: 'nav.management',
+    adminOnly: true,
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M4 12h16M4 17h8" />
@@ -154,6 +155,7 @@ export default function AppLayout() {
   }
 
   const collapsed = !expanded
+  const visibleNavItems = navItems.filter((item) => !item.adminOnly || user?.role === 'admin')
 
   return (
     <div className="app-page flex h-screen">
@@ -187,7 +189,7 @@ export default function AppLayout() {
 
           {/* Nav */}
           <nav className={`${collapsed ? 'px-2' : 'px-3'} flex-1 py-4 space-y-1`}>
-            {navItems.map(({ to, labelKey, icon }) => (
+            {visibleNavItems.map(({ to, labelKey, icon }) => (
               <NavLink
                 key={to}
                 to={to}
