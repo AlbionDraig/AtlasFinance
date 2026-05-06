@@ -28,13 +28,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     // Keep only one active error toast so repeated failures do not "flash"
     // multiple messages that feel like instant auto-close.
     setToasts((prev) => {
+      if (variant === 'error' && prev.some((t) => t.variant === 'error' && t.message === message)) {
+        return prev
+      }
       const base = variant === 'error' ? prev.filter((t) => t.variant !== 'error') : prev
       return [...base.slice(-2), { id, message, variant }]
     })
-    // Auto-dismiss notification after a short, readable interval.
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id))
-    }, 8000)
   }, [])
 
   return (

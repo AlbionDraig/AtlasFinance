@@ -2,10 +2,11 @@
 // Va fuera del Router para que las notificaciones sobrevivan a la navegación
 // (ej. crear una transacción y navegar mientras se muestra el confirm).
 import { useEffect, useRef, useState } from 'react'
+import { TOAST_DURATION_MS } from '@/config/toast'
 import { useToast, type Toast } from '@/hooks/useToast'
 
-// Duración total del toast (ms). 8s mejora legibilidad en mensajes de error extensos.
-const DURATION = 8000
+// Duración total del toast tomada de una única configuración global.
+const DURATION = TOAST_DURATION_MS
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
   // visible controla la animación de entrada (slide+fade) vía clases condicionales.
@@ -24,9 +25,11 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
     return () => cancelAnimationFrame(frame)
   }, [])
 
-  // Barra de progreso: usamos requestAnimationFrame en vez de setInterval para sincronizar
-  // con el refresh de pantalla y evitar saltos visuales bajo carga.
+  // Barra de progreso + auto-dismiss: un único rAF loop maneja ambos para garantizar
+  // que el dismiss ocurre exactamente cuando la barra llega a 0, sin timers separados
+  // que puedan desincronizarse (especialmente bajo StrictMode en desarrollo).
   useEffect(() => {
+    startRef.current = null
     const tick = (now: number) => {
       if (startRef.current === null) startRef.current = now
       const elapsed = now - startRef.current
@@ -34,14 +37,15 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
       setProgress(remaining)
       if (remaining > 0) {
         rafRef.current = requestAnimationFrame(tick)
+      } else {
+        onDismiss(toast.id)
       }
     }
     rafRef.current = requestAnimationFrame(tick)
     return () => {
-      // Cancelar el frame al desmontar evita warnings de "setState on unmounted".
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
     }
-  }, [])
+  }, [onDismiss, toast.id])
 
   const accentColor = isError ? 'var(--af-accent)' : 'var(--af-positive)'
 
