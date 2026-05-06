@@ -110,7 +110,11 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
         setInvestments(invRes.data)
         setEntities(entRes.data)
       })
-      .catch(() => toast(t('dashboard.inv_toast_load_error'), 'error'))
+      .catch((error: unknown) => {
+        const status = (error as { response?: { status?: number } })?.response?.status
+        if (status === 401) return
+        toast(t('dashboard.inv_toast_load_error'), 'error')
+      })
       .finally(() => setLoading(false))
   }, [])
 
