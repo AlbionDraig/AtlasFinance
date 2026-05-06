@@ -25,12 +25,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const toast = useCallback((message: string, variant: ToastVariant = 'success') => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
-    // Keep only the latest 3 toasts to avoid stacking too much UI noise.
-    setToasts((prev) => [...prev.slice(-2), { id, message, variant }])
+    // Keep only one active error toast so repeated failures do not "flash"
+    // multiple messages that feel like instant auto-close.
+    setToasts((prev) => {
+      const base = variant === 'error' ? prev.filter((t) => t.variant !== 'error') : prev
+      return [...base.slice(-2), { id, message, variant }]
+    })
     // Auto-dismiss notification after a short, readable interval.
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id))
-    }, 4500)
+    }, 8000)
   }, [])
 
   return (

@@ -74,7 +74,11 @@ export function useDashboardData({
         setMetrics(m.data)
         setAggregates(agg.data)
       })
-      .catch(() => toast(t('dashboard.error_load'), 'error'))
+      .catch((error: unknown) => {
+        const status = (error as { response?: { status?: number } })?.response?.status
+        if (status === 401) return
+        toast(t('dashboard.error_load'), 'error')
+      })
       .finally(() => setLoading(false))
     // Comparamos por timestamp porque las fechas se recalculan en cada render
     // del padre y dispararían fetches duplicados al cambiar la referencia.

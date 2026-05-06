@@ -4,8 +4,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useToast, type Toast } from '@/hooks/useToast'
 
-// Duración total del toast (ms). 4.5s permite leer mensajes cortos sin sentirse intrusivo.
-const DURATION = 4500
+// Duración total del toast (ms). 8s mejora legibilidad en mensajes de error extensos.
+const DURATION = 8000
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
   // visible controla la animación de entrada (slide+fade) vía clases condicionales.
