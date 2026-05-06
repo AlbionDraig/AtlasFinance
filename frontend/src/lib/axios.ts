@@ -36,7 +36,11 @@ function forceLogout() {
   _loggingOut = true
   useAuthStore.getState().logout()
   sessionStorage.setItem('session_expired', '1')
-  window.location.href = '/login'
+  // Redirección dura para garantizar salida de cualquier estado inconsistente
+  // de la SPA cuando el refresh token ya no es válido.
+  if (window.location.pathname !== '/login') {
+    window.location.replace('/login?reason=session_expired')
+  }
 }
 
 async function refreshTokens(): Promise<void> {
