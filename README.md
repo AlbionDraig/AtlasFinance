@@ -510,11 +510,11 @@ python -m pre_commit run --hook-stage manual pytest-backend
 
 | Workflow | Disparadores | Qué hace |
 |----------|--------------|----------|
-| `ci.yml` | push a `main`/`Develop`, PRs | Lint + tests + cobertura ≥ 85% + Codecov + smoke build |
-| `frontend-ci.yml` | cambios en `frontend/**` | ESLint + tsc + vitest + coverage + build + Playwright (continue-on-error) |
-| `security.yml` | scheduled + cambios | Bandit + pip-audit en Python 3.12 (Docker) |
-| `code-quality.yml` | scheduled + PRs | Pylint con gate 8.0 |
-| `codeql.yml` | scheduled | CodeQL JS/TS + Python |
+| `ci.yml` | push a `main` + PRs a `main` | Ruff + pytest (gate de cobertura backend) + Codecov + smoke build + smoke de Alembic |
+| `frontend-ci.yml` | push a `main` y PRs a `main` con cambios en `frontend/**` | `lint-and-build-frontend`: ESLint + type-check + unit tests + coverage + build; `e2e`: solo en push |
+| `security.yml` | push a `main` + PRs a `main` | `security-scan`: Bandit + pip-audit; `frontend-security`: solo en push |
+| `code-quality.yml` | push a `main` | `code-smell-scan`: Pylint + Mypy + smoke test de hooks; `frontend-quality`: solo en push |
+| `codeql.yml` | push a `main` + PRs a `main` + cron semanal | CodeQL JS/TS + Python |
 
 Variables inyectadas en CI:
 

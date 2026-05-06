@@ -2,7 +2,11 @@ name: Atlas Finance Code Quality
 
 on:
   push:
-  pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   code-smell-scan:
@@ -39,6 +43,7 @@ jobs:
         run: node .github/hooks/scripts/pre-safety.test.js
 
   frontend-quality:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read

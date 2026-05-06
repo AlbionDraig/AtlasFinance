@@ -2,7 +2,13 @@ name: Atlas Finance Security
 
 on:
   push:
+    branches: ["main"]
   pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   security-scan:
@@ -33,6 +39,7 @@ jobs:
           pip-audit -r backend/requirements.txt
 
   frontend-security:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read

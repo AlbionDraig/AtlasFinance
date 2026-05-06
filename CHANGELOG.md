@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+---
+
+## [1.0.3] - 2026-05-05
+
 ### Added
 
 - Management page now includes module-consistent filters (search by name/email and role filter), with active filter chips and reset action.
@@ -17,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Custom `Select` dropdown now renders through a portal to avoid clipping and z-index/overflow issues inside tables and cards.
 - Frontend ESLint configuration now ignores generated `coverage/` artifacts to keep lint output clean.
 - Backend security tooling updated to `bandit==1.9.4` for Python 3.14 compatibility.
+- CI workflows were streamlined to reduce duplicated checks between `push` and `pull_request`, including concurrency cancel-in-progress guards.
+- CI/CD documentation was updated to reflect current workflow triggers and responsibilities.
 
 ---
 
