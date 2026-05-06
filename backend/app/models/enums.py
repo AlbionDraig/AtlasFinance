@@ -26,3 +26,10 @@ class InvestmentEntityType(str, Enum):
     EXCHANGE = "exchange"
     FUND_MANAGER = "fund_manager"
     OTHER = "other"
+
+
+class UserRole(str, Enum):
+    """Application roles used for authorization checks."""
+
+    ADMIN = "admin"
+    USER = "user"

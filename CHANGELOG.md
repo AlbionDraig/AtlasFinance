@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+### Added
+
+- Management page now includes module-consistent filters (search by name/email and role filter), with active filter chips and reset action.
+- Login page now includes the language switcher with a panel variant and interaction test coverage.
+
+### Changed
+
+- Management layout was aligned with other modules: filters moved to page-level composition and redundant "current session" summary removed.
+- Custom `Select` dropdown now renders through a portal to avoid clipping and z-index/overflow issues inside tables and cards.
+- Frontend ESLint configuration now ignores generated `coverage/` artifacts to keep lint output clean.
+- Backend security tooling updated to `bandit==1.9.4` for Python 3.14 compatibility.
+
 ---
 
 ## [1.0.2] - 2026-05-04

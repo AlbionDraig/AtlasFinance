@@ -7,6 +7,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import AdminRoute from '@/components/AdminRoute'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import AppLayout from '@/layouts/AppLayout'
 import PageSkeleton from '@/components/ui/PageSkeleton'
@@ -97,17 +98,21 @@ export default function App() {
               <Route
                 path="/admin"
                 element={
-                  <PageErrorBoundary labelKey="errors.page_label_admin" invalidateKeys={[QUERY_KEYS.banks, QUERY_KEYS.countries, QUERY_KEYS.categories, QUERY_KEYS.investmentEntities]}>
-                    <LazyPage><AdminPage /></LazyPage>
-                  </PageErrorBoundary>
+                  <AdminRoute>
+                    <PageErrorBoundary labelKey="errors.page_label_admin" invalidateKeys={[QUERY_KEYS.banks, QUERY_KEYS.countries, QUERY_KEYS.categories, QUERY_KEYS.investmentEntities]}>
+                      <LazyPage><AdminPage /></LazyPage>
+                    </PageErrorBoundary>
+                  </AdminRoute>
                 }
               />
               <Route
                 path="/management"
                 element={
-                  <PageErrorBoundary labelKey="errors.page_label_management">
-                    <LazyPage><ManagementPage /></LazyPage>
-                  </PageErrorBoundary>
+                  <AdminRoute>
+                    <PageErrorBoundary labelKey="errors.page_label_management">
+                      <LazyPage><ManagementPage /></LazyPage>
+                    </PageErrorBoundary>
+                  </AdminRoute>
                 }
               />
               <Route

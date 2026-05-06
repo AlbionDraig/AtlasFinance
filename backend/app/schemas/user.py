@@ -2,6 +2,8 @@ import re
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from app.models.enums import UserRole
+
 
 def _validate_password_strength(value: str) -> str:
     if not re.search(r"[A-Z]", value):
@@ -30,6 +32,7 @@ class UserRead(BaseModel):
     id: int
     email: EmailStr
     full_name: str
+    role: UserRole
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -47,6 +50,12 @@ class UserUpdate(BaseModel):
         if value is not None:
             return _validate_password_strength(value)
         return value
+
+
+class UserRoleUpdate(BaseModel):
+    """Payload used by admins to change another user's role."""
+
+    role: UserRole
 
 
 class UserLogin(BaseModel):

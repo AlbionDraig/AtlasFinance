@@ -2,7 +2,8 @@
 // Reimplementamos en lugar de usar <select> nativo para que el estilo coincida con
 // el resto del design system y para soportar abrir hacia arriba si no hay espacio abajo
 // (importante en filtros dentro de modales o cards cercanas al pie de página).
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 interface SelectOption {
   value: string
@@ -25,15 +26,60 @@ export default function Select({ value, onChange, options, className = '', disab
   // Lo guardamos en estado para que el primer render del dropdown ya use la posición correcta
   // y evitar el "salto" visual de re-medir después del mount.
   const [openUpward, setOpenUpward] = useState(false)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 0 })
   const ref = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLUListElement>(null)
+
+  const menuMaxHeight = visibleItems ? visibleItems * 36 + 8 : 208
+
+  useLayoutEffect(() => {
+    if (!open || !ref.current) return
+
+    const updatePosition = () => {
+      if (!ref.current) return
+
+      const rect = ref.current.getBoundingClientRect()
+      const viewportMargin = 8
+      const gap = 6
+      const estimatedHeight = Math.min(options.length * 36 + 8, menuMaxHeight)
+      const shouldOpenUpward = window.innerHeight - rect.bottom < estimatedHeight && rect.top > estimatedHeight
+
+      setOpenUpward(shouldOpenUpward)
+      setMenuPosition({
+        top: shouldOpenUpward ? Math.max(viewportMargin, rect.top - gap) : Math.min(window.innerHeight - viewportMargin, rect.bottom + gap),
+        left: Math.max(viewportMargin, rect.left),
+        width: rect.width,
+      })
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [open, options.length, menuMaxHeight])
 
   // Cierre al click-outside: convención de UX para popovers/dropdowns.
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+      if (ref.current?.contains(target) || menuRef.current?.contains(target)) return
+      setOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   // Si options está vacío evitamos que el componente se rompa: mostramos placeholder sin error.
@@ -42,16 +88,7 @@ export default function Select({ value, onChange, options, className = '', disab
 
   function handleOpen() {
     if (isDisabled) return
-    setOpen(prev => {
-      if (!prev && ref.current) {
-        // Calculamos espacio disponible al abrir (no en cada render) para minimizar trabajo.
-        const rect = ref.current.getBoundingClientRect()
-        // Tope de 208px ~= 6 items: balance entre densidad y legibilidad.
-        const estimatedHeight = Math.min(options.length * 36 + 8, 208)
-        setOpenUpward(window.innerHeight - rect.bottom < estimatedHeight && rect.top > estimatedHeight)
-      }
-      return !prev
-    })
+    setOpen(prev => !prev)
   }
 
   return (
@@ -79,10 +116,17 @@ export default function Select({ value, onChange, options, className = '', disab
       </button>
 
       {/* Dropdown */}
-      {open && !isDisabled && (
+      {open && !isDisabled && createPortal(
         <ul
-          className={['app-menu absolute right-0 w-full z-[270] overflow-y-auto py-1 text-xs', openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'].join(' ')}
-          style={visibleItems ? { maxHeight: `${visibleItems * 36 + 8}px` } : { maxHeight: '208px' }}
+          ref={menuRef}
+          className="app-menu fixed z-[400] overflow-y-auto py-1 text-xs"
+          style={{
+            top: openUpward ? 'auto' : `${menuPosition.top}px`,
+            bottom: openUpward ? `${Math.max(8, window.innerHeight - menuPosition.top)}px` : 'auto',
+            left: `${menuPosition.left}px`,
+            width: `${menuPosition.width}px`,
+            maxHeight: `${menuMaxHeight}px`,
+          }}
         >
           {options.map(opt => (
             <li key={opt.value}>
@@ -99,7 +143,8 @@ export default function Select({ value, onChange, options, className = '', disab
               </button>
             </li>
           ))}
-        </ul>
+        </ul>,
+        document.body
       )}
     </div>
   )

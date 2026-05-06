@@ -1,5 +1,8 @@
 from uuid import uuid4
 
+from app.models.enums import UserRole
+from app.models.user import User
+
 TEST_PASSWORD = f"AtlasFinanceTestPwd-{uuid4().hex}"
 
 
@@ -21,6 +24,14 @@ def _auth_headers(client, email: str = "api@test.com"):
     assert login_resp.status_code == 200
     token = login_resp.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
+
+
+def _set_user_role(db_session, email: str, role: UserRole) -> None:
+    user = db_session.query(User).filter(User.email == email).first()
+    if user is None:
+        raise AssertionError(f"User with email {email} was not found")
+    user.role = role
+    db_session.commit()
 
 
 def test_api_main_flow(client):
@@ -77,14 +88,6 @@ def test_api_main_flow(client):
     assert update_pocket_resp.status_code == 200
     assert update_pocket_resp.json()["balance"] == 100
 
-    category_resp = client.post("/api/v1/categories/", json={"name": "transport"}, headers=headers)
-    assert category_resp.status_code == 201
-    category_id = category_resp.json()["id"]
-
-    category_list_resp = client.get("/api/v1/categories/", headers=headers)
-    assert category_list_resp.status_code == 200
-    assert len(category_list_resp.json()) == 1
-
     funding_resp = client.post(
         "/api/v1/transactions/",
         json={
@@ -110,7 +113,6 @@ def test_api_main_flow(client):
             "transaction_type": "expense",
             "occurred_at": "2026-04-01T08:00:00Z",
             "account_id": account_id,
-            "category_id": category_id,
         },
         headers=headers,
     )
@@ -126,7 +128,6 @@ def test_api_main_flow(client):
             "transaction_type": "expense",
             "occurred_at": "2026-04-02T08:00:00Z",
             "account_id": account_id,
-            "category_id": category_id,
         },
         headers=headers,
     )
@@ -163,9 +164,11 @@ def test_api_main_flow(client):
     assert body["total_expenses"] == 0
 
 
-def test_management_endpoints_cover_update_and_delete_paths(client):
+def test_management_endpoints_cover_update_and_delete_paths(client, db_session):
     # Cover update/delete paths to ensure CRUD operations keep ownership rules.
-    headers = _auth_headers(client, email="api-manage@test.com")
+    manage_email = "api-manage@test.com"
+    headers = _auth_headers(client, email=manage_email)
+    _set_user_role(db_session, manage_email, UserRole.ADMIN)
 
     bank_resp = client.post(
         "/api/v1/banks/",
@@ -433,8 +436,10 @@ def test_logout_revokes_access_token(client):
     assert me_after.status_code == 401
 
 
-def test_categories_are_global_across_authenticated_users(client):
-    first_headers = _auth_headers(client, email="api-global-1@test.com")
+def test_categories_are_global_across_authenticated_users(client, db_session):
+    first_email = "api-global-1@test.com"
+    first_headers = _auth_headers(client, email=first_email)
+    _set_user_role(db_session, first_email, UserRole.ADMIN)
     create_resp = client.post("/api/v1/categories/", json={"name": "shared-api-category"}, headers=first_headers)
     assert create_resp.status_code == 201
     created_id = create_resp.json()["id"]
@@ -445,8 +450,10 @@ def test_categories_are_global_across_authenticated_users(client):
     assert any(category["id"] == created_id for category in list_resp.json())
 
 
-def test_countries_crud_endpoints(client):
-    headers = _auth_headers(client, email="api-countries@test.com")
+def test_countries_crud_endpoints(client, db_session):
+    countries_email = "api-countries@test.com"
+    headers = _auth_headers(client, email=countries_email)
+    _set_user_role(db_session, countries_email, UserRole.ADMIN)
 
     create_resp = client.post(
         "/api/v1/countries/",
@@ -481,6 +488,74 @@ def test_countries_crud_endpoints(client):
 
     delete_missing_resp = client.delete(f"/api/v1/countries/{created_country_id}", headers=headers)
     assert delete_missing_resp.status_code == 404
+
+
+def test_regular_user_cannot_manage_global_catalogs(client):
+    headers = _auth_headers(client, email="api-rbac-user@test.com")
+
+    create_category_resp = client.post(
+        "/api/v1/categories/",
+        json={"name": "rbac-denied-category"},
+        headers=headers,
+    )
+    assert create_category_resp.status_code == 403
+    assert create_category_resp.json()["detail"] == "Insufficient permissions"
+
+    create_country_resp = client.post(
+        "/api/v1/countries/",
+        json={"code": "FR", "name": "France"},
+        headers=headers,
+    )
+    assert create_country_resp.status_code == 403
+    assert create_country_resp.json()["detail"] == "Insufficient permissions"
+
+
+def test_admin_user_can_manage_global_catalogs(client, db_session):
+    admin_email = "api-rbac-admin@test.com"
+    headers = _auth_headers(client, email=admin_email)
+    _set_user_role(db_session, admin_email, UserRole.ADMIN)
+
+    create_category_resp = client.post(
+        "/api/v1/categories/",
+        json={"name": "rbac-admin-category"},
+        headers=headers,
+    )
+    assert create_category_resp.status_code == 201
+    category_id = create_category_resp.json()["id"]
+
+    update_category_resp = client.put(
+        f"/api/v1/categories/{category_id}",
+        json={"name": "rbac-admin-category-updated"},
+        headers=headers,
+    )
+    assert update_category_resp.status_code == 200
+
+    delete_category_resp = client.delete(
+        f"/api/v1/categories/{category_id}",
+        headers=headers,
+    )
+    assert delete_category_resp.status_code == 204
+
+    create_country_resp = client.post(
+        "/api/v1/countries/",
+        json={"code": "FR", "name": "France"},
+        headers=headers,
+    )
+    assert create_country_resp.status_code == 201
+    country_id = create_country_resp.json()["id"]
+
+    update_country_resp = client.put(
+        f"/api/v1/countries/{country_id}",
+        json={"name": "France Updated"},
+        headers=headers,
+    )
+    assert update_country_resp.status_code == 200
+
+    delete_country_resp = client.delete(
+        f"/api/v1/countries/{country_id}",
+        headers=headers,
+    )
+    assert delete_country_resp.status_code == 204
 
 
 def test_investments_crud_endpoints(client):

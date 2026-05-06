@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     # En development/test se activa automáticamente.
     # En production permanece False a menos que se establezca explícitamente para evitar contaminar datos reales.
     seed_demo_data: bool = False
+    # Email promovido automáticamente a admin al registrarse, solo si todavía no existe ningún admin.
+    bootstrap_admin_email: str = ""
 
     # IMPORTANTE: en producción DEBE inyectarse vía env var; el default solo evita crashes en dev.
     secret_key: str = "change-this-in-production"
