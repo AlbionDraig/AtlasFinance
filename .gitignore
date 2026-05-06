@@ -12,6 +12,8 @@ htmlcov/
 *.sqlite3
 */coverage.xml
 backend/coverage.xml
+.playwright-mcp/
+.playwright-cli/
 
 # React / Vite / Tailwind
 node_modules/
