@@ -3,6 +3,7 @@ import { AxiosError } from 'axios'
 import { useTranslation } from 'react-i18next'
 import EmptyState from '@/components/ui/EmptyState'
 import InlineAlert from '@/components/ui/InlineAlert'
+import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
 import SkeletonTable from '@/components/ui/SkeletonTable'
 import { useToast } from '@/hooks/useToast'
@@ -12,6 +13,14 @@ import ManagementFiltersCard, { type ManagementFiltersState } from './components
 
 const ROLE_VALUES = ['admin', 'user'] as const
 type UserRole = (typeof ROLE_VALUES)[number]
+
+interface PromoteConfirmationState {
+  userId: number
+  fullName: string
+  email: string
+  currentRole: UserRole
+  nextRole: 'admin'
+}
 
 function isUserRole(value: string): value is UserRole {
   return ROLE_VALUES.includes(value as UserRole)
@@ -28,6 +37,7 @@ export default function ManagementPage() {
     query: '',
     role: 'all',
   })
+  const [promoteConfirmation, setPromoteConfirmation] = useState<PromoteConfirmationState | null>(null)
 
   const query = filters.query.trim().toLocaleLowerCase()
 
@@ -84,6 +94,30 @@ export default function ManagementPage() {
       }
       toast(t('management.toast_role_update_error'), 'error')
     }
+  }
+
+  function handleRoleSelection(
+    managedUser: { id: number; full_name: string; email: string; role: UserRole },
+    nextRole: UserRole,
+  ) {
+    if (managedUser.role !== 'admin' && nextRole === 'admin') {
+      setPromoteConfirmation({
+        userId: managedUser.id,
+        fullName: managedUser.full_name,
+        email: managedUser.email,
+        currentRole: managedUser.role,
+        nextRole,
+      })
+      return
+    }
+
+    void handleRoleChange(managedUser.id, nextRole)
+  }
+
+  async function handleConfirmPromote() {
+    if (!promoteConfirmation) return
+    await handleRoleChange(promoteConfirmation.userId, promoteConfirmation.nextRole)
+    setPromoteConfirmation(null)
   }
 
   return (
@@ -180,7 +214,15 @@ export default function ManagementPage() {
                                 className="w-full"
                                 onChange={(nextRole) => {
                                   if (!isUserRole(nextRole)) return
-                                  void handleRoleChange(managedUser.id, nextRole)
+                                  handleRoleSelection(
+                                    {
+                                      id: managedUser.id,
+                                      full_name: managedUser.full_name,
+                                      email: managedUser.email,
+                                      role: managedUser.role,
+                                    },
+                                    nextRole,
+                                  )
                                 }}
                               />
                             </div>
@@ -199,6 +241,93 @@ export default function ManagementPage() {
           </div>
         )}
       </section>
+
+      {promoteConfirmation && (
+        <Modal
+          onClose={() => {
+            if (!updateRoleMutation.isPending) {
+              setPromoteConfirmation(null)
+            }
+          }}
+          maxWidth="max-w-md"
+        >
+          <div className="w-full rounded-2xl border border-neutral-100 border-t-4 border-t-brand bg-white shadow-xl overflow-visible">
+            <div className="flex items-start gap-3 border-b border-brand/10 bg-brand-light px-6 py-4">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white shadow-[0_0_0_5px_rgba(202,11,11,0.10)]">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="app-section-title text-brand-text">{t('management.promote_confirm_title')}</h2>
+                <p className="mt-0.5 text-sm text-neutral-700">{t('management.promote_confirm_desc')}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!updateRoleMutation.isPending) {
+                    setPromoteConfirmation(null)
+                  }
+                }}
+                disabled={updateRoleMutation.isPending}
+                className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 disabled:pointer-events-none"
+                aria-label={t('common.close')}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4 p-6 text-sm text-neutral-700">
+              <div className="rounded-xl border border-neutral-100 bg-white px-3 py-2.5">
+                <p className="text-xs uppercase tracking-widest text-neutral-400">{t('management.col_name')}</p>
+                <p className="mt-1 text-sm font-medium text-neutral-900">{promoteConfirmation.fullName}</p>
+              </div>
+              <div className="rounded-xl border border-neutral-100 bg-white px-3 py-2.5">
+                <p className="text-xs uppercase tracking-widest text-neutral-400">{t('management.col_email')}</p>
+                <p className="mt-1 break-all text-sm font-medium text-neutral-900">{promoteConfirmation.email}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-neutral-100 bg-white px-3 py-2.5">
+                  <p className="text-xs uppercase tracking-widest text-neutral-400">{t('management.promote_confirm_current_role')}</p>
+                  <p className="mt-1 text-sm font-medium text-neutral-900">
+                    {promoteConfirmation.currentRole === 'admin' ? t('management.role_admin') : t('management.role_user')}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-brand/25 bg-brand-light/50 px-3 py-2.5">
+                  <p className="text-xs uppercase tracking-widest text-neutral-400">{t('management.promote_confirm_new_role')}</p>
+                  <p className="mt-1 text-sm font-medium text-brand-text">{t('management.role_admin')}</p>
+                </div>
+              </div>
+              <div className="rounded-xl border border-warning/30 bg-warning-bg px-3 py-2.5 text-xs text-warning-text">
+                {t('management.promote_confirm_warning')}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleConfirmPromote()
+                  }}
+                  disabled={updateRoleMutation.isPending}
+                  className="app-btn-primary disabled:pointer-events-none"
+                >
+                  {updateRoleMutation.isPending ? t('common.loading') : t('management.promote_confirm_action')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPromoteConfirmation(null)}
+                  disabled={updateRoleMutation.isPending}
+                  className="app-btn-secondary disabled:pointer-events-none"
+                >
+                  {t('common.cancel')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

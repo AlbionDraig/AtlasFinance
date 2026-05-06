@@ -816,7 +816,13 @@
     "current_user_locked": "No puedes cambiar tu propio rol desde esta pantalla.",
     "toast_role_updated": "Rol actualizado correctamente.",
     "toast_role_update_error": "No se pudo actualizar el rol.",
-    "toast_forbidden": "No tienes permisos para realizar esta acción."
+    "toast_forbidden": "No tienes permisos para realizar esta acción.",
+    "promote_confirm_title": "Confirmar cambio a administrador",
+    "promote_confirm_desc": "Revisa los datos antes de otorgar permisos de administración.",
+    "promote_confirm_current_role": "Rol actual",
+    "promote_confirm_new_role": "Nuevo rol",
+    "promote_confirm_warning": "Este cambio dará acceso a funciones administrativas y gestión de usuarios.",
+    "promote_confirm_action": "Sí, convertir en admin"
   },
   "lang": {
     "selector_label": "Idioma",

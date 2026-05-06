@@ -814,7 +814,13 @@
     "current_user_locked": "You cannot change your own role from this screen.",
     "toast_role_updated": "Role updated successfully.",
     "toast_role_update_error": "Could not update role.",
-    "toast_forbidden": "You do not have permission to perform this action."
+    "toast_forbidden": "You do not have permission to perform this action.",
+    "promote_confirm_title": "Confirm administrator change",
+    "promote_confirm_desc": "Review the details before granting administration permissions.",
+    "promote_confirm_current_role": "Current role",
+    "promote_confirm_new_role": "New role",
+    "promote_confirm_warning": "This change grants access to administrative features and user management.",
+    "promote_confirm_action": "Yes, make admin"
   },
   "lang": {
     "selector_label": "Language",
