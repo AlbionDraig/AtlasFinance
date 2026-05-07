@@ -241,6 +241,7 @@ export default function DashboardPage() {
 
   const [period, setPeriod] = useState<Period>('current_year')
   const [currency, setCurrency] = useState('COP')
+  const [densityMode, setDensityMode] = useState<'basic' | 'advanced'>('basic')
   const [customFrom, setCustomFrom] = useState(yearStart)
   const [customTo, setCustomTo] = useState(todayStr)
   const dataBounds = { min: '2000-01-01', max: todayStr }
@@ -378,6 +379,28 @@ export default function DashboardPage() {
 
       {activeTab === 'resumen' && (<>
 
+      <div className="flex flex-col gap-2 rounded-lg border border-brand/20 bg-gradient-to-r from-brand-light/70 to-white px-3 py-2 text-xs text-brand-text sm:flex-row sm:items-center sm:justify-between">
+        <p>{densityMode === 'basic' ? t('dashboard.density_basic_hint') : t('dashboard.density_advanced_hint')}</p>
+        <div className="inline-flex rounded-lg border border-brand/20 bg-white/80 p-0.5" role="group" aria-label={t('dashboard.density_label')}>
+          <button
+            type="button"
+            onClick={() => setDensityMode('basic')}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${densityMode === 'basic' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
+            aria-pressed={densityMode === 'basic'}
+          >
+            {t('dashboard.density_basic')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDensityMode('advanced')}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${densityMode === 'advanced' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
+            aria-pressed={densityMode === 'advanced'}
+          >
+            {t('dashboard.density_advanced')}
+          </button>
+        </div>
+      </div>
+
       {/* Filters */}
       <FilterCard sticky>
         <div className="flex flex-col gap-1">
@@ -429,6 +452,21 @@ export default function DashboardPage() {
           />
         </div>
       </section>
+
+      {densityMode === 'basic' ? (
+        <section className="app-card p-4 text-sm text-neutral-700">
+          <p className="font-medium text-neutral-900">{t('dashboard.density_basic_card_title')}</p>
+          <p className="mt-1 text-xs text-neutral-400">{t('dashboard.density_basic_card_desc')}</p>
+          <button
+            type="button"
+            className="mt-3 app-btn-secondary w-auto px-3"
+            onClick={() => setDensityMode('advanced')}
+          >
+            {t('dashboard.density_switch_advanced')}
+          </button>
+        </section>
+      ) : (
+        <>
 
       {/* Insight cards */}
       <section className="pt-1">
@@ -619,6 +657,8 @@ export default function DashboardPage() {
           <p className="text-lg mb-1">{t('dashboard.empty_title')}</p>
           <p className="text-sm">{t('dashboard.empty_subtitle')}</p>
         </div>
+      )}
+      </>
       )}
       </>)}
     </div>
