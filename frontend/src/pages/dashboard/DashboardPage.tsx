@@ -350,10 +350,12 @@ export default function DashboardPage() {
 
       {/* Tabs */}
       <div className="app-card p-2">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="tablist" aria-label={t('dashboard.title')}>
           <button
             type="button"
             onClick={() => handleTabChange('resumen')}
+            role="tab"
+            aria-selected={activeTab === 'resumen'}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'resumen' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
             {t('dashboard.tab_summary')}
@@ -361,6 +363,8 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={() => handleTabChange('inversiones')}
+            role="tab"
+            aria-selected={activeTab === 'inversiones'}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'inversiones' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
             {t('dashboard.tab_investments')}

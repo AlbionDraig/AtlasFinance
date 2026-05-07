@@ -58,10 +58,12 @@ export default function AdminPage() {
       </div>
 
       <div className="app-card p-2">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2" role="tablist" aria-label={t('admin.title')}>
           <button
             type="button"
             onClick={() => handleTabChange('banks')}
+            role="tab"
+            aria-selected={activeTab === 'banks'}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'banks' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
             {t('admin.tab_banks')}
@@ -69,6 +71,8 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={() => handleTabChange('investment-entities')}
+            role="tab"
+            aria-selected={activeTab === 'investment-entities'}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'investment-entities' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
             {t('admin.tab_entities')}
@@ -76,6 +80,8 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={() => handleTabChange('countries')}
+            role="tab"
+            aria-selected={activeTab === 'countries'}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'countries' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
             {t('admin.tab_countries')}
@@ -83,6 +89,8 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={() => handleTabChange('categories')}
+            role="tab"
+            aria-selected={activeTab === 'categories'}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'categories' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
             {t('admin.tab_categories')}
