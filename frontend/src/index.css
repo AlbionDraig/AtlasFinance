@@ -194,11 +194,11 @@ body {
   }
 
   .app-table tbody tr:nth-child(even) {
-    background: color-mix(in srgb, var(--af-accent-soft) 55%, var(--af-surface) 45%);
+    background: color-mix(in srgb, var(--af-surface-alt) 82%, var(--af-surface) 18%);
   }
 
   .app-table tbody tr:hover {
-    background: color-mix(in srgb, var(--af-accent-soft) 75%, var(--af-surface) 25%);
+    background: color-mix(in srgb, var(--af-accent-soft) 88%, var(--af-surface) 12%);
   }
 
   .app-table th,
