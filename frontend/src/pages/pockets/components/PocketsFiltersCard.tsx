@@ -43,7 +43,7 @@ export default function PocketsFiltersCard({
       </div>
 
       <div className="flex flex-col gap-1 w-52">
-        <label className="app-label">{t('common.bank')}</label>
+        <label className="app-label">{t('common.account')}</label>
         <Select
           value={filters.accountId}
           onChange={(value) => setFilters(current => ({ ...current, accountId: value }))}

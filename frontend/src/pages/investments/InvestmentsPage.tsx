@@ -86,6 +86,8 @@ interface InvestmentFormState {
   started_at: string
 }
 
+type InvestmentFormErrors = Partial<Record<'name' | 'investment_entity_id' | 'amount_invested' | 'current_value' | 'started_at', string>>
+
 function emptyForm(): InvestmentFormState {
   // Default to current day and COP for faster data entry in local context.
   return {
@@ -103,6 +105,7 @@ interface InvestmentModalProps {
   title: string
   isEditing: boolean
   form: InvestmentFormState
+  errors: InvestmentFormErrors
   setForm: Dispatch<SetStateAction<InvestmentFormState>>
   entities: InvestmentEntity[]
   saving: boolean
@@ -112,7 +115,7 @@ interface InvestmentModalProps {
 }
 
 function InvestmentModal({
-  title, isEditing, form, setForm, entities, saving, submitLabel, onSubmit, onClose,
+  title, isEditing, form, errors, setForm, entities, saving, submitLabel, onSubmit, onClose,
 }: InvestmentModalProps) {
   const { t } = useTranslation()
   const entityOptions = [
@@ -159,10 +162,11 @@ function InvestmentModal({
               type="text"
               value={form.name}
               onChange={e => setForm(c => ({ ...c, name: e.target.value }))}
-              className="app-control w-full"
+              className={`app-control w-full ${errors.name ? 'border-warning' : ''}`}
               placeholder={t('investments.field_name_placeholder')}
               autoFocus
             />
+            {errors.name && <p className="mt-1 text-xs tone-negative">{errors.name}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -183,6 +187,7 @@ function InvestmentModal({
                 options={entityOptions}
                 className="w-full"
               />
+              {errors.investment_entity_id && <p className="mt-1 text-xs tone-negative">{errors.investment_entity_id}</p>}
             </div>
           </div>
 
@@ -203,6 +208,7 @@ function InvestmentModal({
                   className="w-full"
                   placeholder="0"
                 />
+                {errors.current_value && <p className="mt-1 text-xs tone-negative">{errors.current_value}</p>}
               </div>
             </div>
           ) : (
@@ -215,6 +221,7 @@ function InvestmentModal({
                 className="w-full"
                 placeholder="0"
               />
+              {errors.amount_invested && <p className="mt-1 text-xs tone-negative">{errors.amount_invested}</p>}
             </div>
           )}
 
@@ -237,6 +244,7 @@ function InvestmentModal({
               value={form.started_at}
               onChange={v => setForm(c => ({ ...c, started_at: v }))}
             />
+            {errors.started_at && <p className="mt-1 text-xs tone-negative">{errors.started_at}</p>}
           </div>
 
           <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
@@ -315,6 +323,7 @@ export default function InvestmentsPage() {
   const [deletingInvestment, setDeletingInvestment] = useState<Investment | null>(null)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<InvestmentFormState>(emptyForm())
+  const [formErrors, setFormErrors] = useState<InvestmentFormErrors>({})
 
   // Filters
   const [filterQuery, setFilterQuery] = useState('')
@@ -389,6 +398,7 @@ export default function InvestmentsPage() {
 
   function openCreate() {
     setForm(emptyForm())
+    setFormErrors({})
     setCreateOpen(true)
   }
 
@@ -402,6 +412,7 @@ export default function InvestmentsPage() {
       investment_entity_id: String(inv.investment_entity_id),
       started_at: inv.started_at.slice(0, 10),
     })
+    setFormErrors({})
     setEditingInvestment(inv)
   }
 
@@ -409,12 +420,22 @@ export default function InvestmentsPage() {
     const name = form.name.trim()
     const investmentEntityId = Number(form.investment_entity_id)
     const amountInvested = Number(form.amount_invested)
+    const errors: InvestmentFormErrors = {}
 
     // Normalize user input into API payload and enforce business constraints.
-    if (name.length < 2) { toast(t('investments.toast_name_short'), 'error'); return null }
-    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) { toast(t('investments.toast_select_entity'), 'error'); return null }
-    if (!form.amount_invested || amountInvested <= 0) { toast(t('investments.toast_amount_zero'), 'error'); return null }
-    if (!form.started_at) { toast(t('investments.toast_select_date'), 'error'); return null }
+    if (name.length < 2) errors.name = t('investments.toast_name_short')
+    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) errors.investment_entity_id = t('investments.toast_select_entity')
+    if (!form.amount_invested || amountInvested <= 0) errors.amount_invested = t('investments.toast_amount_zero')
+    if (!form.started_at) errors.started_at = t('investments.toast_select_date')
+
+    setFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      const firstError = errors.name ?? errors.investment_entity_id ?? errors.amount_invested ?? errors.started_at
+      if (firstError) {
+        toast(firstError, 'error')
+      }
+      return null
+    }
 
     return {
       name,
@@ -431,12 +452,22 @@ export default function InvestmentsPage() {
     const name = form.name.trim()
     const investmentEntityId = Number(form.investment_entity_id)
     const currentValue = Number(form.current_value)
+    const errors: InvestmentFormErrors = {}
 
     // Editing flow only updates mutable fields (not amount_invested/currency).
-    if (name.length < 2) { toast(t('investments.toast_name_short'), 'error'); return null }
-    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) { toast(t('investments.toast_select_entity'), 'error'); return null }
-    if (form.current_value === '' || currentValue < 0) { toast(t('investments.toast_value_negative'), 'error'); return null }
-    if (!form.started_at) { toast(t('investments.toast_select_date'), 'error'); return null }
+    if (name.length < 2) errors.name = t('investments.toast_name_short')
+    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) errors.investment_entity_id = t('investments.toast_select_entity')
+    if (form.current_value === '' || currentValue < 0) errors.current_value = t('investments.toast_value_negative')
+    if (!form.started_at) errors.started_at = t('investments.toast_select_date')
+
+    setFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      const firstError = errors.name ?? errors.investment_entity_id ?? errors.current_value ?? errors.started_at
+      if (firstError) {
+        toast(firstError, 'error')
+      }
+      return null
+    }
 
     return {
       name,
@@ -807,6 +838,7 @@ export default function InvestmentsPage() {
 
       {/* FAB */}
       <FloatingActionMenu
+        ariaLabel={t('investments.fab_menu_label')}
         items={[{ key: 'new', label: t('investments.fab_create'), onClick: openCreate }]}
       />
 
@@ -816,6 +848,7 @@ export default function InvestmentsPage() {
           title={t('investments.create_title')}
           isEditing={false}
           form={form}
+          errors={formErrors}
           setForm={setForm}
           entities={entities}
           saving={saving}
@@ -831,6 +864,7 @@ export default function InvestmentsPage() {
           title={t('investments.edit_title')}
           isEditing
           form={form}
+          errors={formErrors}
           setForm={setForm}
           entities={entities}
           saving={saving}

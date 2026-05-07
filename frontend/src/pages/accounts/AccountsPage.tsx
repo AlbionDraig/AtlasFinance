@@ -22,6 +22,8 @@ interface AccountFormState {
   bankId: string
 }
 
+type AccountFormErrors = Partial<Record<keyof AccountFormState, string>>
+
 const EMPTY_ACCOUNT_FORM: AccountFormState = {
   name: '',
   accountType: '',
@@ -52,6 +54,7 @@ export default function AccountsPage() {
   const [page, setPage] = useState(1)
 
   const [accountForm, setAccountForm] = useState<AccountFormState>(EMPTY_ACCOUNT_FORM)
+  const [accountFormErrors, setAccountFormErrors] = useState<AccountFormErrors>({})
   const [filters, setFilters] = useState<AccountsFiltersState>(() => buildDefaultFilters())
 
   // Catálogos y lista vienen de hooks dedicados (separación de responsabilidades).
@@ -76,6 +79,7 @@ export default function AccountsPage() {
 
   function resetAccountForm() {
     setAccountForm(EMPTY_ACCOUNT_FORM)
+    setAccountFormErrors({})
   }
 
   function openCreateModal() {
@@ -90,22 +94,28 @@ export default function AccountsPage() {
 
   async function handleCreateAccount(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const errors: AccountFormErrors = {}
 
     // Keep validation in UI to provide immediate feedback before API call.
     if (accountForm.name.trim().length < 2) {
-      toast(t('accounts.toast_name_short'), 'error')
-      return
+      errors.name = t('accounts.toast_name_short')
     }
     if (!accountForm.accountType) {
-      toast(t('accounts.toast_select_type'), 'error')
-      return
+      errors.accountType = t('accounts.toast_select_type')
     }
     if (!accountForm.currency) {
-      toast(t('accounts.toast_select_currency'), 'error')
-      return
+      errors.currency = t('accounts.toast_select_currency')
     }
     if (!accountForm.bankId) {
-      toast(t('accounts.toast_select_bank'), 'error')
+      errors.bankId = t('accounts.toast_select_bank')
+    }
+
+    setAccountFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      const firstError = errors.name ?? errors.accountType ?? errors.currency ?? errors.bankId
+      if (firstError) {
+        toast(firstError, 'error')
+      }
       return
     }
 
@@ -183,6 +193,7 @@ export default function AccountsPage() {
       {createOpen && (
         <AccountCreateModal
           form={accountForm}
+          errors={accountFormErrors}
           setForm={setAccountForm}
           banks={banks}
           saving={savingAccount}
@@ -238,7 +249,7 @@ export default function AccountsPage() {
 
       <FloatingActionMenu
         hidden={createOpen}
-        ariaLabel={t('transactions.fab_menu_label')}
+        ariaLabel={t('accounts.fab_menu_label')}
         items={[
           {
             key: 'create-account',

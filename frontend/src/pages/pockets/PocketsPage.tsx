@@ -27,6 +27,8 @@ interface PocketFormState {
   account_id: string
 }
 
+type PocketFormErrors = Partial<Record<keyof PocketFormState, string>>
+
 const EMPTY_FORM: PocketFormState = {
   name: '',
   balance: '',
@@ -90,6 +92,7 @@ interface PocketModalProps {
   title: string
   isEditing: boolean
   form: PocketFormState
+  errors: PocketFormErrors
   setForm: Dispatch<SetStateAction<PocketFormState>>
   accounts: Account[]
   currentBalance?: number
@@ -104,6 +107,7 @@ function PocketModal({
   title,
   isEditing,
   form,
+  errors,
   setForm,
   accounts,
   currentBalance,
@@ -151,7 +155,7 @@ function PocketModal({
         <form onSubmit={onSubmit} className="space-y-4 p-6">
           <FormField label={t('pockets.field_name')}>
             <input
-              className="app-control"
+              className={`app-control ${errors.name ? 'border-warning' : ''}`}
               type="text"
               value={form.name}
               onChange={event => setForm(current => ({ ...current, name: event.target.value }))}
@@ -159,6 +163,7 @@ function PocketModal({
               maxLength={120}
               autoFocus
             />
+            {errors.name && <p className="mt-1 text-xs tone-negative">{errors.name}</p>}
           </FormField>
 
           <FormField label={t('pockets.field_account')}>
@@ -175,6 +180,7 @@ function PocketModal({
               className="w-full"
               active={Boolean(form.account_id)}
             />
+            {errors.account_id && <p className="mt-1 text-xs tone-negative">{errors.account_id}</p>}
           </FormField>
 
           {!isEditing ? (
@@ -186,6 +192,7 @@ function PocketModal({
                 className="w-full"
                 placeholder="0"
               />
+              {errors.balance && <p className="mt-1 text-xs tone-negative">{errors.balance}</p>}
               <InlineAlert
                 className="mt-2"
                 message={<>{t('pockets.initial_balance_alert')}</>}
@@ -240,6 +247,7 @@ export default function PocketsPage() {
   const [deletingPocket, setDeletingPocket] = useState<Pocket | null>(null)
   const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [form, setForm] = useState<PocketFormState>(EMPTY_FORM)
+  const [formErrors, setFormErrors] = useState<PocketFormErrors>({})
 
   const accountById = useMemo(() => {
     // Precompute lookup maps to avoid repeated O(n) searches in render/filter logic.
@@ -310,6 +318,7 @@ export default function PocketsPage() {
 
   function resetForm() {
     setForm(EMPTY_FORM)
+    setFormErrors({})
   }
 
   function openCreateModal() {
@@ -335,23 +344,31 @@ export default function PocketsPage() {
     const name = form.name.trim()
     const accountId = Number(form.account_id)
     const balance = Number(form.balance)
+    const errors: PocketFormErrors = {}
 
     // Validate and normalize form state before calling API.
     if (name.length < 2) {
-      toast(t('pockets.toast_name_short'), 'error')
-      return null
+      errors.name = t('pockets.toast_name_short')
     }
     if (!Number.isInteger(accountId) || accountId <= 0) {
-      toast(t('pockets.toast_select_account'), 'error')
-      return null
+      errors.account_id = t('pockets.toast_select_account')
     }
     if (!Number.isFinite(balance) || balance < 0) {
-      toast(t('pockets.toast_balance_invalid'), 'error')
+      errors.balance = t('pockets.toast_balance_invalid')
+    }
+
+    setFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      const firstError = errors.name ?? errors.account_id ?? errors.balance
+      if (firstError) {
+        toast(firstError, 'error')
+      }
       return null
     }
 
     const selectedAccount = accountById.get(accountId)
     if (!selectedAccount) {
+      setFormErrors((current) => ({ ...current, account_id: t('pockets.toast_invalid_account') }))
       toast(t('pockets.toast_invalid_account'), 'error')
       return null
     }
@@ -367,18 +384,27 @@ export default function PocketsPage() {
   function buildUpdatePayloadFromForm(): PocketUpdatePayload | null {
     const name = form.name.trim()
     const accountId = Number(form.account_id)
+    const errors: PocketFormErrors = {}
 
     if (name.length < 2) {
-      toast(t('pockets.toast_name_short'), 'error')
-      return null
+      errors.name = t('pockets.toast_name_short')
     }
     if (!Number.isInteger(accountId) || accountId <= 0) {
-      toast(t('pockets.toast_select_account'), 'error')
+      errors.account_id = t('pockets.toast_select_account')
+    }
+
+    setFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      const firstError = errors.name ?? errors.account_id
+      if (firstError) {
+        toast(firstError, 'error')
+      }
       return null
     }
 
     const selectedAccount = accountById.get(accountId)
     if (!selectedAccount) {
+      setFormErrors((current) => ({ ...current, account_id: t('pockets.toast_invalid_account') }))
       toast(t('pockets.toast_invalid_account'), 'error')
       return null
     }
@@ -490,6 +516,7 @@ export default function PocketsPage() {
           title={t('pockets.create_title')}
           isEditing={false}
           form={form}
+          errors={formErrors}
           setForm={setForm}
           accounts={accounts}
           saving={saving}
@@ -504,6 +531,7 @@ export default function PocketsPage() {
           title={t('pockets.edit_title')}
           isEditing
           form={form}
+          errors={formErrors}
           setForm={setForm}
           accounts={accounts}
           currentBalance={editingPocket.balance}

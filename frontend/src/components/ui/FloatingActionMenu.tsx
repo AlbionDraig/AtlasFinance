@@ -17,7 +17,7 @@ interface FloatingActionMenuProps {
 export default function FloatingActionMenu({
   items,
   hidden = false,
-  ariaLabel = 'Abrir acciones rapidas',
+  ariaLabel = 'Abrir acciones rápidas',
 }: FloatingActionMenuProps) {
   const [open, setOpen] = useState(false)
 
