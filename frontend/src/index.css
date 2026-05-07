@@ -159,7 +159,7 @@ body {
   }
 
   .app-table-wrap {
-    overflow-x: auto;
+    overflow-x: hidden;
     border: 1px solid color-mix(in srgb, var(--af-accent) 20%, transparent);
     border-radius: 0.75rem;
     background: var(--af-surface);
@@ -169,9 +169,14 @@ body {
 
   .app-table {
     width: 100%;
-    min-width: 100%;
+    min-width: 0;
+    table-layout: auto !important;
     border-collapse: separate;
     border-spacing: 0;
+  }
+
+  .app-table colgroup {
+    display: none;
   }
 
   .app-table thead th {
@@ -199,11 +204,36 @@ body {
   .app-table th,
   .app-table td {
     border-bottom: 1px solid var(--af-border);
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .app-table th:not(:last-child),
   .app-table td:not(:last-child) {
     border-right: 1px solid var(--af-border);
+  }
+
+  .app-table .truncate {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+  }
+
+  .app-table .max-w-0 {
+    max-width: none !important;
+  }
+
+  .app-table .whitespace-nowrap {
+    white-space: normal !important;
+  }
+
+  @media (max-width: 1024px) {
+    .app-table th,
+    .app-table td {
+      padding-left: 0.875rem !important;
+      padding-right: 0.875rem !important;
+    }
   }
 
   .app-filter-card {

@@ -573,7 +573,7 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
             </div>
           ) : (
             <div className="app-table-wrap">
-              <table className="app-table min-w-[820px]">
+              <table className="app-table">
                 <thead>
                   <tr className="border-b border-neutral-100 bg-neutral-50">
                     <th className="px-4 py-3 text-left text-xs font-medium tracking-widest uppercase text-neutral-700">{t('dashboard.inv_col_investment')}</th>
