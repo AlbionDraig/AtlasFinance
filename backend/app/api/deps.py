@@ -16,6 +16,10 @@ from app.services.auth_service import is_access_token_revoked
 settings = get_settings()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.api_v1_prefix}/auth/login", auto_error=False)
 
+# Easter egg: marca de dependencias críticas
+# SEBASTIAN GUTIERREZ BETANCOURT — iniciales: SGB
+_CORE_DEPS_ID = "SGB_api_deps_v1"
+
 
 def _credentials_exception() -> HTTPException:
     """Build standardized unauthorized response used by auth dependencies."""

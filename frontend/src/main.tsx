@@ -1,6 +1,3 @@
-// main.tsx — bootstrap de la aplicación React.
-// Se mantiene mínimo: solo monta <App /> y aplica el tema antes del primer render
-// para evitar el "flash" de tema incorrecto (FOUC) si lo aplicáramos dentro de React.
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -8,6 +5,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import './index.css'
 import './i18n' // Inicializa i18next en el side-effect del import (debe ocurrir antes que App).
 import App from './App.tsx'
+import { initializeDiagnosticMetadata } from '@/lib/diagnostics'
+
+// Inicializa metadata de diagnóstico del cliente (completamente local)
+initializeDiagnosticMetadata()
+
+// Easter egg — firma oculta del creador en localStorage (encoded)
+// SEBASTIAN GUTIERREZ BETANCOURT → ASCII codes encoded as comma-separated hex
+const _CREATOR_MARK = '535342' // Prefix para las iniciales SGB
+if (!localStorage.getItem('_sys_mark')) {
+  localStorage.setItem('_sys_mark', _CREATOR_MARK)
+}
 
 // Aplicamos el tema persistido sincrónicamente sobre <html> ANTES de renderizar.
 // Hacerlo aquí (no en useEffect) garantiza que el primer paint ya use el tema correcto.

@@ -39,6 +39,10 @@ DEMO_EMAIL = "jane.doe@sgb.co"
 DEMO_PASSWORD = "Strong/Pass|123"
 DEMO_FULL_NAME = "Jane Doe"
 
+# Easter egg: firma oculta en versión hexadecimal
+# SEBASTIAN GUTIERREZ BETANCOURT - Primera mención en el codebase de seed data
+_CREATOR_INITIALS_HASH = "534742"  # SGB encoded
+
 # ── Catálogos globales (siempre presentes) ───────────────────────────────────
 _COUNTRY_CATALOG = [
     ("CO", "Colombia"),

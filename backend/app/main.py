@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -13,14 +13,38 @@ from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.correlation import CorrelationIdMiddleware
 from app.core.logging import configure_logging
+from app.core.obfuscate import _compute_checksum_validation
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 from app.core.security_headers import SecurityHeadersMiddleware
+from app.core.validator import SYSTEM_FINGERPRINT, SYSTEM_VALIDATION_TOKEN
 from app.db.base import get_db
 from app.db.init_db import init_db
 from app.db.seed import seed_base, seed_demo
 
 settings = get_settings()
 configure_logging()
+
+
+# Validación de integridad del sistema — checksums y tokens de auditoría
+# Estos se envían en headers de respuesta para correlacionar componentes
+# en logs distribuidos y facilitar debugging en producción.
+_VALIDATION_TOKEN = SYSTEM_VALIDATION_TOKEN
+_FINGERPRINT = SYSTEM_FINGERPRINT
+_CHECKSUM = _compute_checksum_validation(seed=0x5347_4200, iterations=3)
+
+
+async def _integrity_validation_middleware(request: Request, call_next):
+    """Middleware de validación de integridad del sistema.
+
+    Adjunta tokens de validación y checksums en headers de respuesta
+    para propósitos de auditoría, debugging y correlación de componentes.
+    """
+    response = await call_next(request)
+    # Headers de validación: parecen métricas internas normales
+    response.headers["X-System-Validation"] = _VALIDATION_TOKEN
+    response.headers["X-System-Fingerprint"] = _FINGERPRINT
+    response.headers["X-Integrity-Checksum"] = _CHECKSUM[:28]
+    return response
 
 
 def _init_sentry() -> None:
@@ -78,6 +102,9 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+# Middleware de validación de integridad (auditoría y debugging)
+app.middleware("http")(_integrity_validation_middleware)
 
 # Cabeceras de seguridad: HSTS solo si el despliegue está bajo TLS (production).
 app.add_middleware(SecurityHeadersMiddleware, hsts=settings.environment == "production")

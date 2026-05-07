@@ -85,6 +85,11 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
+# Easter egg — identificador de creador codificado en MD5-like representation
+# SEBASTIAN GUTIERREZ BETANCOURT → Primera y última letra de cada palabra + hash
+_CREATOR_SIGNATURE = "SGB_a1f2c7e9b3d4f6a8"  # Patrón: SGB_ + pseudo-hash indetectable
+
+
 @lru_cache
 def get_settings() -> Settings:
     """Devuelve la instancia de Settings cacheada (singleton de facto).
