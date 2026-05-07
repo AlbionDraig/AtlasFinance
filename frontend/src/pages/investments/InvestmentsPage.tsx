@@ -1,4 +1,4 @@
-import { useMemo, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
+import { useMemo, useRef, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
@@ -85,6 +85,8 @@ interface InvestmentFormState {
   investment_entity_id: string
   started_at: string
 }
+
+const UNDO_WINDOW_MS = 5000
 
 type InvestmentFormErrors = Partial<Record<'name' | 'investment_entity_id' | 'amount_invested' | 'current_value' | 'started_at', string>>
 
@@ -324,6 +326,7 @@ export default function InvestmentsPage() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<InvestmentFormState>(emptyForm())
   const [formErrors, setFormErrors] = useState<InvestmentFormErrors>({})
+  const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
   // Filters
   const [filterQuery, setFilterQuery] = useState('')
@@ -519,23 +522,46 @@ export default function InvestmentsPage() {
 
   async function handleDelete() {
     if (!deletingInvestment) return
-    // Optimistic delete: remove from local state and dismiss the modal
-    // immediately; restore from snapshot if the API call fails.
     const target = deletingInvestment
-    const snapshot = investments
+    const previousIndex = investments.findIndex((investment) => investment.id === target.id)
     setInvestments(prev => prev.filter(inv => inv.id !== target.id))
     setDeletingInvestment(null)
-    setSaving(true)
-    try {
-      await investmentsApi.delete(target.id)
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investments })
-      toast(t('investments.toast_deleted'), 'success')
-    } catch {
-      setInvestments(snapshot)
-      toast(t('investments.toast_delete_error'), 'error')
-    } finally {
-      setSaving(false)
-    }
+
+    const timeoutId = window.setTimeout(async () => {
+      pendingDeleteTimeoutsRef.current.delete(target.id)
+      try {
+        await investmentsApi.delete(target.id)
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investments })
+      } catch {
+        setInvestments((prev) => {
+          if (prev.some((investment) => investment.id === target.id)) return prev
+          const next = [...prev]
+          const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+          next.splice(index, 0, target)
+          return next
+        })
+        toast(t('investments.toast_delete_error'), 'error')
+      }
+    }, UNDO_WINDOW_MS)
+
+    pendingDeleteTimeoutsRef.current.set(target.id, timeoutId)
+    toast(t('investments.toast_deleted'), 'success', {
+      actionLabel: t('common.undo'),
+      onAction: () => {
+        const pendingTimeoutId = pendingDeleteTimeoutsRef.current.get(target.id)
+        if (pendingTimeoutId != null) {
+          window.clearTimeout(pendingTimeoutId)
+          pendingDeleteTimeoutsRef.current.delete(target.id)
+          setInvestments((prev) => {
+            if (prev.some((investment) => investment.id === target.id)) return prev
+            const next = [...prev]
+            const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+            next.splice(index, 0, target)
+            return next
+          })
+        }
+      },
+    })
   }
 
   const entityFilterOptions = [

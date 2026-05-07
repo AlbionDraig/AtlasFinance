@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties, type Dispatch, type FormEvent, type SetStateAction } from 'react'
+import { useMemo, useRef, useState, type CSSProperties, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { AxiosError } from 'axios'
@@ -42,6 +42,8 @@ const DEFAULT_FILTERS: PocketFiltersState = {
   bankId: 'all',
   currency: 'all',
 }
+
+const UNDO_WINDOW_MS = 5000
 
 function getApiErrorMessage(error: unknown, fallback: string): string {
   // Align backend detail extraction with the rest of UI pages.
@@ -249,6 +251,7 @@ export default function PocketsPage() {
   const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [form, setForm] = useState<PocketFormState>(EMPTY_FORM)
   const [formErrors, setFormErrors] = useState<PocketFormErrors>({})
+  const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
   const accountById = useMemo(() => {
     // Precompute lookup maps to avoid repeated O(n) searches in render/filter logic.
@@ -459,24 +462,47 @@ export default function PocketsPage() {
 
   async function handleDelete() {
     if (!deletingPocket) return
-    // Optimistic delete: drop from the list and close the confirm modal
-    // before the network round-trip; restore from snapshot on failure.
     const target = deletingPocket
-    const snapshot = pockets
+    const previousIndex = pockets.findIndex((pocket) => pocket.id === target.id)
     setPockets(current => current.filter(pocket => pocket.id !== target.id))
     setDeletingPocket(null)
-    setSaving(true)
-    try {
-      await pocketsApi.delete(target.id)
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
-      toast(t('pockets.toast_deleted'))
-    } catch (error) {
-      setPockets(snapshot)
-      toast(getApiErrorMessage(error, t('pockets.toast_delete_error')), 'error')
-    } finally {
-      setSaving(false)
-    }
+
+    const timeoutId = window.setTimeout(async () => {
+      pendingDeleteTimeoutsRef.current.delete(target.id)
+      try {
+        await pocketsApi.delete(target.id)
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
+      } catch (error) {
+        setPockets((current) => {
+          if (current.some((pocket) => pocket.id === target.id)) return current
+          const next = [...current]
+          const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+          next.splice(index, 0, target)
+          return next
+        })
+        toast(getApiErrorMessage(error, t('pockets.toast_delete_error')), 'error')
+      }
+    }, UNDO_WINDOW_MS)
+
+    pendingDeleteTimeoutsRef.current.set(target.id, timeoutId)
+    toast(t('pockets.toast_deleted'), 'success', {
+      actionLabel: t('common.undo'),
+      onAction: () => {
+        const pendingTimeoutId = pendingDeleteTimeoutsRef.current.get(target.id)
+        if (pendingTimeoutId != null) {
+          window.clearTimeout(pendingTimeoutId)
+          pendingDeleteTimeoutsRef.current.delete(target.id)
+          setPockets((current) => {
+            if (current.some((pocket) => pocket.id === target.id)) return current
+            const next = [...current]
+            const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+            next.splice(index, 0, target)
+            return next
+          })
+        }
+      },
+    })
   }
 
   async function handleWithdraw(formData: WithdrawFromPocketFormData) {

@@ -35,6 +35,7 @@
     "create": "Crear",
     "edit": "Editar",
     "delete": "Eliminar",
+    "undo": "Deshacer",
     "search": "Buscar",
     "name": "Nombre",
     "code": "Código",

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -27,6 +27,8 @@ function buildDefaultInvestmentEntityFilters(): InvestmentEntitiesFiltersState {
   }
 }
 
+const UNDO_WINDOW_MS = 5000
+
 interface InvestmentEntitiesTabProps {
   countryCatalogOptions: Array<{ value: string; label: string }>
 }
@@ -49,6 +51,7 @@ export default function InvestmentEntitiesTab({ countryCatalogOptions }: Investm
   const [investmentEntityFilters, setInvestmentEntityFilters] = useState<InvestmentEntitiesFiltersState>(
     () => buildDefaultInvestmentEntityFilters(),
   )
+  const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
   useEffect(() => {
     async function loadInvestmentEntities() {
@@ -183,18 +186,46 @@ export default function InvestmentEntitiesTab({ countryCatalogOptions }: Investm
 
   async function handleDeleteInvestmentEntity() {
     if (!deletingInvestmentEntity) return
-    setSavingInvestmentEntity(true)
-    try {
-      await investmentEntitiesApi.delete(deletingInvestmentEntity.id)
-      setInvestmentEntities((current) => current.filter((entity) => entity.id !== deletingInvestmentEntity.id))
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investmentEntities })
-      setDeletingInvestmentEntity(null)
-      toast(t('admin.entities.toast_deleted'))
-    } catch (error) {
-      toast(getApiErrorMessage(error, t('admin.entities.toast_delete_error')), 'error')
-    } finally {
-      setSavingInvestmentEntity(false)
-    }
+    const target = deletingInvestmentEntity
+    const previousIndex = investmentEntities.findIndex((entity) => entity.id === target.id)
+    setInvestmentEntities((current) => current.filter((entity) => entity.id !== target.id))
+    setDeletingInvestmentEntity(null)
+
+    const timeoutId = window.setTimeout(async () => {
+      pendingDeleteTimeoutsRef.current.delete(target.id)
+      try {
+        await investmentEntitiesApi.delete(target.id)
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investmentEntities })
+      } catch (error) {
+        setInvestmentEntities((current) => {
+          if (current.some((entity) => entity.id === target.id)) return current
+          const next = [...current]
+          const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+          next.splice(index, 0, target)
+          return next
+        })
+        toast(getApiErrorMessage(error, t('admin.entities.toast_delete_error')), 'error')
+      }
+    }, UNDO_WINDOW_MS)
+
+    pendingDeleteTimeoutsRef.current.set(target.id, timeoutId)
+    toast(t('admin.entities.toast_deleted'), 'success', {
+      actionLabel: t('common.undo'),
+      onAction: () => {
+        const pendingTimeoutId = pendingDeleteTimeoutsRef.current.get(target.id)
+        if (pendingTimeoutId != null) {
+          window.clearTimeout(pendingTimeoutId)
+          pendingDeleteTimeoutsRef.current.delete(target.id)
+          setInvestmentEntities((current) => {
+            if (current.some((entity) => entity.id === target.id)) return current
+            const next = [...current]
+            const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+            next.splice(index, 0, target)
+            return next
+          })
+        }
+      },
+    })
   }
 
   return (

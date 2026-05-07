@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -21,6 +21,7 @@ import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
 
 type TransactionFormErrors = Partial<Record<keyof FormState, string>>
+const UNDO_WINDOW_MS = 5000
 
 function toDateInputValue(value: Date): string {
   const year = value.getFullYear()
@@ -195,6 +196,8 @@ export default function TransactionsPage() {
   const [transferOpen, setTransferOpen] = useState(false)
   const [moveToPocketOpen, setMoveToPocketOpen] = useState(false)
   const [formErrors, setFormErrors] = useState<TransactionFormErrors>({})
+  const [pendingDeletedIds, setPendingDeletedIds] = useState<Set<number>>(new Set())
+  const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
   // Catálogos: carga única tras montar.
   const { accounts, categories, pockets, loading: catalogsLoading } = useTransactionsCatalogs()
@@ -253,18 +256,24 @@ export default function TransactionsPage() {
     return filtered.length ? filtered : categories
   }, [categories, form.transactionType])
 
-  const incomeTotal = transactions
+  const visibleTransactions = useMemo(
+    () => transactions.filter((transaction) => !pendingDeletedIds.has(transaction.id)),
+    [transactions, pendingDeletedIds],
+  )
+
+  const incomeTotal = visibleTransactions
     .filter((transaction) => normalizeTransactionType(String(transaction.transaction_type)) === 'INCOME')
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0)
-  const expenseTotal = transactions
+  const expenseTotal = visibleTransactions
     .filter((transaction) => normalizeTransactionType(String(transaction.transaction_type)) === 'EXPENSE')
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0)
+  const visibleTotal = Math.max(0, total - pendingDeletedIds.size)
   // totalPages derived from server total; paginatedTransactions IS the full page (no client slice).
-  const totalPages = Math.max(1, Math.ceil(total / filters.pageSize))
+  const totalPages = Math.max(1, Math.ceil(visibleTotal / filters.pageSize))
   const currentPage = Math.min(page, totalPages)
   const startIndex = (currentPage - 1) * filters.pageSize
-  const endIndex = Math.min(startIndex + transactions.length, total)
-  const paginatedTransactions = transactions
+  const endIndex = Math.min(startIndex + visibleTransactions.length, visibleTotal)
+  const paginatedTransactions = visibleTransactions
   const noCategoryLabel = t('transactions.no_category')
   const activeFilters = [
     filters.transactionType !== 'all' ? t(filters.transactionType === 'INCOME' ? 'transactions.chip_type_income' : 'transactions.chip_type_expense') : null,
@@ -457,22 +466,76 @@ export default function TransactionsPage() {
   }
 
   async function handleDelete(transactionId: number) {
-    setDeletingId(transactionId)
+    setDeletingId(null)
     setPendingDeleteId(null)
 
-    try {
-      await transactionsApi.delete(transactionId)
-      if (editingId === transactionId) resetForm()
-      toast(t('transactions.toast_deleted'))
-      await reloadTransactions()
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
-    } catch (deleteError) {
-      toast(getApiErrorMessage(deleteError, t('transactions.toast_delete_error')), 'error')
-    } finally {
-      setDeletingId(null)
-    }
+    setPendingDeletedIds((current) => {
+      const next = new Set(current)
+      next.add(transactionId)
+      return next
+    })
+
+    const timeoutId = window.setTimeout(async () => {
+      pendingDeleteTimeoutsRef.current.delete(transactionId)
+      try {
+        await transactionsApi.delete(transactionId)
+        if (editingId === transactionId) resetForm()
+        await reloadTransactions()
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
+      } catch (deleteError) {
+        setPendingDeletedIds((current) => {
+          const next = new Set(current)
+          next.delete(transactionId)
+          return next
+        })
+        toast(getApiErrorMessage(deleteError, t('transactions.toast_delete_error')), 'error')
+      }
+    }, UNDO_WINDOW_MS)
+
+    pendingDeleteTimeoutsRef.current.set(transactionId, timeoutId)
+    toast(t('transactions.toast_deleted'), 'success', {
+      actionLabel: t('common.undo'),
+      onAction: () => {
+        const pendingTimeoutId = pendingDeleteTimeoutsRef.current.get(transactionId)
+        if (pendingTimeoutId != null) {
+          window.clearTimeout(pendingTimeoutId)
+          pendingDeleteTimeoutsRef.current.delete(transactionId)
+          setPendingDeletedIds((current) => {
+            const next = new Set(current)
+            next.delete(transactionId)
+            return next
+          })
+        }
+      },
+    })
   }
+
+  useEffect(() => {
+    if (pendingDeletedIds.size === 0) {
+      return
+    }
+    const existingIds = new Set(transactions.map((transaction) => transaction.id))
+    setPendingDeletedIds((current) => {
+      let changed = false
+      const next = new Set<number>()
+      current.forEach((id) => {
+        if (existingIds.has(id)) {
+          next.add(id)
+        } else {
+          changed = true
+        }
+      })
+      return changed ? next : current
+    })
+  }, [transactions, pendingDeletedIds.size])
+
+  useEffect(() => {
+    return () => {
+      pendingDeleteTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
+      pendingDeleteTimeoutsRef.current.clear()
+    }
+  }, [])
 
   if (catalogsLoading) {
     return <PageSkeleton cards={3} rows={8} columns={6} />
@@ -558,9 +621,9 @@ export default function TransactionsPage() {
 
       {/* Transactions table */}
       <TransactionsHistoryCard
-        filteredTransactions={transactions}
+        filteredTransactions={visibleTransactions}
         paginatedTransactions={paginatedTransactions}
-        total={total}
+        total={visibleTotal}
         loading={listLoading}
         currentPage={currentPage}
         totalPages={totalPages}

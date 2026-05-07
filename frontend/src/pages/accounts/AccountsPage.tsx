@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { accountsApi } from '@/api/accounts'
@@ -31,6 +31,8 @@ const EMPTY_ACCOUNT_FORM: AccountFormState = {
   bankId: '',
 }
 
+const UNDO_WINDOW_MS = 5000
+
 function buildDefaultFilters(): AccountsFiltersState {
   // Conservative defaults to keep the first render lightweight and predictable.
   return {
@@ -56,6 +58,7 @@ export default function AccountsPage() {
   const [accountForm, setAccountForm] = useState<AccountFormState>(EMPTY_ACCOUNT_FORM)
   const [accountFormErrors, setAccountFormErrors] = useState<AccountFormErrors>({})
   const [filters, setFilters] = useState<AccountsFiltersState>(() => buildDefaultFilters())
+  const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
   // Catálogos y lista vienen de hooks dedicados (separación de responsabilidades).
   const { banks } = useBanks()
@@ -159,24 +162,46 @@ export default function AccountsPage() {
 
   async function handleDeleteAccount() {
     if (!deletingAccount) return
-    // Optimistic update: snapshot the current list, remove the row
-    // immediately, and close the confirm modal so the UI feels instant.
-    // On error we restore the snapshot to keep the table consistent.
     const target = deletingAccount
-    const snapshot = accounts
+    const previousIndex = accounts.findIndex((account) => account.id === target.id)
     setAccounts((current) => current.filter((acc) => acc.id !== target.id))
     setDeletingAccount(null)
-    setSavingAccount(true)
-    try {
-      await accountsApi.delete(target.id)
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
-      toast(t('accounts.toast_deleted'))
-    } catch (error) {
-      setAccounts(snapshot)
-      toast(getApiErrorMessage(error, t('accounts.toast_delete_error')), 'error')
-    } finally {
-      setSavingAccount(false)
-    }
+
+    const timeoutId = window.setTimeout(async () => {
+      pendingDeleteTimeoutsRef.current.delete(target.id)
+      try {
+        await accountsApi.delete(target.id)
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
+      } catch (error) {
+        setAccounts((current) => {
+          if (current.some((account) => account.id === target.id)) return current
+          const next = [...current]
+          const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+          next.splice(index, 0, target)
+          return next
+        })
+        toast(getApiErrorMessage(error, t('accounts.toast_delete_error')), 'error')
+      }
+    }, UNDO_WINDOW_MS)
+
+    pendingDeleteTimeoutsRef.current.set(target.id, timeoutId)
+    toast(t('accounts.toast_deleted'), 'success', {
+      actionLabel: t('common.undo'),
+      onAction: () => {
+        const pendingTimeoutId = pendingDeleteTimeoutsRef.current.get(target.id)
+        if (pendingTimeoutId != null) {
+          window.clearTimeout(pendingTimeoutId)
+          pendingDeleteTimeoutsRef.current.delete(target.id)
+          setAccounts((current) => {
+            if (current.some((account) => account.id === target.id)) return current
+            const next = [...current]
+            const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+            next.splice(index, 0, target)
+            return next
+          })
+        }
+      },
+    })
   }
 
   if (loading) {

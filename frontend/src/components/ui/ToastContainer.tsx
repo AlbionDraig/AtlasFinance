@@ -86,6 +86,18 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
             {isError ? 'Ha ocurrido un error' : 'Operación exitosa'}
           </p>
           <p className="mt-0.5 text-xs text-neutral-700 leading-relaxed">{toast.message}</p>
+          {toast.actionLabel && toast.onAction && (
+            <button
+              type="button"
+              onClick={() => {
+                toast.onAction?.()
+                onDismiss(toast.id)
+              }}
+              className="mt-1.5 text-xs font-medium text-brand hover:text-brand-hover"
+            >
+              {toast.actionLabel}
+            </button>
+          )}
         </div>
 
         {/* Close */}

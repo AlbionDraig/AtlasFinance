@@ -6,11 +6,18 @@ export interface Toast {
   id: string
   message: string
   variant: ToastVariant
+  actionLabel?: string
+  onAction?: () => void
+}
+
+export interface ToastOptions {
+  actionLabel?: string
+  onAction?: () => void
 }
 
 interface ToastContextValue {
   toasts: Toast[]
-  toast: (message: string, variant?: ToastVariant) => void
+  toast: (message: string, variant?: ToastVariant, options?: ToastOptions) => void
   dismiss: (id: string) => void
 }
 
@@ -23,7 +30,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
-  const toast = useCallback((message: string, variant: ToastVariant = 'success') => {
+  const toast = useCallback((message: string, variant: ToastVariant = 'success', options?: ToastOptions) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
     // Keep only one active error toast so repeated failures do not "flash"
     // multiple messages that feel like instant auto-close.
@@ -32,7 +39,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         return prev
       }
       const base = variant === 'error' ? prev.filter((t) => t.variant !== 'error') : prev
-      return [...base.slice(-2), { id, message, variant }]
+      return [...base.slice(-2), { id, message, variant, actionLabel: options?.actionLabel, onAction: options?.onAction }]
     })
   }, [])
 
