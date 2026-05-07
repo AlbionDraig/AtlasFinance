@@ -84,7 +84,24 @@ export default function CountriesTableCard({
           </div>
         </div>
       ) : (
-        <div className="app-table-wrap">
+        <>
+          <div className="space-y-3 p-4 md:hidden">
+            {paginatedCountries.map((country) => (
+              <article key={country.id} className="rounded-xl border border-neutral-100 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="min-w-0 truncate text-sm font-medium text-neutral-900">{country.name}</p>
+                  <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-[11px] font-medium text-neutral-700">
+                    {country.code}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-1.5 border-t border-neutral-100 pt-3">
+                  <EditButton onClick={() => onEdit(country)} label={`Editar ${country.name}`} />
+                  <DeleteButton onClick={() => onDelete(country)} label={`Eliminar ${country.name}`} />
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="hidden md:block app-table-wrap">
           <table className="app-table table-fixed">
             <colgroup>
               <col className="w-28" />
@@ -122,6 +139,7 @@ export default function CountriesTableCard({
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <Pagination

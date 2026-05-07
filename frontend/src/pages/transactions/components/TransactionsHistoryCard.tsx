@@ -149,7 +149,47 @@ export default function TransactionsHistoryCard({
           <SkeletonTable rows={8} columns={6} />
         </div>
       ) : (
-        <div className="app-table-wrap">
+        <>
+          <div className="space-y-3 p-4 md:hidden">
+            {paginatedTransactions.map((transaction) => {
+              const isIncome = normalizeTransactionType(String(transaction.transaction_type)) === 'INCOME'
+              const isTransfer = isTransferTransaction(transaction)
+              return (
+                <article key={transaction.id} className="rounded-xl border border-neutral-100 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-neutral-900" title={transaction.description}>{transaction.description}</p>
+                      <p className="mt-1 text-xs text-neutral-400">
+                        {new Date(transaction.occurred_at).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        {' · '}
+                        {new Date(transaction.occurred_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <p className={`shrink-0 text-sm font-medium ${isIncome ? 'text-success' : 'text-warning'}`}>
+                      {isIncome ? '+' : '−'}{formatCurrency(Number(transaction.amount), transaction.currency)}
+                    </p>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-neutral-700">
+                    <p>{t('transactions.table_col_account')}</p>
+                    <p className="text-right">{getCompactAccountName(transaction.account_id, accounts)}</p>
+                    <p>{t('transactions.table_col_category')}</p>
+                    <p className="truncate text-right">{getCategoryName(transaction.category_id, categories) || t('transactions.no_category')}</p>
+                  </div>
+                  <div className="mt-3 flex items-center justify-end gap-1.5 border-t border-neutral-100 pt-3">
+                    {isTransfer ? (
+                      <DeleteButton onClick={() => onDelete(transaction.id)} loading={deletingId === transaction.id} />
+                    ) : (
+                      <>
+                        <EditButton onClick={() => onEdit(transaction)} />
+                        <DeleteButton onClick={() => onDelete(transaction.id)} loading={deletingId === transaction.id} />
+                      </>
+                    )}
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+          <div className="hidden md:block app-table-wrap">
           <table className="app-table table-fixed">
             <colgroup>
               <col className="w-36" />
@@ -252,6 +292,7 @@ export default function TransactionsHistoryCard({
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <Pagination

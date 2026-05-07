@@ -119,7 +119,39 @@ export default function AccountsTableCard({
           </div>
         </div>
       ) : (
-        <div className="app-table-wrap">
+        <>
+          <div className="space-y-3 p-4 md:hidden">
+            {paginatedAccounts.map((account) => {
+              const bank = banks.find((item) => item.id === account.bank_id)
+              const balance = Number(account.current_balance ?? account.balance ?? 0)
+              return (
+                <article key={account.id} className="rounded-xl border border-neutral-100 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-neutral-900">{account.name}</p>
+                      <p className="mt-1 text-xs text-neutral-400">{bank?.name ?? `Banco #${account.bank_id}`}</p>
+                    </div>
+                    <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-[11px] font-medium text-neutral-700">
+                      {account.currency}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-neutral-700">
+                    <p>{t('accounts.table_col_type')}</p>
+                    <p className="text-right">
+                      {account.account_type === 'checking' ? t('accounts.type_checking') : t('accounts.type_savings')}
+                    </p>
+                    <p>{t('accounts.table_col_balance')}</p>
+                    <p className="text-right font-medium text-brand-deep">{formatCurrency(balance, account.currency)}</p>
+                  </div>
+                  <div className="mt-3 flex items-center justify-end gap-1.5 border-t border-neutral-100 pt-3">
+                    <EditButton onClick={() => onEdit(account)} label={t('common.edit_item', { name: account.name })} />
+                    <DeleteButton onClick={() => onDelete(account)} label={t('common.delete_item', { name: account.name })} />
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+          <div className="hidden md:block app-table-wrap">
           <table className="app-table table-fixed">
             <colgroup>
               <col className="w-[24rem]" />
@@ -181,6 +213,7 @@ export default function AccountsTableCard({
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <Pagination
