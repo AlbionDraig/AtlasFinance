@@ -10,7 +10,7 @@ import InvestmentsTab from './components/InvestmentsTab'
 import Select from '@/components/ui/Select'
 import DatePicker from '@/components/ui/DatePicker'
 import FilterCard from '@/components/ui/FilterCard'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import SkeletonCard from '@/components/ui/SkeletonCard'
 import AppTooltip from '@/components/ui/Tooltip'
 import { useDashboardData } from '@/hooks/useDashboardData'
 
@@ -334,8 +334,35 @@ export default function DashboardPage() {
   const savingsBadge = deltaPointsBadge(savingsRate, prevSavings, hasPrev)
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <LoadingSpinner size={8} />
+    <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] rounded-2xl p-4 md:p-6" aria-busy="true" aria-label={t('common.loading')}>
+      <div className="animate-pulse">
+        <div className="h-6 w-48 rounded bg-neutral-100" />
+        <div className="mt-2 h-4 w-72 rounded bg-neutral-100" />
+      </div>
+      <div className="app-card p-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="h-10 rounded-lg bg-neutral-100 animate-pulse" />
+          <div className="h-10 rounded-lg bg-neutral-100 animate-pulse" />
+        </div>
+      </div>
+      <div className="app-filter-card">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="h-10 rounded-lg bg-neutral-100 animate-pulse" />
+          <div className="h-10 rounded-lg bg-neutral-100 animate-pulse" />
+          <div className="h-10 rounded-lg bg-neutral-100 animate-pulse" />
+          <div className="h-10 rounded-lg bg-neutral-100 animate-pulse" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <SkeletonCard borderColor="border-t-brand" />
+        <SkeletonCard borderColor="border-t-success" />
+        <SkeletonCard borderColor="border-t-warning" />
+        <SkeletonCard borderColor="border-t-brand" />
+      </div>
+      <div className="app-panel p-5 space-y-4">
+        <div className="h-10 w-72 rounded bg-neutral-100 animate-pulse" />
+        <div className="h-64 w-full rounded bg-neutral-100 animate-pulse" />
+      </div>
     </div>
   )
 
