@@ -26,10 +26,15 @@ export default function InvestmentEntityEditModal({
   const [name, setName] = useState(entity.name)
   const [entityType, setEntityType] = useState<InvestmentEntityType>(entity.entity_type)
   const [countryCode, setCountryCode] = useState(entity.country_code)
+  const [errors, setErrors] = useState<{ name?: string; countryCode?: string }>({})
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (name.trim().length < 2) return
+    const nextErrors: { name?: string; countryCode?: string } = {}
+    if (name.trim().length < 2) nextErrors.name = t('admin.entities.toast_name_short')
+    if (!countryCode.trim()) nextErrors.countryCode = t('admin.entities.toast_no_country')
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) return
     onSubmit(entity.id, {
       name: name.trim(),
       entity_type: entityType,
@@ -68,12 +73,16 @@ export default function InvestmentEntityEditModal({
             <input
               type="text"
               value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="app-control w-full"
+              onChange={(event) => {
+                setName(event.target.value)
+                setErrors((current) => ({ ...current, name: undefined }))
+              }}
+              className={`app-control w-full ${errors.name ? 'border-warning' : ''}`}
               placeholder={t('admin.entities.field_name_placeholder')}
               autoFocus
               maxLength={120}
             />
+            {errors.name && <p className="mt-1 text-xs tone-negative">{errors.name}</p>}
           </div>
 
           <div className="space-y-1">
@@ -91,12 +100,16 @@ export default function InvestmentEntityEditModal({
             <label className="app-label">{t('admin.entities.field_country_code')}</label>
             <Select
               value={countryCode}
-              onChange={setCountryCode}
+              onChange={(value) => {
+                setCountryCode(value)
+                setErrors((current) => ({ ...current, countryCode: undefined }))
+              }}
               options={countryOptions}
               className="w-full"
               active
               disabled={!countryOptions.length}
             />
+            {errors.countryCode && <p className="mt-1 text-xs tone-negative">{errors.countryCode}</p>}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">

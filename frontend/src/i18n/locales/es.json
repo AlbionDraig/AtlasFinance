@@ -740,6 +740,8 @@
       "metric_total": "{{count}} países",
       "metric_total_help": "Total de países que cumplen los filtros actuales.",
       "toast_load_error": "No se pudieron cargar los países.",
+      "toast_name_short": "El nombre del país debe tener al menos 2 caracteres.",
+      "toast_code_short": "El código del país debe tener al menos 2 caracteres.",
       "toast_created": "País creado con éxito.",
       "toast_create_error": "No se pudo crear el país.",
       "toast_updated": "País actualizado con éxito.",

@@ -26,7 +26,9 @@ function EditModeIcon() {
 
 interface TransactionEditModalProps {
   form: FormState
+  errors: Partial<Record<keyof FormState, string>>
   setForm: Dispatch<SetStateAction<FormState>>
+  setErrors: Dispatch<SetStateAction<Partial<Record<keyof FormState, string>>>>
   accounts: Account[]
   categoryOptions: Category[]
   accountCurrency: string
@@ -39,7 +41,9 @@ interface TransactionEditModalProps {
 
 export default function TransactionEditModal({
   form,
+  errors,
   setForm,
+  setErrors,
   accounts,
   categoryOptions,
   accountCurrency,
@@ -89,7 +93,9 @@ export default function TransactionEditModal({
         </div>
         <TransactionFormCard
           form={form}
+          errors={errors}
           setForm={setForm}
+          setErrors={setErrors}
           accounts={accounts}
           categoryOptions={categoryOptions}
           accountCurrency={accountCurrency}

@@ -20,6 +20,8 @@ import { useTransactionsCatalogs, useTransactionsList } from '@/hooks/useTransac
 import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
 
+type TransactionFormErrors = Partial<Record<keyof FormState, string>>
+
 function toDateInputValue(value: Date): string {
   const year = value.getFullYear()
   const month = String(value.getMonth() + 1).padStart(2, '0')
@@ -192,6 +194,7 @@ export default function TransactionsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
   const [moveToPocketOpen, setMoveToPocketOpen] = useState(false)
+  const [formErrors, setFormErrors] = useState<TransactionFormErrors>({})
 
   // Catálogos: carga única tras montar.
   const { accounts, categories, pockets, loading: catalogsLoading } = useTransactionsCatalogs()
@@ -275,6 +278,7 @@ export default function TransactionsPage() {
     setEditingId(null)
     setModalOpen(false)
     setForm(buildDefaultForm())
+    setFormErrors({})
   }
 
   async function handleExportCSV() {
@@ -316,51 +320,56 @@ export default function TransactionsPage() {
       occurredDate: toDateInputValue(occurredAt),
       occurredTime: toTimeInputValue(occurredAt),
     })
+    setFormErrors({})
+  }
+
+  function validateTransactionForm(): TransactionFormErrors {
+    const errors: TransactionFormErrors = {}
+
+    if (form.description.trim().length < 2) {
+      errors.description = t('transactions.toast_desc_short')
+    }
+    if (!form.transactionType) {
+      errors.transactionType = t('transactions.toast_select_type')
+    }
+
+    const amount = Number(form.amount)
+    if (Number.isNaN(amount) || amount <= 0) {
+      errors.amount = t('transactions.toast_amount_zero')
+    }
+    if (!form.accountId) {
+      errors.accountId = t('transactions.toast_select_account')
+    }
+    if (form.transactionType === 'EXPENSE' && (!form.categoryId || form.categoryId === 'none')) {
+      errors.categoryId = t('transactions.toast_category_required')
+    }
+    if (!form.occurredDate) {
+      errors.occurredDate = t('transactions.toast_select_date')
+    }
+    if (!form.occurredTime) {
+      errors.occurredTime = t('transactions.toast_select_time')
+    }
+    if (!selectedAccount) {
+      errors.accountId = t('transactions.toast_no_account')
+    }
+
+    return errors
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (form.description.trim().length < 2) {
-      toast(t('transactions.toast_desc_short'), 'error')
-      return
-    }
-
-    if (!form.transactionType) {
-      toast(t('transactions.toast_select_type'), 'error')
+    const errors = validateTransactionForm()
+    setFormErrors(errors)
+    if (Object.keys(errors).length) {
+      const firstError = Object.values(errors)[0]
+      if (firstError) {
+        toast(firstError, 'error')
+      }
       return
     }
 
     const amount = Number(form.amount)
-    if (Number.isNaN(amount) || amount <= 0) {
-      toast(t('transactions.toast_amount_zero'), 'error')
-      return
-    }
-
-    if (!form.accountId) {
-      toast(t('transactions.toast_select_account'), 'error')
-      return
-    }
-
-    if (form.transactionType === 'EXPENSE' && (!form.categoryId || form.categoryId === 'none')) {
-      toast(t('transactions.toast_category_required'), 'error')
-      return
-    }
-
-    if (!form.occurredDate) {
-      toast(t('transactions.toast_select_date'), 'error')
-      return
-    }
-
-    if (!form.occurredTime) {
-      toast(t('transactions.toast_select_time'), 'error')
-      return
-    }
-
-    if (!selectedAccount) {
-      toast(t('transactions.toast_no_account'), 'error')
-      return
-    }
 
     const occurredAt = `${form.occurredDate}T${form.occurredTime || '00:00'}:00`
     const payload = {
@@ -493,7 +502,9 @@ export default function TransactionsPage() {
       {modalOpen && (
         <TransactionEditModal
           form={form}
+          errors={formErrors}
           setForm={setForm}
+          setErrors={setFormErrors}
           accounts={accounts}
           categoryOptions={categoryOptions}
           accountCurrency={accountCurrency}

@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
@@ -25,6 +25,24 @@ export default function BankCreateModal({
   onClose,
 }: BankCreateModalProps) {
   const { t } = useTranslation()
+  const [errors, setErrors] = useState<{ name?: string; countryCode?: string }>({})
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const nextErrors: { name?: string; countryCode?: string } = {}
+    if (name.trim().length < 2) {
+      nextErrors.name = t('admin.banks.toast_name_short')
+    }
+    if (!countryCode) {
+      nextErrors.countryCode = t('admin.banks.toast_no_country')
+    }
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) {
+      return
+    }
+    onSubmit(event)
+  }
+
   return (
     <Modal onClose={onClose} maxWidth="max-w-xl">
       <div className="w-full rounded-2xl border border-neutral-100 border-t-4 border-t-brand bg-white shadow-xl overflow-visible">
@@ -50,29 +68,37 @@ export default function BankCreateModal({
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4 p-6">
+        <form onSubmit={handleSubmit} className="space-y-4 p-6">
           <div className="space-y-1">
             <label className="app-label">{t('admin.banks.field_name')}</label>
             <input
               type="text"
               value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="app-control w-full"
+              onChange={(event) => {
+                setName(event.target.value)
+                setErrors((current) => ({ ...current, name: undefined }))
+              }}
+              className={`app-control w-full ${errors.name ? 'border-warning' : ''}`}
               placeholder={t('admin.banks.field_name_placeholder')}
               autoFocus
             />
+            {errors.name && <p className="mt-1 text-xs tone-negative">{errors.name}</p>}
           </div>
 
           <div className="space-y-1">
             <label className="app-label">{t('admin.banks.field_country')}</label>
             <Select
               value={countryCode}
-              onChange={setCountryCode}
+              onChange={(value) => {
+                setCountryCode(value)
+                setErrors((current) => ({ ...current, countryCode: undefined }))
+              }}
               options={countryOptions}
               className="w-full"
               active
               disabled={!countryOptions.length}
             />
+            {errors.countryCode && <p className="mt-1 text-xs tone-negative">{errors.countryCode}</p>}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
