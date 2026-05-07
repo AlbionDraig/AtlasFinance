@@ -197,6 +197,8 @@
     "insight_sub_no_prior": "No hay período anterior",
     "insight_sub_no_fixed": "No hay egresos",
     "insight_sub_no_spending": "Sin gastos",
+    "insight_unit_months": "meses",
+    "insight_sub_coverage_rate": "Al ritmo de {{amount}}/mes",
     "chart_income_vs_expense": "Ingresos vs gastos",
     "chart_net_flow": "Flujo neto mensual",
     "chart_top_categories": "Top categorías",

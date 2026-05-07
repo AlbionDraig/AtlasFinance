@@ -197,6 +197,8 @@
     "insight_sub_no_prior": "No previous period",
     "insight_sub_no_fixed": "No expenses",
     "insight_sub_no_spending": "No spending",
+    "insight_unit_months": "months",
+    "insight_sub_coverage_rate": "At a pace of {{amount}}/month",
     "chart_income_vs_expense": "Income vs expenses",
     "chart_net_flow": "Monthly net flow",
     "chart_top_categories": "Top categories",

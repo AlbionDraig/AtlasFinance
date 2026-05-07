@@ -200,7 +200,7 @@ function normalizeTab(value: string | null): Tab {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const today = new Date()
   const todayStr = toISODate(today)
   const yearStart = `${today.getFullYear()}-01-01`
@@ -246,6 +246,10 @@ export default function DashboardPage() {
   const [customTo, setCustomTo] = useState(todayStr)
   const dataBounds = { min: '2000-01-01', max: todayStr }
   const [chartType, setChartType] = useState<ChartType>('income_vs_expense')
+  const movementCountFormatter = useMemo(
+    () => new Intl.NumberFormat(i18n.language.startsWith('es') ? 'es-CO' : 'en-US'),
+    [i18n.language],
+  )
 
   // Compute date ranges
   const { dateFrom, dateTo } = useMemo(() => computeDates(period, customFrom, customTo), [period, customFrom, customTo])
@@ -497,10 +501,10 @@ export default function DashboardPage() {
 
       {/* Insight cards */}
       <section className="pt-1">
-        <SectionTitle>Análisis del período</SectionTitle>
+        <SectionTitle>{t('dashboard.section_analysis')}</SectionTitle>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <InsightCard label={t('dashboard.insight_balance')} value={fmt(balance, currency)} sub={balance > 0 ? t('dashboard.insight_sub_positive') : balance < 0 ? t('dashboard.insight_sub_negative') : t('dashboard.insight_sub_balanced')} tone={toneFn(balance)} help={t('dashboard.help_balance')} />
-          <InsightCard label={t('dashboard.insight_movements')} value={`${(aggregates?.transaction_count ?? 0).toLocaleString('es-CO')}`} sub={t('dashboard.insight_sub_transactions')} tone="neutral" help={t('dashboard.help_movements')} />
+          <InsightCard label={t('dashboard.insight_movements')} value={movementCountFormatter.format(aggregates?.transaction_count ?? 0)} sub={t('dashboard.insight_sub_transactions')} tone="neutral" help={t('dashboard.help_movements')} />
           <InsightCard
             label={t('dashboard.insight_expense_ratio')}
             value={expRatio != null ? `${expRatio.toFixed(1)}%` : t('dashboard.insight_sub_no_data')}
@@ -512,8 +516,8 @@ export default function DashboardPage() {
           <InsightCard label={t('dashboard.insight_top_expense')} value={biggestExpAmount != null ? fmt(biggestExpAmount, currency) : t('dashboard.insight_sub_no_spending')} sub={biggestExpDescription ?? t('dashboard.insight_sub_no_expenses_reg')} tone="negative" help={t('dashboard.help_top_expense')} />
           <InsightCard
             label={t('dashboard.insight_cash_coverage')}
-            value={cashCoverage != null ? `${cashCoverage.toFixed(1)} meses` : netWorth <= 0 ? fmt(netWorth, currency) : t('dashboard.insight_sub_no_ref')}
-            sub={cashCoverage != null ? `Al ritmo de ${fmt(avgMonthlyExp, currency)}/mes` : t('dashboard.insight_sub_no_ref')}
+            value={cashCoverage != null ? `${cashCoverage.toFixed(1)} ${t('dashboard.insight_unit_months')}` : netWorth <= 0 ? fmt(netWorth, currency) : t('dashboard.insight_sub_no_ref')}
+            sub={cashCoverage != null ? t('dashboard.insight_sub_coverage_rate', { amount: fmt(avgMonthlyExp, currency) }) : t('dashboard.insight_sub_no_ref')}
             tone={cashCoverage == null ? 'neutral' : cashCoverage >= 6 ? 'positive' : cashCoverage < 1 ? 'negative' : 'flat'}
             help={t('dashboard.help_cash_coverage')}
           />
