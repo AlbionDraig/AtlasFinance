@@ -79,3 +79,39 @@ test.describe('Page error boundaries', () => {
     }
   })
 })
+
+test.describe('Dashboard UX improvements', () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page)
+    await page.goto('/dashboard?tab=resumen')
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10_000 })
+  })
+
+  test('toggles between basic and advanced density modes', async ({ page }) => {
+    const basicBtn = page.getByRole('button', { name: /vista básica|basic view/i })
+    const advancedBtn = page.getByRole('button', { name: /vista avanzada|advanced view/i })
+
+    await expect(basicBtn).toBeVisible()
+    await expect(advancedBtn).toBeVisible()
+    await expect(basicBtn).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByText(/análisis del período|period analysis/i)).toHaveCount(0)
+
+    await advancedBtn.click()
+
+    await expect(advancedBtn).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByText(/análisis del período|period analysis/i)).toBeVisible()
+  })
+
+  test('updates tab aria-selected state when switching sections', async ({ page }) => {
+    const summaryTab = page.getByRole('tab', { name: /resumen financiero|financial summary/i })
+    const investmentsTab = page.getByRole('tab', { name: /inversiones|investments/i })
+
+    await expect(summaryTab).toHaveAttribute('aria-selected', 'true')
+    await expect(investmentsTab).toHaveAttribute('aria-selected', 'false')
+
+    await investmentsTab.click()
+
+    await expect(summaryTab).toHaveAttribute('aria-selected', 'false')
+    await expect(investmentsTab).toHaveAttribute('aria-selected', 'true')
+  })
+})
