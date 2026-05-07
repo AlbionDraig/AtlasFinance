@@ -19,6 +19,7 @@ interface BanksTableCardProps {
   onPageSizeChange: (size: number) => void
   onEdit: (bank: Bank) => void
   onDelete: (bank: Bank) => void
+  onCreate?: () => void
 }
 
 export default function BanksTableCard({
@@ -34,6 +35,7 @@ export default function BanksTableCard({
   onPageSizeChange,
   onEdit,
   onDelete,
+  onCreate,
 }: BanksTableCardProps) {
   const { t } = useTranslation()
   const countryCounts = filteredBanks.reduce<Record<string, number>>((accumulator, bank) => {
@@ -94,6 +96,11 @@ export default function BanksTableCard({
             <p className="text-sm font-medium text-neutral-900">{t('admin.banks.table_empty_title')}</p>
             <p className="mt-1 text-xs text-neutral-400">{t('admin.banks.table_empty_desc')}</p>
           </div>
+          {onCreate && filteredBanks.length === 0 && (
+            <button type="button" className="app-btn-primary" onClick={onCreate}>
+              {t('admin.banks.fab_create')}
+            </button>
+          )}
         </div>
       ) : (
         <>

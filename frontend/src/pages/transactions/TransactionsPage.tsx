@@ -584,6 +584,7 @@ export default function TransactionsPage() {
         getCategoryName={(id, cats) => getCategoryName(id, cats, noCategoryLabel)}
         formatCurrency={formatCurrency}
         normalizeTransactionType={normalizeTransactionType}
+        onCreate={() => { resetForm(); setModalOpen(true) }}
       />
 
       <FloatingActionMenu

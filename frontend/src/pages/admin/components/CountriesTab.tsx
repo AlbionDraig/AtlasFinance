@@ -182,6 +182,7 @@ export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
           onPageSizeChange={(size) => setCountryFilters((current) => ({ ...current, pageSize: size }))}
           onEdit={setEditingCountry}
           onDelete={setDeletingCountry}
+          onCreate={() => setCountryCreateOpen(true)}
         />
       )}
 

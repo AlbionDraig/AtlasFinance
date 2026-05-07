@@ -699,6 +699,25 @@ export default function InvestmentsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
             }
+            action={investments.length === 0 ? (
+              <button type="button" className="app-btn-primary" onClick={openCreate}>
+                {t('investments.fab_create')}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="app-btn-secondary"
+                onClick={() => {
+                  setFilterQuery('')
+                  setFilterEntity('')
+                  setFilterType('')
+                  setFilterCurrency('')
+                  setSortBy('')
+                }}
+              >
+                {t('common.clearFilters')}
+              </button>
+            )}
           />
         </div>
       ) : viewMode === 'cards' ? (

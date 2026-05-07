@@ -33,6 +33,7 @@ interface TransactionsHistoryCardProps {
   incomeTotal: number
   expenseTotal: number
   currency: string
+  onCreate?: () => void
 }
 
 export default function TransactionsHistoryCard({
@@ -60,6 +61,7 @@ export default function TransactionsHistoryCard({
   incomeTotal,
   expenseTotal,
   currency,
+  onCreate,
 }: TransactionsHistoryCardProps) {
   const { t } = useTranslation()
   type MetricVariant = 'neutral' | 'positive' | 'negative'
@@ -143,6 +145,11 @@ export default function TransactionsHistoryCard({
             <p className="text-sm font-medium text-neutral-900">{t('transactions.table_empty_title')}</p>
             <p className="mt-1 text-xs text-neutral-400">{t('transactions.table_empty_desc')}</p>
           </div>
+          {onCreate && total === 0 && (
+            <button type="button" className="app-btn-primary" onClick={onCreate}>
+              {t('transactions.fab_register')}
+            </button>
+          )}
         </div>
       ) : loading ? (
         <div className="p-2">

@@ -20,6 +20,7 @@ interface InvestmentEntitiesTableCardProps {
   onPageSizeChange: (size: number) => void
   onEdit: (entity: InvestmentEntity) => void
   onDelete: (entity: InvestmentEntity) => void
+  onCreate?: () => void
 }
 
 export default function InvestmentEntitiesTableCard({
@@ -36,6 +37,7 @@ export default function InvestmentEntitiesTableCard({
   onPageSizeChange,
   onEdit,
   onDelete,
+  onCreate,
 }: InvestmentEntitiesTableCardProps) {
   const { t } = useTranslation()
   const countryCounts = filteredEntities.reduce<Record<string, number>>((accumulator, entity) => {
@@ -106,6 +108,11 @@ export default function InvestmentEntitiesTableCard({
             <p className="text-sm font-medium text-neutral-900">{t('admin.entities.table_empty_title')}</p>
             <p className="mt-1 text-xs text-neutral-400">{t('admin.entities.table_empty_desc')}</p>
           </div>
+          {onCreate && filteredEntities.length === 0 && (
+            <button type="button" className="app-btn-primary" onClick={onCreate}>
+              {t('admin.entities.fab_create')}
+            </button>
+          )}
         </div>
       ) : (
         <>

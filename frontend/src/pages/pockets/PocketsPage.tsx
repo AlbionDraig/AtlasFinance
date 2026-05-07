@@ -1,5 +1,6 @@
 import { useMemo, useState, type CSSProperties, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { AxiosError } from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
 import { pocketsApi, type PocketPayload, type PocketUpdatePayload } from '@/api/pockets'
@@ -587,6 +588,11 @@ export default function PocketsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18" />
               </svg>
             }
+            action={(
+              <Link to="/accounts" className="app-btn-primary">
+                {t('accounts.fab_create')}
+              </Link>
+            )}
           />
         </div>
       ) : filteredPockets.length === 0 ? (
@@ -594,6 +600,15 @@ export default function PocketsPage() {
           <EmptyState
             title={pockets.length === 0 ? t('pockets.empty_no_pockets') : t('pockets.empty_no_results')}
             description={pockets.length === 0 ? t('pockets.empty_create_hint') : t('pockets.empty_filter_hint')}
+            action={pockets.length === 0 ? (
+              <button type="button" className="app-btn-primary" onClick={openCreateModal}>
+                {t('pockets.fab_create')}
+              </button>
+            ) : (
+              <button type="button" className="app-btn-secondary" onClick={() => setFilters(DEFAULT_FILTERS)}>
+                {t('common.clearFilters')}
+              </button>
+            )}
           />
         </div>
       ) : (

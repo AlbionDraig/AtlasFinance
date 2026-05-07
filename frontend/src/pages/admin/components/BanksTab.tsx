@@ -226,6 +226,15 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
           onPageSizeChange={(size) => setBankFilters((current) => ({ ...current, pageSize: size }))}
           onEdit={setEditingBank}
           onDelete={setDeletingBank}
+          onCreate={() => {
+            if (!countryCatalogOptions.length) {
+              toast(t('admin.banks.toast_no_country_hint'), 'error')
+              return
+            }
+            setBankName('')
+            setBankCountryCode(countryCatalogOptions[0]?.value ?? '')
+            setBankCreateOpen(true)
+          }}
         />
       )}
 

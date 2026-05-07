@@ -22,6 +22,7 @@ interface AccountsTableCardProps {
   formatCurrency: (value: number, currency: string) => string
   onEdit: (account: Account) => void
   onDelete: (account: Account) => void
+  onCreate?: () => void
 }
 
 export default function AccountsTableCard({
@@ -39,6 +40,7 @@ export default function AccountsTableCard({
   formatCurrency,
   onEdit,
   onDelete,
+  onCreate,
 }: AccountsTableCardProps) {
   const { t } = useTranslation()
   // KPIs summarize filtered dataset, independent from pagination window.
@@ -117,6 +119,11 @@ export default function AccountsTableCard({
             <p className="text-sm font-medium text-neutral-900">{t('accounts.table_empty_title')}</p>
             <p className="mt-1 text-xs text-neutral-400">{t('accounts.table_empty_desc')}</p>
           </div>
+          {onCreate && filteredAccounts.length === 0 && (
+            <button type="button" className="app-btn-primary" onClick={onCreate}>
+              {t('accounts.fab_create')}
+            </button>
+          )}
         </div>
       ) : (
         <>

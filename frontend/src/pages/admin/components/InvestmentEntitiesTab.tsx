@@ -269,6 +269,16 @@ export default function InvestmentEntitiesTab({ countryCatalogOptions }: Investm
           onPageSizeChange={(size) => setInvestmentEntityFilters((current) => ({ ...current, pageSize: size }))}
           onEdit={setEditingInvestmentEntity}
           onDelete={setDeletingInvestmentEntity}
+          onCreate={() => {
+            if (!countryCatalogOptions.length) {
+              toast(t('admin.entities.toast_no_country_hint'), 'error')
+              return
+            }
+            setInvestmentEntityName('')
+            setInvestmentEntityType('broker')
+            setInvestmentEntityCountryCode(countryCatalogOptions[0]?.value ?? '')
+            setInvestmentEntityCreateOpen(true)
+          }}
         />
       )}
 

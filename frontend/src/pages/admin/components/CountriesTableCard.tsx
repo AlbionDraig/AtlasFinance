@@ -19,6 +19,7 @@ interface CountriesTableCardProps {
   onPageSizeChange: (size: number) => void
   onEdit: (country: Country) => void
   onDelete: (country: Country) => void
+  onCreate?: () => void
 }
 
 export default function CountriesTableCard({
@@ -34,6 +35,7 @@ export default function CountriesTableCard({
   onPageSizeChange,
   onEdit,
   onDelete,
+  onCreate,
 }: CountriesTableCardProps) {
   const { t } = useTranslation()
   const metrics = [
@@ -82,6 +84,11 @@ export default function CountriesTableCard({
             <p className="text-sm font-medium text-neutral-900">{t('admin.countries.table_empty_title')}</p>
             <p className="mt-1 text-xs text-neutral-400">{t('admin.countries.table_empty_desc')}</p>
           </div>
+          {onCreate && filteredCountries.length === 0 && (
+            <button type="button" className="app-btn-primary" onClick={onCreate}>
+              {t('admin.countries.fab_create')}
+            </button>
+          )}
         </div>
       ) : (
         <>

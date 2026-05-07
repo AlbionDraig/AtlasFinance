@@ -245,6 +245,7 @@ export default function AccountsPage() {
         formatCurrency={formatCurrency}
         onEdit={setEditingAccount}
         onDelete={setDeletingAccount}
+        onCreate={openCreateModal}
       />
 
       <FloatingActionMenu
