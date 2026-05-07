@@ -158,6 +158,54 @@ body {
     box-shadow: var(--af-shadow-sm);
   }
 
+  .app-table-wrap {
+    overflow-x: auto;
+    border: 1px solid color-mix(in srgb, var(--af-accent) 20%, transparent);
+    border-radius: 0.75rem;
+    background: var(--af-surface);
+    box-shadow: var(--af-shadow-sm);
+    outline: 1px solid color-mix(in srgb, var(--af-accent) 10%, transparent);
+  }
+
+  .app-table {
+    width: 100%;
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .app-table thead th {
+    background: var(--af-accent) !important;
+    color: #ffffff !important;
+    border-color: color-mix(in srgb, var(--af-accent) 35%, transparent) !important;
+  }
+
+  .app-table tbody tr {
+    transition: background-color 0.15s;
+  }
+
+  .app-table tbody tr:nth-child(odd) {
+    background: var(--af-surface);
+  }
+
+  .app-table tbody tr:nth-child(even) {
+    background: color-mix(in srgb, var(--af-accent-soft) 55%, var(--af-surface) 45%);
+  }
+
+  .app-table tbody tr:hover {
+    background: color-mix(in srgb, var(--af-accent-soft) 75%, var(--af-surface) 25%);
+  }
+
+  .app-table th,
+  .app-table td {
+    border-bottom: 1px solid var(--af-border);
+  }
+
+  .app-table th:not(:last-child),
+  .app-table td:not(:last-child) {
+    border-right: 1px solid var(--af-border);
+  }
+
   .app-filter-card {
     overflow: visible;
     background: var(--af-surface);

@@ -177,8 +177,8 @@ export default function ManagementPage() {
                 )}
               />
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full table-fixed border-separate border-spacing-0">
+              <div className="app-table-wrap">
+                <table className="app-table table-fixed">
                   <colgroup>
                     <col className="w-[20rem]" />
                     <col className="w-[22rem]" />

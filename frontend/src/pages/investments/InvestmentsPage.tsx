@@ -726,8 +726,8 @@ export default function InvestmentsPage() {
           })}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-brand/20 bg-white shadow-sm ring-1 ring-brand/10">
-          <table className="min-w-full text-left text-sm">
+        <div className="app-table-wrap">
+          <table className="app-table text-left text-sm">
             <thead className="border-b border-brand/30 bg-brand text-xs text-white">
               <tr>
                 <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_name')}</th>

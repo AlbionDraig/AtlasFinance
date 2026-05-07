@@ -149,8 +149,8 @@ export default function TransactionsHistoryCard({
           <SkeletonTable rows={8} columns={6} />
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full table-fixed border-separate border-spacing-0">
+        <div className="app-table-wrap">
+          <table className="app-table table-fixed">
             <colgroup>
               <col className="w-36" />
               <col className="w-[26rem]" />
