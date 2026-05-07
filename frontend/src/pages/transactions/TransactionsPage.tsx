@@ -17,6 +17,7 @@ import PageSkeleton from '@/components/ui/PageSkeleton'
 import { useToast } from '@/hooks/useToast'
 import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { useTransactionsCatalogs, useTransactionsList } from '@/hooks/useTransactionsData'
+import { trackUxEvent } from '@/lib/uxTelemetry'
 import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
 
@@ -371,6 +372,12 @@ export default function TransactionsPage() {
     const errors = validateTransactionForm()
     setFormErrors(errors)
     if (Object.keys(errors).length) {
+      trackUxEvent('transactions_validation_failed', {
+        errorCount: Object.keys(errors).length,
+        hasAccountError: Boolean(errors.accountId),
+        hasAmountError: Boolean(errors.amount),
+        hasCategoryError: Boolean(errors.categoryId),
+      })
       const firstError = Object.values(errors)[0]
       if (firstError) {
         toast(firstError, 'error')
@@ -468,6 +475,7 @@ export default function TransactionsPage() {
   async function handleDelete(transactionId: number) {
     setDeletingId(null)
     setPendingDeleteId(null)
+    trackUxEvent('transactions_delete_requested', { transactionId })
 
     setPendingDeletedIds((current) => {
       const next = new Set(current)
@@ -497,6 +505,7 @@ export default function TransactionsPage() {
     toast(t('transactions.toast_deleted'), 'success', {
       actionLabel: t('common.undo'),
       onAction: () => {
+        trackUxEvent('transactions_delete_undo', { transactionId })
         const pendingTimeoutId = pendingDeleteTimeoutsRef.current.get(transactionId)
         if (pendingTimeoutId != null) {
           window.clearTimeout(pendingTimeoutId)
@@ -616,7 +625,10 @@ export default function TransactionsPage() {
         activeFilters={activeFilters}
         datasetRange={{ min: '2000-01-01', max: toDateInputValue(new Date()) }}
         derivedRange={derivedRange}
-        onResetFilters={() => setFilters(buildDefaultFilters())}
+        onResetFilters={() => {
+          trackUxEvent('transactions_filters_reset')
+          setFilters(buildDefaultFilters())
+        }}
       />
 
       {/* Transactions table */}
@@ -635,19 +647,27 @@ export default function TransactionsPage() {
         onPrevPage={() => setPage((current) => Math.max(1, current - 1))}
         onNextPage={() => setPage((current) => Math.min(totalPages, current + 1))}
         pageSize={filters.pageSize}
-        onPageSizeChange={(size) => setFilters((current) => ({ ...current, pageSize: size }))}
+        onPageSizeChange={(size) => {
+          trackUxEvent('transactions_page_size_changed', { pageSize: size })
+          setFilters((current) => ({ ...current, pageSize: size }))
+        }}
         incomeTotal={incomeTotal}
         expenseTotal={expenseTotal}
         currency={filters.currency === 'USD' ? 'USD' : 'COP'}
         onEdit={handleEdit}
         onDelete={(transactionId) => {
+          trackUxEvent('transactions_delete_modal_opened', { transactionId })
           setPendingDeleteId(transactionId)
         }}
         getCompactAccountName={getCompactAccountName}
         getCategoryName={(id, cats) => getCategoryName(id, cats, noCategoryLabel)}
         formatCurrency={formatCurrency}
         normalizeTransactionType={normalizeTransactionType}
-        onCreate={() => { resetForm(); setModalOpen(true) }}
+        onCreate={() => {
+          trackUxEvent('transactions_modal_opened', { source: 'table_create' })
+          resetForm()
+          setModalOpen(true)
+        }}
       />
 
       <FloatingActionMenu
@@ -657,7 +677,10 @@ export default function TransactionsPage() {
           {
             key: 'move-to-pocket',
             label: t('transactions.fab_pocket'),
-            onClick: () => setMoveToPocketOpen(true),
+            onClick: () => {
+              trackUxEvent('transactions_modal_opened', { source: 'fab_move_to_pocket' })
+              setMoveToPocketOpen(true)
+            },
             icon: (
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
                 <path d="M4 10h12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
@@ -669,7 +692,10 @@ export default function TransactionsPage() {
           {
             key: 'transfer',
             label: t('transactions.fab_transfer'),
-            onClick: () => setTransferOpen(true),
+            onClick: () => {
+              trackUxEvent('transactions_modal_opened', { source: 'fab_transfer' })
+              setTransferOpen(true)
+            },
             icon: (
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
                 <path d="M3 10h14M13 6l4 4-4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -680,7 +706,11 @@ export default function TransactionsPage() {
           {
             key: 'register-transaction',
             label: t('transactions.fab_register'),
-            onClick: () => { resetForm(); setModalOpen(true) },
+            onClick: () => {
+              trackUxEvent('transactions_modal_opened', { source: 'fab_register' })
+              resetForm()
+              setModalOpen(true)
+            },
             icon: (
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

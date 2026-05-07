@@ -13,6 +13,7 @@ import FilterCard from '@/components/ui/FilterCard'
 import SkeletonCard from '@/components/ui/SkeletonCard'
 import AppTooltip from '@/components/ui/Tooltip'
 import { useDashboardData } from '@/hooks/useDashboardData'
+import { trackUxEvent } from '@/lib/uxTelemetry'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Period = 'current_year' | 'last_90' | 'last_30' | 'custom'
@@ -237,6 +238,12 @@ export default function DashboardPage() {
   function handleTabChange(tab: Tab) {
     setActiveTab(tab)
     setSearchParams({ tab })
+    trackUxEvent('dashboard_tab_changed', { tab })
+  }
+
+  function handleDensityChange(mode: 'basic' | 'advanced') {
+    setDensityMode(mode)
+    trackUxEvent('dashboard_density_changed', { mode })
   }
 
   const [period, setPeriod] = useState<Period>('current_year')
@@ -415,7 +422,7 @@ export default function DashboardPage() {
         <div className="inline-flex rounded-lg border border-brand/20 bg-white/80 p-0.5" role="group" aria-label={t('dashboard.density_label')}>
           <button
             type="button"
-            onClick={() => setDensityMode('basic')}
+            onClick={() => handleDensityChange('basic')}
             className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${densityMode === 'basic' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
             aria-pressed={densityMode === 'basic'}
           >
@@ -423,7 +430,7 @@ export default function DashboardPage() {
           </button>
           <button
             type="button"
-            onClick={() => setDensityMode('advanced')}
+            onClick={() => handleDensityChange('advanced')}
             className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${densityMode === 'advanced' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
             aria-pressed={densityMode === 'advanced'}
           >
@@ -491,7 +498,7 @@ export default function DashboardPage() {
           <button
             type="button"
             className="mt-3 app-btn-secondary w-auto px-3"
-            onClick={() => setDensityMode('advanced')}
+            onClick={() => handleDensityChange('advanced')}
           >
             {t('dashboard.density_switch_advanced')}
           </button>
