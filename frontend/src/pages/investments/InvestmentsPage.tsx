@@ -285,19 +285,19 @@ function KpiCard({ label, value, accent, sub, subColor, icon }: KpiCardProps) {
   }[accent]
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/80 p-5 shadow-sm ring-1 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ${accentStyles.ring}`}>
+    <div className={`relative overflow-hidden rounded-xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/80 p-4 shadow-sm ring-1 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ${accentStyles.ring}`}>
       <div className={`absolute inset-x-0 top-0 h-1.5 ${accentStyles.line}`} />
-      <div className={`absolute -right-8 -top-8 h-24 w-24 rounded-full blur-2xl ${accentStyles.glow}`} aria-hidden="true" />
+      <div className={`absolute -right-8 -top-8 h-20 w-20 rounded-full blur-2xl ${accentStyles.glow}`} aria-hidden="true" />
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium tracking-[0.16em] uppercase text-neutral-700">{label}</p>
+        <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-neutral-700">{label}</p>
         {icon && (
-          <span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${accentStyles.icon}`}>
+          <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${accentStyles.icon}`}>
             {icon}
           </span>
         )}
       </div>
-      <p className="mt-3 text-[2rem] font-medium tracking-tight text-neutral-900">{value}</p>
-      {sub && <p className={`mt-1.5 text-sm ${subColor ?? 'text-neutral-400'}`}>{sub}</p>}
+      <p className="mt-2 text-[1.7rem] font-medium tracking-tight text-neutral-900">{value}</p>
+      {sub && <p className={`mt-1 text-[13px] ${subColor ?? 'text-neutral-400'}`}>{sub}</p>}
     </div>
   )
 }
