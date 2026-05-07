@@ -257,20 +257,47 @@ function InvestmentModal({
 interface KpiCardProps {
   label: string
   value: string
-  accent: string
+  accent: 'brand' | 'success' | 'warning'
   sub?: string
   subColor?: string
   icon?: ReactNode
 }
 function KpiCard({ label, value, accent, sub, subColor, icon }: KpiCardProps) {
+  const accentStyles = {
+    brand: {
+      line: 'bg-brand',
+      ring: 'ring-brand/15',
+      glow: 'bg-brand/10',
+      icon: 'bg-brand-light text-brand',
+    },
+    success: {
+      line: 'bg-success',
+      ring: 'ring-success/15',
+      glow: 'bg-success/10',
+      icon: 'bg-success-bg text-success',
+    },
+    warning: {
+      line: 'bg-warning',
+      ring: 'ring-warning/15',
+      glow: 'bg-warning/10',
+      icon: 'bg-warning-bg text-warning',
+    },
+  }[accent]
+
   return (
-    <div className={`bg-white border border-neutral-100 rounded-xl p-4 ${accent}`}>
+    <div className={`relative overflow-hidden rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/80 p-5 shadow-sm ring-1 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ${accentStyles.ring}`}>
+      <div className={`absolute inset-x-0 top-0 h-1.5 ${accentStyles.line}`} />
+      <div className={`absolute -right-8 -top-8 h-24 w-24 rounded-full blur-2xl ${accentStyles.glow}`} aria-hidden="true" />
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium tracking-widest uppercase text-neutral-700">{label}</p>
-        {icon && <span className="text-neutral-400">{icon}</span>}
+        <p className="text-xs font-medium tracking-[0.16em] uppercase text-neutral-700">{label}</p>
+        {icon && (
+          <span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${accentStyles.icon}`}>
+            {icon}
+          </span>
+        )}
       </div>
-      <p className="text-2xl font-medium text-neutral-900 mt-1">{value}</p>
-      {sub && <p className={`text-sm mt-0.5 ${subColor ?? 'text-neutral-400'}`}>{sub}</p>}
+      <p className="mt-3 text-[2rem] font-medium tracking-tight text-neutral-900">{value}</p>
+      {sub && <p className={`mt-1.5 text-sm ${subColor ?? 'text-neutral-400'}`}>{sub}</p>}
     </div>
   )
 }
@@ -511,7 +538,7 @@ export default function InvestmentsPage() {
         <KpiCard
           label={t('investments.kpi_invested')}
           value={formatCurrency(totalInvested, 'COP')}
-          accent="border-t-2 border-t-brand"
+          accent="brand"
           icon={
             <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
               <path d="M10 2v16M5 7l5-5 5 5M5 17h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -521,7 +548,7 @@ export default function InvestmentsPage() {
         <KpiCard
           label={t('investments.kpi_current')}
           value={formatCurrency(totalCurrent, 'COP')}
-          accent="border-t-2 border-t-success"
+          accent="success"
           icon={
             <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
               <path d="M3 13l4-4 4 4 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -531,7 +558,7 @@ export default function InvestmentsPage() {
         <KpiCard
           label={t('investments.kpi_gain')}
           value={`${gainPositive ? '+' : ''}${formatCurrency(totalGain, 'COP')}`}
-          accent={gainPositive ? 'border-t-2 border-t-success' : 'border-t-2 border-t-warning'}
+          accent={gainPositive ? 'success' : 'warning'}
           sub={t('investments.kpi_return', { sign: gainPositive ? '+' : '', pct: returnPct })}
           subColor={gainPositive ? 'text-success' : 'text-warning'}
           icon={

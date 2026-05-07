@@ -13,16 +13,15 @@ interface StickyBarProps {
  *   - shell:   `p-4 md:p-6` (horizontal padding = 16px / 24px)
  *   - <main>:  `p-6` in AppLayout
  *
- * The invisible overlay (`-top-8 h-8`) covers the row-gap above this
- * element when it snaps to the top, preventing content showing through.
+ * Keep the wrapper visually separated from content above without masking it.
  */
 export default function StickyBar({ children, className }: StickyBarProps) {
   return (
     <div
-      className={`sticky top-0 z-50 relative -mx-4 md:-mx-6 px-4 md:px-6 pt-1 pb-0 bg-neutral-50 ${className ?? ''}`}
+      className={`sticky top-0 z-50 relative -mx-4 md:-mx-6 px-4 md:px-6 pt-3 pb-0 bg-neutral-50 ${className ?? ''}`}
     >
-      {/* Covers the space-y gap above when snapped to top */}
-      <div className="absolute -top-8 left-0 right-0 h-8 bg-neutral-50 pointer-events-none" />
+        {/* Keep the wrapper visually separated from content above */}
+        <div className="absolute left-0 right-0 h-0 bg-neutral-50 pointer-events-none" />
       {children}
     </div>
   )
