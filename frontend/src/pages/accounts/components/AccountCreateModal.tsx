@@ -13,6 +13,7 @@ interface AccountFormState {
 
 interface AccountCreateModalProps {
   form: AccountFormState
+  errors: Partial<Record<'name' | 'accountType' | 'currency' | 'bankId', string>>
   setForm: Dispatch<SetStateAction<AccountFormState>>
   banks: Bank[]
   saving: boolean
@@ -22,6 +23,7 @@ interface AccountCreateModalProps {
 
 export default function AccountCreateModal({
   form,
+  errors,
   setForm,
   banks,
   saving,
@@ -61,10 +63,11 @@ export default function AccountCreateModal({
               type="text"
               value={form.name}
               onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-              className="app-control w-full"
+              className={`app-control w-full ${errors.name ? 'border-warning' : ''}`}
               placeholder={t('accounts.field_name_placeholder')}
               autoFocus
             />
+            {errors.name && <p className="mt-1 text-xs tone-negative">{errors.name}</p>}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -80,6 +83,7 @@ export default function AccountCreateModal({
                 ]}
                 className="w-full"
               />
+              {errors.accountType && <p className="mt-1 text-xs tone-negative">{errors.accountType}</p>}
             </div>
 
             <div className="space-y-1">
@@ -94,6 +98,7 @@ export default function AccountCreateModal({
                 ]}
                 className="w-full"
               />
+              {errors.currency && <p className="mt-1 text-xs tone-negative">{errors.currency}</p>}
             </div>
 
             <div className="space-y-1">
@@ -108,6 +113,7 @@ export default function AccountCreateModal({
                 className="w-full"
                 disabled={!banks.length}
               />
+              {errors.bankId && <p className="mt-1 text-xs tone-negative">{errors.bankId}</p>}
             </div>
           </div>
 

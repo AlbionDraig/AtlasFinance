@@ -185,7 +185,11 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
         setMetrics(m.data)
         setAggregates(agg.data)
       })
-      .catch(() => toast(t('dashboard.error_load'), 'error'))
+      .catch((error: unknown) => {
+        const status = (error as { response?: { status?: number } })?.response?.status
+        if (status === 401) return
+        toast(t('dashboard.error_load'), 'error')
+      })
       .finally(() => setLoading(false))
   }, [currency, dateFrom.getTime(), dateTo.getTime()])
 

@@ -10,9 +10,10 @@ import InvestmentsTab from './components/InvestmentsTab'
 import Select from '@/components/ui/Select'
 import DatePicker from '@/components/ui/DatePicker'
 import FilterCard from '@/components/ui/FilterCard'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import SkeletonCard from '@/components/ui/SkeletonCard'
 import AppTooltip from '@/components/ui/Tooltip'
 import { useDashboardData } from '@/hooks/useDashboardData'
+import { trackUxEvent } from '@/lib/uxTelemetry'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Period = 'current_year' | 'last_90' | 'last_30' | 'custom'
@@ -200,7 +201,7 @@ function normalizeTab(value: string | null): Tab {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const today = new Date()
   const todayStr = toISODate(today)
   const yearStart = `${today.getFullYear()}-01-01`
@@ -237,14 +238,25 @@ export default function DashboardPage() {
   function handleTabChange(tab: Tab) {
     setActiveTab(tab)
     setSearchParams({ tab })
+    trackUxEvent('dashboard_tab_changed', { tab })
+  }
+
+  function handleDensityChange(mode: 'basic' | 'advanced') {
+    setDensityMode(mode)
+    trackUxEvent('dashboard_density_changed', { mode })
   }
 
   const [period, setPeriod] = useState<Period>('current_year')
   const [currency, setCurrency] = useState('COP')
+  const [densityMode, setDensityMode] = useState<'basic' | 'advanced'>('basic')
   const [customFrom, setCustomFrom] = useState(yearStart)
   const [customTo, setCustomTo] = useState(todayStr)
   const dataBounds = { min: '2000-01-01', max: todayStr }
   const [chartType, setChartType] = useState<ChartType>('income_vs_expense')
+  const movementCountFormatter = useMemo(
+    () => new Intl.NumberFormat(i18n.language.startsWith('es') ? 'es-CO' : 'en-US'),
+    [i18n.language],
+  )
 
   // Compute date ranges
   const { dateFrom, dateTo } = useMemo(() => computeDates(period, customFrom, customTo), [period, customFrom, customTo])
@@ -333,8 +345,35 @@ export default function DashboardPage() {
   const savingsBadge = deltaPointsBadge(savingsRate, prevSavings, hasPrev)
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <LoadingSpinner size={8} />
+    <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] rounded-2xl p-4 md:p-6" aria-busy="true" aria-label={t('common.loading')}>
+      <div className="animate-pulse">
+        <div className="h-6 w-48 rounded bg-neutral-100" />
+        <div className="mt-2 h-4 w-72 rounded bg-neutral-100" />
+      </div>
+      <div className="app-card p-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="h-10 rounded-lg bg-neutral-100 animate-pulse" />
+          <div className="h-10 rounded-lg bg-neutral-100 animate-pulse" />
+        </div>
+      </div>
+      <div className="app-filter-card">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="h-10 rounded-lg bg-neutral-100 animate-pulse" />
+          <div className="h-10 rounded-lg bg-neutral-100 animate-pulse" />
+          <div className="h-10 rounded-lg bg-neutral-100 animate-pulse" />
+          <div className="h-10 rounded-lg bg-neutral-100 animate-pulse" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <SkeletonCard borderColor="border-t-brand" />
+        <SkeletonCard borderColor="border-t-success" />
+        <SkeletonCard borderColor="border-t-warning" />
+        <SkeletonCard borderColor="border-t-brand" />
+      </div>
+      <div className="app-panel p-5 space-y-4">
+        <div className="h-10 w-72 rounded bg-neutral-100 animate-pulse" />
+        <div className="h-64 w-full rounded bg-neutral-100 animate-pulse" />
+      </div>
     </div>
   )
 
@@ -350,10 +389,12 @@ export default function DashboardPage() {
 
       {/* Tabs */}
       <div className="app-card p-2">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="tablist" aria-label={t('dashboard.title')}>
           <button
             type="button"
             onClick={() => handleTabChange('resumen')}
+            role="tab"
+            aria-selected={activeTab === 'resumen'}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'resumen' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
             {t('dashboard.tab_summary')}
@@ -361,6 +402,8 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={() => handleTabChange('inversiones')}
+            role="tab"
+            aria-selected={activeTab === 'inversiones'}
             className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'inversiones' ? 'bg-brand text-white' : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'}`}
           >
             {t('dashboard.tab_investments')}
@@ -373,6 +416,28 @@ export default function DashboardPage() {
       )}
 
       {activeTab === 'resumen' && (<>
+
+      <div className="flex flex-col gap-2 rounded-lg border border-brand/20 bg-gradient-to-r from-brand-light/70 to-white px-3 py-2 text-xs text-brand-text sm:flex-row sm:items-center sm:justify-between">
+        <p>{densityMode === 'basic' ? t('dashboard.density_basic_hint') : t('dashboard.density_advanced_hint')}</p>
+        <div className="inline-flex rounded-lg border border-brand/20 bg-white/80 p-0.5" role="group" aria-label={t('dashboard.density_label')}>
+          <button
+            type="button"
+            onClick={() => handleDensityChange('basic')}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${densityMode === 'basic' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
+            aria-pressed={densityMode === 'basic'}
+          >
+            {t('dashboard.density_basic')}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDensityChange('advanced')}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${densityMode === 'advanced' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
+            aria-pressed={densityMode === 'advanced'}
+          >
+            {t('dashboard.density_advanced')}
+          </button>
+        </div>
+      </div>
 
       {/* Filters */}
       <FilterCard sticky>
@@ -426,12 +491,27 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      {densityMode === 'basic' ? (
+        <section className="app-card p-4 text-sm text-neutral-700">
+          <p className="font-medium text-neutral-900">{t('dashboard.density_basic_card_title')}</p>
+          <p className="mt-1 text-xs text-neutral-400">{t('dashboard.density_basic_card_desc')}</p>
+          <button
+            type="button"
+            className="mt-3 app-btn-secondary w-auto px-3"
+            onClick={() => handleDensityChange('advanced')}
+          >
+            {t('dashboard.density_switch_advanced')}
+          </button>
+        </section>
+      ) : (
+        <>
+
       {/* Insight cards */}
       <section className="pt-1">
-        <SectionTitle>Análisis del período</SectionTitle>
+        <SectionTitle>{t('dashboard.section_analysis')}</SectionTitle>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <InsightCard label={t('dashboard.insight_balance')} value={fmt(balance, currency)} sub={balance > 0 ? t('dashboard.insight_sub_positive') : balance < 0 ? t('dashboard.insight_sub_negative') : t('dashboard.insight_sub_balanced')} tone={toneFn(balance)} help={t('dashboard.help_balance')} />
-          <InsightCard label={t('dashboard.insight_movements')} value={`${(aggregates?.transaction_count ?? 0).toLocaleString('es-CO')}`} sub={t('dashboard.insight_sub_transactions')} tone="neutral" help={t('dashboard.help_movements')} />
+          <InsightCard label={t('dashboard.insight_movements')} value={movementCountFormatter.format(aggregates?.transaction_count ?? 0)} sub={t('dashboard.insight_sub_transactions')} tone="neutral" help={t('dashboard.help_movements')} />
           <InsightCard
             label={t('dashboard.insight_expense_ratio')}
             value={expRatio != null ? `${expRatio.toFixed(1)}%` : t('dashboard.insight_sub_no_data')}
@@ -443,8 +523,8 @@ export default function DashboardPage() {
           <InsightCard label={t('dashboard.insight_top_expense')} value={biggestExpAmount != null ? fmt(biggestExpAmount, currency) : t('dashboard.insight_sub_no_spending')} sub={biggestExpDescription ?? t('dashboard.insight_sub_no_expenses_reg')} tone="negative" help={t('dashboard.help_top_expense')} />
           <InsightCard
             label={t('dashboard.insight_cash_coverage')}
-            value={cashCoverage != null ? `${cashCoverage.toFixed(1)} meses` : netWorth <= 0 ? fmt(netWorth, currency) : t('dashboard.insight_sub_no_ref')}
-            sub={cashCoverage != null ? `Al ritmo de ${fmt(avgMonthlyExp, currency)}/mes` : t('dashboard.insight_sub_no_ref')}
+            value={cashCoverage != null ? `${cashCoverage.toFixed(1)} ${t('dashboard.insight_unit_months')}` : netWorth <= 0 ? fmt(netWorth, currency) : t('dashboard.insight_sub_no_ref')}
+            sub={cashCoverage != null ? t('dashboard.insight_sub_coverage_rate', { amount: fmt(avgMonthlyExp, currency) }) : t('dashboard.insight_sub_no_ref')}
             tone={cashCoverage == null ? 'neutral' : cashCoverage >= 6 ? 'positive' : cashCoverage < 1 ? 'negative' : 'flat'}
             help={t('dashboard.help_cash_coverage')}
           />
@@ -615,6 +695,8 @@ export default function DashboardPage() {
           <p className="text-lg mb-1">{t('dashboard.empty_title')}</p>
           <p className="text-sm">{t('dashboard.empty_subtitle')}</p>
         </div>
+      )}
+      </>
       )}
       </>)}
     </div>

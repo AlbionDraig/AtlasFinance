@@ -1,4 +1,4 @@
-import { useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
+import { useMemo, useRef, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
@@ -34,20 +34,43 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-const INSTRUMENT_COLORS: Record<string, { bg: string; text: string }> = {
-  Acciones: { bg: 'bg-brand-light', text: 'text-brand-text' },
-  Fondos:   { bg: 'bg-success-bg', text: 'text-success-text' },
-  Bonos:    { bg: 'bg-warning-bg', text: 'text-warning-text' },
-  CDT:      { bg: 'bg-neutral-100', text: 'text-neutral-700' },
-  ETF:      { bg: 'bg-brand-light', text: 'text-brand-text' },
-  Cripto:   { bg: 'bg-warning-bg', text: 'text-warning-text' },
-  Otro:     { bg: 'bg-neutral-100', text: 'text-neutral-700' },
+function daysSince(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
+}
+
+type InstrumentGroup = 'equity' | 'funds' | 'fixed' | 'crypto' | 'other'
+
+const INSTRUMENT_GROUP_BY_TYPE: Record<string, InstrumentGroup> = {
+  Acciones: 'equity',
+  Accion: 'equity',
+  'Acción': 'equity',
+  ETF: 'equity',
+  Fondos: 'funds',
+  Fondo: 'funds',
+  'Fondo de pensiones': 'funds',
+  Bonos: 'fixed',
+  CDT: 'fixed',
+  Cripto: 'crypto',
+  Criptomoneda: 'crypto',
+  Otro: 'other',
+}
+
+const GROUP_STYLE: Record<InstrumentGroup, { bg: string; text: string; ring: string; shadow: string }> = {
+  equity: { bg: 'bg-brand-light', text: 'text-brand', ring: 'ring-brand/45', shadow: 'shadow-[inset_0_0_0_1px_rgba(202,11,11,0.18)]' },
+  funds: { bg: 'bg-success-bg', text: 'text-success', ring: 'ring-success/45', shadow: 'shadow-[inset_0_0_0_1px_rgba(34,197,94,0.18)]' },
+  fixed: { bg: 'bg-warning-bg', text: 'text-warning', ring: 'ring-warning/45', shadow: 'shadow-[inset_0_0_0_1px_rgba(245,158,11,0.22)]' },
+  crypto: { bg: 'bg-warning-bg', text: 'text-warning', ring: 'ring-warning/45', shadow: 'shadow-[inset_0_0_0_1px_rgba(245,158,11,0.22)]' },
+  other: { bg: 'bg-neutral-100', text: 'text-neutral-700', ring: 'ring-neutral-300/90', shadow: 'shadow-[inset_0_0_0_1px_rgba(148,163,184,0.22)]' },
+}
+
+function getInstrumentGroup(type: string): InstrumentGroup {
+  return INSTRUMENT_GROUP_BY_TYPE[type] ?? 'other'
 }
 
 function instrumentBadge(type: string) {
-  const style = INSTRUMENT_COLORS[type] ?? { bg: 'bg-neutral-100', text: 'text-neutral-700' }
+  const style = GROUP_STYLE[getInstrumentGroup(type)]
   return (
-    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${style.bg} ${style.text}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${style.bg} ${style.text} ${style.ring} ${style.shadow}`}>
       {type}
     </span>
   )
@@ -62,6 +85,10 @@ interface InvestmentFormState {
   investment_entity_id: string
   started_at: string
 }
+
+const UNDO_WINDOW_MS = 5000
+
+type InvestmentFormErrors = Partial<Record<'name' | 'investment_entity_id' | 'amount_invested' | 'current_value' | 'started_at', string>>
 
 function emptyForm(): InvestmentFormState {
   // Default to current day and COP for faster data entry in local context.
@@ -80,6 +107,7 @@ interface InvestmentModalProps {
   title: string
   isEditing: boolean
   form: InvestmentFormState
+  errors: InvestmentFormErrors
   setForm: Dispatch<SetStateAction<InvestmentFormState>>
   entities: InvestmentEntity[]
   saving: boolean
@@ -89,7 +117,7 @@ interface InvestmentModalProps {
 }
 
 function InvestmentModal({
-  title, isEditing, form, setForm, entities, saving, submitLabel, onSubmit, onClose,
+  title, isEditing, form, errors, setForm, entities, saving, submitLabel, onSubmit, onClose,
 }: InvestmentModalProps) {
   const { t } = useTranslation()
   const entityOptions = [
@@ -136,10 +164,11 @@ function InvestmentModal({
               type="text"
               value={form.name}
               onChange={e => setForm(c => ({ ...c, name: e.target.value }))}
-              className="app-control w-full"
+              className={`app-control w-full ${errors.name ? 'border-warning' : ''}`}
               placeholder={t('investments.field_name_placeholder')}
               autoFocus
             />
+            {errors.name && <p className="mt-1 text-xs tone-negative">{errors.name}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -160,6 +189,7 @@ function InvestmentModal({
                 options={entityOptions}
                 className="w-full"
               />
+              {errors.investment_entity_id && <p className="mt-1 text-xs tone-negative">{errors.investment_entity_id}</p>}
             </div>
           </div>
 
@@ -180,6 +210,7 @@ function InvestmentModal({
                   className="w-full"
                   placeholder="0"
                 />
+                {errors.current_value && <p className="mt-1 text-xs tone-negative">{errors.current_value}</p>}
               </div>
             </div>
           ) : (
@@ -192,6 +223,7 @@ function InvestmentModal({
                 className="w-full"
                 placeholder="0"
               />
+              {errors.amount_invested && <p className="mt-1 text-xs tone-negative">{errors.amount_invested}</p>}
             </div>
           )}
 
@@ -214,6 +246,7 @@ function InvestmentModal({
               value={form.started_at}
               onChange={v => setForm(c => ({ ...c, started_at: v }))}
             />
+            {errors.started_at && <p className="mt-1 text-xs tone-negative">{errors.started_at}</p>}
           </div>
 
           <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
@@ -234,16 +267,47 @@ function InvestmentModal({
 interface KpiCardProps {
   label: string
   value: string
-  accent: string
+  accent: 'brand' | 'success' | 'warning'
   sub?: string
   subColor?: string
+  icon?: ReactNode
 }
-function KpiCard({ label, value, accent, sub, subColor }: KpiCardProps) {
+function KpiCard({ label, value, accent, sub, subColor, icon }: KpiCardProps) {
+  const accentStyles = {
+    brand: {
+      line: 'bg-brand',
+      ring: 'ring-brand/15',
+      glow: 'bg-brand/10',
+      icon: 'bg-brand-light text-brand',
+    },
+    success: {
+      line: 'bg-success',
+      ring: 'ring-success/15',
+      glow: 'bg-success/10',
+      icon: 'bg-success-bg text-success',
+    },
+    warning: {
+      line: 'bg-warning',
+      ring: 'ring-warning/15',
+      glow: 'bg-warning/10',
+      icon: 'bg-warning-bg text-warning',
+    },
+  }[accent]
+
   return (
-    <div className={`bg-white border border-neutral-100 rounded-xl p-4 ${accent}`}>
-      <p className="text-xs font-medium tracking-widest uppercase text-neutral-700">{label}</p>
-      <p className="text-2xl font-medium text-neutral-900 mt-1">{value}</p>
-      {sub && <p className={`text-sm mt-0.5 ${subColor ?? 'text-neutral-400'}`}>{sub}</p>}
+    <div className={`relative overflow-hidden rounded-xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/80 p-4 shadow-sm ring-1 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ${accentStyles.ring}`}>
+      <div className={`absolute inset-x-0 top-0 h-1.5 ${accentStyles.line}`} />
+      <div className={`absolute -right-8 -top-8 h-20 w-20 rounded-full blur-2xl ${accentStyles.glow}`} aria-hidden="true" />
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-neutral-700">{label}</p>
+        {icon && (
+          <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${accentStyles.icon}`}>
+            {icon}
+          </span>
+        )}
+      </div>
+      <p className="mt-2 text-[1.7rem] font-medium tracking-tight text-neutral-900">{value}</p>
+      {sub && <p className={`mt-1 text-[13px] ${subColor ?? 'text-neutral-400'}`}>{sub}</p>}
     </div>
   )
 }
@@ -261,27 +325,48 @@ export default function InvestmentsPage() {
   const [deletingInvestment, setDeletingInvestment] = useState<Investment | null>(null)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<InvestmentFormState>(emptyForm())
+  const [formErrors, setFormErrors] = useState<InvestmentFormErrors>({})
+  const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
   // Filters
   const [filterQuery, setFilterQuery] = useState('')
   const [filterEntity, setFilterEntity] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filterCurrency, setFilterCurrency] = useState('')
+  const [sortBy, setSortBy] = useState('')
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
 
   const entityById = useMemo(() => new Map(entities.map(entity => [entity.id, entity])), [entities])
 
-  const filtered = useMemo(() => investments.filter(inv => {
-    // All selected filters are conjunctive (AND) to avoid ambiguous result sets.
-    if (filterQuery) {
-      const q = filterQuery.toLowerCase()
-      const entity = entityById.get(inv.investment_entity_id)
-      if (!inv.name.toLowerCase().includes(q) && !(entity?.name ?? '').toLowerCase().includes(q)) return false
-    }
-    if (filterEntity && String(inv.investment_entity_id) !== filterEntity) return false
-    if (filterType && inv.instrument_type !== filterType) return false
-    if (filterCurrency && inv.currency !== filterCurrency) return false
-    return true
-  }), [investments, filterQuery, filterEntity, filterType, filterCurrency, entityById])
+  const filtered = useMemo(() => {
+    const base = investments.filter(inv => {
+      // All selected filters are conjunctive (AND) to avoid ambiguous result sets.
+      if (filterQuery) {
+        const q = filterQuery.toLowerCase()
+        const entity = entityById.get(inv.investment_entity_id)
+        if (!inv.name.toLowerCase().includes(q) && !(entity?.name ?? '').toLowerCase().includes(q)) return false
+      }
+      if (filterEntity && String(inv.investment_entity_id) !== filterEntity) return false
+      if (filterType && inv.instrument_type !== filterType) return false
+      if (filterCurrency && inv.currency !== filterCurrency) return false
+      return true
+    })
+
+    if (!sortBy) return base
+    return [...base].sort((a, b) => {
+      const gainPctA = a.amount_invested > 0 ? (a.current_value - a.amount_invested) / a.amount_invested : 0
+      const gainPctB = b.amount_invested > 0 ? (b.current_value - b.amount_invested) / b.amount_invested : 0
+      switch (sortBy) {
+        case 'gain_desc':   return gainPctB - gainPctA
+        case 'gain_asc':    return gainPctA - gainPctB
+        case 'invested_desc': return b.amount_invested - a.amount_invested
+        case 'date_desc':   return new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+        case 'date_asc':    return new Date(a.started_at).getTime() - new Date(b.started_at).getTime()
+        case 'name_asc':    return a.name.localeCompare(b.name, 'es')
+        default:            return 0
+      }
+    })
+  }, [investments, filterQuery, filterEntity, filterType, filterCurrency, entityById, sortBy])
 
   const totalInvested = useMemo(() =>
     filtered.reduce((sum, inv) => sum + inv.amount_invested, 0), [filtered])
@@ -292,16 +377,31 @@ export default function InvestmentsPage() {
   const returnPct = totalInvested > 0 ? ((totalGain / totalInvested) * 100).toFixed(1) : '0.0'
   const gainPositive = totalGain >= 0
 
-  const hasFilters = filterQuery || filterEntity || filterType || filterCurrency
+  const sortOptions = [
+    { value: '', label: t('investments.sort_none') },
+    { value: 'gain_desc', label: t('investments.sort_gain_desc') },
+    { value: 'gain_asc', label: t('investments.sort_gain_asc') },
+    { value: 'invested_desc', label: t('investments.sort_invested_desc') },
+    { value: 'date_desc', label: t('investments.sort_date_desc') },
+    { value: 'date_asc', label: t('investments.sort_date_asc') },
+    { value: 'name_asc', label: t('investments.sort_name_asc') },
+  ]
+  const selectedSortLabel = sortBy
+    ? (sortOptions.find(option => option.value === sortBy)?.label ?? '')
+    : ''
+
+  const hasFilters = filterQuery || filterEntity || filterType || filterCurrency || sortBy
   const activeFilters = [
-    filterQuery && `"${filterQuery}"`,
-    filterEntity && (entityById.get(Number(filterEntity))?.name ?? ''),
-    filterType || '',
-    filterCurrency || '',
+    filterQuery && t('investments.chip_search', { value: `"${filterQuery}"` }),
+    filterEntity && t('investments.chip_entity', { value: entityById.get(Number(filterEntity))?.name ?? '' }),
+    filterType && t('investments.chip_type', { value: filterType }),
+    filterCurrency && t('investments.chip_currency', { value: filterCurrency }),
+    selectedSortLabel && t('investments.chip_sort', { value: selectedSortLabel }),
   ].filter(Boolean) as string[]
 
   function openCreate() {
     setForm(emptyForm())
+    setFormErrors({})
     setCreateOpen(true)
   }
 
@@ -315,6 +415,7 @@ export default function InvestmentsPage() {
       investment_entity_id: String(inv.investment_entity_id),
       started_at: inv.started_at.slice(0, 10),
     })
+    setFormErrors({})
     setEditingInvestment(inv)
   }
 
@@ -322,12 +423,22 @@ export default function InvestmentsPage() {
     const name = form.name.trim()
     const investmentEntityId = Number(form.investment_entity_id)
     const amountInvested = Number(form.amount_invested)
+    const errors: InvestmentFormErrors = {}
 
     // Normalize user input into API payload and enforce business constraints.
-    if (name.length < 2) { toast(t('investments.toast_name_short'), 'error'); return null }
-    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) { toast(t('investments.toast_select_entity'), 'error'); return null }
-    if (!form.amount_invested || amountInvested <= 0) { toast(t('investments.toast_amount_zero'), 'error'); return null }
-    if (!form.started_at) { toast(t('investments.toast_select_date'), 'error'); return null }
+    if (name.length < 2) errors.name = t('investments.toast_name_short')
+    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) errors.investment_entity_id = t('investments.toast_select_entity')
+    if (!form.amount_invested || amountInvested <= 0) errors.amount_invested = t('investments.toast_amount_zero')
+    if (!form.started_at) errors.started_at = t('investments.toast_select_date')
+
+    setFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      const firstError = errors.name ?? errors.investment_entity_id ?? errors.amount_invested ?? errors.started_at
+      if (firstError) {
+        toast(firstError, 'error')
+      }
+      return null
+    }
 
     return {
       name,
@@ -344,12 +455,22 @@ export default function InvestmentsPage() {
     const name = form.name.trim()
     const investmentEntityId = Number(form.investment_entity_id)
     const currentValue = Number(form.current_value)
+    const errors: InvestmentFormErrors = {}
 
     // Editing flow only updates mutable fields (not amount_invested/currency).
-    if (name.length < 2) { toast(t('investments.toast_name_short'), 'error'); return null }
-    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) { toast(t('investments.toast_select_entity'), 'error'); return null }
-    if (form.current_value === '' || currentValue < 0) { toast(t('investments.toast_value_negative'), 'error'); return null }
-    if (!form.started_at) { toast(t('investments.toast_select_date'), 'error'); return null }
+    if (name.length < 2) errors.name = t('investments.toast_name_short')
+    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) errors.investment_entity_id = t('investments.toast_select_entity')
+    if (form.current_value === '' || currentValue < 0) errors.current_value = t('investments.toast_value_negative')
+    if (!form.started_at) errors.started_at = t('investments.toast_select_date')
+
+    setFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      const firstError = errors.name ?? errors.investment_entity_id ?? errors.current_value ?? errors.started_at
+      if (firstError) {
+        toast(firstError, 'error')
+      }
+      return null
+    }
 
     return {
       name,
@@ -401,23 +522,46 @@ export default function InvestmentsPage() {
 
   async function handleDelete() {
     if (!deletingInvestment) return
-    // Optimistic delete: remove from local state and dismiss the modal
-    // immediately; restore from snapshot if the API call fails.
     const target = deletingInvestment
-    const snapshot = investments
+    const previousIndex = investments.findIndex((investment) => investment.id === target.id)
     setInvestments(prev => prev.filter(inv => inv.id !== target.id))
     setDeletingInvestment(null)
-    setSaving(true)
-    try {
-      await investmentsApi.delete(target.id)
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investments })
-      toast(t('investments.toast_deleted'), 'success')
-    } catch {
-      setInvestments(snapshot)
-      toast(t('investments.toast_delete_error'), 'error')
-    } finally {
-      setSaving(false)
-    }
+
+    const timeoutId = window.setTimeout(async () => {
+      pendingDeleteTimeoutsRef.current.delete(target.id)
+      try {
+        await investmentsApi.delete(target.id)
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investments })
+      } catch {
+        setInvestments((prev) => {
+          if (prev.some((investment) => investment.id === target.id)) return prev
+          const next = [...prev]
+          const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+          next.splice(index, 0, target)
+          return next
+        })
+        toast(t('investments.toast_delete_error'), 'error')
+      }
+    }, UNDO_WINDOW_MS)
+
+    pendingDeleteTimeoutsRef.current.set(target.id, timeoutId)
+    toast(t('investments.toast_deleted'), 'success', {
+      actionLabel: t('common.undo'),
+      onAction: () => {
+        const pendingTimeoutId = pendingDeleteTimeoutsRef.current.get(target.id)
+        if (pendingTimeoutId != null) {
+          window.clearTimeout(pendingTimeoutId)
+          pendingDeleteTimeoutsRef.current.delete(target.id)
+          setInvestments((prev) => {
+            if (prev.some((investment) => investment.id === target.id)) return prev
+            const next = [...prev]
+            const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+            next.splice(index, 0, target)
+            return next
+          })
+        }
+      },
+    })
   }
 
   const entityFilterOptions = [
@@ -451,19 +595,37 @@ export default function InvestmentsPage() {
         <KpiCard
           label={t('investments.kpi_invested')}
           value={formatCurrency(totalInvested, 'COP')}
-          accent="border-t-2 border-t-brand"
+          accent="brand"
+          icon={
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
+              <path d="M10 2v16M5 7l5-5 5 5M5 17h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          }
         />
         <KpiCard
           label={t('investments.kpi_current')}
           value={formatCurrency(totalCurrent, 'COP')}
-          accent="border-t-2 border-t-success"
+          accent="success"
+          icon={
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
+              <path d="M3 13l4-4 4 4 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          }
         />
         <KpiCard
           label={t('investments.kpi_gain')}
           value={`${gainPositive ? '+' : ''}${formatCurrency(totalGain, 'COP')}`}
-          accent={gainPositive ? 'border-t-2 border-t-success' : 'border-t-2 border-t-warning'}
+          accent={gainPositive ? 'success' : 'warning'}
           sub={t('investments.kpi_return', { sign: gainPositive ? '+' : '', pct: returnPct })}
           subColor={gainPositive ? 'text-success' : 'text-warning'}
+          icon={
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
+              {gainPositive
+                ? <path d="M4 14l4-4 4 4 5-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                : <path d="M4 6l4 4 4-4 5 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              }
+            </svg>
+          }
         />
       </div>
 
@@ -471,7 +633,7 @@ export default function InvestmentsPage() {
       <FilterCard
         sticky
         activeFilters={activeFilters}
-        onReset={hasFilters ? () => { setFilterQuery(''); setFilterEntity(''); setFilterType(''); setFilterCurrency('') } : undefined}
+        onReset={hasFilters ? () => { setFilterQuery(''); setFilterEntity(''); setFilterType(''); setFilterCurrency(''); setSortBy('') } : undefined}
       >
         <div className="flex min-w-[180px] flex-1 flex-col gap-1">
           <label className="app-label">{t('common.search')}</label>
@@ -511,7 +673,46 @@ export default function InvestmentsPage() {
             active={!!filterCurrency}
           />
         </div>
+        <div className="flex w-44 flex-col gap-1">
+          <label className="app-label">{t('common.sort')}</label>
+          <Select
+            value={sortBy}
+            onChange={setSortBy}
+            options={sortOptions}
+            className="w-full"
+            active={!!sortBy}
+          />
+        </div>
       </FilterCard>
+
+      <div className="flex flex-col gap-2 rounded-lg border border-brand/20 bg-gradient-to-r from-brand-light/70 to-white px-3 py-2 text-xs text-brand-text sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <p>
+            {filtered.length === investments.length
+              ? t('investments.results_count_total', { total: investments.length })
+              : t('investments.results_count_filtered', { shown: filtered.length, total: investments.length })}
+          </p>
+          {selectedSortLabel && <p className="text-neutral-700">{t('investments.chip_sort', { value: selectedSortLabel })}</p>}
+        </div>
+        <div className="inline-flex rounded-lg border border-brand/20 bg-white/80 p-0.5">
+          <button
+            type="button"
+            onClick={() => setViewMode('cards')}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'cards' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
+            aria-pressed={viewMode === 'cards'}
+          >
+            {t('investments.view_cards')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('table')}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'table' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
+            aria-pressed={viewMode === 'table'}
+          >
+            {t('investments.view_table')}
+          </button>
+        </div>
+      </div>
 
       {/* Cards grid */}
       {filtered.length === 0 ? (
@@ -524,15 +725,40 @@ export default function InvestmentsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
             }
+            action={investments.length === 0 ? (
+              <button type="button" className="app-btn-primary" onClick={openCreate}>
+                {t('investments.fab_create')}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="app-btn-secondary"
+                onClick={() => {
+                  setFilterQuery('')
+                  setFilterEntity('')
+                  setFilterType('')
+                  setFilterCurrency('')
+                  setSortBy('')
+                }}
+              >
+                {t('common.clearFilters')}
+              </button>
+            )}
           />
         </div>
-      ) : (
+      ) : viewMode === 'cards' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(inv => {
             const gain = inv.current_value - inv.amount_invested
             const pct = inv.amount_invested > 0 ? ((gain / inv.amount_invested) * 100).toFixed(1) : '0.0'
             const positive = gain >= 0
             const entity = entityById.get(inv.investment_entity_id)
+            // Barra de progreso: muestra visualmente cuánto creció o cayó la inversión.
+            // Se ancla en el 100% (monto invertido) y se extiende en verde/naranja.
+            const perfPct = inv.amount_invested > 0
+              ? Math.min(150, (inv.current_value / inv.amount_invested) * 100)
+              : 100
+            const days = daysSince(inv.started_at)
 
             return (
               <div
@@ -575,24 +801,89 @@ export default function InvestmentsPage() {
                   </div>
                 </div>
 
+                {/* Barra de rendimiento */}
+                <div className="space-y-1">
+                  <div className="h-1.5 w-full rounded-full bg-neutral-100 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${positive ? 'bg-success' : 'bg-warning'}`}
+                      style={{ width: `${perfPct}%` }}
+                    />
+                  </div>
+                </div>
+
                 {/* Gain/loss */}
-                <div className={`rounded-lg px-3 py-2 ${positive ? 'bg-success-bg' : 'bg-warning-bg'}`}>
-                  <p className={`text-xs font-medium ${positive ? 'text-success-text' : 'text-warning-text'}`}>
+                <div className={`rounded-lg px-3 py-2 ring-1 ${positive ? 'bg-success-bg ring-success/30' : 'bg-warning-bg ring-warning/35'}`}>
+                  <p className={`text-xs font-medium ${positive ? 'text-success' : 'text-warning'}`}>
                     {positive ? '+' : ''}{formatCurrency(gain, inv.currency)}
                     <span className="font-normal ml-1 opacity-80">({positive ? '+' : ''}{pct}%)</span>
                   </p>
                 </div>
 
-                {/* Date */}
-                <p className="text-xs text-neutral-400">{t('investments.card_since', { date: formatDate(inv.started_at) })}</p>
+                {/* Date + days */}
+                <p className="text-xs text-neutral-400">
+                  {t('investments.card_since', { date: formatDate(inv.started_at) })}
+                  <span className="ml-1 text-neutral-400 opacity-60">· {days} {t('investments.card_days')}</span>
+                </p>
               </div>
             )
           })}
+        </div>
+      ) : (
+        <div className="app-table-wrap">
+          <table className="app-table text-left text-sm">
+            <thead className="border-b border-brand/30 bg-brand text-xs text-white">
+              <tr>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_name')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_entity')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_type')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_invested')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_current')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_performance')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_since')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-right">{t('investments.table_actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((inv, index) => {
+                const gain = inv.current_value - inv.amount_invested
+                const pct = inv.amount_invested > 0 ? ((gain / inv.amount_invested) * 100).toFixed(1) : '0.0'
+                const positive = gain >= 0
+                const entity = entityById.get(inv.investment_entity_id)
+
+                return (
+                  <tr
+                    key={inv.id}
+                    className={`border-b border-neutral-100 last:border-b-0 transition-colors hover:bg-brand-light/35 ${index % 2 === 0 ? 'bg-white' : 'bg-brand-light/10'}`}
+                  >
+                    <td className="px-3 py-2 text-neutral-900 font-medium">{inv.name}</td>
+                    <td className="px-3 py-2 text-neutral-700">{entity?.name ?? '—'}</td>
+                    <td className="px-3 py-2">{instrumentBadge(inv.instrument_type)}</td>
+                    <td className="px-3 py-2 text-neutral-700 tabular-nums">{formatCurrency(inv.amount_invested, inv.currency)}</td>
+                    <td className="px-3 py-2 text-neutral-700 tabular-nums">{formatCurrency(inv.current_value, inv.currency)}</td>
+                    <td className="px-3 py-2">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${positive ? 'bg-success-bg text-success ring-success/45 shadow-[inset_0_0_0_1px_rgba(34,197,94,0.18)]' : 'bg-warning-bg text-warning ring-warning/45 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.22)]'}`}>
+                        <span aria-hidden="true">{positive ? '↗' : '↘'}</span>
+                        <span>{positive ? '+' : ''}{pct}%</span>
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-neutral-400">{formatDate(inv.started_at)}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center justify-end gap-1 rounded-md bg-brand-light/40 px-1 py-0.5">
+                        <EditButton onClick={() => openEdit(inv)} />
+                        <DeleteButton onClick={() => setDeletingInvestment(inv)} />
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
       {/* FAB */}
       <FloatingActionMenu
+        ariaLabel={t('investments.fab_menu_label')}
         items={[{ key: 'new', label: t('investments.fab_create'), onClick: openCreate }]}
       />
 
@@ -602,6 +893,7 @@ export default function InvestmentsPage() {
           title={t('investments.create_title')}
           isEditing={false}
           form={form}
+          errors={formErrors}
           setForm={setForm}
           entities={entities}
           saving={saving}
@@ -617,6 +909,7 @@ export default function InvestmentsPage() {
           title={t('investments.edit_title')}
           isEditing
           form={form}
+          errors={formErrors}
           setForm={setForm}
           entities={entities}
           saving={saving}

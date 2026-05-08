@@ -16,10 +16,15 @@ export default function BankEditModal({ bank, countryOptions, saving, onSubmit, 
   const { t } = useTranslation()
   const [name, setName] = useState(bank.name)
   const [countryCode, setCountryCode] = useState(bank.country_code)
+  const [errors, setErrors] = useState<{ name?: string; countryCode?: string }>({})
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (name.trim().length < 2) return
+    const nextErrors: { name?: string; countryCode?: string } = {}
+    if (name.trim().length < 2) nextErrors.name = t('admin.banks.toast_name_short')
+    if (!countryCode.trim()) nextErrors.countryCode = t('admin.banks.toast_no_country')
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) return
     onSubmit(bank.id, name.trim(), countryCode.trim().toUpperCase())
   }
 
@@ -54,24 +59,32 @@ export default function BankEditModal({ bank, countryOptions, saving, onSubmit, 
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="app-control w-full"
+              onChange={(e) => {
+                setName(e.target.value)
+                setErrors((current) => ({ ...current, name: undefined }))
+              }}
+              className={`app-control w-full ${errors.name ? 'border-warning' : ''}`}
               placeholder={t('admin.banks.field_name_placeholder')}
               autoFocus
               maxLength={120}
             />
+            {errors.name && <p className="mt-1 text-xs tone-negative">{errors.name}</p>}
           </div>
 
           <div className="space-y-1">
             <label className="app-label">{t('admin.banks.field_country_code')}</label>
             <Select
               value={countryCode}
-              onChange={setCountryCode}
+              onChange={(value) => {
+                setCountryCode(value)
+                setErrors((current) => ({ ...current, countryCode: undefined }))
+              }}
               options={countryOptions}
               className="w-full"
               active
               disabled={!countryOptions.length}
             />
+            {errors.countryCode && <p className="mt-1 text-xs tone-negative">{errors.countryCode}</p>}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">

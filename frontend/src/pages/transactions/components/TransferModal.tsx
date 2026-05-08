@@ -16,6 +16,8 @@ interface TransferForm {
   occurredTime: string
 }
 
+type TransferFormErrors = Partial<Record<keyof TransferForm, string>>
+
 interface TransferModalProps {
   accounts: Account[]
   saving: boolean
@@ -44,6 +46,7 @@ export default function TransferModal({
   const { t } = useTranslation()
   const { toast } = useToast()
   const [form, setForm] = useState<TransferForm>(buildDefault)
+  const [errors, setErrors] = useState<TransferFormErrors>({})
 
   const fromAccount = accounts.find((a) => String(a.id) === form.fromAccountId) ?? null
   const toAccount = accounts.find((a) => String(a.id) === form.toAccountId) ?? null
@@ -74,29 +77,23 @@ export default function TransferModal({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!form.fromAccountId) {
-      toast(t('transactions.toast_transfer_select_from'), 'error')
-      return
-    }
-    if (!form.toAccountId) {
-      toast(t('transactions.toast_transfer_select_to'), 'error')
-      return
-    }
-    if (form.fromAccountId === form.toAccountId) {
-      toast(t('transactions.toast_transfer_same_account'), 'error')
-      return
+    const nextErrors: TransferFormErrors = {}
+    if (!form.fromAccountId) nextErrors.fromAccountId = t('transactions.toast_transfer_select_from')
+    if (!form.toAccountId) nextErrors.toAccountId = t('transactions.toast_transfer_select_to')
+    if (form.fromAccountId && form.fromAccountId === form.toAccountId) {
+      nextErrors.toAccountId = t('transactions.toast_transfer_same_account')
     }
     const amount = Number(form.amount)
-    if (Number.isNaN(amount) || amount <= 0) {
-      toast(t('transactions.toast_transfer_amount_zero'), 'error')
-      return
-    }
-    if (!form.occurredDate) {
-      toast(t('transactions.toast_transfer_select_date'), 'error')
-      return
-    }
-    if (!form.occurredTime) {
-      toast(t('transactions.toast_transfer_select_time'), 'error')
+    if (Number.isNaN(amount) || amount <= 0) nextErrors.amount = t('transactions.toast_transfer_amount_zero')
+    if (!form.occurredDate) nextErrors.occurredDate = t('transactions.toast_transfer_select_date')
+    if (!form.occurredTime) nextErrors.occurredTime = t('transactions.toast_transfer_select_time')
+
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) {
+      const firstError = Object.values(nextErrors)[0]
+      if (firstError) {
+        toast(firstError, 'error')
+      }
       return
     }
 
@@ -137,7 +134,10 @@ export default function TransferModal({
             <label className="app-label">{t('transactions.transfer_field_from')}</label>
             <Select
               value={form.fromAccountId}
-              onChange={handleFromChange}
+              onChange={(value) => {
+                handleFromChange(value)
+                setErrors((current) => ({ ...current, fromAccountId: undefined, toAccountId: undefined }))
+              }}
               options={[
                 { value: '', label: t('transactions.transfer_select_from') },
                 ...accounts.map((a) => ({
@@ -148,6 +148,7 @@ export default function TransferModal({
               className="w-full"
               disabled={!accounts.length}
             />
+            {errors.fromAccountId && <p className="mt-1 text-xs tone-negative">{errors.fromAccountId}</p>}
           </div>
 
           {/* Destination */}
@@ -155,7 +156,10 @@ export default function TransferModal({
             <label className="app-label">{t('transactions.transfer_field_to')}</label>
             <Select
               value={form.toAccountId}
-              onChange={(value) => { setForm((prev) => ({ ...prev, toAccountId: value })) }}
+              onChange={(value) => {
+                setForm((prev) => ({ ...prev, toAccountId: value }))
+                setErrors((current) => ({ ...current, toAccountId: undefined }))
+              }}
               options={[
                 {
                   value: '',
@@ -173,16 +177,21 @@ export default function TransferModal({
               className="w-full"
               disabled={!form.fromAccountId || eligibleDestinations.length === 0}
             />
+            {errors.toAccountId && <p className="mt-1 text-xs tone-negative">{errors.toAccountId}</p>}
           </div>
 
           <div className="space-y-1">
             <label className="app-label">{t('common.amount')}</label>
             <AmountInput
               value={form.amount}
-              onChange={(raw) => setForm((prev) => ({ ...prev, amount: raw }))}
+              onChange={(raw) => {
+                setForm((prev) => ({ ...prev, amount: raw }))
+                setErrors((current) => ({ ...current, amount: undefined }))
+              }}
               currency={currency ?? 'COP'}
               className="w-full"
             />
+            {errors.amount && <p className="mt-1 text-xs tone-negative">{errors.amount}</p>}
           </div>
 
           <div className="space-y-1">
@@ -194,19 +203,31 @@ export default function TransferModal({
 
           {/* Date / time */}
           <div className="grid grid-cols-2 gap-4">
-            <DatePicker
-              label={t('common.date')}
-              value={form.occurredDate}
-              onChange={(value) => setForm((prev) => ({ ...prev, occurredDate: value }))}
-              max={maxDate}
-              className="w-full"
-            />
-            <TimePicker
-              label={t('common.time')}
-              value={form.occurredTime}
-              onChange={(value) => setForm((prev) => ({ ...prev, occurredTime: value }))}
-              className="w-full"
-            />
+            <div className="space-y-1">
+              <DatePicker
+                label={t('common.date')}
+                value={form.occurredDate}
+                onChange={(value) => {
+                  setForm((prev) => ({ ...prev, occurredDate: value }))
+                  setErrors((current) => ({ ...current, occurredDate: undefined }))
+                }}
+                max={maxDate}
+                className="w-full"
+              />
+              {errors.occurredDate && <p className="text-xs tone-negative">{errors.occurredDate}</p>}
+            </div>
+            <div className="space-y-1">
+              <TimePicker
+                label={t('common.time')}
+                value={form.occurredTime}
+                onChange={(value) => {
+                  setForm((prev) => ({ ...prev, occurredTime: value }))
+                  setErrors((current) => ({ ...current, occurredTime: undefined }))
+                }}
+                className="w-full"
+              />
+              {errors.occurredTime && <p className="text-xs tone-negative">{errors.occurredTime}</p>}
+            </div>
           </div>
 
           {/* Actions */}

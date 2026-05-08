@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -17,8 +17,12 @@ import PageSkeleton from '@/components/ui/PageSkeleton'
 import { useToast } from '@/hooks/useToast'
 import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { useTransactionsCatalogs, useTransactionsList } from '@/hooks/useTransactionsData'
+import { trackUxEvent } from '@/lib/uxTelemetry'
 import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import type { FiltersState, FormState, PeriodFilter, TransactionType } from './types'
+
+type TransactionFormErrors = Partial<Record<keyof FormState, string>>
+const UNDO_WINDOW_MS = 5000
 
 function toDateInputValue(value: Date): string {
   const year = value.getFullYear()
@@ -192,6 +196,9 @@ export default function TransactionsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
   const [moveToPocketOpen, setMoveToPocketOpen] = useState(false)
+  const [formErrors, setFormErrors] = useState<TransactionFormErrors>({})
+  const [pendingDeletedIds, setPendingDeletedIds] = useState<Set<number>>(new Set())
+  const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
   // Catálogos: carga única tras montar.
   const { accounts, categories, pockets, loading: catalogsLoading } = useTransactionsCatalogs()
@@ -250,18 +257,24 @@ export default function TransactionsPage() {
     return filtered.length ? filtered : categories
   }, [categories, form.transactionType])
 
-  const incomeTotal = transactions
+  const visibleTransactions = useMemo(
+    () => transactions.filter((transaction) => !pendingDeletedIds.has(transaction.id)),
+    [transactions, pendingDeletedIds],
+  )
+
+  const incomeTotal = visibleTransactions
     .filter((transaction) => normalizeTransactionType(String(transaction.transaction_type)) === 'INCOME')
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0)
-  const expenseTotal = transactions
+  const expenseTotal = visibleTransactions
     .filter((transaction) => normalizeTransactionType(String(transaction.transaction_type)) === 'EXPENSE')
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0)
+  const visibleTotal = Math.max(0, total - pendingDeletedIds.size)
   // totalPages derived from server total; paginatedTransactions IS the full page (no client slice).
-  const totalPages = Math.max(1, Math.ceil(total / filters.pageSize))
+  const totalPages = Math.max(1, Math.ceil(visibleTotal / filters.pageSize))
   const currentPage = Math.min(page, totalPages)
   const startIndex = (currentPage - 1) * filters.pageSize
-  const endIndex = Math.min(startIndex + transactions.length, total)
-  const paginatedTransactions = transactions
+  const endIndex = Math.min(startIndex + visibleTransactions.length, visibleTotal)
+  const paginatedTransactions = visibleTransactions
   const noCategoryLabel = t('transactions.no_category')
   const activeFilters = [
     filters.transactionType !== 'all' ? t(filters.transactionType === 'INCOME' ? 'transactions.chip_type_income' : 'transactions.chip_type_expense') : null,
@@ -275,6 +288,7 @@ export default function TransactionsPage() {
     setEditingId(null)
     setModalOpen(false)
     setForm(buildDefaultForm())
+    setFormErrors({})
   }
 
   async function handleExportCSV() {
@@ -316,60 +330,77 @@ export default function TransactionsPage() {
       occurredDate: toDateInputValue(occurredAt),
       occurredTime: toTimeInputValue(occurredAt),
     })
+    setFormErrors({})
+  }
+
+  function validateTransactionForm(): TransactionFormErrors {
+    const errors: TransactionFormErrors = {}
+
+    if (form.description.trim().length < 2) {
+      errors.description = t('transactions.toast_desc_short')
+    }
+    if (!form.transactionType) {
+      errors.transactionType = t('transactions.toast_select_type')
+    }
+
+    const amount = Number(form.amount)
+    if (Number.isNaN(amount) || amount <= 0) {
+      errors.amount = t('transactions.toast_amount_zero')
+    }
+    if (!form.accountId) {
+      errors.accountId = t('transactions.toast_select_account')
+    }
+    if (form.transactionType === 'EXPENSE' && (!form.categoryId || form.categoryId === 'none')) {
+      errors.categoryId = t('transactions.toast_category_required')
+    }
+    if (!form.occurredDate) {
+      errors.occurredDate = t('transactions.toast_select_date')
+    }
+    if (!form.occurredTime) {
+      errors.occurredTime = t('transactions.toast_select_time')
+    }
+    if (!selectedAccount) {
+      errors.accountId = t('transactions.toast_no_account')
+    }
+
+    return errors
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (form.description.trim().length < 2) {
-      toast(t('transactions.toast_desc_short'), 'error')
-      return
-    }
-
-    if (!form.transactionType) {
-      toast(t('transactions.toast_select_type'), 'error')
+    const errors = validateTransactionForm()
+    setFormErrors(errors)
+    if (Object.keys(errors).length) {
+      trackUxEvent('transactions_validation_failed', {
+        errorCount: Object.keys(errors).length,
+        hasAccountError: Boolean(errors.accountId),
+        hasAmountError: Boolean(errors.amount),
+        hasCategoryError: Boolean(errors.categoryId),
+      })
+      const firstError = Object.values(errors)[0]
+      if (firstError) {
+        toast(firstError, 'error')
+      }
       return
     }
 
     const amount = Number(form.amount)
-    if (Number.isNaN(amount) || amount <= 0) {
-      toast(t('transactions.toast_amount_zero'), 'error')
-      return
-    }
 
-    if (!form.accountId) {
-      toast(t('transactions.toast_select_account'), 'error')
-      return
-    }
-
-    if (form.transactionType === 'EXPENSE' && (!form.categoryId || form.categoryId === 'none')) {
-      toast(t('transactions.toast_category_required'), 'error')
-      return
-    }
-
-    if (!form.occurredDate) {
-      toast(t('transactions.toast_select_date'), 'error')
-      return
-    }
-
-    if (!form.occurredTime) {
-      toast(t('transactions.toast_select_time'), 'error')
-      return
-    }
-
-    if (!selectedAccount) {
+    const account = selectedAccount
+    if (!account) {
       toast(t('transactions.toast_no_account'), 'error')
       return
     }
 
     const occurredAt = `${form.occurredDate}T${form.occurredTime || '00:00'}:00`
     const payload = {
-      account_id: selectedAccount.id,
+      account_id: account.id,
       amount,
       description: form.description.trim(),
       category_id: form.categoryId === 'none' ? null : Number(form.categoryId),
       pocket_id: null,
-      currency: selectedAccount.currency,
+      currency: account.currency,
       transaction_type: form.transactionType.toLowerCase() as Transaction['transaction_type'],
       occurred_at: occurredAt,
     } satisfies Omit<Transaction, 'id'>
@@ -448,22 +479,78 @@ export default function TransactionsPage() {
   }
 
   async function handleDelete(transactionId: number) {
-    setDeletingId(transactionId)
+    setDeletingId(null)
     setPendingDeleteId(null)
+    trackUxEvent('transactions_delete_requested', { transactionId })
 
-    try {
-      await transactionsApi.delete(transactionId)
-      if (editingId === transactionId) resetForm()
-      toast(t('transactions.toast_deleted'))
-      await reloadTransactions()
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
-    } catch (deleteError) {
-      toast(getApiErrorMessage(deleteError, t('transactions.toast_delete_error')), 'error')
-    } finally {
-      setDeletingId(null)
-    }
+    setPendingDeletedIds((current) => {
+      const next = new Set(current)
+      next.add(transactionId)
+      return next
+    })
+
+    const timeoutId = window.setTimeout(async () => {
+      pendingDeleteTimeoutsRef.current.delete(transactionId)
+      try {
+        await transactionsApi.delete(transactionId)
+        if (editingId === transactionId) resetForm()
+        await reloadTransactions()
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
+      } catch (deleteError) {
+        setPendingDeletedIds((current) => {
+          const next = new Set(current)
+          next.delete(transactionId)
+          return next
+        })
+        toast(getApiErrorMessage(deleteError, t('transactions.toast_delete_error')), 'error')
+      }
+    }, UNDO_WINDOW_MS)
+
+    pendingDeleteTimeoutsRef.current.set(transactionId, timeoutId)
+    toast(t('transactions.toast_deleted'), 'success', {
+      actionLabel: t('common.undo'),
+      onAction: () => {
+        trackUxEvent('transactions_delete_undo', { transactionId })
+        const pendingTimeoutId = pendingDeleteTimeoutsRef.current.get(transactionId)
+        if (pendingTimeoutId != null) {
+          window.clearTimeout(pendingTimeoutId)
+          pendingDeleteTimeoutsRef.current.delete(transactionId)
+          setPendingDeletedIds((current) => {
+            const next = new Set(current)
+            next.delete(transactionId)
+            return next
+          })
+        }
+      },
+    })
   }
+
+  useEffect(() => {
+    if (pendingDeletedIds.size === 0) {
+      return
+    }
+    const existingIds = new Set(transactions.map((transaction) => transaction.id))
+    setPendingDeletedIds((current) => {
+      let changed = false
+      const next = new Set<number>()
+      current.forEach((id) => {
+        if (existingIds.has(id)) {
+          next.add(id)
+        } else {
+          changed = true
+        }
+      })
+      return changed ? next : current
+    })
+  }, [transactions, pendingDeletedIds.size])
+
+  useEffect(() => {
+    return () => {
+      pendingDeleteTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
+      pendingDeleteTimeoutsRef.current.clear()
+    }
+  }, [])
 
   if (catalogsLoading) {
     return <PageSkeleton cards={3} rows={8} columns={6} />
@@ -493,7 +580,9 @@ export default function TransactionsPage() {
       {modalOpen && (
         <TransactionEditModal
           form={form}
+          errors={formErrors}
           setForm={setForm}
+          setErrors={setFormErrors}
           accounts={accounts}
           categoryOptions={categoryOptions}
           accountCurrency={accountCurrency}
@@ -542,14 +631,17 @@ export default function TransactionsPage() {
         activeFilters={activeFilters}
         datasetRange={{ min: '2000-01-01', max: toDateInputValue(new Date()) }}
         derivedRange={derivedRange}
-        onResetFilters={() => setFilters(buildDefaultFilters())}
+        onResetFilters={() => {
+          trackUxEvent('transactions_filters_reset')
+          setFilters(buildDefaultFilters())
+        }}
       />
 
       {/* Transactions table */}
       <TransactionsHistoryCard
-        filteredTransactions={transactions}
+        filteredTransactions={visibleTransactions}
         paginatedTransactions={paginatedTransactions}
-        total={total}
+        total={visibleTotal}
         loading={listLoading}
         currentPage={currentPage}
         totalPages={totalPages}
@@ -561,18 +653,27 @@ export default function TransactionsPage() {
         onPrevPage={() => setPage((current) => Math.max(1, current - 1))}
         onNextPage={() => setPage((current) => Math.min(totalPages, current + 1))}
         pageSize={filters.pageSize}
-        onPageSizeChange={(size) => setFilters((current) => ({ ...current, pageSize: size }))}
+        onPageSizeChange={(size) => {
+          trackUxEvent('transactions_page_size_changed', { pageSize: size })
+          setFilters((current) => ({ ...current, pageSize: size }))
+        }}
         incomeTotal={incomeTotal}
         expenseTotal={expenseTotal}
         currency={filters.currency === 'USD' ? 'USD' : 'COP'}
         onEdit={handleEdit}
         onDelete={(transactionId) => {
+          trackUxEvent('transactions_delete_modal_opened', { transactionId })
           setPendingDeleteId(transactionId)
         }}
         getCompactAccountName={getCompactAccountName}
         getCategoryName={(id, cats) => getCategoryName(id, cats, noCategoryLabel)}
         formatCurrency={formatCurrency}
         normalizeTransactionType={normalizeTransactionType}
+        onCreate={() => {
+          trackUxEvent('transactions_modal_opened', { source: 'table_create' })
+          resetForm()
+          setModalOpen(true)
+        }}
       />
 
       <FloatingActionMenu
@@ -582,7 +683,10 @@ export default function TransactionsPage() {
           {
             key: 'move-to-pocket',
             label: t('transactions.fab_pocket'),
-            onClick: () => setMoveToPocketOpen(true),
+            onClick: () => {
+              trackUxEvent('transactions_modal_opened', { source: 'fab_move_to_pocket' })
+              setMoveToPocketOpen(true)
+            },
             icon: (
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
                 <path d="M4 10h12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
@@ -594,7 +698,10 @@ export default function TransactionsPage() {
           {
             key: 'transfer',
             label: t('transactions.fab_transfer'),
-            onClick: () => setTransferOpen(true),
+            onClick: () => {
+              trackUxEvent('transactions_modal_opened', { source: 'fab_transfer' })
+              setTransferOpen(true)
+            },
             icon: (
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
                 <path d="M3 10h14M13 6l4 4-4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -605,7 +712,11 @@ export default function TransactionsPage() {
           {
             key: 'register-transaction',
             label: t('transactions.fab_register'),
-            onClick: () => { resetForm(); setModalOpen(true) },
+            onClick: () => {
+              trackUxEvent('transactions_modal_opened', { source: 'fab_register' })
+              resetForm()
+              setModalOpen(true)
+            },
             icon: (
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

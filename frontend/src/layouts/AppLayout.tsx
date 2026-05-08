@@ -167,7 +167,6 @@ export default function AppLayout() {
         onMouseLeave={scheduleClose}
         onFocusCapture={() => {
           clearTimers()
-          setExpanded(true)
         }}
         onBlurCapture={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {

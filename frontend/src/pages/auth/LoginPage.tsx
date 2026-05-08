@@ -19,11 +19,27 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (sessionStorage.getItem('session_expired')) {
-      sessionStorage.removeItem('session_expired')
+    const params = new URLSearchParams(window.location.search)
+    const hasReasonInUrl = params.get('reason') === 'session_expired'
+    const hasSessionFlag = !!sessionStorage.getItem('session_expired')
+
+    if (!hasReasonInUrl && !hasSessionFlag) return
+
+    // En desarrollo, StrictMode monta/desmonta una vez extra; diferimos el
+    // toast para que el primer ciclo de prueba se cancele y el mensaje real
+    // quede visible en el montaje definitivo.
+    const timer = window.setTimeout(() => {
       toast(t('auth.login.error_expired'), 'error')
-    }
-  }, [])
+      sessionStorage.removeItem('session_expired')
+
+      // Limpiamos el query param para no repetir el toast al refrescar login.
+      if (hasReasonInUrl) {
+        window.history.replaceState(null, '', window.location.pathname)
+      }
+    }, 0)
+
+    return () => window.clearTimeout(timer)
+  }, [toast, t])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

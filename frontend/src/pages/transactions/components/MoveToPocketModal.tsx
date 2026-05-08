@@ -16,6 +16,8 @@ interface MoveToPocketForm {
   occurredTime: string
 }
 
+type MoveToPocketFormErrors = Partial<Record<keyof MoveToPocketForm, string>>
+
 interface MoveToPocketModalProps {
   accounts: Account[]
   pockets: Pocket[]
@@ -46,6 +48,7 @@ export default function MoveToPocketModal({
   const { t } = useTranslation()
   const { toast } = useToast()
   const [form, setForm] = useState<MoveToPocketForm>(buildDefault)
+  const [errors, setErrors] = useState<MoveToPocketFormErrors>({})
 
   const account = accounts.find((item) => String(item.id) === form.accountId) ?? null
   const selectedPocket = pockets.find((item) => String(item.id) === form.pocketId) ?? null
@@ -58,25 +61,20 @@ export default function MoveToPocketModal({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!form.accountId) {
-      toast(t('transactions.toast_pocket_select_account'), 'error')
-      return
-    }
-    if (!form.pocketId) {
-      toast(t('transactions.toast_pocket_select_pocket'), 'error')
-      return
-    }
+    const nextErrors: MoveToPocketFormErrors = {}
+    if (!form.accountId) nextErrors.accountId = t('transactions.toast_pocket_select_account')
+    if (!form.pocketId) nextErrors.pocketId = t('transactions.toast_pocket_select_pocket')
     const amount = Number(form.amount)
-    if (Number.isNaN(amount) || amount <= 0) {
-      toast(t('transactions.toast_pocket_amount_zero'), 'error')
-      return
-    }
-    if (!form.occurredDate) {
-      toast(t('transactions.toast_pocket_select_date'), 'error')
-      return
-    }
-    if (!form.occurredTime) {
-      toast(t('transactions.toast_pocket_select_time'), 'error')
+    if (Number.isNaN(amount) || amount <= 0) nextErrors.amount = t('transactions.toast_pocket_amount_zero')
+    if (!form.occurredDate) nextErrors.occurredDate = t('transactions.toast_pocket_select_date')
+    if (!form.occurredTime) nextErrors.occurredTime = t('transactions.toast_pocket_select_time')
+
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) {
+      const firstError = Object.values(nextErrors)[0]
+      if (firstError) {
+        toast(firstError, 'error')
+      }
       return
     }
 
@@ -115,7 +113,10 @@ export default function MoveToPocketModal({
             <label className="app-label">{t('transactions.pocket_field_account')}</label>
             <Select
               value={form.accountId}
-              onChange={(value) => setForm((prev) => ({ ...prev, accountId: value, pocketId: '' }))}
+              onChange={(value) => {
+                setForm((prev) => ({ ...prev, accountId: value, pocketId: '' }))
+                setErrors((current) => ({ ...current, accountId: undefined, pocketId: undefined }))
+              }}
               options={[
                 { value: '', label: t('transactions.pocket_select_account') },
                 ...accounts.map((item) => ({
@@ -125,13 +126,17 @@ export default function MoveToPocketModal({
               ]}
               className="w-full"
             />
+            {errors.accountId && <p className="mt-1 text-xs tone-negative">{errors.accountId}</p>}
           </div>
 
           <div className="space-y-1">
             <label className="app-label">{t('transactions.pocket_field_pocket')}</label>
             <Select
               value={form.pocketId}
-              onChange={(value) => setForm((prev) => ({ ...prev, pocketId: value }))}
+              onChange={(value) => {
+                setForm((prev) => ({ ...prev, pocketId: value }))
+                setErrors((current) => ({ ...current, pocketId: undefined }))
+              }}
               options={[
                 {
                   value: '',
@@ -149,16 +154,21 @@ export default function MoveToPocketModal({
               className="w-full"
               disabled={!form.accountId || !accountPockets.length}
             />
+            {errors.pocketId && <p className="mt-1 text-xs tone-negative">{errors.pocketId}</p>}
           </div>
 
           <div className="space-y-1">
             <label className="app-label">{t('common.amount')}</label>
             <AmountInput
               value={form.amount}
-              onChange={(raw) => setForm((prev) => ({ ...prev, amount: raw }))}
+              onChange={(raw) => {
+                setForm((prev) => ({ ...prev, amount: raw }))
+                setErrors((current) => ({ ...current, amount: undefined }))
+              }}
               currency={account?.currency ?? 'COP'}
               className="w-full"
             />
+            {errors.amount && <p className="mt-1 text-xs tone-negative">{errors.amount}</p>}
           </div>
 
           <div className="space-y-1">
@@ -169,19 +179,31 @@ export default function MoveToPocketModal({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <DatePicker
-              label={t('common.date')}
-              value={form.occurredDate}
-              onChange={(value) => setForm((prev) => ({ ...prev, occurredDate: value }))}
-              max={maxDate}
-              className="w-full"
-            />
-            <TimePicker
-              label={t('common.time')}
-              value={form.occurredTime}
-              onChange={(value) => setForm((prev) => ({ ...prev, occurredTime: value }))}
-              className="w-full"
-            />
+            <div className="space-y-1">
+              <DatePicker
+                label={t('common.date')}
+                value={form.occurredDate}
+                onChange={(value) => {
+                  setForm((prev) => ({ ...prev, occurredDate: value }))
+                  setErrors((current) => ({ ...current, occurredDate: undefined }))
+                }}
+                max={maxDate}
+                className="w-full"
+              />
+              {errors.occurredDate && <p className="text-xs tone-negative">{errors.occurredDate}</p>}
+            </div>
+            <div className="space-y-1">
+              <TimePicker
+                label={t('common.time')}
+                value={form.occurredTime}
+                onChange={(value) => {
+                  setForm((prev) => ({ ...prev, occurredTime: value }))
+                  setErrors((current) => ({ ...current, occurredTime: undefined }))
+                }}
+                className="w-full"
+              />
+              {errors.occurredTime && <p className="text-xs tone-negative">{errors.occurredTime}</p>}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">

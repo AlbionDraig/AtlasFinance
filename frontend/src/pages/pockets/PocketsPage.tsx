@@ -1,5 +1,6 @@
-import { useMemo, useState, type CSSProperties, type Dispatch, type FormEvent, type SetStateAction } from 'react'
+import { useMemo, useRef, useState, type CSSProperties, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { AxiosError } from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
 import { pocketsApi, type PocketPayload, type PocketUpdatePayload } from '@/api/pockets'
@@ -27,6 +28,8 @@ interface PocketFormState {
   account_id: string
 }
 
+type PocketFormErrors = Partial<Record<keyof PocketFormState, string>>
+
 const EMPTY_FORM: PocketFormState = {
   name: '',
   balance: '',
@@ -39,6 +42,8 @@ const DEFAULT_FILTERS: PocketFiltersState = {
   bankId: 'all',
   currency: 'all',
 }
+
+const UNDO_WINDOW_MS = 5000
 
 function getApiErrorMessage(error: unknown, fallback: string): string {
   // Align backend detail extraction with the rest of UI pages.
@@ -90,6 +95,7 @@ interface PocketModalProps {
   title: string
   isEditing: boolean
   form: PocketFormState
+  errors: PocketFormErrors
   setForm: Dispatch<SetStateAction<PocketFormState>>
   accounts: Account[]
   currentBalance?: number
@@ -104,6 +110,7 @@ function PocketModal({
   title,
   isEditing,
   form,
+  errors,
   setForm,
   accounts,
   currentBalance,
@@ -151,7 +158,7 @@ function PocketModal({
         <form onSubmit={onSubmit} className="space-y-4 p-6">
           <FormField label={t('pockets.field_name')}>
             <input
-              className="app-control"
+              className={`app-control ${errors.name ? 'border-warning' : ''}`}
               type="text"
               value={form.name}
               onChange={event => setForm(current => ({ ...current, name: event.target.value }))}
@@ -159,6 +166,7 @@ function PocketModal({
               maxLength={120}
               autoFocus
             />
+            {errors.name && <p className="mt-1 text-xs tone-negative">{errors.name}</p>}
           </FormField>
 
           <FormField label={t('pockets.field_account')}>
@@ -175,6 +183,7 @@ function PocketModal({
               className="w-full"
               active={Boolean(form.account_id)}
             />
+            {errors.account_id && <p className="mt-1 text-xs tone-negative">{errors.account_id}</p>}
           </FormField>
 
           {!isEditing ? (
@@ -186,6 +195,7 @@ function PocketModal({
                 className="w-full"
                 placeholder="0"
               />
+              {errors.balance && <p className="mt-1 text-xs tone-negative">{errors.balance}</p>}
               <InlineAlert
                 className="mt-2"
                 message={<>{t('pockets.initial_balance_alert')}</>}
@@ -240,6 +250,8 @@ export default function PocketsPage() {
   const [deletingPocket, setDeletingPocket] = useState<Pocket | null>(null)
   const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [form, setForm] = useState<PocketFormState>(EMPTY_FORM)
+  const [formErrors, setFormErrors] = useState<PocketFormErrors>({})
+  const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
   const accountById = useMemo(() => {
     // Precompute lookup maps to avoid repeated O(n) searches in render/filter logic.
@@ -310,6 +322,7 @@ export default function PocketsPage() {
 
   function resetForm() {
     setForm(EMPTY_FORM)
+    setFormErrors({})
   }
 
   function openCreateModal() {
@@ -335,23 +348,31 @@ export default function PocketsPage() {
     const name = form.name.trim()
     const accountId = Number(form.account_id)
     const balance = Number(form.balance)
+    const errors: PocketFormErrors = {}
 
     // Validate and normalize form state before calling API.
     if (name.length < 2) {
-      toast(t('pockets.toast_name_short'), 'error')
-      return null
+      errors.name = t('pockets.toast_name_short')
     }
     if (!Number.isInteger(accountId) || accountId <= 0) {
-      toast(t('pockets.toast_select_account'), 'error')
-      return null
+      errors.account_id = t('pockets.toast_select_account')
     }
     if (!Number.isFinite(balance) || balance < 0) {
-      toast(t('pockets.toast_balance_invalid'), 'error')
+      errors.balance = t('pockets.toast_balance_invalid')
+    }
+
+    setFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      const firstError = errors.name ?? errors.account_id ?? errors.balance
+      if (firstError) {
+        toast(firstError, 'error')
+      }
       return null
     }
 
     const selectedAccount = accountById.get(accountId)
     if (!selectedAccount) {
+      setFormErrors((current) => ({ ...current, account_id: t('pockets.toast_invalid_account') }))
       toast(t('pockets.toast_invalid_account'), 'error')
       return null
     }
@@ -367,18 +388,27 @@ export default function PocketsPage() {
   function buildUpdatePayloadFromForm(): PocketUpdatePayload | null {
     const name = form.name.trim()
     const accountId = Number(form.account_id)
+    const errors: PocketFormErrors = {}
 
     if (name.length < 2) {
-      toast(t('pockets.toast_name_short'), 'error')
-      return null
+      errors.name = t('pockets.toast_name_short')
     }
     if (!Number.isInteger(accountId) || accountId <= 0) {
-      toast(t('pockets.toast_select_account'), 'error')
+      errors.account_id = t('pockets.toast_select_account')
+    }
+
+    setFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      const firstError = errors.name ?? errors.account_id
+      if (firstError) {
+        toast(firstError, 'error')
+      }
       return null
     }
 
     const selectedAccount = accountById.get(accountId)
     if (!selectedAccount) {
+      setFormErrors((current) => ({ ...current, account_id: t('pockets.toast_invalid_account') }))
       toast(t('pockets.toast_invalid_account'), 'error')
       return null
     }
@@ -432,24 +462,47 @@ export default function PocketsPage() {
 
   async function handleDelete() {
     if (!deletingPocket) return
-    // Optimistic delete: drop from the list and close the confirm modal
-    // before the network round-trip; restore from snapshot on failure.
     const target = deletingPocket
-    const snapshot = pockets
+    const previousIndex = pockets.findIndex((pocket) => pocket.id === target.id)
     setPockets(current => current.filter(pocket => pocket.id !== target.id))
     setDeletingPocket(null)
-    setSaving(true)
-    try {
-      await pocketsApi.delete(target.id)
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
-      toast(t('pockets.toast_deleted'))
-    } catch (error) {
-      setPockets(snapshot)
-      toast(getApiErrorMessage(error, t('pockets.toast_delete_error')), 'error')
-    } finally {
-      setSaving(false)
-    }
+
+    const timeoutId = window.setTimeout(async () => {
+      pendingDeleteTimeoutsRef.current.delete(target.id)
+      try {
+        await pocketsApi.delete(target.id)
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
+      } catch (error) {
+        setPockets((current) => {
+          if (current.some((pocket) => pocket.id === target.id)) return current
+          const next = [...current]
+          const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+          next.splice(index, 0, target)
+          return next
+        })
+        toast(getApiErrorMessage(error, t('pockets.toast_delete_error')), 'error')
+      }
+    }, UNDO_WINDOW_MS)
+
+    pendingDeleteTimeoutsRef.current.set(target.id, timeoutId)
+    toast(t('pockets.toast_deleted'), 'success', {
+      actionLabel: t('common.undo'),
+      onAction: () => {
+        const pendingTimeoutId = pendingDeleteTimeoutsRef.current.get(target.id)
+        if (pendingTimeoutId != null) {
+          window.clearTimeout(pendingTimeoutId)
+          pendingDeleteTimeoutsRef.current.delete(target.id)
+          setPockets((current) => {
+            if (current.some((pocket) => pocket.id === target.id)) return current
+            const next = [...current]
+            const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+            next.splice(index, 0, target)
+            return next
+          })
+        }
+      },
+    })
   }
 
   async function handleWithdraw(formData: WithdrawFromPocketFormData) {
@@ -490,6 +543,7 @@ export default function PocketsPage() {
           title={t('pockets.create_title')}
           isEditing={false}
           form={form}
+          errors={formErrors}
           setForm={setForm}
           accounts={accounts}
           saving={saving}
@@ -504,6 +558,7 @@ export default function PocketsPage() {
           title={t('pockets.edit_title')}
           isEditing
           form={form}
+          errors={formErrors}
           setForm={setForm}
           accounts={accounts}
           currentBalance={editingPocket.balance}
@@ -559,6 +614,11 @@ export default function PocketsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18" />
               </svg>
             }
+            action={(
+              <Link to="/accounts" className="app-btn-primary">
+                {t('accounts.fab_create')}
+              </Link>
+            )}
           />
         </div>
       ) : filteredPockets.length === 0 ? (
@@ -566,6 +626,15 @@ export default function PocketsPage() {
           <EmptyState
             title={pockets.length === 0 ? t('pockets.empty_no_pockets') : t('pockets.empty_no_results')}
             description={pockets.length === 0 ? t('pockets.empty_create_hint') : t('pockets.empty_filter_hint')}
+            action={pockets.length === 0 ? (
+              <button type="button" className="app-btn-primary" onClick={openCreateModal}>
+                {t('pockets.fab_create')}
+              </button>
+            ) : (
+              <button type="button" className="app-btn-secondary" onClick={() => setFilters(DEFAULT_FILTERS)}>
+                {t('common.clearFilters')}
+              </button>
+            )}
           />
         </div>
       ) : (

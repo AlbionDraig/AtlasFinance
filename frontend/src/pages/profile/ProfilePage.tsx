@@ -13,6 +13,8 @@ interface FormState {
   confirm_password: string
 }
 
+type ProfileFormErrors = Partial<Record<keyof FormState, string>>
+
 export default function ProfilePage() {
   const { user, setUser } = useAuthStore()
   const { toast } = useToast()
@@ -27,6 +29,7 @@ export default function ProfilePage() {
   })
   const [loading, setLoading] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
+  const [errors, setErrors] = useState<ProfileFormErrors>({})
 
   const pwChecks = useMemo(() => getPasswordChecks(form.new_password), [form.new_password])
   const pwStrength = useMemo(() => getPasswordStrength(form.new_password), [form.new_password])
@@ -39,35 +42,32 @@ export default function ProfilePage() {
   }, [user])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
+    const field = e.target.name as keyof FormState
+    setForm((f) => ({ ...f, [field]: e.target.value }))
+    setErrors((current) => ({ ...current, [field]: undefined }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (form.full_name.trim().length < 2) {
-      toast(t('profile.toast_name_short'), 'error')
-      return
-    }
-    if (!form.email.trim()) {
-      toast(t('profile.toast_email_required'), 'error')
-      return
-    }
+    const nextErrors: ProfileFormErrors = {}
+    if (form.full_name.trim().length < 2) nextErrors.full_name = t('profile.toast_name_short')
+    if (!form.email.trim()) nextErrors.email = t('profile.toast_email_required')
 
     // Password rules are only enforced when user explicitly enables password change.
     if (changingPassword) {
-      if (!form.current_password) {
-        toast(t('profile.toast_current_password_required'), 'error')
-        return
+      if (!form.current_password) nextErrors.current_password = t('profile.toast_current_password_required')
+      if (form.new_password.length < 8) nextErrors.new_password = t('profile.toast_new_password_short')
+      if (form.new_password !== form.confirm_password) nextErrors.confirm_password = t('profile.toast_passwords_mismatch')
+    }
+
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) {
+      const firstError = Object.values(nextErrors)[0]
+      if (firstError) {
+        toast(firstError, 'error')
       }
-      if (form.new_password.length < 8) {
-        toast(t('profile.toast_new_password_short'), 'error')
-        return
-      }
-      if (form.new_password !== form.confirm_password) {
-        toast(t('profile.toast_passwords_mismatch'), 'error')
-        return
-      }
+      return
     }
 
     setLoading(true)
@@ -160,11 +160,12 @@ export default function ProfilePage() {
                   id="full_name"
                   name="full_name"
                   type="text"
-                  className="app-control"
+                  className={`app-control ${errors.full_name ? 'border-warning' : ''}`}
                   value={form.full_name}
                   onChange={handleChange}
                   autoComplete="name"
                 />
+                {errors.full_name && <p className="mt-1 text-xs tone-negative">{errors.full_name}</p>}
               </div>
 
               {/* Correo */}
@@ -174,11 +175,12 @@ export default function ProfilePage() {
                   id="email"
                   name="email"
                   type="email"
-                  className="app-control"
+                  className={`app-control ${errors.email ? 'border-warning' : ''}`}
                   value={form.email}
                   onChange={handleChange}
                   autoComplete="email"
                 />
+                {errors.email && <p className="mt-1 text-xs tone-negative">{errors.email}</p>}
               </div>
             </div>
           </div>
@@ -211,11 +213,12 @@ export default function ProfilePage() {
                     id="current_password"
                     name="current_password"
                     type="password"
-                    className="app-control [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_white]"
+                    className={`app-control [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_white] ${errors.current_password ? 'border-warning' : ''}`}
                     value={form.current_password}
                     onChange={handleChange}
                     autoComplete="current-password"
                   />
+                  {errors.current_password && <p className="mt-1 text-xs tone-negative">{errors.current_password}</p>}
                 </div>
                 <div className="flex flex-col gap-1">
                   <label htmlFor="new_password" className="app-label">{t('profile.field_new_password')}</label>
@@ -223,11 +226,12 @@ export default function ProfilePage() {
                     id="new_password"
                     name="new_password"
                     type="password"
-                    className="app-control [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_white]"
+                    className={`app-control [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_white] ${errors.new_password ? 'border-warning' : ''}`}
                     value={form.new_password}
                     onChange={handleChange}
                     autoComplete="new-password"
                   />
+                  {errors.new_password && <p className="mt-1 text-xs tone-negative">{errors.new_password}</p>}
                   <div className="mt-2">
                     <div className="flex items-center justify-between text-xs text-neutral-400 mb-1">
                       <span>{t('profile.password_strength')}</span>
@@ -263,11 +267,12 @@ export default function ProfilePage() {
                     id="confirm_password"
                     name="confirm_password"
                     type="password"
-                    className="app-control [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_white]"
+                    className={`app-control [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_white] ${errors.confirm_password ? 'border-warning' : ''}`}
                     value={form.confirm_password}
                     onChange={handleChange}
                     autoComplete="new-password"
                   />
+                  {errors.confirm_password && <p className="mt-1 text-xs tone-negative">{errors.confirm_password}</p>}
                   {form.confirm_password.length > 0 && (
                     <p className={`text-xs mt-1 ${confirmMatch ? 'text-success' : 'text-neutral-400'}`}>
                       {confirmMatch ? t('profile.confirm_match') : t('profile.confirm_mismatch')}
@@ -279,6 +284,7 @@ export default function ProfilePage() {
                   onClick={() => {
                     setChangingPassword(false)
                     setForm((f) => ({ ...f, current_password: '', new_password: '', confirm_password: '' }))
+                    setErrors((current) => ({ ...current, current_password: undefined, new_password: undefined, confirm_password: undefined }))
                   }}
                   className="w-full flex items-center justify-center gap-2 bg-brand-light border border-brand-light text-brand-text hover:bg-brand hover:border-brand hover:text-white text-sm font-medium rounded-lg h-10 transition-colors"
                 >

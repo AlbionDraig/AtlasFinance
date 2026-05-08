@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { accountsApi } from '@/api/accounts'
@@ -22,12 +22,16 @@ interface AccountFormState {
   bankId: string
 }
 
+type AccountFormErrors = Partial<Record<keyof AccountFormState, string>>
+
 const EMPTY_ACCOUNT_FORM: AccountFormState = {
   name: '',
   accountType: '',
   currency: '',
   bankId: '',
 }
+
+const UNDO_WINDOW_MS = 5000
 
 function buildDefaultFilters(): AccountsFiltersState {
   // Conservative defaults to keep the first render lightweight and predictable.
@@ -52,7 +56,9 @@ export default function AccountsPage() {
   const [page, setPage] = useState(1)
 
   const [accountForm, setAccountForm] = useState<AccountFormState>(EMPTY_ACCOUNT_FORM)
+  const [accountFormErrors, setAccountFormErrors] = useState<AccountFormErrors>({})
   const [filters, setFilters] = useState<AccountsFiltersState>(() => buildDefaultFilters())
+  const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
   // Catálogos y lista vienen de hooks dedicados (separación de responsabilidades).
   const { banks } = useBanks()
@@ -76,6 +82,7 @@ export default function AccountsPage() {
 
   function resetAccountForm() {
     setAccountForm(EMPTY_ACCOUNT_FORM)
+    setAccountFormErrors({})
   }
 
   function openCreateModal() {
@@ -90,22 +97,35 @@ export default function AccountsPage() {
 
   async function handleCreateAccount(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const errors: AccountFormErrors = {}
 
     // Keep validation in UI to provide immediate feedback before API call.
     if (accountForm.name.trim().length < 2) {
-      toast(t('accounts.toast_name_short'), 'error')
-      return
+      errors.name = t('accounts.toast_name_short')
     }
     if (!accountForm.accountType) {
-      toast(t('accounts.toast_select_type'), 'error')
-      return
+      errors.accountType = t('accounts.toast_select_type')
     }
     if (!accountForm.currency) {
-      toast(t('accounts.toast_select_currency'), 'error')
-      return
+      errors.currency = t('accounts.toast_select_currency')
     }
     if (!accountForm.bankId) {
-      toast(t('accounts.toast_select_bank'), 'error')
+      errors.bankId = t('accounts.toast_select_bank')
+    }
+
+    setAccountFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      const firstError = errors.name ?? errors.accountType ?? errors.currency ?? errors.bankId
+      if (firstError) {
+        toast(firstError, 'error')
+      }
+      return
+    }
+
+    const accountType = accountForm.accountType
+    const currency = accountForm.currency
+    if (!accountType || !currency) {
+      toast(t('accounts.toast_create_error'), 'error')
       return
     }
 
@@ -113,8 +133,8 @@ export default function AccountsPage() {
     try {
       const response = await accountsApi.create({
         name: accountForm.name.trim(),
-        account_type: accountForm.accountType,
-        currency: accountForm.currency,
+        account_type: accountType,
+        currency,
         current_balance: 0,
         bank_id: Number(accountForm.bankId),
       })
@@ -149,24 +169,46 @@ export default function AccountsPage() {
 
   async function handleDeleteAccount() {
     if (!deletingAccount) return
-    // Optimistic update: snapshot the current list, remove the row
-    // immediately, and close the confirm modal so the UI feels instant.
-    // On error we restore the snapshot to keep the table consistent.
     const target = deletingAccount
-    const snapshot = accounts
+    const previousIndex = accounts.findIndex((account) => account.id === target.id)
     setAccounts((current) => current.filter((acc) => acc.id !== target.id))
     setDeletingAccount(null)
-    setSavingAccount(true)
-    try {
-      await accountsApi.delete(target.id)
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
-      toast(t('accounts.toast_deleted'))
-    } catch (error) {
-      setAccounts(snapshot)
-      toast(getApiErrorMessage(error, t('accounts.toast_delete_error')), 'error')
-    } finally {
-      setSavingAccount(false)
-    }
+
+    const timeoutId = window.setTimeout(async () => {
+      pendingDeleteTimeoutsRef.current.delete(target.id)
+      try {
+        await accountsApi.delete(target.id)
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
+      } catch (error) {
+        setAccounts((current) => {
+          if (current.some((account) => account.id === target.id)) return current
+          const next = [...current]
+          const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+          next.splice(index, 0, target)
+          return next
+        })
+        toast(getApiErrorMessage(error, t('accounts.toast_delete_error')), 'error')
+      }
+    }, UNDO_WINDOW_MS)
+
+    pendingDeleteTimeoutsRef.current.set(target.id, timeoutId)
+    toast(t('accounts.toast_deleted'), 'success', {
+      actionLabel: t('common.undo'),
+      onAction: () => {
+        const pendingTimeoutId = pendingDeleteTimeoutsRef.current.get(target.id)
+        if (pendingTimeoutId != null) {
+          window.clearTimeout(pendingTimeoutId)
+          pendingDeleteTimeoutsRef.current.delete(target.id)
+          setAccounts((current) => {
+            if (current.some((account) => account.id === target.id)) return current
+            const next = [...current]
+            const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+            next.splice(index, 0, target)
+            return next
+          })
+        }
+      },
+    })
   }
 
   if (loading) {
@@ -183,6 +225,7 @@ export default function AccountsPage() {
       {createOpen && (
         <AccountCreateModal
           form={accountForm}
+          errors={accountFormErrors}
           setForm={setAccountForm}
           banks={banks}
           saving={savingAccount}
@@ -234,11 +277,12 @@ export default function AccountsPage() {
         formatCurrency={formatCurrency}
         onEdit={setEditingAccount}
         onDelete={setDeletingAccount}
+        onCreate={openCreateModal}
       />
 
       <FloatingActionMenu
         hidden={createOpen}
-        ariaLabel={t('transactions.fab_menu_label')}
+        ariaLabel={t('accounts.fab_menu_label')}
         items={[
           {
             key: 'create-account',

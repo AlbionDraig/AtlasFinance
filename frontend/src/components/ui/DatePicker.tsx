@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 interface DatePickerProps {
   label: string
@@ -51,6 +51,9 @@ function buildCalendarDays(viewDate: Date): Date[] {
 }
 
 export default function DatePicker({ label, value, onChange, min, max, className = '', disabled = false }: DatePickerProps) {
+  const triggerId = useId()
+  const labelId = useId()
+  const dialogId = useId()
   const [open, setOpen] = useState(false)
   const [openUpward, setOpenUpward] = useState(false)
   const [openLeft, setOpenLeft] = useState(false)
@@ -97,13 +100,18 @@ export default function DatePicker({ label, value, onChange, min, max, className
 
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
-      <label className={`app-label ${disabled ? 'text-neutral-400' : ''}`}>{label}</label>
+      <label id={labelId} htmlFor={triggerId} className={`app-label ${disabled ? 'text-neutral-400' : ''}`}>{label}</label>
 
       <div ref={rootRef} className={`relative isolate [transform:translateZ(0)] [backface-visibility:hidden] ${open ? 'z-[140]' : 'z-10'}`}>
 
       <button
+        id={triggerId}
         type="button"
         disabled={disabled}
+        aria-labelledby={labelId}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={dialogId}
         onClick={() => {
           if (disabled) return
           setOpen(prev => {
@@ -137,7 +145,13 @@ export default function DatePicker({ label, value, onChange, min, max, className
       </button>
 
       {open && !disabled && (
-        <div className={['app-menu absolute z-[150] w-72 p-3', openUpward ? 'bottom-full mb-2' : 'top-full mt-2', openLeft ? 'right-0' : 'left-0'].join(' ')}>
+        <div
+          id={dialogId}
+          role="dialog"
+          aria-modal="false"
+          aria-label={`${label}: ${monthLabel}`}
+          className={['app-menu absolute z-[150] w-72 p-3', openUpward ? 'bottom-full mb-2' : 'top-full mt-2', openLeft ? 'right-0' : 'left-0'].join(' ')}
+        >
           <div className="mb-2 flex items-center justify-between">
             <button
               type="button"
@@ -175,6 +189,7 @@ export default function DatePicker({ label, value, onChange, min, max, className
                   key={day.toISOString()}
                   type="button"
                   disabled={disabled}
+                  aria-label={day.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}
                   onClick={() => {
                     onChange(toIsoDate(day))
                     setOpen(false)

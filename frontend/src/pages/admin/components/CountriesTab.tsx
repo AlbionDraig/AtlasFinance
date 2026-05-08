@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { countriesApi, type Country } from '@/api/countries'
@@ -20,6 +20,8 @@ function buildDefaultCountryFilters(): CountriesFiltersState {
   }
 }
 
+const UNDO_WINDOW_MS = 5000
+
 interface CountriesTabProps {
   onCountriesChange?: (countries: Country[]) => void
 }
@@ -37,6 +39,7 @@ export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
   const [deletingCountry, setDeletingCountry] = useState<Country | null>(null)
   const [countryPage, setCountryPage] = useState(1)
   const [countryFilters, setCountryFilters] = useState<CountriesFiltersState>(() => buildDefaultCountryFilters())
+  const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
   useEffect(() => {
     async function loadCountries() {
@@ -114,18 +117,46 @@ export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
 
   async function handleDeleteCountry() {
     if (!deletingCountry) return
-    setSavingCountry(true)
-    try {
-      await countriesApi.delete(deletingCountry.id)
-      setCountries((current) => current.filter((country) => country.id !== deletingCountry.id))
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.countries })
-      setDeletingCountry(null)
-      toast(t('admin.countries.toast_deleted'))
-    } catch (error) {
-      toast(getApiErrorMessage(error, t('admin.countries.toast_delete_error')), 'error')
-    } finally {
-      setSavingCountry(false)
-    }
+    const target = deletingCountry
+    const previousIndex = countries.findIndex((country) => country.id === target.id)
+    setCountries((current) => current.filter((country) => country.id !== target.id))
+    setDeletingCountry(null)
+
+    const timeoutId = window.setTimeout(async () => {
+      pendingDeleteTimeoutsRef.current.delete(target.id)
+      try {
+        await countriesApi.delete(target.id)
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.countries })
+      } catch (error) {
+        setCountries((current) => {
+          if (current.some((country) => country.id === target.id)) return current
+          const next = [...current]
+          const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+          next.splice(index, 0, target)
+          return next
+        })
+        toast(getApiErrorMessage(error, t('admin.countries.toast_delete_error')), 'error')
+      }
+    }, UNDO_WINDOW_MS)
+
+    pendingDeleteTimeoutsRef.current.set(target.id, timeoutId)
+    toast(t('admin.countries.toast_deleted'), 'success', {
+      actionLabel: t('common.undo'),
+      onAction: () => {
+        const pendingTimeoutId = pendingDeleteTimeoutsRef.current.get(target.id)
+        if (pendingTimeoutId != null) {
+          window.clearTimeout(pendingTimeoutId)
+          pendingDeleteTimeoutsRef.current.delete(target.id)
+          setCountries((current) => {
+            if (current.some((country) => country.id === target.id)) return current
+            const next = [...current]
+            const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+            next.splice(index, 0, target)
+            return next
+          })
+        }
+      },
+    })
   }
 
   return (
@@ -182,6 +213,7 @@ export default function CountriesTab({ onCountriesChange }: CountriesTabProps) {
           onPageSizeChange={(size) => setCountryFilters((current) => ({ ...current, pageSize: size }))}
           onEdit={setEditingCountry}
           onDelete={setDeletingCountry}
+          onCreate={() => setCountryCreateOpen(true)}
         />
       )}
 

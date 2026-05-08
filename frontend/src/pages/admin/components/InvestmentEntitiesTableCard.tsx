@@ -20,6 +20,7 @@ interface InvestmentEntitiesTableCardProps {
   onPageSizeChange: (size: number) => void
   onEdit: (entity: InvestmentEntity) => void
   onDelete: (entity: InvestmentEntity) => void
+  onCreate?: () => void
 }
 
 export default function InvestmentEntitiesTableCard({
@@ -36,6 +37,7 @@ export default function InvestmentEntitiesTableCard({
   onPageSizeChange,
   onEdit,
   onDelete,
+  onCreate,
 }: InvestmentEntitiesTableCardProps) {
   const { t } = useTranslation()
   const countryCounts = filteredEntities.reduce<Record<string, number>>((accumulator, entity) => {
@@ -106,10 +108,35 @@ export default function InvestmentEntitiesTableCard({
             <p className="text-sm font-medium text-neutral-900">{t('admin.entities.table_empty_title')}</p>
             <p className="mt-1 text-xs text-neutral-400">{t('admin.entities.table_empty_desc')}</p>
           </div>
+          {onCreate && filteredEntities.length === 0 && (
+            <button type="button" className="app-btn-primary" onClick={onCreate}>
+              {t('admin.entities.fab_create')}
+            </button>
+          )}
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full table-fixed border-separate border-spacing-0">
+        <>
+          <div className="space-y-3 p-4 md:hidden">
+            {paginatedEntities.map((entity) => (
+              <article key={entity.id} className="rounded-xl border border-neutral-100 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-neutral-900">{entity.name}</p>
+                    <p className="mt-1 text-xs text-neutral-400">{typeLabelByValue[entity.entity_type] ?? entity.entity_type}</p>
+                  </div>
+                  <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-[11px] font-medium text-neutral-700">
+                    {entity.country_code}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-1.5 border-t border-neutral-100 pt-3">
+                  <EditButton onClick={() => onEdit(entity)} label={`Editar ${entity.name}`} />
+                  <DeleteButton onClick={() => onDelete(entity)} label={`Eliminar ${entity.name}`} />
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="hidden md:block app-table-wrap">
+          <table className="app-table table-fixed">
             <colgroup>
               <col className="w-[20rem]" />
               <col className="w-40" />
@@ -153,6 +180,7 @@ export default function InvestmentEntitiesTableCard({
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <Pagination

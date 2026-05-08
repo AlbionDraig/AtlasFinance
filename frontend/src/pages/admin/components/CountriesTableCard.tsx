@@ -19,6 +19,7 @@ interface CountriesTableCardProps {
   onPageSizeChange: (size: number) => void
   onEdit: (country: Country) => void
   onDelete: (country: Country) => void
+  onCreate?: () => void
 }
 
 export default function CountriesTableCard({
@@ -34,6 +35,7 @@ export default function CountriesTableCard({
   onPageSizeChange,
   onEdit,
   onDelete,
+  onCreate,
 }: CountriesTableCardProps) {
   const { t } = useTranslation()
   const metrics = [
@@ -82,10 +84,32 @@ export default function CountriesTableCard({
             <p className="text-sm font-medium text-neutral-900">{t('admin.countries.table_empty_title')}</p>
             <p className="mt-1 text-xs text-neutral-400">{t('admin.countries.table_empty_desc')}</p>
           </div>
+          {onCreate && filteredCountries.length === 0 && (
+            <button type="button" className="app-btn-primary" onClick={onCreate}>
+              {t('admin.countries.fab_create')}
+            </button>
+          )}
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full table-fixed border-separate border-spacing-0">
+        <>
+          <div className="space-y-3 p-4 md:hidden">
+            {paginatedCountries.map((country) => (
+              <article key={country.id} className="rounded-xl border border-neutral-100 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="min-w-0 truncate text-sm font-medium text-neutral-900">{country.name}</p>
+                  <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-[11px] font-medium text-neutral-700">
+                    {country.code}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-1.5 border-t border-neutral-100 pt-3">
+                  <EditButton onClick={() => onEdit(country)} label={`Editar ${country.name}`} />
+                  <DeleteButton onClick={() => onDelete(country)} label={`Eliminar ${country.name}`} />
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="hidden md:block app-table-wrap">
+          <table className="app-table table-fixed">
             <colgroup>
               <col className="w-28" />
               <col className="w-[24rem]" />
@@ -122,6 +146,7 @@ export default function CountriesTableCard({
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <Pagination

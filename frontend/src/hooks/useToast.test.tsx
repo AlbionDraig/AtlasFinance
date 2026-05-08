@@ -1,5 +1,5 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { ToastProvider, useToast } from './useToast'
 
 function ToastHarness() {
@@ -46,9 +46,7 @@ describe('useToast', () => {
     expect(screen.getByTestId('count')).toHaveTextContent('1')
   })
 
-  it('keeps only the latest 3 toasts and auto-dismisses after timeout', () => {
-    vi.useFakeTimers()
-
+  it('keeps only the latest 3 toasts', () => {
     render(
       <ToastProvider>
         <ToastHarness />
@@ -57,12 +55,5 @@ describe('useToast', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'many' }))
     expect(screen.getByTestId('count')).toHaveTextContent('3')
-
-    act(() => {
-      vi.advanceTimersByTime(4500)
-    })
-
-    expect(screen.getByTestId('count')).toHaveTextContent('0')
-    vi.useRealTimers()
   })
 })

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { banksApi, type Bank } from '@/api/banks'
@@ -21,6 +21,8 @@ function buildDefaultBankFilters(): BanksFiltersState {
   }
 }
 
+const UNDO_WINDOW_MS = 5000
+
 interface BanksTabProps {
   countryCatalogOptions: Array<{ value: string; label: string }>
 }
@@ -40,6 +42,7 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
   const [deletingBank, setDeletingBank] = useState<Bank | null>(null)
   const [bankPage, setBankPage] = useState(1)
   const [bankFilters, setBankFilters] = useState<BanksFiltersState>(() => buildDefaultBankFilters())
+  const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
   useEffect(() => {
     async function loadBanks() {
@@ -147,18 +150,46 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
 
   async function handleDeleteBank() {
     if (!deletingBank) return
-    setSavingBank(true)
-    try {
-      await banksApi.delete(deletingBank.id)
-      setBanks((current) => current.filter((b) => b.id !== deletingBank.id))
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.banks })
-      setDeletingBank(null)
-      toast(t('admin.banks.toast_deleted'))
-    } catch (error) {
-      toast(getApiErrorMessage(error, t('admin.banks.toast_delete_error')), 'error')
-    } finally {
-      setSavingBank(false)
-    }
+    const target = deletingBank
+    const previousIndex = banks.findIndex((bank) => bank.id === target.id)
+    setBanks((current) => current.filter((bank) => bank.id !== target.id))
+    setDeletingBank(null)
+
+    const timeoutId = window.setTimeout(async () => {
+      pendingDeleteTimeoutsRef.current.delete(target.id)
+      try {
+        await banksApi.delete(target.id)
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.banks })
+      } catch (error) {
+        setBanks((current) => {
+          if (current.some((bank) => bank.id === target.id)) return current
+          const next = [...current]
+          const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+          next.splice(index, 0, target)
+          return next
+        })
+        toast(getApiErrorMessage(error, t('admin.banks.toast_delete_error')), 'error')
+      }
+    }, UNDO_WINDOW_MS)
+
+    pendingDeleteTimeoutsRef.current.set(target.id, timeoutId)
+    toast(t('admin.banks.toast_deleted'), 'success', {
+      actionLabel: t('common.undo'),
+      onAction: () => {
+        const pendingTimeoutId = pendingDeleteTimeoutsRef.current.get(target.id)
+        if (pendingTimeoutId != null) {
+          window.clearTimeout(pendingTimeoutId)
+          pendingDeleteTimeoutsRef.current.delete(target.id)
+          setBanks((current) => {
+            if (current.some((bank) => bank.id === target.id)) return current
+            const next = [...current]
+            const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+            next.splice(index, 0, target)
+            return next
+          })
+        }
+      },
+    })
   }
 
   return (
@@ -226,6 +257,15 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
           onPageSizeChange={(size) => setBankFilters((current) => ({ ...current, pageSize: size }))}
           onEdit={setEditingBank}
           onDelete={setDeletingBank}
+          onCreate={() => {
+            if (!countryCatalogOptions.length) {
+              toast(t('admin.banks.toast_no_country_hint'), 'error')
+              return
+            }
+            setBankName('')
+            setBankCountryCode(countryCatalogOptions[0]?.value ?? '')
+            setBankCreateOpen(true)
+          }}
         />
       )}
 

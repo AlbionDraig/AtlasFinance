@@ -57,12 +57,13 @@ function KpiCard({
   valueClass = 'text-neutral-900',
 }: KpiCardProps) {
   return (
-    <div className={`app-card p-5 relative ${accentRingClass}`}>
-      <div className={`absolute top-0 left-0 right-0 h-1.5 ${accentClass}`} />
+    <div className={`relative overflow-hidden rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/70 p-5 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ${accentRingClass}`}>
+      <div className={`absolute left-0 right-0 top-0 h-1.5 ${accentClass}`} />
+      <div className={`absolute -right-8 -top-8 h-24 w-24 rounded-full blur-2xl opacity-15 ${accentClass}`} aria-hidden="true" />
       {help && <span className="absolute top-3 right-3"><HelpTooltip text={help} /></span>}
-      <p className="app-label uppercase tracking-wider mb-1">{label}</p>
-      <p className={`text-2xl font-medium leading-none ${valueClass}`}>{value}</p>
-      {sub && <p className="app-subtitle text-xs mt-1.5 leading-snug">{sub}</p>}
+      <p className="app-label mb-2 uppercase tracking-[0.18em]">{label}</p>
+      <p className={`text-[1.9rem] font-medium leading-none tracking-tight ${valueClass}`}>{value}</p>
+      {sub && <p className="app-subtitle mt-2 text-xs leading-snug">{sub}</p>}
     </div>
   )
 }
@@ -76,11 +77,12 @@ interface InsightCardProps {
 }
 function InsightCard({ label, name, sub, help, accentClass = 'border-l-neutral-400' }: InsightCardProps) {
   return (
-    <div className={`bg-white border border-neutral-100 border-l-4 ${accentClass} rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md`}>
+    <div className={`relative overflow-hidden rounded-2xl border border-neutral-100 border-l-4 ${accentClass} bg-gradient-to-b from-white to-neutral-50/70 p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md`}>
+      <div className="absolute inset-x-0 top-0 h-px bg-white/70" aria-hidden="true" />
       {help && <span className="absolute top-3 right-3"><HelpTooltip text={help} /></span>}
-      <p className="app-label uppercase tracking-wider mb-2">{label}</p>
-      <p className="text-xl font-medium text-neutral-900 truncate leading-snug">{name}</p>
-      <p className="app-subtitle text-xs mt-1.5 leading-snug">{sub}</p>
+      <p className="app-label mb-2 uppercase tracking-[0.16em]">{label}</p>
+      <p className="truncate text-[1.65rem] font-medium leading-snug text-neutral-900">{name}</p>
+      <p className="app-subtitle mt-1.5 text-xs leading-snug">{sub}</p>
     </div>
   )
 }
@@ -110,7 +112,11 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
         setInvestments(invRes.data)
         setEntities(entRes.data)
       })
-      .catch(() => toast(t('dashboard.inv_toast_load_error'), 'error'))
+      .catch((error: unknown) => {
+        const status = (error as { response?: { status?: number } })?.response?.status
+        if (status === 401) return
+        toast(t('dashboard.inv_toast_load_error'), 'error')
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -428,10 +434,10 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
               const positiveCount = investmentRows.filter(i => Number(i.current_value) >= Number(i.amount_invested)).length
               const pct = investmentRows.length > 0 ? (positiveCount / investmentRows.length) * 100 : 0
               return (
-                <div className="bg-white border border-neutral-100 border-l-4 border-l-success rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
+                <div className="relative overflow-hidden rounded-2xl border border-neutral-100 border-l-4 border-l-success bg-gradient-to-b from-white to-neutral-50/70 p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
                   <span className="absolute top-3 right-3"><HelpTooltip text={t('dashboard.inv_insight_positive_positions_help')} /></span>
-                  <p className="app-label uppercase tracking-wider mb-2">{t('dashboard.inv_insight_positive_positions')}</p>
-                  <p className="text-xl font-medium text-neutral-900 leading-snug">
+                  <p className="app-label mb-2 uppercase tracking-[0.16em]">{t('dashboard.inv_insight_positive_positions')}</p>
+                  <p className="text-[1.65rem] font-medium leading-snug text-neutral-900">
                     {positiveCount} <span className="text-neutral-400 font-normal text-sm">/ {investmentRows.length}</span>
                   </p>
                   <div className="w-full h-1.5 rounded-full bg-neutral-100 overflow-hidden mt-2">
@@ -441,10 +447,10 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
                 </div>
               )
             })()}
-            <div className="bg-white border border-neutral-100 border-l-4 border-l-neutral-400 rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
+            <div className="relative overflow-hidden rounded-2xl border border-neutral-100 border-l-4 border-l-neutral-400 bg-gradient-to-b from-white to-neutral-50/70 p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
               <span className="absolute top-3 right-3"><HelpTooltip text={t('dashboard.inv_insight_instrument_types_help')} /></span>
-              <p className="app-label uppercase tracking-wider mb-2">{t('dashboard.inv_insight_instrument_types')}</p>
-              <p className="text-xl font-medium text-neutral-900 leading-snug">{investmentsByType.length}</p>
+              <p className="app-label mb-2 uppercase tracking-[0.16em]">{t('dashboard.inv_insight_instrument_types')}</p>
+              <p className="text-[1.65rem] font-medium leading-snug text-neutral-900">{investmentsByType.length}</p>
               <p className="app-subtitle text-xs mt-1.5">
                 {investmentsByType.length > 0 ? t('dashboard.inv_insight_instrument_types_sub', { type: investmentsByType[0].type, pct: topInstrumentShare.toFixed(1) }) : t('dashboard.inv_insight_instrument_types_sub_empty')}
               </p>
@@ -461,14 +467,14 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
                 />
               )
             })()}
-            <div className={`bg-white border border-neutral-100 border-l-4 ${
+            <div className={`relative overflow-hidden rounded-2xl border border-neutral-100 border-l-4 ${
               investmentsByType.length >= 4 ? 'border-l-success'
               : investmentsByType.length >= 2 ? 'border-l-warning'
               : 'border-l-brand'
-            } rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md`}>
+            } bg-gradient-to-b from-white to-neutral-50/70 p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md`}>
               <span className="absolute top-3 right-3"><HelpTooltip text={t('dashboard.inv_insight_diversification_help')} /></span>
-              <p className="app-label uppercase tracking-wider mb-2">{t('dashboard.inv_insight_diversification')}</p>
-              <p className={`text-xl font-medium leading-snug ${
+              <p className="app-label mb-2 uppercase tracking-[0.16em]">{t('dashboard.inv_insight_diversification')}</p>
+              <p className={`text-[1.65rem] font-medium leading-snug ${
                 investmentsByType.length >= 4 ? 'text-success'
                 : investmentsByType.length >= 2 ? 'text-warning'
                 : 'text-brand'
@@ -568,8 +574,8 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
               <p className="text-sm">{t('dashboard.inv_pos_empty', { currency })}</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px]">
+            <div className="app-table-wrap">
+              <table className="app-table">
                 <thead>
                   <tr className="border-b border-neutral-100 bg-neutral-50">
                     <th className="px-4 py-3 text-left text-xs font-medium tracking-widest uppercase text-neutral-700">{t('dashboard.inv_col_investment')}</th>

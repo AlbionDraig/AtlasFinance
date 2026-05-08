@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { categoriesApi, type Category, type CategoryPayload } from '@/api/categories'
@@ -14,6 +14,7 @@ import CategoryModal, { type FormState } from './components/CategoryModal'
 import CategoryGroup from './components/CategoryGroup'
 
 const EMPTY_FORM: FormState = { name: '', is_fixed: false, description: '' }
+const UNDO_WINDOW_MS = 5000
 
 export default function CategoriesPage({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation()
@@ -27,6 +28,7 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
   const [editing, setEditing] = useState<Category | null>(null)
   const [deleting, setDeleting] = useState<Category | null>(null)
   const [query, setQuery] = useState('')
+  const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
   async function handleCreate(data: FormState) {
     setSaving(true)
@@ -63,18 +65,46 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
 
   async function handleDelete() {
     if (!deleting) return
-    setSaving(true)
-    try {
-      await categoriesApi.delete(deleting.id)
-      setCategories((prev) => prev.filter((c) => c.id !== deleting.id))
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories })
-      setDeleting(null)
-      toast(t('categories.toast_deleted'), 'success')
-    } catch {
-      toast(t('categories.toast_delete_error'), 'error')
-    } finally {
-      setSaving(false)
-    }
+    const target = deleting
+    const previousIndex = categories.findIndex((category) => category.id === target.id)
+    setCategories((prev) => prev.filter((c) => c.id !== target.id))
+    setDeleting(null)
+
+    const timeoutId = window.setTimeout(async () => {
+      pendingDeleteTimeoutsRef.current.delete(target.id)
+      try {
+        await categoriesApi.delete(target.id)
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categories })
+      } catch {
+        setCategories((prev) => {
+          if (prev.some((category) => category.id === target.id)) return prev
+          const next = [...prev]
+          const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+          next.splice(index, 0, target)
+          return next
+        })
+        toast(t('categories.toast_delete_error'), 'error')
+      }
+    }, UNDO_WINDOW_MS)
+
+    pendingDeleteTimeoutsRef.current.set(target.id, timeoutId)
+    toast(t('categories.toast_deleted'), 'success', {
+      actionLabel: t('common.undo'),
+      onAction: () => {
+        const pendingTimeoutId = pendingDeleteTimeoutsRef.current.get(target.id)
+        if (pendingTimeoutId != null) {
+          window.clearTimeout(pendingTimeoutId)
+          pendingDeleteTimeoutsRef.current.delete(target.id)
+          setCategories((prev) => {
+            if (prev.some((category) => category.id === target.id)) return prev
+            const next = [...prev]
+            const index = previousIndex >= 0 ? Math.min(previousIndex, next.length) : next.length
+            next.splice(index, 0, target)
+            return next
+          })
+        }
+      },
+    })
   }
 
   const filtered = useMemo(() => {
