@@ -781,13 +781,13 @@ export default function PocketsPage() {
             <div className="app-table-wrap">
               <table className="app-table text-left text-sm">
                 <thead className="border-b border-brand/30 bg-brand text-xs text-white">
-                  <tr>
-                    <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('pockets.table_name')}</th>
-                    <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('pockets.table_account')}</th>
-                    <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('pockets.table_bank')}</th>
-                    <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('pockets.table_currency')}</th>
-                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-right">{t('pockets.table_balance')}</th>
-                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-right">{t('pockets.table_actions')}</th>
+                  <tr className="align-middle">
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('pockets.table_name')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('pockets.table_account')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('pockets.table_bank')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('pockets.table_currency')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-right align-middle">{t('pockets.table_balance')}</th>
+                    <th className="w-1 whitespace-nowrap px-2 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('pockets.table_actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -820,8 +820,8 @@ export default function PocketsPage() {
                         <td className="px-3 py-2 text-right font-medium text-neutral-900 tabular-nums">
                           {formatCurrency(pocket.balance, pocket.currency)}
                         </td>
-                        <td className="px-3 py-2">
-                          <div className="flex items-center justify-end gap-1 rounded-md bg-brand-light/40 px-1 py-0.5">
+                        <td className="w-1 whitespace-nowrap px-2 py-2 text-center align-middle">
+                          <div className="mx-auto inline-flex items-center justify-center gap-1 rounded-md bg-brand-light/40 px-1 py-0.5">
                             <EditButton onClick={() => prepareEdit(pocket)} />
                             <DeleteButton onClick={() => setDeletingPocket(pocket)} />
                           </div>
