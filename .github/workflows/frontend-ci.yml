@@ -98,7 +98,7 @@ jobs:
           key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox
 
       - name: Start backend
         working-directory: backend
