@@ -23,6 +23,7 @@ import type { FiltersState, FormState, PeriodFilter, TransactionType } from './t
 
 type TransactionFormErrors = Partial<Record<keyof FormState, string>>
 const UNDO_WINDOW_MS = 5000
+const TRANSACTIONS_FILTERS_STORAGE_KEY = 'atlas.transactions.filters'
 
 function toDateInputValue(value: Date): string {
   const year = value.getFullYear()
@@ -185,7 +186,19 @@ export default function TransactionsPage() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const [form, setForm] = useState<FormState>(() => buildDefaultForm())
-  const [filters, setFilters] = useState<FiltersState>(() => buildFiltersFromParams(searchParams))
+  const [filters, setFilters] = useState<FiltersState>(() => {
+    if (searchParams.toString()) {
+      return buildFiltersFromParams(searchParams)
+    }
+    if (typeof window === 'undefined') {
+      return buildDefaultFilters()
+    }
+    const storedFilters = window.localStorage.getItem(TRANSACTIONS_FILTERS_STORAGE_KEY)
+    if (!storedFilters) {
+      return buildDefaultFilters()
+    }
+    return buildFiltersFromParams(new URLSearchParams(storedFilters))
+  })
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [saving, setSaving] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -236,6 +249,14 @@ export default function TransactionsPage() {
     }
     // Intentionally exclude searchParams/setSearchParams to avoid feedback loop.
 
+  }, [filters])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+    const serializedFilters = filtersToSearchParams(filters).toString()
+    window.localStorage.setItem(TRANSACTIONS_FILTERS_STORAGE_KEY, serializedFilters)
   }, [filters])
 
   useEffect(() => {
