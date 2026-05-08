@@ -39,7 +39,6 @@ jobs:
           pip-audit -r backend/requirements.txt
 
   frontend-security:
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
