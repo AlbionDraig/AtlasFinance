@@ -1,25 +1,19 @@
 import { test, expect } from '@playwright/test'
 
-const TEST_EMAIL = process.env.E2E_EMAIL ?? 'demo@atlas.local'
-const TEST_PASSWORD = process.env.E2E_PASSWORD ?? 'Demo1234!'
+/**
+ * All tests in this file use the pre-authenticated storageState loaded by
+ * globalSetup (playwright.config.ts). No explicit login() helper is needed.
+ */
+const TEST_EMAIL = process.env.E2E_EMAIL ?? 'jane.doe@sgb.co'
+const TEST_PASSWORD = process.env.E2E_PASSWORD ?? 'Strong/Pass|123'
 
-async function fillLoginForm(page: import('@playwright/test').Page, email: string, password: string) {
-  const emailField = page.getByLabel(/email/i).or(page.getByPlaceholder(/email/i))
-  const passwordField = page.getByLabel(/contraseña|password/i).or(page.getByPlaceholder(/contraseña|password/i))
-  await emailField.fill(email)
-  await passwordField.fill(password)
-}
-
-async function login(page: import('@playwright/test').Page) {
-  await page.goto('/login')
-  await fillLoginForm(page, TEST_EMAIL, TEST_PASSWORD)
-  await page.getByRole('button', { name: /iniciar sesión|sign in|log in/i }).click()
-  await expect(page).not.toHaveURL(/\/login/, { timeout: 10_000 })
-}
+// Keep TEST_EMAIL / TEST_PASSWORD exported so TypeScript doesn't warn about
+// unused variables — they are available as overrideable env vars.
+void TEST_EMAIL
+void TEST_PASSWORD
 
 test.describe('Pockets page', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page)
     await page.goto('/pockets')
   })
 
@@ -30,7 +24,6 @@ test.describe('Pockets page', () => {
 
 test.describe('Investments page', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page)
     await page.goto('/investments')
   })
 
@@ -41,7 +34,6 @@ test.describe('Investments page', () => {
 
 test.describe('Accounts page', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page)
     await page.goto('/accounts')
   })
 
@@ -52,7 +44,6 @@ test.describe('Accounts page', () => {
 
 test.describe('Transactions filters in URL', () => {
   test('persists transaction type filter in URL after reload', async ({ page }) => {
-    await login(page)
     await page.goto('/transactions?type=INCOME')
     // The URL parameter is consumed by the page on mount; reloading should keep it.
     await page.reload()
@@ -60,7 +51,6 @@ test.describe('Transactions filters in URL', () => {
   })
 
   test('keeps custom period from/to in URL', async ({ page }) => {
-    await login(page)
     await page.goto('/transactions?period=custom&from=2025-01-01&to=2025-01-31')
     await page.reload()
     await expect(page).toHaveURL(/period=custom/)
@@ -71,7 +61,6 @@ test.describe('Transactions filters in URL', () => {
 
 test.describe('Page error boundaries', () => {
   test('private routes have a heading after navigation (no boundary triggered)', async ({ page }) => {
-    await login(page)
     for (const path of ['/dashboard', '/transactions', '/accounts', '/pockets', '/investments', '/admin', '/profile']) {
       await page.goto(path)
       // If a page error boundary was triggered, the "Reintentar" button would be visible.
@@ -82,7 +71,6 @@ test.describe('Page error boundaries', () => {
 
 test.describe('Dashboard UX improvements', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page)
     await page.goto('/dashboard?tab=resumen')
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10_000 })
   })

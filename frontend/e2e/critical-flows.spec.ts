@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test'
 /**
  * Helpers
  */
-const TEST_EMAIL = process.env.E2E_EMAIL ?? 'demo@atlas.local'
-const TEST_PASSWORD = process.env.E2E_PASSWORD ?? 'Demo1234!'
+const TEST_EMAIL = process.env.E2E_EMAIL ?? 'jane.doe@sgb.co'
+const TEST_PASSWORD = process.env.E2E_PASSWORD ?? 'Strong/Pass|123'
 
 async function fillLoginForm(page: import('@playwright/test').Page, email: string, password: string) {
   // Some auth inputs use visual labels not linked with htmlFor/id.
@@ -14,18 +14,13 @@ async function fillLoginForm(page: import('@playwright/test').Page, email: strin
   await passwordField.fill(password)
 }
 
-async function login(page: import('@playwright/test').Page) {
-  await page.goto('/login')
-  await fillLoginForm(page, TEST_EMAIL, TEST_PASSWORD)
-  await page.getByRole('button', { name: /iniciar sesión|sign in|log in/i }).click()
-  // Wait until we leave the login page
-  await expect(page).not.toHaveURL(/\/login/, { timeout: 10_000 })
-}
-
 /**
- * Auth flow
+ * Auth flow — these tests validate the login page itself, so they require a
+ * fresh browser context without any pre-loaded storage state.
  */
 test.describe('Authentication', () => {
+  test.use({ storageState: { cookies: [], origins: [] } })
+
   test('redirects unauthenticated users to /login', async ({ page }) => {
     await page.goto('/dashboard')
     await expect(page).toHaveURL(/\/login/)
@@ -40,7 +35,10 @@ test.describe('Authentication', () => {
   })
 
   test('can log in and reach the dashboard', async ({ page }) => {
-    await login(page)
+    await page.goto('/login')
+    await fillLoginForm(page, TEST_EMAIL, TEST_PASSWORD)
+    await page.getByRole('button', { name: /iniciar sesión|sign in|log in/i }).click()
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 10_000 })
     await expect(page).toHaveURL(/\/(dashboard|$)/)
     // Main navigation should be visible after login
     await expect(page.getByRole('navigation')).toBeVisible()
@@ -48,11 +46,10 @@ test.describe('Authentication', () => {
 })
 
 /**
- * Dashboard
+ * Dashboard — uses the pre-authenticated storageState from global setup.
  */
 test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page)
     await page.goto('/dashboard')
   })
 
@@ -63,11 +60,10 @@ test.describe('Dashboard', () => {
 })
 
 /**
- * Transactions
+ * Transactions — uses the pre-authenticated storageState from global setup.
  */
 test.describe('Transactions page', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page)
     await page.goto('/transactions')
   })
 
@@ -92,18 +88,18 @@ test.describe('Transactions page', () => {
         name: /abrir acciones de movimientos|open transaction actions|acciones de movimientos|transaction actions/i,
       })
       await actionsMenu.click()
-      await page.getByRole('button', { name: /registrar movimiento|register transaction/i }).click()
+      await page.getByRole('menuitem', { name: /registrar movimiento|register transaction/i }).click()
     }
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 })
   })
 })
 
 /**
- * Logout
+ * Logout — uses the pre-authenticated storageState from global setup.
  */
 test.describe('Logout', () => {
   test('can log out and is redirected to login', async ({ page }) => {
-    await login(page)
+    await page.goto('/dashboard')
     // Wait for all in-flight requests (e.g. authApi.me()) to settle so the user
     // state is stable before we trigger logout.
     await page.waitForLoadState('networkidle')
