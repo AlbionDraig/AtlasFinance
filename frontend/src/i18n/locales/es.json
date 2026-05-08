@@ -609,6 +609,7 @@
     "submit_edit": "Guardar cambios",
     "submitting": "Guardando…",
     "card_account": "Cuenta asociada: {{name}}",
+    "card_balance_label": "Saldo",
     "filter_search_placeholder": "Buscar por bolsillo, cuenta, banco o moneda",
     "filter_account_all": "Todas las cuentas",
     "filter_bank_all": "Todos los bancos",
@@ -650,7 +651,12 @@
     "toast_withdraw_amount_zero": "El monto debe ser mayor que 0.",
     "toast_withdraw_exceeds_balance": "El monto supera el saldo del bolsillo.",
     "toast_withdraw_select_date": "Selecciona la fecha.",
-    "toast_withdraw_select_time": "Selecciona la hora."
+    "toast_withdraw_select_time": "Selecciona la hora.",
+    "kpi_count": "Bolsillos",
+    "kpi_cop": "Saldo COP",
+    "kpi_usd": "Saldo USD",
+    "results_count": "{{count}} bolsillos",
+    "results_count_filtered": "{{shown}} de {{total}} bolsillos"
   },
   "categories": {
     "loading": "Cargando categorías...",

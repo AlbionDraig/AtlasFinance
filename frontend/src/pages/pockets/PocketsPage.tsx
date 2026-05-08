@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type CSSProperties, type Dispatch, type FormEvent, type SetStateAction } from 'react'
+import { useMemo, useRef, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { AxiosError } from 'axios'
@@ -21,6 +21,7 @@ import AmountInput from '@/components/ui/AmountInput'
 import InlineAlert from '@/components/ui/InlineAlert'
 import PocketsFiltersCard, { type PocketFiltersState } from './components/PocketsFiltersCard'
 import WithdrawFromPocketModal, { type WithdrawFromPocketFormData } from './components/WithdrawFromPocketModal'
+import EntityCard from '@/components/ui/EntityCard'
 
 interface PocketFormState {
   name: string
@@ -89,6 +90,37 @@ function buildAccountVisualStyle(_accountId: number, index: number): AccountVisu
     softBorder: `color-mix(in srgb, ${base.accent} ${borderTint}%, white)`,
     softText: base.softText,
   }
+}
+
+// ── KPI card ──────────────────────────────────────────────────────────────────
+interface KpiCardProps {
+  label: string
+  value: string
+  accent: 'brand' | 'success' | 'warning'
+  icon?: ReactNode
+}
+function KpiCard({ label, value, accent, icon }: KpiCardProps) {
+  const accentStyles = {
+    brand: { line: 'bg-brand', ring: 'ring-brand/15', glow: 'bg-brand/10', icon: 'bg-brand-light text-brand' },
+    success: { line: 'bg-success', ring: 'ring-success/15', glow: 'bg-success/10', icon: 'bg-success-bg text-success' },
+    warning: { line: 'bg-warning', ring: 'ring-warning/15', glow: 'bg-warning/10', icon: 'bg-warning-bg text-warning' },
+  }[accent]
+
+  return (
+    <div className={`relative overflow-hidden rounded-xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/80 p-4 shadow-sm ring-1 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ${accentStyles.ring}`}>
+      <div className={`absolute inset-x-0 top-0 h-1.5 ${accentStyles.line}`} />
+      <div className={`absolute -right-8 -top-8 h-20 w-20 rounded-full blur-2xl ${accentStyles.glow}`} aria-hidden="true" />
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-neutral-700">{label}</p>
+        {icon && (
+          <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${accentStyles.icon}`}>
+            {icon}
+          </span>
+        )}
+      </div>
+      <p className="mt-2 text-[1.7rem] font-medium tracking-tight text-neutral-900">{value}</p>
+    </div>
+  )
 }
 
 interface PocketModalProps {
@@ -320,6 +352,14 @@ export default function PocketsPage() {
     return list
   }, [filters, accountById, bankById, t])
 
+  const totalCOP = useMemo(() =>
+    filteredPockets.filter(p => p.currency === 'COP').reduce((sum, p) => sum + p.balance, 0),
+  [filteredPockets])
+
+  const totalUSD = useMemo(() =>
+    filteredPockets.filter(p => p.currency === 'USD').reduce((sum, p) => sum + p.balance, 0),
+  [filteredPockets])
+
   function resetForm() {
     setForm(EMPTY_FORM)
     setFormErrors({})
@@ -538,6 +578,42 @@ export default function PocketsPage() {
         </p>
       </div>
 
+      {pockets.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <KpiCard
+            label={t('pockets.kpi_count')}
+            value={String(filteredPockets.length)}
+            accent="brand"
+            icon={
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
+                <path d="M3 6a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V6z" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M13 10a1 1 0 11-2 0 1 1 0 012 0z" fill="currentColor" />
+              </svg>
+            }
+          />
+          <KpiCard
+            label={t('pockets.kpi_cop')}
+            value={formatCurrency(totalCOP, 'COP')}
+            accent="success"
+            icon={
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
+                <path d="M10 2v16M5 7l5-5 5 5M5 17h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            }
+          />
+          <KpiCard
+            label={t('pockets.kpi_usd')}
+            value={formatCurrency(totalUSD, 'USD')}
+            accent="warning"
+            icon={
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
+                <path d="M10 3v14M7 6.5C7 5.12 8.34 4 10 4s3 1.12 3 2.5S11.66 9 10 9s-3 1.12-3 2.5S8.34 14 10 14s3-1.12 3-2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            }
+          />
+        </div>
+      )}
+
       {createOpen && (
         <PocketModal
           title={t('pockets.create_title')}
@@ -638,57 +714,50 @@ export default function PocketsPage() {
           />
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filteredPockets.map((pocket) => {
-            const account = accountById.get(pocket.account_id)
-            const accountStyle = accountStyleById.get(pocket.account_id)
-            // Inline styles derive from account palette to reinforce visual grouping.
-            const cardStyle: CSSProperties | undefined = accountStyle
-              ? {
-                  borderTopColor: accountStyle.accent,
-                  background: `linear-gradient(180deg, ${accountStyle.softBg} 0%, #ffffff 36%)`,
-                }
-              : undefined
+        <>
+          {/* Barra de resultados */}
+          <div className="flex flex-col gap-2 rounded-lg border border-brand/20 bg-gradient-to-r from-brand-light/70 to-white px-3 py-2 text-xs text-brand-text sm:flex-row sm:items-center">
+            <p>
+              {filteredPockets.length === pockets.length
+                ? t('pockets.results_count', { count: pockets.length })
+                : t('pockets.results_count_filtered', { shown: filteredPockets.length, total: pockets.length })}
+            </p>
+          </div>
 
-            const currencyBadgeStyle: CSSProperties | undefined = accountStyle
-              ? {
-                  backgroundColor: accountStyle.softBg,
-                  color: accountStyle.softText,
-                  borderColor: accountStyle.softBorder,
-                }
-              : undefined
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {filteredPockets.map((pocket) => {
+              const account = accountById.get(pocket.account_id)
+              const bankName = bankById.get(account?.bank_id ?? -1)?.name
+              const accountStyle = accountStyleById.get(pocket.account_id)
 
-            return (
-              <article key={pocket.id} className="app-card border-t-2 p-4 space-y-3" style={cardStyle}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-base text-neutral-900 font-medium">{pocket.name}</h2>
-                  </div>
-                  <span
-                    className="rounded-full border px-3 py-1 text-xs font-medium tracking-wide shadow-sm"
-                    style={currencyBadgeStyle}
-                  >
-                    {pocket.currency}
-                  </span>
-                </div>
+              const accentStyle = accountStyle
+                ? {
+                    accentColor: accountStyle.accent,
+                    badgeBg: accountStyle.softBg,
+                    badgeText: accountStyle.softText,
+                    badgeBorder: accountStyle.softBorder,
+                  }
+                : undefined
 
-                <div>
-                  <p className="text-2xl font-medium text-neutral-900">
-                    {formatCurrency(pocket.balance, pocket.currency)}
-                  </p>
-                  <p className="text-sm text-neutral-400 mt-1">
-                    {t('pockets.card_account', { name: account?.name ?? `#${pocket.account_id}` })}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-1">
-                  <EditButton onClick={() => prepareEdit(pocket)} />
-                  <DeleteButton onClick={() => setDeletingPocket(pocket)} />
-                </div>
-              </article>
-            )
-          })}
-        </div>
+              return (
+                <EntityCard
+                  key={pocket.id}
+                  title={pocket.name}
+                  badge={pocket.currency}
+                  value={formatCurrency(pocket.balance, pocket.currency)}
+                  footerLabel={[bankName, account?.name ?? `#${pocket.account_id}`].filter(Boolean).join(' · ')}
+                  accentStyle={accentStyle}
+                  actions={
+                    <>
+                      <EditButton onClick={() => prepareEdit(pocket)} />
+                      <DeleteButton onClick={() => setDeletingPocket(pocket)} />
+                    </>
+                  }
+                />
+              )
+            })}
+          </div>
+        </>
       )}
 
       <FloatingActionMenu

@@ -607,6 +607,7 @@
     "submit_edit": "Save changes",
     "submitting": "Saving…",
     "card_account": "Associated account: {{name}}",
+    "card_balance_label": "Balance",
     "filter_search_placeholder": "Search by pocket, account, bank or currency",
     "filter_account_all": "All accounts",
     "filter_bank_all": "All banks",
@@ -648,7 +649,12 @@
     "toast_withdraw_amount_zero": "Amount must be greater than 0.",
     "toast_withdraw_exceeds_balance": "Amount exceeds pocket balance.",
     "toast_withdraw_select_date": "Select the date.",
-    "toast_withdraw_select_time": "Select the time."
+    "toast_withdraw_select_time": "Select the time.",
+    "kpi_count": "Pockets",
+    "kpi_cop": "COP Balance",
+    "kpi_usd": "USD Balance",
+    "results_count": "{{count}} pockets",
+    "results_count_filtered": "{{shown}} of {{total}} pockets"
   },
   "categories": {
     "loading": "Loading categories...",
