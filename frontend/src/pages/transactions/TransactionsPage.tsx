@@ -387,14 +387,20 @@ export default function TransactionsPage() {
 
     const amount = Number(form.amount)
 
+    const account = selectedAccount
+    if (!account) {
+      toast(t('transactions.toast_no_account'), 'error')
+      return
+    }
+
     const occurredAt = `${form.occurredDate}T${form.occurredTime || '00:00'}:00`
     const payload = {
-      account_id: selectedAccount.id,
+      account_id: account.id,
       amount,
       description: form.description.trim(),
       category_id: form.categoryId === 'none' ? null : Number(form.categoryId),
       pocket_id: null,
-      currency: selectedAccount.currency,
+      currency: account.currency,
       transaction_type: form.transactionType.toLowerCase() as Transaction['transaction_type'],
       occurred_at: occurredAt,
     } satisfies Omit<Transaction, 'id'>

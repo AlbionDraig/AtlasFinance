@@ -122,12 +122,19 @@ export default function AccountsPage() {
       return
     }
 
+    const accountType = accountForm.accountType
+    const currency = accountForm.currency
+    if (!accountType || !currency) {
+      toast(t('accounts.toast_create_error'), 'error')
+      return
+    }
+
     setSavingAccount(true)
     try {
       const response = await accountsApi.create({
         name: accountForm.name.trim(),
-        account_type: accountForm.accountType,
-        currency: accountForm.currency,
+        account_type: accountType,
+        currency,
         current_balance: 0,
         bank_id: Number(accountForm.bankId),
       })
