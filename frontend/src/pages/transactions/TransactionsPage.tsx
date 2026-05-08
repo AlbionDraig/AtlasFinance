@@ -276,13 +276,61 @@ export default function TransactionsPage() {
   const endIndex = Math.min(startIndex + visibleTransactions.length, visibleTotal)
   const paginatedTransactions = visibleTransactions
   const noCategoryLabel = t('transactions.no_category')
-  const activeFilters = [
-    filters.transactionType !== 'all' ? t(filters.transactionType === 'INCOME' ? 'transactions.chip_type_income' : 'transactions.chip_type_expense') : null,
-    filters.currency !== 'all' ? t('transactions.chip_currency', { value: filters.currency }) : null,
-    filters.accountId !== 'all' ? t('transactions.chip_account', { value: getCompactAccountName(Number(filters.accountId), accounts) }) : null,
-    filters.period !== 'all' ? t('transactions.chip_period', { value: getPeriodLabel(filters.period, t) }) : null,
-    filters.query.trim() ? t('transactions.chip_search', { value: filters.query.trim() }) : null,
-  ].filter(Boolean) as string[]
+  const activeFilters = useMemo(() => {
+    const chips: Array<{ id: string; label: string }> = []
+    if (filters.transactionType !== 'all') {
+      chips.push({
+        id: 'type',
+        label: t(filters.transactionType === 'INCOME' ? 'transactions.chip_type_income' : 'transactions.chip_type_expense'),
+      })
+    }
+    if (filters.currency !== 'all') {
+      chips.push({
+        id: 'currency',
+        label: t('transactions.chip_currency', { value: filters.currency }),
+      })
+    }
+    if (filters.accountId !== 'all') {
+      chips.push({
+        id: 'account',
+        label: t('transactions.chip_account', { value: getCompactAccountName(Number(filters.accountId), accounts) }),
+      })
+    }
+    if (filters.period !== 'all') {
+      chips.push({
+        id: 'period',
+        label: t('transactions.chip_period', { value: getPeriodLabel(filters.period, t) }),
+      })
+    }
+    if (filters.query.trim()) {
+      chips.push({
+        id: 'search',
+        label: t('transactions.chip_search', { value: filters.query.trim() }),
+      })
+    }
+    return chips
+  }, [filters.transactionType, filters.currency, filters.accountId, filters.period, filters.query, accounts, t])
+
+  function handleRemoveFilter(id: string) {
+    switch (id) {
+      case 'type':
+        setFilters(current => ({ ...current, transactionType: 'all' }))
+        break
+      case 'currency':
+        setFilters(current => ({ ...current, currency: 'all' }))
+        break
+      case 'account':
+        setFilters(current => ({ ...current, accountId: 'all' }))
+        break
+      case 'period':
+        setFilters(current => ({ ...current, period: 'all' }))
+        break
+      case 'search':
+        setFilters(current => ({ ...current, query: '' }))
+        break
+    }
+    trackUxEvent('transactions_filter_removed', { filterId: id })
+  }
 
   function resetForm() {
     setEditingId(null)
@@ -635,6 +683,7 @@ export default function TransactionsPage() {
           trackUxEvent('transactions_filters_reset')
           setFilters(buildDefaultFilters())
         }}
+        onRemoveFilter={handleRemoveFilter}
       />
 
       {/* Transactions table */}
