@@ -1,5 +1,6 @@
 {
   "nav": {
+    "navigation": "Navegación",
     "dashboard": "Dashboard",
     "transactions": "Movimientos",
     "accounts": "Cuentas",
@@ -8,7 +9,12 @@
     "admin": "Administración",
     "management": "Gestión",
     "myProfile": "Mi perfil",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "pinSidebar": "Fijar barra lateral",
+    "unpinSidebar": "Desfijar barra lateral",
+    "openSidebar": "Abrir menú",
+    "closeSidebar": "Cerrar menú",
+    "sidebarShortcut": "Ctrl+B"
   },
   "errors": {
     "app_title": "Algo salió mal",

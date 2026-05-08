@@ -2,6 +2,7 @@ import Badge from '@/components/ui/Badge'
 import DeleteButton from '@/components/ui/DeleteButton'
 import EditButton from '@/components/ui/EditButton'
 import Pagination from '@/components/ui/Pagination'
+import TableActionGroup from '@/components/ui/TableActionGroup'
 import Tooltip from '@/components/ui/Tooltip'
 import { useTranslation } from 'react-i18next'
 import type { Country } from '@/api/countries'
@@ -117,15 +118,15 @@ export default function CountriesTableCard({
             </colgroup>
             <thead>
               <tr>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('admin.countries.table_col_code')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('admin.countries.table_col_country')}</th>
-                <th className="border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('admin.countries.table_col_actions')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('admin.countries.table_col_code')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('admin.countries.table_col_country')}</th>
+                <th className="border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('admin.countries.table_col_actions')}</th>
               </tr>
             </thead>
             <tbody>
               {paginatedCountries.map((country) => (
                 <tr key={country.id} className="group transition-colors hover:bg-brand-light/40 odd:bg-white even:bg-neutral-50/50">
-                  <td className="border-b border-r border-neutral-100 px-5 py-3.5 align-middle text-sm text-neutral-700">
+                  <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-center align-middle text-sm text-neutral-700">
                     <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700 whitespace-nowrap">
                       {country.code}
                     </span>
@@ -135,11 +136,11 @@ export default function CountriesTableCard({
                       {country.name}
                     </span>
                   </td>
-                  <td className="border-b border-neutral-100 px-5 py-3.5 align-middle">
-                    <div className="flex items-center justify-end gap-1.5">
+                  <td className="border-b border-neutral-100 px-5 py-3.5 text-center align-middle">
+                    <TableActionGroup>
                       <EditButton onClick={() => onEdit(country)} label={`Editar ${country.name}`} />
                       <DeleteButton onClick={() => onDelete(country)} label={`Eliminar ${country.name}`} />
-                    </div>
+                    </TableActionGroup>
                   </td>
                 </tr>
               ))}

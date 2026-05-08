@@ -1,5 +1,6 @@
 {
   "nav": {
+    "navigation": "Navigation",
     "dashboard": "Dashboard",
     "transactions": "Transactions",
     "accounts": "Accounts",
@@ -8,7 +9,12 @@
     "admin": "Administration",
     "management": "Management",
     "myProfile": "My profile",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "pinSidebar": "Pin sidebar",
+    "unpinSidebar": "Unpin sidebar",
+    "openSidebar": "Open menu",
+    "closeSidebar": "Close menu",
+    "sidebarShortcut": "Ctrl+B"
   },
   "errors": {
     "app_title": "Something went wrong",

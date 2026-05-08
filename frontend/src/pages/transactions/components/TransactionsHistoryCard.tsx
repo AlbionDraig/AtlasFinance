@@ -4,6 +4,7 @@ import Tooltip from '@/components/ui/Tooltip'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 import SkeletonTable from '@/components/ui/SkeletonTable'
+import TableActionGroup from '@/components/ui/TableActionGroup'
 import { useTranslation } from 'react-i18next'
 import type { Category } from '@/api/categories'
 import type { Account, Transaction } from '@/types'
@@ -208,12 +209,12 @@ export default function TransactionsHistoryCard({
             </colgroup>
             <thead>
               <tr>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_date')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_desc')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_account')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_category')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_amount')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_actions')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_date')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_desc')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_account')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_category')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_amount')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -278,8 +279,8 @@ export default function TransactionsHistoryCard({
                     </td>
 
                     {/* Acciones */}
-                    <td className="border-b border-r border-neutral-100 px-5 py-3.5 align-middle">
-                      <div className="flex items-center justify-end gap-1.5">
+                    <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-center align-middle">
+                      <TableActionGroup>
                         {isTransfer ? (
                           // Transfer rows cannot be edited, only removed as a pair operation.
                           <DeleteButton onClick={() => onDelete(transaction.id)} loading={deletingId === transaction.id} />
@@ -291,7 +292,7 @@ export default function TransactionsHistoryCard({
                             <DeleteButton onClick={() => onDelete(transaction.id)} loading={deletingId === transaction.id} />
                           </>
                         )}
-                      </div>
+                      </TableActionGroup>
                     </td>
                   </tr>
                 )

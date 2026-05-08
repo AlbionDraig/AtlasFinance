@@ -16,6 +16,7 @@ import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import EmptyState from '@/components/ui/EmptyState'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
+import TableActionGroup from '@/components/ui/TableActionGroup'
 import Select from '@/components/ui/Select'
 import AmountInput from '@/components/ui/AmountInput'
 import InlineAlert from '@/components/ui/InlineAlert'
@@ -829,10 +830,10 @@ export default function PocketsPage() {
                           {formatCurrency(pocket.balance, pocket.currency)}
                         </td>
                         <td className="whitespace-nowrap px-2 py-2 text-center align-middle">
-                          <div className="mx-auto inline-flex items-center justify-center gap-1 rounded-md bg-brand-light/40 px-1 py-0.5">
+                          <TableActionGroup>
                             <EditButton onClick={() => prepareEdit(pocket)} />
                             <DeleteButton onClick={() => setDeletingPocket(pocket)} />
-                          </div>
+                          </TableActionGroup>
                         </td>
                       </tr>
                     )

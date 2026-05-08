@@ -17,6 +17,7 @@ import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import EmptyState from '@/components/ui/EmptyState'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
+import TableActionGroup from '@/components/ui/TableActionGroup'
 import Select from '@/components/ui/Select'
 import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
@@ -833,14 +834,14 @@ export default function InvestmentsPage() {
           <table className="app-table text-left text-sm">
             <thead className="border-b border-brand/30 bg-brand text-xs text-white">
               <tr>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_name')}</th>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_entity')}</th>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_type')}</th>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_invested')}</th>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_current')}</th>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_performance')}</th>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_since')}</th>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide text-right">{t('investments.table_actions')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_name')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_entity')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_type')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_invested')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_current')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_performance')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_since')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -867,11 +868,11 @@ export default function InvestmentsPage() {
                       </span>
                     </td>
                     <td className="px-3 py-2 text-neutral-400">{formatDate(inv.started_at)}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center justify-end gap-1 rounded-md bg-brand-light/40 px-1 py-0.5">
+                    <td className="px-3 py-2 text-center align-middle">
+                      <TableActionGroup>
                         <EditButton onClick={() => openEdit(inv)} />
                         <DeleteButton onClick={() => setDeletingInvestment(inv)} />
-                      </div>
+                      </TableActionGroup>
                     </td>
                   </tr>
                 )

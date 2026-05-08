@@ -2,7 +2,7 @@
 // Aporta sidebar (navegación + perfil + logout) y un área principal con <Outlet/>.
 // El sidebar usa hover-expansion (icon-only → expandido) para maximizar área
 // útil en desktop sin sacrificar acceso rápido al menú.
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/store/authStore'
@@ -86,11 +86,18 @@ const navItems = [
   },
 ]
 
+const SIDEBAR_PIN_KEY = 'atlasfinance.sidebar.pinned'
+
 export default function AppLayout() {
   const { logout, user, setUser } = useAuthStore()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const [pinned, setPinned] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.localStorage.getItem(SIDEBAR_PIN_KEY) === '1'
+  })
   const [expanded, setExpanded] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   // Refs (no state) para los timers porque su mutación no debe disparar re-render
   // y debemos poder cancelarlos sincrónicamente desde otros handlers.
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -121,6 +128,7 @@ export default function AppLayout() {
   }
 
   const scheduleOpen = () => {
+    if (pinned) return
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current)
       closeTimerRef.current = null
@@ -133,6 +141,7 @@ export default function AppLayout() {
   }
 
   const scheduleClose = () => {
+    if (pinned) return
     if (openTimerRef.current) {
       clearTimeout(openTimerRef.current)
       openTimerRef.current = null
@@ -155,14 +164,185 @@ export default function AppLayout() {
     navigate('/login', { replace: true })
   }
 
-  const collapsed = !expanded
+  const handleTogglePin = useCallback(() => {
+    clearTimers()
+    setPinned((current) => {
+      const next = !current
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(SIDEBAR_PIN_KEY, next ? '1' : '0')
+      }
+      if (next) setExpanded(true)
+      if (!next) setExpanded(false)
+      return next
+    })
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== 'b') return
+
+      const target = event.target as HTMLElement | null
+      if (target) {
+        const editableTags = ['INPUT', 'TEXTAREA', 'SELECT']
+        if (target.isContentEditable || editableTags.includes(target.tagName)) return
+      }
+
+      event.preventDefault()
+      handleTogglePin()
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [handleTogglePin])
+
+  useEffect(() => {
+    if (!mobileMenuOpen || typeof window === 'undefined') return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileMenuOpen(false)
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [mobileMenuOpen])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+
+    const mediaQuery = window.matchMedia('(min-width: 1024px)')
+    const mediaQueryWithLegacyApi = mediaQuery as MediaQueryList & {
+      addListener?: (listener: (event: MediaQueryListEvent) => void) => void
+      removeListener?: (listener: (event: MediaQueryListEvent) => void) => void
+    }
+    const onDesktop = (event: MediaQueryListEvent) => {
+      if (event.matches) setMobileMenuOpen(false)
+    }
+
+    if (typeof mediaQueryWithLegacyApi.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', onDesktop)
+      return () => mediaQuery.removeEventListener('change', onDesktop)
+    }
+
+    mediaQueryWithLegacyApi.addListener?.(onDesktop)
+    return () => mediaQueryWithLegacyApi.removeListener?.(onDesktop)
+  }, [])
+
+  const isExpanded = pinned || expanded
+  const collapsed = !isExpanded
   const visibleNavItems = navItems.filter((item) => !item.adminOnly || user?.role === 'admin')
+
+  const getUserInitials = (fullName: string) => fullName.split(' ').map((word) => word[0]).slice(0, 2).join('').toUpperCase()
+
+  const renderSidebarNav = (isCollapsed: boolean, onNavigate?: () => void) => (
+    <nav className={`${isCollapsed ? 'px-2' : 'px-3'} flex-1 py-4 space-y-1`}>
+      {!isCollapsed && <p className="px-3 pb-1 text-[10px] uppercase tracking-[0.12em] text-neutral-400">{t('nav.navigation')}</p>}
+      {visibleNavItems.map(({ to, labelKey, icon }) => (
+        <NavLink
+          key={to}
+          to={to}
+          onClick={onNavigate}
+          aria-label={isCollapsed ? t(labelKey) : undefined}
+          className={({ isActive }) =>
+            `flex items-center ${isCollapsed ? 'justify-center h-9 w-9 mx-auto px-0' : 'px-3 py-2'} rounded-lg text-sm font-medium transition-colors ${
+              isActive
+                ? 'bg-brand text-white shadow-sm'
+                : 'text-neutral-400 hover:text-neutral-50 hover:bg-white/10'
+            }`
+          }
+          title={isCollapsed ? t(labelKey) : undefined}
+        >
+          {isCollapsed
+            ? icon
+            : (
+                <>
+                  <span className="mr-2">{icon}</span>
+                  <span>{t(labelKey)}</span>
+                </>
+              )}
+        </NavLink>
+      ))}
+    </nav>
+  )
+
+  const renderSidebarFooter = (isCollapsed: boolean, onNavigate?: () => void) => (
+    <div className="px-3 py-4 border-t border-white/10 space-y-2">
+      {!isCollapsed && user && (
+        <NavLink
+          to="/profile"
+          onClick={onNavigate}
+          className={({ isActive }) =>
+            `flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+              isActive
+                ? 'bg-brand text-white'
+                : 'text-neutral-400 hover:text-neutral-50 hover:bg-white/10'
+            }`
+          }
+        >
+          <div className="w-6 h-6 rounded-full bg-brand-light flex items-center justify-center shrink-0">
+            <span className="text-[10px] font-medium text-brand-text">{getUserInitials(user.full_name)}</span>
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium truncate leading-tight">{user.full_name}</p>
+            <p className="text-[10px] text-neutral-400 truncate leading-tight">{user.email}</p>
+          </div>
+        </NavLink>
+      )}
+      {isCollapsed && user && (
+        <NavLink
+          to="/profile"
+          onClick={onNavigate}
+          aria-label={t('nav.myProfile')}
+          title={t('nav.myProfile')}
+          className={({ isActive }) =>
+            `flex items-center justify-center h-9 w-9 mx-auto rounded-lg transition-colors ${
+              isActive ? 'bg-brand' : 'text-neutral-400 hover:text-neutral-50 hover:bg-white/10'
+            }`
+          }
+        >
+          <span className="text-xs font-medium">{getUserInitials(user.full_name)}</span>
+        </NavLink>
+      )}
+      <button
+        onClick={handleLogout}
+        data-testid="logout-button"
+        aria-label={t('nav.logout')}
+        className={`w-full flex items-center ${isCollapsed ? 'justify-center h-9 w-9 mx-auto px-0' : 'px-3 py-2'} rounded-lg text-sm font-medium text-neutral-400 hover:text-neutral-50 hover:bg-white/10 transition-colors`}
+        title={isCollapsed ? t('nav.logout') : undefined}
+      >
+        {isCollapsed
+          ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 16l4-4-4-4" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 12H9" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 19H6a2 2 0 01-2-2V7a2 2 0 012-2h6" />
+              </svg>
+            )
+          : (
+              <>
+                <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 16l4-4-4-4" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 12H9" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 19H6a2 2 0 01-2-2V7a2 2 0 012-2h6" />
+                </svg>
+                <span>{t('nav.logout')}</span>
+              </>
+            )}
+      </button>
+      {!isCollapsed && (
+        <div className="px-3 pt-1">
+          <LanguageSwitcher />
+        </div>
+      )}
+    </div>
+  )
 
   return (
     <div className="app-page flex h-screen">
-      {/* Sidebar */}
+      {/* Sidebar desktop */}
       <aside
-        className="relative w-20 shrink-0 overflow-visible"
+        className="relative hidden w-20 shrink-0 overflow-visible lg:block"
         onMouseEnter={scheduleOpen}
         onMouseLeave={scheduleClose}
         onFocusCapture={() => {
@@ -178,118 +358,96 @@ export default function AppLayout() {
           className={`${collapsed ? 'w-20' : 'w-60 shadow-lg'} absolute left-0 top-0 h-full bg-neutral-900 text-neutral-50 border-r border-neutral-100 flex flex-col z-[120]`}
         >
           {/* Logo */}
-          <div className={`${collapsed ? 'px-2 py-3 flex-col items-center gap-2' : 'px-6 py-5 items-center gap-3'} border-b border-white/10 flex`}>
+          <div className={`${collapsed ? 'px-2 py-3 flex-col items-center gap-2' : 'px-4 py-4 items-center gap-2'} border-b border-white/10 flex`}>
             <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center shrink-0">
               <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V17a1 1 0 11-2 0v-.07A7.003 7.003 0 015 10h1a6 6 0 0012 0h1a7.003 7.003 0 01-6 6.93z" />
               </svg>
             </div>
-            {!collapsed && <span className="text-base font-bold tracking-tight text-neutral-50">{t('common.atlasFinance')}</span>}
-          </div>
-
-          {/* Nav */}
-          <nav className={`${collapsed ? 'px-2' : 'px-3'} flex-1 py-4 space-y-1`}>
-            {visibleNavItems.map(({ to, labelKey, icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                className={({ isActive }) =>
-                  `flex items-center ${collapsed ? 'justify-center h-9 w-9 mx-auto px-0' : 'px-3 py-2'} rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-brand text-white font-medium'
-                      : 'text-neutral-400 hover:text-neutral-50 hover:bg-white/10'
-                  }`
-                }
-                title={collapsed ? t(labelKey) : undefined}
-              >
-                {collapsed
-                  ? icon
-                  : (
-                      <>
-                        <span className="mr-2">{icon}</span>
-                        <span>{t(labelKey)}</span>
-                      </>
-                    )}
-              </NavLink>
-            ))}
-          </nav>
-
-          {/* Footer: user + logout */}
-          <div className="px-3 py-4 border-t border-white/10 space-y-2">
-            {!collapsed && user && (
-              <NavLink
-                to="/profile"
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-brand text-white'
-                      : 'text-neutral-400 hover:text-neutral-50 hover:bg-white/10'
-                  }`
-                }
-              >
-                <div className="w-6 h-6 rounded-full bg-brand-light flex items-center justify-center shrink-0">
-                  <span className="text-[10px] font-medium text-brand-text">
-                    {user.full_name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-medium truncate leading-tight">{user.full_name}</p>
-                  <p className="text-[10px] text-neutral-400 truncate leading-tight">{user.email}</p>
-                </div>
-              </NavLink>
-            )}
-            {collapsed && user && (
-              <NavLink
-                to="/profile"
-                title={t('nav.myProfile')}
-                className={({ isActive }) =>
-                  `flex items-center justify-center h-9 w-9 mx-auto rounded-lg transition-colors ${
-                    isActive ? 'bg-brand' : 'text-neutral-400 hover:text-neutral-50 hover:bg-white/10'
-                  }`
-                }
-              >
-                <span className="text-xs font-medium">
-                  {user.full_name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
-                </span>
-              </NavLink>
-            )}
+            {!collapsed && <span className="text-base font-medium tracking-tight text-neutral-50">{t('common.atlasFinance')}</span>}
             <button
-              onClick={handleLogout}
-              data-testid="logout-button"
-              aria-label={t('nav.logout')}
-              className={`w-full flex items-center ${collapsed ? 'justify-center h-9 w-9 mx-auto px-0' : 'px-3 py-2'} rounded-lg text-sm font-medium text-neutral-400 hover:text-neutral-50 hover:bg-white/10 transition-colors`}
-              title={collapsed ? t('nav.logout') : undefined}
+              type="button"
+              onClick={handleTogglePin}
+              className={`${collapsed ? 'mt-1 h-8 w-8' : 'ml-auto h-8 w-8'} inline-flex items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-50 hover:bg-white/10 transition-colors`}
+              aria-label={pinned ? t('nav.unpinSidebar') : t('nav.pinSidebar')}
+              title={`${pinned ? t('nav.unpinSidebar') : t('nav.pinSidebar')} (${t('nav.sidebarShortcut')})`}
             >
-              {collapsed
+              {pinned
                 ? (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 16l4-4-4-4" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 12H9" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 19H6a2 2 0 01-2-2V7a2 2 0 012-2h6" />
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 3h8l-1 6 4 4v2H5v-2l4-4-1-6z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v6" />
                     </svg>
                   )
                 : (
-                    <>
-                      <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 16l4-4-4-4" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 12H9" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 19H6a2 2 0 01-2-2V7a2 2 0 012-2h6" />
-                      </svg>
-                      <span>{t('nav.logout')}</span>
-                    </>
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 3h8l-1 6 4 4v2H5v-2l4-4-1-6z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 20l16-16" />
+                    </svg>
                   )}
             </button>
-            {!collapsed && (
-              <div className="px-3 pt-1">
-                <LanguageSwitcher />
-              </div>
-            )}
           </div>
+          {renderSidebarNav(collapsed)}
+          {renderSidebarFooter(collapsed)}
         </div>
       </aside>
 
+      {/* Sidebar mobile */}
+      <button
+        type="button"
+        className="fixed left-3 top-3 z-[140] inline-flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-100 bg-white text-neutral-900 shadow-sm transition-colors hover:bg-neutral-50 lg:hidden"
+        aria-label={mobileMenuOpen ? t('nav.closeSidebar') : t('nav.openSidebar')}
+        onClick={() => setMobileMenuOpen((current) => !current)}
+      >
+        {mobileMenuOpen
+          ? (
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            )
+          : (
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+            )}
+      </button>
+
+      {mobileMenuOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-[120] bg-neutral-900/45 backdrop-blur-[1px] lg:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+          <aside className="fixed inset-y-0 left-0 z-[130] w-72 max-w-[85vw] bg-neutral-900 text-neutral-50 border-r border-neutral-100 flex flex-col shadow-lg lg:hidden">
+            <div className="px-4 py-4 items-center gap-2 border-b border-white/10 flex">
+              <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center shrink-0">
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V17a1 1 0 11-2 0v-.07A7.003 7.003 0 015 10h1a6 6 0 0012 0h1a7.003 7.003 0 01-6 6.93z" />
+                </svg>
+              </div>
+              <span className="text-base font-medium tracking-tight text-neutral-50">{t('common.atlasFinance')}</span>
+              <button
+                type="button"
+                className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-50 hover:bg-white/10 transition-colors"
+                aria-label={t('nav.closeSidebar')}
+                title={t('nav.closeSidebar')}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </div>
+
+            {renderSidebarNav(false, () => setMobileMenuOpen(false))}
+            {renderSidebarFooter(false, () => setMobileMenuOpen(false))}
+          </aside>
+        </>
+      )}
+
       {/* Main content */}
-      <main className={`app-page flex-1 overflow-y-auto overflow-x-hidden p-6 transition-[padding-left] duration-200 ${expanded ? 'pl-44' : 'pl-6'}`}>
+      <main className={`app-page flex-1 overflow-y-auto overflow-x-hidden p-4 pt-16 sm:p-6 sm:pt-6 transition-[padding-left] duration-200 ${isExpanded ? 'lg:pl-44' : 'lg:pl-6'}`}>
         <Outlet />
       </main>
     </div>
