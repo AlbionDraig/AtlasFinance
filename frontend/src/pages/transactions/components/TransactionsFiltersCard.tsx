@@ -1,8 +1,9 @@
-import type { Dispatch, SetStateAction } from 'react'
+import { useState, type Dispatch, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import DatePicker from '@/components/ui/DatePicker'
 import Select from '@/components/ui/Select'
 import FilterCard from '@/components/ui/FilterCard'
+import Modal from '@/components/ui/Modal'
 import SearchInput from '@/components/ui/SearchInput'
 import type { Account } from '@/types'
 import type { FiltersState, PeriodFilter } from '../types'
@@ -29,6 +30,7 @@ export default function TransactionsFiltersCard({
   onRemoveFilter,
 }: TransactionsFiltersCardProps) {
   const { t } = useTranslation()
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
   // Presets rápidos de período
   const periodPresets = [
@@ -38,16 +40,15 @@ export default function TransactionsFiltersCard({
     { key: 'month', label: t('transactions.filter_period_month'), value: 'month' as PeriodFilter },
   ]
 
-  return (
-    <div className="space-y-3">
-      {/* Presets rápidos de período */}
-      <div className="flex flex-wrap gap-2 px-4">
+  function renderPeriodPresets() {
+    return (
+      <div className="flex flex-wrap gap-2">
         <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center">{t('transactions.quick_filters')}</span>
-        {periodPresets.map(preset => (
+        {periodPresets.map((preset) => (
           <button
             key={preset.key}
             type="button"
-            onClick={() => setFilters(current => ({ ...current, period: preset.value }))}
+            onClick={() => setFilters((current) => ({ ...current, period: preset.value }))}
             aria-pressed={filters.period === preset.value}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2 ${
               filters.period === preset.value
@@ -59,9 +60,12 @@ export default function TransactionsFiltersCard({
           </button>
         ))}
       </div>
+    )
+  }
 
-      {/* Filtros principales */}
-      <FilterCard sticky activeFilters={activeFilters} onReset={onResetFilters} onRemoveFilter={onRemoveFilter}>
+  function renderFilterFields() {
+    return (
+      <>
         {/* Buscar */}
         <div className="flex flex-col gap-1 flex-1 min-w-[160px]">
           <label className="app-label">{t('common.search')}</label>
@@ -158,7 +162,62 @@ export default function TransactionsFiltersCard({
             />
           </>
         )}
-      </FilterCard>
+      </>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="px-4 md:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileFiltersOpen(true)}
+          className="inline-flex w-full items-center justify-between rounded-lg border border-neutral-100 bg-white px-4 py-2.5 text-sm font-medium text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+          aria-label={t('transactions.mobile_filters_open')}
+        >
+          <span>{t('transactions.mobile_filters_open')}</span>
+          {activeFilters.length > 0 && (
+            <span className="rounded-full bg-brand-light px-2 py-0.5 text-xs text-brand-text">
+              {t('transactions.mobile_filters_count', { count: activeFilters.length })}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Presets rápidos de período (desktop) */}
+      <div className="hidden flex-wrap gap-2 px-4 md:flex">
+        {renderPeriodPresets()}
+      </div>
+
+      {/* Filtros principales (desktop) */}
+      <div className="hidden md:block">
+        <FilterCard sticky activeFilters={activeFilters} onReset={onResetFilters} onRemoveFilter={onRemoveFilter}>
+          {renderFilterFields()}
+        </FilterCard>
+      </div>
+
+      {mobileFiltersOpen && (
+        <Modal onClose={() => setMobileFiltersOpen(false)} maxWidth="max-w-2xl">
+          <section className="rounded-xl border border-neutral-100 bg-white p-4 shadow-lg">
+            <div className="mb-3 flex items-center justify-between gap-3 border-b border-neutral-100 pb-3">
+              <h2 className="text-base font-medium text-neutral-900">{t('transactions.mobile_filters_title')}</h2>
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen(false)}
+                className="rounded-md border border-neutral-100 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+              >
+                {t('common.close')}
+              </button>
+            </div>
+
+            <div className="mb-3">{renderPeriodPresets()}</div>
+
+            <FilterCard activeFilters={activeFilters} onReset={onResetFilters} onRemoveFilter={onRemoveFilter}>
+              {renderFilterFields()}
+            </FilterCard>
+          </section>
+        </Modal>
+      )}
     </div>
   )
 }
