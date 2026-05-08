@@ -30,7 +30,13 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: /firefox-smoke\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox-smoke',
+      testMatch: /firefox-smoke\.spec\.ts/,
+      use: { ...devices['Desktop Firefox'] },
     },
   ],
 

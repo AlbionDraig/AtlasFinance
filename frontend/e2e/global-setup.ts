@@ -27,10 +27,8 @@ async function globalSetup() {
   await page.goto(`${BASE_URL}/login`, { timeout: 60_000 })
   await page.waitForURL(/\/login/, { timeout: 60_000 })
 
-  // Use attribute selectors — the FormField component doesn't link <label> with
-  // htmlFor, so getByLabel() is unreliable; target inputs by type directly.
-  const emailField = page.locator('input[type="email"], input[autocomplete="username"]').first()
-  const passwordField = page.locator('input[type="password"], input[autocomplete="current-password"]').first()
+  const emailField = page.getByLabel(/email/i)
+  const passwordField = page.getByLabel(/contraseña|password/i)
   await emailField.waitFor({ state: 'visible', timeout: 30_000 })
   await emailField.fill(E2E_EMAIL)
   await passwordField.fill(E2E_PASSWORD)
