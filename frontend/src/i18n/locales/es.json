@@ -656,7 +656,15 @@
     "kpi_cop": "Saldo COP",
     "kpi_usd": "Saldo USD",
     "results_count": "{{count}} bolsillos",
-    "results_count_filtered": "{{shown}} de {{total}} bolsillos"
+    "results_count_filtered": "{{shown}} de {{total}} bolsillos",
+    "view_cards": "Tarjetas",
+    "view_table": "Tabla",
+    "table_name": "Bolsillo",
+    "table_account": "Cuenta",
+    "table_bank": "Banco",
+    "table_currency": "Moneda",
+    "table_balance": "Saldo",
+    "table_actions": "Acciones"
   },
   "categories": {
     "loading": "Cargando categorías...",

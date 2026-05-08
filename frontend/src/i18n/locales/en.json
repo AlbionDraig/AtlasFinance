@@ -654,7 +654,15 @@
     "kpi_cop": "COP Balance",
     "kpi_usd": "USD Balance",
     "results_count": "{{count}} pockets",
-    "results_count_filtered": "{{shown}} of {{total}} pockets"
+    "results_count_filtered": "{{shown}} of {{total}} pockets",
+    "view_cards": "Cards",
+    "view_table": "Table",
+    "table_name": "Pocket",
+    "table_account": "Account",
+    "table_bank": "Bank",
+    "table_currency": "Currency",
+    "table_balance": "Balance",
+    "table_actions": "Actions"
   },
   "categories": {
     "loading": "Loading categories...",

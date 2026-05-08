@@ -274,6 +274,7 @@ export default function PocketsPage() {
 
   const [saving, setSaving] = useState(false)
   const [filters, setFilters] = useState<PocketFiltersState>(DEFAULT_FILTERS)
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
 
   const { pockets, setPockets, accounts, banks, loading } = usePocketsData()
 
@@ -715,48 +716,123 @@ export default function PocketsPage() {
         </div>
       ) : (
         <>
-          {/* Barra de resultados */}
-          <div className="flex flex-col gap-2 rounded-lg border border-brand/20 bg-gradient-to-r from-brand-light/70 to-white px-3 py-2 text-xs text-brand-text sm:flex-row sm:items-center">
+          {/* Barra de resultados + toggle */}
+          <div className="flex flex-col gap-2 rounded-lg border border-brand/20 bg-gradient-to-r from-brand-light/70 to-white px-3 py-2 text-xs text-brand-text sm:flex-row sm:items-center sm:justify-between">
             <p>
               {filteredPockets.length === pockets.length
                 ? t('pockets.results_count', { count: pockets.length })
                 : t('pockets.results_count_filtered', { shown: filteredPockets.length, total: pockets.length })}
             </p>
+            <div className="inline-flex rounded-lg border border-brand/20 bg-white/80 p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode('cards')}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'cards' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
+                aria-pressed={viewMode === 'cards'}
+              >
+                {t('pockets.view_cards')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'table' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
+                aria-pressed={viewMode === 'table'}
+              >
+                {t('pockets.view_table')}
+              </button>
+            </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {filteredPockets.map((pocket) => {
-              const account = accountById.get(pocket.account_id)
-              const bankName = bankById.get(account?.bank_id ?? -1)?.name
-              const accountStyle = accountStyleById.get(pocket.account_id)
+          {viewMode === 'cards' ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredPockets.map((pocket) => {
+                const account = accountById.get(pocket.account_id)
+                const bankName = bankById.get(account?.bank_id ?? -1)?.name
+                const accountStyle = accountStyleById.get(pocket.account_id)
 
-              const accentStyle = accountStyle
-                ? {
-                    accentColor: accountStyle.accent,
-                    badgeBg: accountStyle.softBg,
-                    badgeText: accountStyle.softText,
-                    badgeBorder: accountStyle.softBorder,
-                  }
-                : undefined
+                const accentStyle = accountStyle
+                  ? {
+                      accentColor: accountStyle.accent,
+                      badgeBg: accountStyle.softBg,
+                      badgeText: accountStyle.softText,
+                      badgeBorder: accountStyle.softBorder,
+                    }
+                  : undefined
 
-              return (
-                <EntityCard
-                  key={pocket.id}
-                  title={pocket.name}
-                  badge={pocket.currency}
-                  value={formatCurrency(pocket.balance, pocket.currency)}
-                  footerLabel={[bankName, account?.name ?? `#${pocket.account_id}`].filter(Boolean).join(' · ')}
-                  accentStyle={accentStyle}
-                  actions={
-                    <>
-                      <EditButton onClick={() => prepareEdit(pocket)} />
-                      <DeleteButton onClick={() => setDeletingPocket(pocket)} />
-                    </>
-                  }
-                />
-              )
-            })}
-          </div>
+                return (
+                  <EntityCard
+                    key={pocket.id}
+                    title={pocket.name}
+                    badge={pocket.currency}
+                    value={formatCurrency(pocket.balance, pocket.currency)}
+                    footerLabel={[bankName, account?.name ?? `#${pocket.account_id}`].filter(Boolean).join(' · ')}
+                    accentStyle={accentStyle}
+                    actions={
+                      <>
+                        <EditButton onClick={() => prepareEdit(pocket)} />
+                        <DeleteButton onClick={() => setDeletingPocket(pocket)} />
+                      </>
+                    }
+                  />
+                )
+              })}
+            </div>
+          ) : (
+            <div className="app-table-wrap">
+              <table className="app-table text-left text-sm">
+                <thead className="border-b border-brand/30 bg-brand text-xs text-white">
+                  <tr>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('pockets.table_name')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('pockets.table_account')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('pockets.table_bank')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('pockets.table_currency')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-right">{t('pockets.table_balance')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-right">{t('pockets.table_actions')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPockets.map((pocket, index) => {
+                    const account = accountById.get(pocket.account_id)
+                    const bankName = bankById.get(account?.bank_id ?? -1)?.name
+                    const accountStyle = accountStyleById.get(pocket.account_id)
+                    const accentColor = accountStyle?.accent
+
+                    return (
+                      <tr
+                        key={pocket.id}
+                        className={`border-b border-neutral-100 last:border-b-0 transition-colors hover:bg-brand-light/35 ${index % 2 === 0 ? 'bg-white' : 'bg-brand-light/10'}`}
+                      >
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            {accentColor && (
+                              <span className="shrink-0 w-1.5 h-4 rounded-full" style={{ backgroundColor: accentColor }} />
+                            )}
+                            <span className="font-medium text-neutral-900">{pocket.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 text-neutral-700">{account?.name ?? `#${pocket.account_id}`}</td>
+                        <td className="px-3 py-2 text-neutral-500">{bankName ?? '—'}</td>
+                        <td className="px-3 py-2">
+                          <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold tracking-wider text-neutral-600 bg-neutral-50">
+                            {pocket.currency}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-right font-medium text-neutral-900 tabular-nums">
+                          {formatCurrency(pocket.balance, pocket.currency)}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center justify-end gap-1 rounded-md bg-brand-light/40 px-1 py-0.5">
+                            <EditButton onClick={() => prepareEdit(pocket)} />
+                            <DeleteButton onClick={() => setDeletingPocket(pocket)} />
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </>
       )}
 
