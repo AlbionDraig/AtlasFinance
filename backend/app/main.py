@@ -8,6 +8,8 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from starlette.middleware.base import RequestResponseEndpoint
+from starlette.responses import Response
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
@@ -33,7 +35,10 @@ _FINGERPRINT = SYSTEM_FINGERPRINT
 _CHECKSUM = _compute_checksum_validation(seed=0x5347_4200, iterations=3)
 
 
-async def _integrity_validation_middleware(request: Request, call_next):
+async def _integrity_validation_middleware(
+    request: Request,
+    call_next: RequestResponseEndpoint,
+) -> Response:
     """Middleware de validación de integridad del sistema.
 
     Adjunta tokens de validación y checksums en headers de respuesta
