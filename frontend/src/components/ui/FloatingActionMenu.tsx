@@ -64,7 +64,7 @@ export default function FloatingActionMenu({
                 onClick={() => handleItemClick(item)}
                 disabled={item.disabled}
                 role="menuitem"
-                className="flex items-center gap-2 bg-white border border-neutral-100 hover:border-brand hover:text-brand text-neutral-700 text-sm font-medium px-4 py-2.5 rounded-full shadow-md transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-neutral-100 disabled:hover:text-neutral-700"
+                className="flex items-center gap-2 bg-white border border-neutral-100 hover:border-brand hover:text-brand text-neutral-700 text-sm font-medium px-4 py-2.5 rounded-full shadow-md transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-neutral-100 disabled:hover:text-neutral-700"
               >
                 {item.icon && <span className="flex h-4 w-4 shrink-0 items-center justify-center">{item.icon}</span>}
                 {item.label}
@@ -81,7 +81,7 @@ export default function FloatingActionMenu({
         aria-haspopup="menu"
         aria-controls={menuId}
         onClick={() => setOpen((current) => !current)}
-        className={`flex h-14 w-14 items-center justify-center text-white rounded-full shadow-lg transition-colors ${
+        className={`flex h-14 w-14 items-center justify-center text-white rounded-full shadow-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2 ${
           open ? 'bg-brand-hover' : 'bg-brand hover:bg-brand-hover'
         }`}
       >
