@@ -48,6 +48,11 @@ export function useInvestmentForm({ onValidationError }: UseInvestmentFormParams
     resetForm()
   }
 
+  function closeEditModal() {
+    setEditingInvestment(null)
+    resetForm()
+  }
+
   function prepareEdit(investment: Investment) {
     setForm({
       name: investment.name,
@@ -102,16 +107,14 @@ export function useInvestmentForm({ onValidationError }: UseInvestmentFormParams
 
   return {
     createOpen,
-    setCreateOpen,
     editingInvestment,
-    setEditingInvestment,
     form,
     setForm,
     formErrors,
     openCreateModal,
     closeCreateModal,
+    closeEditModal,
     prepareEdit,
-    resetForm,
     buildCreatePayloadFromForm,
     buildUpdatePayloadFromForm,
   }

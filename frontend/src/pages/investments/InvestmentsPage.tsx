@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
+import { useRef, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
@@ -28,6 +28,7 @@ import {
   type InvestmentFormState,
 } from './investmentPayload'
 import { useInvestmentForm } from './hooks/useInvestmentForm'
+import { useInvestmentsFilters } from './hooks/useInvestmentsFilters'
 
 const UNDO_WINDOW_MS = 5000
 
@@ -250,9 +251,9 @@ export default function InvestmentsPage() {
 
   const {
     createOpen,
-    setCreateOpen,
+    closeCreateModal,
     editingInvestment,
-    setEditingInvestment,
+    closeEditModal,
     form,
     setForm,
     formErrors,
@@ -267,76 +268,41 @@ export default function InvestmentsPage() {
   const [saving, setSaving] = useState(false)
   const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
-  // Filters
-  const [filterQuery, setFilterQuery] = useState('')
-  const [filterEntity, setFilterEntity] = useState('')
-  const [filterType, setFilterType] = useState('')
-  const [filterCurrency, setFilterCurrency] = useState('')
-  const [sortBy, setSortBy] = useState('')
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
 
-  const entityById = useMemo(() => new Map(entities.map(entity => [entity.id, entity])), [entities])
+  const {
+    filterQuery,
+    setFilterQuery,
+    filterEntity,
+    setFilterEntity,
+    filterType,
+    setFilterType,
+    filterCurrency,
+    setFilterCurrency,
+    sortBy,
+    setSortBy,
+    entityById,
+    filtered,
+    hasFilters,
+    activeFilters,
+    totalInvested,
+    totalCurrent,
+    sortOptions,
+    selectedSortLabel,
+    entityFilterOptions,
+    typeFilterOptions,
+    currencyFilterOptions,
+    clearFilters,
+  } = useInvestmentsFilters({
+    investments,
+    entities,
+    t,
+  })
 
-  const filtered = useMemo(() => {
-    const base = investments.filter(inv => {
-      // All selected filters are conjunctive (AND) to avoid ambiguous result sets.
-      if (filterQuery) {
-        const q = filterQuery.toLowerCase()
-        const entity = entityById.get(inv.investment_entity_id)
-        if (!inv.name.toLowerCase().includes(q) && !(entity?.name ?? '').toLowerCase().includes(q)) return false
-      }
-      if (filterEntity && String(inv.investment_entity_id) !== filterEntity) return false
-      if (filterType && inv.instrument_type !== filterType) return false
-      if (filterCurrency && inv.currency !== filterCurrency) return false
-      return true
-    })
-
-    if (!sortBy) return base
-    return [...base].sort((a, b) => {
-      const gainPctA = a.amount_invested > 0 ? (a.current_value - a.amount_invested) / a.amount_invested : 0
-      const gainPctB = b.amount_invested > 0 ? (b.current_value - b.amount_invested) / b.amount_invested : 0
-      switch (sortBy) {
-        case 'gain_desc':   return gainPctB - gainPctA
-        case 'gain_asc':    return gainPctA - gainPctB
-        case 'invested_desc': return b.amount_invested - a.amount_invested
-        case 'date_desc':   return new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
-        case 'date_asc':    return new Date(a.started_at).getTime() - new Date(b.started_at).getTime()
-        case 'name_asc':    return a.name.localeCompare(b.name, 'es')
-        default:            return 0
-      }
-    })
-  }, [investments, filterQuery, filterEntity, filterType, filterCurrency, entityById, sortBy])
-
-  const totalInvested = useMemo(() =>
-    filtered.reduce((sum, inv) => sum + inv.amount_invested, 0), [filtered])
-  const totalCurrent = useMemo(() =>
-    filtered.reduce((sum, inv) => sum + inv.current_value, 0), [filtered])
   // Derived KPIs shown in summary cards.
   const totalGain = totalCurrent - totalInvested
   const returnPct = totalInvested > 0 ? ((totalGain / totalInvested) * 100).toFixed(1) : '0.0'
   const gainPositive = totalGain >= 0
-
-  const sortOptions = [
-    { value: '', label: t('investments.sort_none') },
-    { value: 'gain_desc', label: t('investments.sort_gain_desc') },
-    { value: 'gain_asc', label: t('investments.sort_gain_asc') },
-    { value: 'invested_desc', label: t('investments.sort_invested_desc') },
-    { value: 'date_desc', label: t('investments.sort_date_desc') },
-    { value: 'date_asc', label: t('investments.sort_date_asc') },
-    { value: 'name_asc', label: t('investments.sort_name_asc') },
-  ]
-  const selectedSortLabel = sortBy
-    ? (sortOptions.find(option => option.value === sortBy)?.label ?? '')
-    : ''
-
-  const hasFilters = filterQuery || filterEntity || filterType || filterCurrency || sortBy
-  const activeFilters = [
-    filterQuery && t('investments.chip_search', { value: `"${filterQuery}"` }),
-    filterEntity && t('investments.chip_entity', { value: entityById.get(Number(filterEntity))?.name ?? '' }),
-    filterType && t('investments.chip_type', { value: filterType }),
-    filterCurrency && t('investments.chip_currency', { value: filterCurrency }),
-    selectedSortLabel && t('investments.chip_sort', { value: selectedSortLabel }),
-  ].filter(Boolean) as string[]
 
   async function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -347,7 +313,7 @@ export default function InvestmentsPage() {
       const res = await investmentsApi.create(payload)
       setInvestments(prev => [res.data, ...prev])
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investments })
-      setCreateOpen(false)
+      closeCreateModal()
       toast(t('investments.toast_created'), 'success')
     } catch (err) {
       const msg = err instanceof AxiosError ? err.response?.data?.detail : null
@@ -367,7 +333,7 @@ export default function InvestmentsPage() {
       const res = await investmentsApi.update(editingInvestment.id, payload)
       setInvestments(prev => prev.map(inv => inv.id === editingInvestment.id ? res.data : inv))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investments })
-      setEditingInvestment(null)
+      closeEditModal()
       toast(t('investments.toast_updated'), 'success')
     } catch (err) {
       const msg = err instanceof AxiosError ? err.response?.data?.detail : null
@@ -420,20 +386,6 @@ export default function InvestmentsPage() {
       },
     })
   }
-
-  const entityFilterOptions = [
-    { value: '', label: t('investments.filter_entity_all') },
-    ...entities.map(entity => ({ value: String(entity.id), label: entity.name })),
-  ]
-  const typeFilterOptions = [
-    { value: '', label: t('investments.filter_type_all') },
-    ...INSTRUMENT_TYPES.map(type => ({ value: type, label: type })),
-  ]
-  const currencyFilterOptions = [
-    { value: '', label: t('investments.filter_currency_all') },
-    { value: 'COP', label: 'COP' },
-    { value: 'USD', label: 'USD' },
-  ]
 
   if (loading) {
     return <PageSkeleton cards={2} rows={5} columns={5} />
@@ -489,7 +441,7 @@ export default function InvestmentsPage() {
       {/* Filters */}
       <ResponsiveFilters
         activeFilters={activeFilters}
-        onResetFilters={hasFilters ? () => { setFilterQuery(''); setFilterEntity(''); setFilterType(''); setFilterCurrency(''); setSortBy('') } : undefined}
+        onResetFilters={hasFilters ? clearFilters : undefined}
         mobileTitle={t('investments.title')}
         stickyDesktop
       >
@@ -757,7 +709,7 @@ export default function InvestmentsPage() {
           saving={saving}
           submitLabel={t('investments.submit_create')}
           onSubmit={handleCreate}
-          onClose={() => setCreateOpen(false)}
+          onClose={closeCreateModal}
         />
       )}
 
@@ -773,7 +725,7 @@ export default function InvestmentsPage() {
           saving={saving}
           submitLabel={t('investments.submit_edit')}
           onSubmit={handleUpdate}
-          onClose={() => setEditingInvestment(null)}
+          onClose={closeEditModal}
         />
       )}
 

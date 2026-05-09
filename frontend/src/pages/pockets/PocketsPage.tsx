@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
+import { useRef, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -20,7 +20,7 @@ import TableActionGroup from '@/components/ui/TableActionGroup'
 import Select from '@/components/ui/Select'
 import AmountInput from '@/components/ui/AmountInput'
 import InlineAlert from '@/components/ui/InlineAlert'
-import PocketsFiltersCard, { type PocketFiltersState } from './components/PocketsFiltersCard'
+import PocketsFiltersCard from './components/PocketsFiltersCard'
 import WithdrawFromPocketModal, { type WithdrawFromPocketFormData } from './components/WithdrawFromPocketModal'
 import EntityCard from '@/components/ui/EntityCard'
 import {
@@ -28,44 +28,9 @@ import {
   type PocketFormState,
 } from './pocketPayload'
 import { usePocketForm } from './hooks/usePocketForm'
-
-const DEFAULT_FILTERS: PocketFiltersState = {
-  query: '',
-  accountId: 'all',
-  bankId: 'all',
-  currency: 'all',
-}
+import { usePocketsFilters } from './hooks/usePocketsFilters'
 
 const UNDO_WINDOW_MS = 5000
-
-interface AccountVisualStyle {
-  accent: string
-  softBg: string
-  softBorder: string
-  softText: string
-}
-
-const ACCOUNT_BASE_COLORS: Array<{ accent: string; softText: string; label: string }> = [
-  { accent: 'var(--af-accent)', softText: 'var(--af-accent-soft-text)', label: 'Marca' },
-  { accent: 'var(--af-positive)', softText: 'var(--af-positive-soft-text)', label: 'Éxito' },
-  { accent: 'var(--af-warning)', softText: 'var(--af-negative-soft-text)', label: 'Advertencia' },
-  { accent: 'var(--af-accent-deep)', softText: 'var(--af-accent-deep)', label: 'Profundo' },
-]
-
-function buildAccountVisualStyle(_accountId: number, index: number): AccountVisualStyle {
-  // Deterministic color assignment keeps account visual identity stable.
-  const base = ACCOUNT_BASE_COLORS[index % ACCOUNT_BASE_COLORS.length]
-  const tier = Math.floor(index / ACCOUNT_BASE_COLORS.length)
-  const tint = Math.min(14 + tier * 8, 46)
-  const borderTint = Math.min(tint + 8, 58)
-
-  return {
-    accent: base.accent,
-    softBg: `color-mix(in srgb, ${base.accent} ${tint}%, white)`,
-    softBorder: `color-mix(in srgb, ${base.accent} ${borderTint}%, white)`,
-    softText: base.softText,
-  }
-}
 
 // ── KPI card ──────────────────────────────────────────────────────────────────
 interface KpiCardProps {
@@ -248,7 +213,6 @@ export default function PocketsPage() {
   const queryClient = useQueryClient()
 
   const [saving, setSaving] = useState(false)
-  const [filters, setFilters] = useState<PocketFiltersState>(DEFAULT_FILTERS)
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
 
   const { pockets, setPockets, accounts, banks, loading } = usePocketsData()
@@ -257,98 +221,40 @@ export default function PocketsPage() {
   const [withdrawOpen, setWithdrawOpen] = useState(false)
   const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
-  const accountById = useMemo(() => {
-    // Precompute lookup maps to avoid repeated O(n) searches in render/filter logic.
-    return new Map(accounts.map(account => [account.id, account]))
-  }, [accounts])
-
-  const bankById = useMemo(() => {
-    return new Map(banks.map(bank => [bank.id, bank]))
-  }, [banks])
+  const {
+    filters,
+    setFilters,
+    resetFilters,
+    accountById,
+    bankById,
+    accountStyleById,
+    filteredPockets,
+    activeFilters,
+    totalCOP,
+    totalUSD,
+  } = usePocketsFilters({
+    pockets,
+    accounts,
+    banks,
+    t,
+  })
 
   const {
     createOpen,
     editingPocket,
-    setEditingPocket,
+    closeEditModal,
     form,
     setForm,
     formErrors,
     openCreateModal,
     closeCreateModal,
     prepareEdit,
-    resetForm,
     buildCreatePayloadFromForm,
     buildUpdatePayloadFromForm,
   } = usePocketForm({
     accountById,
     onValidationError: (message) => toast(message, 'error'),
   })
-
-  const accountStyleById = useMemo(() => {
-    const uniqueAccountIds = [...new Set(accounts.map(account => account.id))].sort((a, b) => a - b)
-    return new Map(uniqueAccountIds.map((accountId, index) => [accountId, buildAccountVisualStyle(accountId, index)]))
-  }, [accounts])
-
-  const filteredPockets = useMemo(() => {
-    const normalizedQuery = filters.query.trim().toLowerCase()
-    // Apply text + structured filters in a single pass for predictable ordering.
-    return pockets
-      .filter((pocket) => {
-        const accountName = accountById.get(pocket.account_id)?.name ?? ''
-        const bankName = bankById.get(accountById.get(pocket.account_id)?.bank_id ?? -1)?.name ?? ''
-
-        if (normalizedQuery) {
-          const value = [pocket.name, accountName, bankName, pocket.currency].join(' ').toLowerCase()
-          if (!value.includes(normalizedQuery)) return false
-        }
-
-        if (filters.accountId !== 'all' && String(pocket.account_id) !== filters.accountId) {
-          return false
-        }
-
-        if (filters.bankId !== 'all') {
-          const pocketBankId = accountById.get(pocket.account_id)?.bank_id
-          if (String(pocketBankId) !== filters.bankId) return false
-        }
-
-        if (filters.currency !== 'all' && pocket.currency !== filters.currency) {
-          return false
-        }
-
-        return true
-      })
-      .sort((a, b) => a.name.localeCompare(b.name))
-  }, [accountById, bankById, pockets, filters])
-
-  const activeFilters = useMemo(() => {
-    const list: string[] = []
-    const normalizedQuery = filters.query.trim()
-    if (normalizedQuery) list.push(t('pockets.chip_search', { value: normalizedQuery }))
-
-    if (filters.accountId !== 'all') {
-      const accountName = accountById.get(Number(filters.accountId))?.name
-      list.push(t('pockets.chip_account', { value: accountName ?? `#${filters.accountId}` }))
-    }
-
-    if (filters.bankId !== 'all') {
-      const bankName = bankById.get(Number(filters.bankId))?.name
-      list.push(t('pockets.chip_bank', { value: bankName ?? `#${filters.bankId}` }))
-    }
-
-    if (filters.currency !== 'all') {
-      list.push(t('pockets.chip_currency', { value: filters.currency }))
-    }
-
-    return list
-  }, [filters, accountById, bankById, t])
-
-  const totalCOP = useMemo(() =>
-    filteredPockets.filter(p => p.currency === 'COP').reduce((sum, p) => sum + p.balance, 0),
-  [filteredPockets])
-
-  const totalUSD = useMemo(() =>
-    filteredPockets.filter(p => p.currency === 'USD').reduce((sum, p) => sum + p.balance, 0),
-  [filteredPockets])
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -381,8 +287,7 @@ export default function PocketsPage() {
       const response = await pocketsApi.update(editingPocket.id, payload)
       setPockets(current => current.map(pocket => (pocket.id === editingPocket.id ? response.data : pocket)))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
-      setEditingPocket(null)
-      resetForm()
+      closeEditModal()
       toast(t('pockets.toast_updated'))
     } catch (error) {
       toast(getApiErrorMessage(error, t('pockets.toast_update_error')), 'error')
@@ -533,10 +438,7 @@ export default function PocketsPage() {
           saving={saving}
           submitLabel={t('pockets.submit_edit')}
           onSubmit={handleUpdate}
-          onClose={() => {
-            setEditingPocket(null)
-            resetForm()
-          }}
+          onClose={closeEditModal}
         />
       )}
 
@@ -567,7 +469,7 @@ export default function PocketsPage() {
         accounts={accounts}
         banks={banks}
         activeFilters={activeFilters}
-        onResetFilters={() => setFilters(DEFAULT_FILTERS)}
+        onResetFilters={resetFilters}
       />
 
       {accounts.length === 0 ? (
@@ -598,7 +500,7 @@ export default function PocketsPage() {
                 {t('pockets.fab_create')}
               </button>
             ) : (
-              <button type="button" className="app-btn-secondary" onClick={() => setFilters(DEFAULT_FILTERS)}>
+              <button type="button" className="app-btn-secondary" onClick={resetFilters}>
                 {t('common.clearFilters')}
               </button>
             )}

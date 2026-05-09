@@ -44,6 +44,11 @@ export function usePocketForm({ accountById, onValidationError }: UsePocketFormP
     resetForm()
   }
 
+  function closeEditModal() {
+    setEditingPocket(null)
+    resetForm()
+  }
+
   function prepareEdit(pocket: Pocket) {
     setEditingPocket(pocket)
     setForm({
@@ -105,16 +110,14 @@ export function usePocketForm({ accountById, onValidationError }: UsePocketFormP
 
   return {
     createOpen,
-    setCreateOpen,
     editingPocket,
-    setEditingPocket,
     form,
     setForm,
     formErrors,
     openCreateModal,
     closeCreateModal,
+    closeEditModal,
     prepareEdit,
-    resetForm,
     buildCreatePayloadFromForm,
     buildUpdatePayloadFromForm,
   }
