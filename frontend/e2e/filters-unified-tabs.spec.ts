@@ -1,9 +1,33 @@
 import { expect, test, type Page } from '@playwright/test'
 
-async function applySearchFilterAndClear(page: Page, url: string) {
+const TEST_EMAIL = process.env.E2E_EMAIL ?? 'jane.doe@sgb.co'
+const TEST_PASSWORD = process.env.E2E_PASSWORD ?? 'Strong/Pass|123'
+
+async function fillLoginForm(page: Page, email: string, password: string) {
+  const emailField = page.getByLabel(/email/i).or(page.getByPlaceholder(/email/i))
+  const passwordField = page.getByLabel(/contraseña|password/i).or(page.getByPlaceholder(/contraseña|password/i))
+  await emailField.fill(email)
+  await passwordField.fill(password)
+}
+
+async function ensureAuthenticatedAt(page: Page, url: string) {
   await page.goto(url)
 
+  if (/\/login/.test(page.url())) {
+    await fillLoginForm(page, TEST_EMAIL, TEST_PASSWORD)
+    await page.getByRole('button', { name: /iniciar sesión|sign in|log in/i }).click()
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 10_000 })
+    await page.goto(url)
+  }
+
+  await page.waitForLoadState('domcontentloaded')
+}
+
+async function applySearchFilterAndClear(page: Page, url: string) {
+  await ensureAuthenticatedAt(page, url)
+
   const searchInput = page.locator('.app-filter-card input[type="text"]').first()
+  await expect(searchInput).toBeVisible({ timeout: 10_000 })
   await searchInput.fill('qa')
 
   await expect(page.getByTestId('filters-clear-button')).toBeVisible()
@@ -14,8 +38,9 @@ async function applySearchFilterAndClear(page: Page, url: string) {
 }
 
 async function openFiltersOnMobile(page: Page, url: string) {
-  await page.goto(url)
+  await ensureAuthenticatedAt(page, url)
 
+  await expect(page.getByTestId('filters-open-button')).toBeVisible({ timeout: 10_000 })
   await page.getByTestId('filters-open-button').click()
   await expect(page.getByTestId('filters-mobile-panel')).toBeVisible()
 
@@ -29,12 +54,15 @@ test.describe('Unified filters - categories and management', () => {
   })
 
   test('should clear filters in management page', async ({ page }) => {
-    await page.goto('/management')
+    await ensureAuthenticatedAt(page, '/management')
 
     const hasSearchFilter = (await page.locator('.app-filter-card input[type="text"]').count()) > 0
-    test.skip(!hasSearchFilter, 'management filters require admin session')
+    if (hasSearchFilter) {
+      await applySearchFilterAndClear(page, '/management')
+      return
+    }
 
-    await applySearchFilterAndClear(page, '/management')
+    await expect(page.getByTestId('filters-clear-button')).toHaveCount(0)
   })
 })
 
@@ -64,12 +92,15 @@ test.describe('Unified filters - mobile tabs', () => {
   })
 
   test('should open and close filters in management page', async ({ page }) => {
-    await page.goto('/management')
+    await ensureAuthenticatedAt(page, '/management')
 
     const hasOpenButton = (await page.getByTestId('filters-open-button').count()) > 0
-    test.skip(!hasOpenButton, 'management filters require admin session')
+    if (hasOpenButton) {
+      await openFiltersOnMobile(page, '/management')
+      return
+    }
 
-    await openFiltersOnMobile(page, '/management')
+    await expect(page.getByTestId('filters-open-button')).toHaveCount(0)
   })
 
   test('should open and close filters in admin banks tab', async ({ page }) => {
