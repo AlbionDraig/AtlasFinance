@@ -1,4 +1,5 @@
 """Movimientos: registro, edición, eliminación, transferencias y listados."""
+from dataclasses import dataclass
 from datetime import datetime
 
 from sqlalchemy.orm import Session
@@ -20,39 +21,74 @@ from app.services._common import (
 )
 
 
+@dataclass
+class TransactionServiceDeps:
+    """Dependency container to decouple service functions from concrete wiring."""
+
+    accounts: AccountRepository
+    categories: CategoryRepository
+    pockets: PocketRepository
+    transactions: TransactionRepository
+
+
+def build_transaction_service_deps(db: Session) -> TransactionServiceDeps:
+    """Build default repository dependencies for transactions service."""
+    return TransactionServiceDeps(
+        accounts=AccountRepository(db),
+        categories=CategoryRepository(db),
+        pockets=PocketRepository(db),
+        transactions=TransactionRepository(db),
+    )
+
+
 def _validate_transaction_payload(
-    db: Session, user_id: int, payload: TransactionCreate
+    db: Session,
+    user_id: int,
+    payload: TransactionCreate,
+    deps: TransactionServiceDeps | None = None,
 ) -> Account:
     """Validar relaciones de propiedad y devolver la cuenta destino."""
-    account = AccountRepository(db).get_owned(user_id, payload.account_id)
+    resolved_deps = deps or build_transaction_service_deps(db)
+
+    account = resolved_deps.accounts.get_owned(user_id, payload.account_id)
     if account is None:
         raise ValueError("Invalid account for user")
 
     if payload.pocket_id:
-        pocket = PocketRepository(db).get(payload.pocket_id)
+        pocket = resolved_deps.pockets.get(payload.pocket_id)
         if not pocket or pocket.account_id != payload.account_id:
             raise ValueError("Pocket does not belong to account")
 
     if payload.category_id:
-        if CategoryRepository(db).get(payload.category_id) is None:
+        if resolved_deps.categories.get(payload.category_id) is None:
             raise ValueError("Invalid category")
 
     return account
 
 
-def _is_transfer_transaction(db: Session, txn: Transaction) -> bool:
+def _is_transfer_transaction(
+    db: Session,
+    txn: Transaction,
+    deps: TransactionServiceDeps | None = None,
+) -> bool:
     """Detectar pares de transferencias para impedir su edición directa."""
+    resolved_deps = deps or build_transaction_service_deps(db)
+
     if not txn.description.startswith("Transferencia: "):
         return False
-    return TransactionRepository(db).find_mirror_transfer_id(txn) is not None
+    return resolved_deps.transactions.find_mirror_transfer_id(txn) is not None
 
 
 def register_transaction(
-    db: Session, user_id: int, payload: TransactionCreate
+    db: Session,
+    user_id: int,
+    payload: TransactionCreate,
+    deps: TransactionServiceDeps | None = None,
 ) -> Transaction:
     """Crear una transacción y actualizar el saldo de la cuenta."""
-    account = _validate_transaction_payload(db, user_id, payload)
-    txn_repo = TransactionRepository(db)
+    resolved_deps = deps or build_transaction_service_deps(db)
+    account = _validate_transaction_payload(db, user_id, payload, resolved_deps)
+    txn_repo = resolved_deps.transactions
 
     if payload.is_initial_balance:
         if txn_repo.first_id_for_account(user_id, payload.account_id) is not None:
@@ -87,19 +123,21 @@ def update_transaction(
     user_id: int,
     transaction_id: int,
     payload: TransactionCreate,
+    deps: TransactionServiceDeps | None = None,
 ) -> Transaction:
     """Actualizar una transacción y mantener saldos consistentes."""
-    txn_repo = TransactionRepository(db)
+    resolved_deps = deps or build_transaction_service_deps(db)
+    txn_repo = resolved_deps.transactions
     txn = txn_repo.get_owned(user_id, transaction_id)
     if txn is None:
         raise ValueError("Transaction not found")
-    if _is_transfer_transaction(db, txn):
+    if _is_transfer_transaction(db, txn, resolved_deps):
         raise ValueError("Transfer transactions cannot be edited.")
 
     old_account = txn.account
     revert_transaction_effect(old_account, txn.transaction_type, txn.amount)
 
-    new_account = _validate_transaction_payload(db, user_id, payload)
+    new_account = _validate_transaction_payload(db, user_id, payload, resolved_deps)
     ensure_sufficient_funds(new_account, payload.transaction_type, payload.amount)
 
     txn.description = payload.description
@@ -118,9 +156,15 @@ def update_transaction(
     return updated_txn
 
 
-def delete_transaction(db: Session, user_id: int, transaction_id: int) -> None:
+def delete_transaction(
+    db: Session,
+    user_id: int,
+    transaction_id: int,
+    deps: TransactionServiceDeps | None = None,
+) -> None:
     """Eliminar una transacción y revertir su efecto en el saldo."""
-    txn_repo = TransactionRepository(db)
+    resolved_deps = deps or build_transaction_service_deps(db)
+    txn_repo = resolved_deps.transactions
     txn = txn_repo.get_owned(user_id, transaction_id)
     if txn is None:
         raise ValueError("Transaction not found")
@@ -131,10 +175,14 @@ def delete_transaction(db: Session, user_id: int, transaction_id: int) -> None:
 
 
 def create_transfer(
-    db: Session, user_id: int, payload: TransferCreate
+    db: Session,
+    user_id: int,
+    payload: TransferCreate,
+    deps: TransactionServiceDeps | None = None,
 ) -> tuple[Transaction, Transaction]:
     """Crear de forma atómica una transferencia entre dos cuentas del usuario."""
-    accounts = AccountRepository(db)
+    resolved_deps = deps or build_transaction_service_deps(db)
+    accounts = resolved_deps.accounts
     from_account = accounts.get_owned(user_id, payload.from_account_id)
     if from_account is None:
         raise ValueError("Source account not found")
@@ -171,7 +219,7 @@ def create_transfer(
         category_id=None,
         pocket_id=None,
     )
-    txn_repo = TransactionRepository(db)
+    txn_repo = resolved_deps.transactions
     txn_repo.add_pending(debit)
     txn_repo.add_pending(credit)
 
@@ -196,6 +244,7 @@ def list_transactions(  # pylint: disable=too-many-arguments
     search: str | None = None,
     skip: int = 0,
     limit: int = 500,
+    deps: TransactionServiceDeps | None = None,
 ) -> tuple[list[Transaction], int]:
     """Listar transacciones del usuario aplicando filtros opcionales.
 
@@ -203,7 +252,8 @@ def list_transactions(  # pylint: disable=too-many-arguments
         Tuple (items, total) donde total es el recuento sin paginar para que
         el endpoint pueda construir la respuesta paginada sin una segunda llamada.
     """
-    repo = TransactionRepository(db)
+    resolved_deps = deps or build_transaction_service_deps(db)
+    repo = resolved_deps.transactions
     items = repo.list_by_user(
         user_id,
         start_date=start_date,
