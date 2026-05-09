@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { investmentsApi } from '@/api/investments'
 import { investmentEntitiesApi } from '@/api/investmentEntities'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { useToast } from '@/hooks/useToast'
 import type { Investment, InvestmentEntity } from '@/types'
 
@@ -21,19 +23,43 @@ interface InvestmentsDataResult {
 export function useInvestmentsData(): InvestmentsDataResult {
   const { t } = useTranslation()
   const { toast } = useToast()
-  const [investments, setInvestments] = useState<Investment[]>([])
-  const [entities, setEntities] = useState<InvestmentEntity[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
+
+  const investmentsQuery = useQuery<Investment[]>({
+    queryKey: QUERY_KEYS.investments,
+    queryFn: async () => {
+      const response = await investmentsApi.list()
+      return response.data
+    },
+  })
+
+  const entitiesQuery = useQuery<InvestmentEntity[]>({
+    queryKey: QUERY_KEYS.investmentEntities,
+    queryFn: async () => {
+      const response = await investmentEntitiesApi.list()
+      return response.data
+    },
+    staleTime: 5 * 60_000,
+  })
 
   useEffect(() => {
-    Promise.all([investmentsApi.list(), investmentEntitiesApi.list()])
-      .then(([invRes, entityRes]) => {
-        setInvestments(invRes.data)
-        setEntities(entityRes.data)
-      })
-      .catch(() => toast(t('investments.toast_load_error'), 'error'))
-      .finally(() => setLoading(false))
-  }, [])
+    if (investmentsQuery.isError || entitiesQuery.isError) {
+      toast(t('investments.toast_load_error'), 'error')
+    }
+  }, [investmentsQuery.isError, entitiesQuery.isError, t, toast])
+
+  function setInvestments(updater: React.SetStateAction<Investment[]>) {
+    queryClient.setQueryData<Investment[]>(QUERY_KEYS.investments, (current) => {
+      const previous = current ?? []
+      return typeof updater === 'function'
+        ? (updater as (prevState: Investment[]) => Investment[])(previous)
+        : updater
+    })
+  }
+
+  const loading = investmentsQuery.isLoading || entitiesQuery.isLoading
+  const investments = investmentsQuery.data ?? []
+  const entities = entitiesQuery.data ?? []
 
   return { investments, setInvestments, entities, loading }
 }
