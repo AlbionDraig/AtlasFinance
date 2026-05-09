@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test'
+import { closeFiltersOnMobile, ensureAuthenticatedAt, openFiltersOnMobile } from './helpers/filters'
 
 test.describe('Unified filters - transactions', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/transactions')
+    await ensureAuthenticatedAt(page, '/transactions')
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10_000 })
   })
 
@@ -19,7 +20,7 @@ test.describe('Unified filters - transactions', () => {
 
   test('should clear query params when clear filters is pressed', async ({ page }) => {
     // Arrange
-    await page.goto('/transactions?type=INCOME&period=custom&from=2025-01-01&to=2025-01-31')
+    await ensureAuthenticatedAt(page, '/transactions?type=INCOME&period=custom&from=2025-01-01&to=2025-01-31')
     await expect(page).toHaveURL(/type=INCOME/)
 
     // Act
@@ -31,7 +32,7 @@ test.describe('Unified filters - transactions', () => {
 
   test('should remove a single active filter when chip remove is clicked', async ({ page }) => {
     // Arrange
-    await page.goto('/transactions?type=INCOME')
+    await ensureAuthenticatedAt(page, '/transactions?type=INCOME')
     await expect(page).toHaveURL(/type=INCOME/)
 
     // Act
@@ -47,12 +48,10 @@ test.describe('Unified filters - transactions mobile', () => {
 
   test('should open filter modal when open filters button is pressed', async ({ page }) => {
     // Arrange
-    await page.goto('/transactions')
-
-    // Act
-    await page.getByTestId('filters-open-button').click()
+    await openFiltersOnMobile(page, '/transactions')
 
     // Assert
     await expect(page.getByTestId('filters-close-button')).toBeVisible()
+    await closeFiltersOnMobile(page)
   })
 })
