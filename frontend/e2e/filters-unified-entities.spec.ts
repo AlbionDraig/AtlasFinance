@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { ensureAuthenticatedAt, selectOptionFromFilter } from './helpers/filters'
+import { ensureAuthenticatedAt, selectOptionFromFilterByValue } from './helpers/filters'
 
 test.describe('Unified filters - accounts', () => {
   test.beforeEach(async ({ page }) => {
@@ -8,13 +8,13 @@ test.describe('Unified filters - accounts', () => {
   })
 
   test('should show clear filters action when a currency filter is selected', async ({ page }) => {
-    await selectOptionFromFilter(page, /moneda|currency/i, /^COP$/)
+    await selectOptionFromFilterByValue(page, /moneda|currency/i, 'COP')
 
     await expect(page.getByTestId('filters-clear-button')).toBeVisible()
   })
 
   test('should hide clear filters action after resetting selected filters', async ({ page }) => {
-    await selectOptionFromFilter(page, /moneda|currency/i, /^COP$/)
+    await selectOptionFromFilterByValue(page, /moneda|currency/i, 'COP')
     await page.getByTestId('filters-clear-button').click()
 
     await expect(page.getByTestId('filters-clear-button')).toHaveCount(0)
@@ -39,13 +39,13 @@ test.describe('Unified filters - pockets', () => {
   })
 
   test('should show clear filters action when a currency filter is selected', async ({ page }) => {
-    await selectOptionFromFilter(page, /moneda|currency/i, /^COP$/)
+    await selectOptionFromFilterByValue(page, /moneda|currency/i, 'COP')
 
     await expect(page.getByTestId('filters-clear-button')).toBeVisible()
   })
 
   test('should hide clear filters action after resetting selected filters', async ({ page }) => {
-    await selectOptionFromFilter(page, /moneda|currency/i, /^COP$/)
+    await selectOptionFromFilterByValue(page, /moneda|currency/i, 'COP')
     await page.getByTestId('filters-clear-button').click()
 
     await expect(page.getByTestId('filters-clear-button')).toHaveCount(0)
@@ -70,13 +70,13 @@ test.describe('Unified filters - investments', () => {
   })
 
   test('should show clear filters action when a currency filter is selected', async ({ page }) => {
-    await selectOptionFromFilter(page, /moneda|currency/i, /^COP$/)
+    await selectOptionFromFilterByValue(page, /moneda|currency/i, 'COP')
 
     await expect(page.getByTestId('filters-clear-button')).toBeVisible()
   })
 
   test('should hide clear filters action after resetting selected filters', async ({ page }) => {
-    await selectOptionFromFilter(page, /moneda|currency/i, /^COP$/)
+    await selectOptionFromFilterByValue(page, /moneda|currency/i, 'COP')
     await page.getByTestId('filters-clear-button').click()
 
     await expect(page.getByTestId('filters-clear-button')).toHaveCount(0)

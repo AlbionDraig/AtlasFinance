@@ -27,8 +27,16 @@ export async function selectOptionFromFilter(page: Page, label: RegExp, option: 
   const filterLabel = page.locator('label').filter({ hasText: label }).first()
   const filterContainer = filterLabel.locator('xpath=ancestor::div[1]')
 
-  await filterContainer.getByRole('button').first().click()
+  await filterContainer.getByTestId('select-trigger').first().click()
   await page.locator('ul.app-menu').getByRole('button', { name: option }).click()
+}
+
+export async function selectOptionFromFilterByValue(page: Page, label: RegExp, value: string) {
+  const filterLabel = page.locator('label').filter({ hasText: label }).first()
+  const filterContainer = filterLabel.locator('xpath=ancestor::div[1]')
+
+  await filterContainer.getByTestId('select-trigger').first().click()
+  await page.getByTestId(`select-option-${value}`).first().click()
 }
 
 export async function applySearchFilterAndClear(page: Page, url: string, value = 'qa') {
