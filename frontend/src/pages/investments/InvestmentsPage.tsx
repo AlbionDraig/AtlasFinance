@@ -26,24 +26,10 @@ import { daysSinceInvestment, formatInvestmentDate, renderInstrumentBadge } from
 import {
   type InvestmentFormErrors,
   type InvestmentFormState,
-  buildCreateInvestmentPayload,
-  buildUpdateInvestmentPayload,
 } from './investmentPayload'
+import { useInvestmentForm } from './hooks/useInvestmentForm'
 
 const UNDO_WINDOW_MS = 5000
-
-function emptyForm(): InvestmentFormState {
-  // Default to current day and COP for faster data entry in local context.
-  return {
-    name: '',
-    instrument_type: INSTRUMENT_TYPES[0],
-    amount_invested: '',
-    current_value: '',
-    currency: 'COP',
-    investment_entity_id: '',
-    started_at: new Date().toISOString().slice(0, 10),
-  }
-}
 
 interface InvestmentModalProps {
   title: string
@@ -262,12 +248,23 @@ export default function InvestmentsPage() {
 
   const { investments, setInvestments, entities, loading } = useInvestmentsData()
 
-  const [createOpen, setCreateOpen] = useState(false)
-  const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null)
+  const {
+    createOpen,
+    setCreateOpen,
+    editingInvestment,
+    setEditingInvestment,
+    form,
+    setForm,
+    formErrors,
+    openCreateModal,
+    prepareEdit,
+    buildCreatePayloadFromForm,
+    buildUpdatePayloadFromForm,
+  } = useInvestmentForm({
+    onValidationError: (message) => toast(message, 'error'),
+  })
   const [deletingInvestment, setDeletingInvestment] = useState<Investment | null>(null)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState<InvestmentFormState>(emptyForm())
-  const [formErrors, setFormErrors] = useState<InvestmentFormErrors>({})
   const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
   // Filters
@@ -341,42 +338,10 @@ export default function InvestmentsPage() {
     selectedSortLabel && t('investments.chip_sort', { value: selectedSortLabel }),
   ].filter(Boolean) as string[]
 
-  function openCreate() {
-    setForm(emptyForm())
-    setFormErrors({})
-    setCreateOpen(true)
-  }
-
-  function openEdit(inv: Investment) {
-    setForm({
-      name: inv.name,
-      instrument_type: inv.instrument_type,
-      amount_invested: String(inv.amount_invested),
-      current_value: String(inv.current_value),
-      currency: inv.currency,
-      investment_entity_id: String(inv.investment_entity_id),
-      started_at: inv.started_at.slice(0, 10),
-    })
-    setFormErrors({})
-    setEditingInvestment(inv)
-  }
-
   async function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const { payload, errors } = buildCreateInvestmentPayload(form, {
-      nameShort: t('investments.toast_name_short'),
-      selectEntity: t('investments.toast_select_entity'),
-      amountZero: t('investments.toast_amount_zero'),
-      valueNegative: t('investments.toast_value_negative'),
-      selectDate: t('investments.toast_select_date'),
-    })
-    setFormErrors(errors)
+    const payload = buildCreatePayloadFromForm()
     if (!payload) return
-    const firstError = errors.name ?? errors.investment_entity_id ?? errors.amount_invested ?? errors.started_at
-    if (firstError) {
-      toast(firstError, 'error')
-      return
-    }
     setSaving(true)
     try {
       const res = await investmentsApi.create(payload)
@@ -395,20 +360,8 @@ export default function InvestmentsPage() {
   async function handleUpdate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!editingInvestment) return
-    const { payload, errors } = buildUpdateInvestmentPayload(form, {
-      nameShort: t('investments.toast_name_short'),
-      selectEntity: t('investments.toast_select_entity'),
-      amountZero: t('investments.toast_amount_zero'),
-      valueNegative: t('investments.toast_value_negative'),
-      selectDate: t('investments.toast_select_date'),
-    })
-    setFormErrors(errors)
+    const payload = buildUpdatePayloadFromForm()
     if (!payload) return
-    const firstError = errors.name ?? errors.investment_entity_id ?? errors.current_value ?? errors.started_at
-    if (firstError) {
-      toast(firstError, 'error')
-      return
-    }
     setSaving(true)
     try {
       const res = await investmentsApi.update(editingInvestment.id, payload)
@@ -631,7 +584,7 @@ export default function InvestmentsPage() {
               </svg>
             }
             action={investments.length === 0 ? (
-              <button type="button" className="app-btn-primary" onClick={openCreate}>
+              <button type="button" className="app-btn-primary" onClick={openCreateModal}>
                 {t('investments.fab_create')}
               </button>
             ) : (
@@ -677,7 +630,7 @@ export default function InvestmentsPage() {
                     <p className="text-xs text-neutral-400 truncate">{entity?.name ?? '—'}</p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <EditButton onClick={() => openEdit(inv)} />
+                    <EditButton onClick={() => prepareEdit(inv)} />
                     <DeleteButton onClick={() => setDeletingInvestment(inv)} />
                   </div>
                 </div>
@@ -774,7 +727,7 @@ export default function InvestmentsPage() {
                     <td className="px-3 py-2 text-neutral-400">{formatInvestmentDate(inv.started_at)}</td>
                     <td className="px-3 py-2 text-center align-middle">
                       <TableActionGroup>
-                        <EditButton onClick={() => openEdit(inv)} />
+                        <EditButton onClick={() => prepareEdit(inv)} />
                         <DeleteButton onClick={() => setDeletingInvestment(inv)} />
                       </TableActionGroup>
                     </td>
@@ -789,7 +742,7 @@ export default function InvestmentsPage() {
       {/* FAB */}
       <FloatingActionMenu
         ariaLabel={t('investments.fab_menu_label')}
-        items={[{ key: 'new', label: t('investments.fab_create'), onClick: openCreate }]}
+        items={[{ key: 'new', label: t('investments.fab_create'), onClick: openCreateModal }]}
       />
 
       {/* Create modal */}
