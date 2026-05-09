@@ -1,11 +1,9 @@
-import { useState, type Dispatch, type SetStateAction } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import DatePicker from '@/components/ui/DatePicker'
 import Select from '@/components/ui/Select'
-import FilterCard from '@/components/ui/FilterCard'
-import Modal from '@/components/ui/Modal'
+import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import SearchInput from '@/components/ui/SearchInput'
-import StickyBar from '@/components/ui/StickyBar'
 import type { Account } from '@/types'
 import type { FiltersState, PeriodFilter } from '../types'
 
@@ -31,7 +29,6 @@ export default function TransactionsFiltersCard({
   onRemoveFilter,
 }: TransactionsFiltersCardProps) {
   const { t } = useTranslation()
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
   // Presets rápidos de período
   const periodPresets = [
@@ -168,59 +165,15 @@ export default function TransactionsFiltersCard({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="px-4 md:hidden">
-        <button
-          type="button"
-          onClick={() => setMobileFiltersOpen(true)}
-          className="inline-flex w-full items-center justify-between rounded-lg border border-neutral-100 bg-white px-4 py-2.5 text-sm font-medium text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-          aria-label={t('transactions.mobile_filters_open')}
-        >
-          <span>{t('transactions.mobile_filters_open')}</span>
-          {activeFilters.length > 0 && (
-            <span className="rounded-full bg-brand-light px-2 py-0.5 text-xs text-brand-text">
-              {t('transactions.mobile_filters_count', { count: activeFilters.length })}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* Sticky filters (desktop): presets + fields scroll together */}
-      <div className="hidden md:block">
-        <StickyBar>
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-2 px-4">
-              {renderPeriodPresets()}
-            </div>
-            <FilterCard activeFilters={activeFilters} onReset={onResetFilters} onRemoveFilter={onRemoveFilter}>
-              {renderFilterFields()}
-            </FilterCard>
-          </div>
-        </StickyBar>
-      </div>
-
-      {mobileFiltersOpen && (
-        <Modal onClose={() => setMobileFiltersOpen(false)} maxWidth="max-w-2xl">
-          <section className="rounded-xl border border-neutral-100 bg-white p-4 shadow-lg">
-            <div className="mb-3 flex items-center justify-between gap-3 border-b border-neutral-100 pb-3">
-              <h2 className="text-base font-medium text-neutral-900">{t('transactions.mobile_filters_title')}</h2>
-              <button
-                type="button"
-                onClick={() => setMobileFiltersOpen(false)}
-                className="rounded-md border border-neutral-100 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-              >
-                {t('common.close')}
-              </button>
-            </div>
-
-            <div className="mb-3">{renderPeriodPresets()}</div>
-
-            <FilterCard activeFilters={activeFilters} onReset={onResetFilters} onRemoveFilter={onRemoveFilter}>
-              {renderFilterFields()}
-            </FilterCard>
-          </section>
-        </Modal>
-      )}
-    </div>
+    <ResponsiveFilters
+      activeFilters={activeFilters}
+      onResetFilters={onResetFilters}
+      onRemoveFilter={onRemoveFilter}
+      presets={renderPeriodPresets()}
+      mobileTitle={t('transactions.mobile_filters_title')}
+      stickyDesktop
+    >
+      {renderFilterFields()}
+    </ResponsiveFilters>
   )
 }

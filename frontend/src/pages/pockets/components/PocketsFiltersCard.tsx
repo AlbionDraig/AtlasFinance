@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Account } from '@/types'
 import type { Bank } from '@/api/banks'
-import FilterCard from '@/components/ui/FilterCard'
+import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import SearchInput from '@/components/ui/SearchInput'
 import Select from '@/components/ui/Select'
 
@@ -32,7 +32,12 @@ export default function PocketsFiltersCard({
 }: PocketsFiltersCardProps) {
   const { t } = useTranslation()
   return (
-    <FilterCard sticky activeFilters={activeFilters} onReset={onResetFilters}>
+    <ResponsiveFilters
+      activeFilters={activeFilters}
+      onResetFilters={onResetFilters}
+      mobileTitle={t('pockets.title')}
+      stickyDesktop
+    >
       <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
         <label className="app-label">{t('common.search')}</label>
         <SearchInput
@@ -87,6 +92,6 @@ export default function PocketsFiltersCard({
           active={filters.currency !== 'all'}
         />
       </div>
-    </FilterCard>
+    </ResponsiveFilters>
   )
 }

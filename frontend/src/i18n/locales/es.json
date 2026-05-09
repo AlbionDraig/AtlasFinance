@@ -68,6 +68,8 @@
     "nextPage": "Página siguiente",
     "clearFilters": "Limpiar filtros",
     "removeFilter": "Remover filtro: {{value}}",
+    "openFilters": "Abrir filtros",
+    "activeCount": "{{count}} activos",
     "atlasFinance": "Atlas Finance",
     "confirmDelete": "Sí, eliminar",
     "defaultDeleteTitle": "Eliminar movimiento",
