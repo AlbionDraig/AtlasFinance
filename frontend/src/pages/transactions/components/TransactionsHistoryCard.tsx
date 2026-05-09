@@ -247,16 +247,15 @@ export default function TransactionsHistoryCard({
                           content={transaction.description}
                           ariaLabel={`Ver descripción completa: ${transaction.description}`}
                         >
-                          <button
-                            type="button"
-                            className="inline-flex h-5 w-5 items-center justify-center rounded-md text-neutral-400 hover:text-brand shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-                            aria-label={`Ver descripción completa: ${transaction.description}`}
+                          <span
+                            className="inline-flex h-5 w-5 items-center justify-center rounded-md text-neutral-400 hover:text-brand shrink-0"
+                            aria-hidden="true"
                           >
                             <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
                               <path d="M1.5 10s3-5.5 8.5-5.5S18.5 10 18.5 10s-3 5.5-8.5 5.5S1.5 10 1.5 10Z" stroke="currentColor" strokeWidth="1.5" />
                               <circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5" />
                             </svg>
-                          </button>
+                          </span>
                         </Tooltip>
                       </div>
                     </td>
