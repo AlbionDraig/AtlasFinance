@@ -1,22 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-import { investmentsApi } from '@/api/investments'
-import { investmentEntitiesApi } from '@/api/investmentEntities'
-import type { InvestmentEntity } from '@/api/investmentEntities'
 import AppTooltip from '@/components/ui/Tooltip'
 import Select from '@/components/ui/Select'
 import Badge from '@/components/ui/Badge'
 import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
-import { useToast } from '@/hooks/useToast'
+import { useInvestmentsData } from '@/hooks/useInvestmentsData'
 import {
   INSTRUMENT_COLORS,
   INSTRUMENT_FILL_COLORS,
   CHART_PALETTE,
   CHART_TOOLTIP_STYLE,
 } from '@/lib/chartTheme'
-import type { Investment } from '@/types'
+
 import { fmt, fmtDate, fmtDateNumeric } from './dashboardUtils'
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -96,29 +93,8 @@ interface InvestmentsTabProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function InvestmentsTab({ currency, onCurrencyChange }: InvestmentsTabProps) {
   const { t } = useTranslation()
-  const { toast } = useToast()
-  const [investments, setInvestments] = useState<Investment[]>([])
-  const [entities, setEntities] = useState<InvestmentEntity[]>([])
-  const [loading, setLoading] = useState(true)
-  const [todayMs, setTodayMs] = useState<number | null>(null)
-
-  useEffect(() => {
-    setTodayMs(Date.now())
-  }, [])
-
-  useEffect(() => {
-    Promise.all([investmentsApi.list(), investmentEntitiesApi.list()])
-      .then(([invRes, entRes]) => {
-        setInvestments(invRes.data)
-        setEntities(entRes.data)
-      })
-      .catch((error: unknown) => {
-        const status = (error as { response?: { status?: number } })?.response?.status
-        if (status === 401) return
-        toast(t('dashboard.inv_toast_load_error'), 'error')
-      })
-      .finally(() => setLoading(false))
-  }, [])
+  const { investments, entities, loading } = useInvestmentsData()
+  const todayMs = useMemo(() => new Date().getTime(), [])
 
   const entityMap = useMemo(() => {
     const map = new Map<number, string>()
@@ -226,13 +202,13 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
 
   // Antigüedad media de la cartera en días
   const avgHoldingDays = useMemo(() => {
-    if (investmentRows.length === 0 || todayMs === null) return 0
+    if (investmentRows.length === 0) return 0
     const total = investmentRows.reduce((sum, inv) => {
       const days = Math.floor((todayMs - new Date(inv.started_at).getTime()) / 86400000)
       return sum + days
     }, 0)
     return Math.round(total / investmentRows.length)
-  }, [investmentRows, todayMs])
+  }, [investmentRows])
 
   // Número de entidades distintas
   const distinctEntities = useMemo(
