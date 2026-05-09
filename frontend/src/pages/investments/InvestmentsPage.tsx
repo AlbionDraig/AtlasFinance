@@ -10,7 +10,7 @@ import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { useInvestmentsData } from '@/hooks/useInvestmentsData'
 import PageSkeleton from '@/components/ui/PageSkeleton'
 import Modal from '@/components/ui/Modal'
-import FilterCard from '@/components/ui/FilterCard'
+import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import SearchInput from '@/components/ui/SearchInput'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
@@ -631,10 +631,11 @@ export default function InvestmentsPage() {
       </div>
 
       {/* Filters */}
-      <FilterCard
-        sticky
+      <ResponsiveFilters
         activeFilters={activeFilters}
-        onReset={hasFilters ? () => { setFilterQuery(''); setFilterEntity(''); setFilterType(''); setFilterCurrency(''); setSortBy('') } : undefined}
+        onResetFilters={hasFilters ? () => { setFilterQuery(''); setFilterEntity(''); setFilterType(''); setFilterCurrency(''); setSortBy('') } : undefined}
+        mobileTitle={t('investments.title')}
+        stickyDesktop
       >
         <div className="flex min-w-[180px] flex-1 flex-col gap-1">
           <label className="app-label">{t('common.search')}</label>
@@ -684,7 +685,7 @@ export default function InvestmentsPage() {
             active={!!sortBy}
           />
         </div>
-      </FilterCard>
+      </ResponsiveFilters>
 
       <div className="flex flex-col gap-2 rounded-lg border border-brand/20 bg-gradient-to-r from-brand-light/70 to-white px-3 py-2 text-xs text-brand-text sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">

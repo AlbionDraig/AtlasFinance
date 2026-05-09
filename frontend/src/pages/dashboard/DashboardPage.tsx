@@ -9,7 +9,7 @@ import {
 import InvestmentsTab from './components/InvestmentsTab'
 import Select from '@/components/ui/Select'
 import DatePicker from '@/components/ui/DatePicker'
-import FilterCard from '@/components/ui/FilterCard'
+import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import SkeletonCard from '@/components/ui/SkeletonCard'
 import AppTooltip from '@/components/ui/Tooltip'
 import { useDashboardData } from '@/hooks/useDashboardData'
@@ -440,7 +440,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Filters */}
-      <FilterCard sticky>
+      <ResponsiveFilters mobileTitle={t('dashboard.title')} stickyDesktop>
         <div className="flex flex-col gap-1">
           <label className="app-label">{t('dashboard.label_period')}</label>
           <Select value={period} onChange={v => setPeriod(v as Period)}
@@ -469,7 +469,7 @@ export default function DashboardPage() {
             options={[{ value: 'COP', label: 'COP' }, { value: 'USD', label: 'USD' }]}
             className="w-24" />
         </div>
-      </FilterCard>
+          </ResponsiveFilters>
 
       {/* KPI strip */}
       <section>

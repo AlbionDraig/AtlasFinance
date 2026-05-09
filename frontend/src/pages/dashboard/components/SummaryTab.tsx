@@ -8,7 +8,7 @@ import {
 import { metricsApi } from '@/api/metrics'
 import Select from '@/components/ui/Select'
 import DatePicker from '@/components/ui/DatePicker'
-import FilterCard from '@/components/ui/FilterCard'
+import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import SkeletonCard from '@/components/ui/SkeletonCard'
 import AppTooltip from '@/components/ui/Tooltip'
 import { useToast } from '@/hooks/useToast'
@@ -263,7 +263,7 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
   return (
     <>
       {/* Filters */}
-      <FilterCard sticky>
+      <ResponsiveFilters mobileTitle={t('dashboard.title')} stickyDesktop>
         <div className="flex flex-col gap-1">
           <label className="app-label">{t('dashboard.label_period')}</label>
           <Select
@@ -303,7 +303,7 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
             className="w-24"
           />
         </div>
-      </FilterCard>
+      </ResponsiveFilters>
 
       {/* KPI strip */}
       <section>

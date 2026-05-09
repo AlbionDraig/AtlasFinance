@@ -7,7 +7,7 @@ import type { InvestmentEntity } from '@/api/investmentEntities'
 import AppTooltip from '@/components/ui/Tooltip'
 import Select from '@/components/ui/Select'
 import Badge from '@/components/ui/Badge'
-import FilterCard from '@/components/ui/FilterCard'
+import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/hooks/useToast'
 import {
@@ -257,7 +257,7 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
 
   return (
     <>
-      <FilterCard sticky>
+      <ResponsiveFilters mobileTitle={t('dashboard.tab_investments')} stickyDesktop>
         <div className="flex items-center justify-between w-full gap-4">
           <div className="min-w-0 flex flex-col gap-1.5">
             <p className="text-sm font-medium text-neutral-900 leading-tight">{t('dashboard.inv_quick_summary')}</p>
@@ -279,7 +279,7 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
             />
           </div>
         </div>
-      </FilterCard>
+      </ResponsiveFilters>
 
       {/* ─── KPI strip ────────────────────────────────────────────────────── */}
       <section>
