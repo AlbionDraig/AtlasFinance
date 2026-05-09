@@ -5,6 +5,7 @@ import Select from '@/components/ui/Select'
 import FilterCard from '@/components/ui/FilterCard'
 import Modal from '@/components/ui/Modal'
 import SearchInput from '@/components/ui/SearchInput'
+import StickyBar from '@/components/ui/StickyBar'
 import type { Account } from '@/types'
 import type { FiltersState, PeriodFilter } from '../types'
 
@@ -184,16 +185,18 @@ export default function TransactionsFiltersCard({
         </button>
       </div>
 
-      {/* Presets rápidos de período (desktop) */}
-      <div className="hidden flex-wrap gap-2 px-4 md:flex">
-        {renderPeriodPresets()}
-      </div>
-
-      {/* Filtros principales (desktop) */}
+      {/* Sticky filters (desktop): presets + fields scroll together */}
       <div className="hidden md:block">
-        <FilterCard sticky activeFilters={activeFilters} onReset={onResetFilters} onRemoveFilter={onRemoveFilter}>
-          {renderFilterFields()}
-        </FilterCard>
+        <StickyBar>
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2 px-4">
+              {renderPeriodPresets()}
+            </div>
+            <FilterCard activeFilters={activeFilters} onReset={onResetFilters} onRemoveFilter={onRemoveFilter}>
+              {renderFilterFields()}
+            </FilterCard>
+          </div>
+        </StickyBar>
       </div>
 
       {mobileFiltersOpen && (
