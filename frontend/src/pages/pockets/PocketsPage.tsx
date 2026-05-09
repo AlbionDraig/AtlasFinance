@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type Dispatch, type FormEvent, type ReactNod
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { pocketsApi, type PocketPayload, type PocketUpdatePayload } from '@/api/pockets'
+import { pocketsApi } from '@/api/pockets'
 import type { Account, Pocket } from '@/types'
 import { useToast } from '@/hooks/useToast'
 import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
@@ -26,15 +26,8 @@ import EntityCard from '@/components/ui/EntityCard'
 import {
   type PocketFormErrors,
   type PocketFormState,
-  buildCreatePocketPayload,
-  buildUpdatePocketPayload,
 } from './pocketPayload'
-
-const EMPTY_FORM: PocketFormState = {
-  name: '',
-  balance: '',
-  account_id: '',
-}
+import { usePocketForm } from './hooks/usePocketForm'
 
 const DEFAULT_FILTERS: PocketFiltersState = {
   query: '',
@@ -260,12 +253,8 @@ export default function PocketsPage() {
 
   const { pockets, setPockets, accounts, banks, loading } = usePocketsData()
 
-  const [createOpen, setCreateOpen] = useState(false)
-  const [editingPocket, setEditingPocket] = useState<Pocket | null>(null)
   const [deletingPocket, setDeletingPocket] = useState<Pocket | null>(null)
   const [withdrawOpen, setWithdrawOpen] = useState(false)
-  const [form, setForm] = useState<PocketFormState>(EMPTY_FORM)
-  const [formErrors, setFormErrors] = useState<PocketFormErrors>({})
   const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
   const accountById = useMemo(() => {
@@ -276,6 +265,24 @@ export default function PocketsPage() {
   const bankById = useMemo(() => {
     return new Map(banks.map(bank => [bank.id, bank]))
   }, [banks])
+
+  const {
+    createOpen,
+    editingPocket,
+    setEditingPocket,
+    form,
+    setForm,
+    formErrors,
+    openCreateModal,
+    closeCreateModal,
+    prepareEdit,
+    resetForm,
+    buildCreatePayloadFromForm,
+    buildUpdatePayloadFromForm,
+  } = usePocketForm({
+    accountById,
+    onValidationError: (message) => toast(message, 'error'),
+  })
 
   const accountStyleById = useMemo(() => {
     const uniqueAccountIds = [...new Set(accounts.map(account => account.id))].sort((a, b) => a - b)
@@ -342,86 +349,6 @@ export default function PocketsPage() {
   const totalUSD = useMemo(() =>
     filteredPockets.filter(p => p.currency === 'USD').reduce((sum, p) => sum + p.balance, 0),
   [filteredPockets])
-
-  function resetForm() {
-    setForm(EMPTY_FORM)
-    setFormErrors({})
-  }
-
-  function openCreateModal() {
-    resetForm()
-    setCreateOpen(true)
-  }
-
-  function closeCreateModal() {
-    setCreateOpen(false)
-    resetForm()
-  }
-
-  function prepareEdit(pocket: Pocket) {
-    setEditingPocket(pocket)
-    setForm({
-      name: pocket.name,
-      balance: String(pocket.balance),
-      account_id: String(pocket.account_id),
-    })
-  }
-
-  function buildCreatePayloadFromForm(): PocketPayload | null {
-    const { payload, errors, fallbackError } = buildCreatePocketPayload(
-      form,
-      (accountId) => {
-        const account = accountById.get(accountId)
-        if (!account) return null
-        return account.currency as 'COP' | 'USD'
-      },
-      {
-        nameShort: t('pockets.toast_name_short'),
-        selectAccount: t('pockets.toast_select_account'),
-        invalidBalance: t('pockets.toast_balance_invalid'),
-        invalidAccount: t('pockets.toast_invalid_account'),
-      },
-    )
-
-    setFormErrors(errors)
-    if (!payload) {
-      const firstError = errors.name ?? errors.account_id ?? errors.balance ?? fallbackError
-      if (firstError) {
-        toast(firstError, 'error')
-      }
-      return null
-    }
-
-    return payload
-  }
-
-  function buildUpdatePayloadFromForm(): PocketUpdatePayload | null {
-    const { payload, errors, fallbackError } = buildUpdatePocketPayload(
-      form,
-      (accountId) => {
-        const account = accountById.get(accountId)
-        if (!account) return null
-        return account.currency as 'COP' | 'USD'
-      },
-      {
-        nameShort: t('pockets.toast_name_short'),
-        selectAccount: t('pockets.toast_select_account'),
-        invalidBalance: t('pockets.toast_balance_invalid'),
-        invalidAccount: t('pockets.toast_invalid_account'),
-      },
-    )
-
-    setFormErrors(errors)
-    if (!payload) {
-      const firstError = errors.name ?? errors.account_id ?? fallbackError
-      if (firstError) {
-        toast(firstError, 'error')
-      }
-      return null
-    }
-
-    return payload
-  }
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
