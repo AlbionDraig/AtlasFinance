@@ -54,6 +54,7 @@ export default function FilterCard({
             <button
               type="button"
               onClick={onReset}
+              data-testid="filters-clear-button"
               className="flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors border-brand bg-brand text-white hover:bg-brand-hover hover:border-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
@@ -71,6 +72,7 @@ export default function FilterCard({
           {normalizedFilters.map(chip => (
             <div
               key={chip.id}
+              data-testid="filter-chip"
               className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-tone-neutral"
             >
               <span>{chip.label}</span>
@@ -78,6 +80,7 @@ export default function FilterCard({
                 <button
                   type="button"
                   onClick={() => onRemoveFilter(chip.id)}
+                  data-testid="filter-chip-remove"
                   className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full hover:bg-black/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
                   aria-label={t('common.removeFilter', { value: chip.label })}
                 >

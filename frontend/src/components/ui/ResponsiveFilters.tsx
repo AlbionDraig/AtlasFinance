@@ -44,6 +44,7 @@ export default function ResponsiveFilters({
         <button
           type="button"
           onClick={() => setMobileFiltersOpen(true)}
+          data-testid="filters-open-button"
           className="inline-flex w-full items-center justify-between rounded-lg border border-neutral-100 bg-white px-4 py-2.5 text-sm font-medium text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
           aria-label={t('common.openFilters')}
         >
@@ -62,12 +63,13 @@ export default function ResponsiveFilters({
 
       {mobileFiltersOpen && (
         <Modal onClose={() => setMobileFiltersOpen(false)} maxWidth="max-w-2xl">
-          <section className="rounded-xl border border-neutral-100 bg-white p-4 shadow-lg">
+          <section data-testid="filters-mobile-panel" className="rounded-xl border border-neutral-100 bg-white p-4 shadow-lg">
             <div className="mb-3 flex items-center justify-between gap-3 border-b border-neutral-100 pb-3">
               <h2 className="text-base font-medium text-neutral-900">{mobileTitle}</h2>
               <button
                 type="button"
                 onClick={() => setMobileFiltersOpen(false)}
+                data-testid="filters-close-button"
                 className="rounded-md border border-neutral-100 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
               >
                 {t('common.close')}
