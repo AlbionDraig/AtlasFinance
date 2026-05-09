@@ -10,17 +10,30 @@ export async function fillLoginForm(page: Page, email: string, password: string)
   await passwordField.fill(password)
 }
 
+async function loginAndReturn(page: Page, url: string) {
+  await fillLoginForm(page, TEST_EMAIL, TEST_PASSWORD)
+  await page.getByRole('button', { name: /iniciar sesión|sign in|log in/i }).click()
+  await expect(page).not.toHaveURL(/\/login/, { timeout: 15_000 })
+  await page.goto(url)
+}
+
 export async function ensureAuthenticatedAt(page: Page, url: string) {
   await page.goto(url)
 
   if (/\/login/.test(page.url())) {
-    await fillLoginForm(page, TEST_EMAIL, TEST_PASSWORD)
-    await page.getByRole('button', { name: /iniciar sesión|sign in|log in/i }).click()
-    await expect(page).not.toHaveURL(/\/login/, { timeout: 10_000 })
-    await page.goto(url)
+    await loginAndReturn(page, url)
+  } else {
+    // Algunos flujos redirigen a /login después de cargar (token expirado).
+    try {
+      await page.waitForURL(/\/login(\?|$)/, { timeout: 2_500 })
+      await loginAndReturn(page, url)
+    } catch {
+      // No hubo redirección: seguimos en la vista objetivo.
+    }
   }
 
   await page.waitForLoadState('domcontentloaded')
+  await expect(page).not.toHaveURL(/\/login/, { timeout: 10_000 })
 }
 
 export async function selectOptionFromFilter(page: Page, label: RegExp, option: RegExp) {
