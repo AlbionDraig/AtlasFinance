@@ -67,8 +67,7 @@ describe('useDashboardData', () => {
   })
 
   it('keeps metrics null and turns loading off when the API rejects', async () => {
-    const error401 = new Error('Unauthorized') as any
-    error401.response = { status: 401 }
+    const error401 = Object.assign(new Error('Unauthorized'), { response: { status: 401 } })
     dashboardMock.mockRejectedValue(error401)
     aggregatesMock.mockRejectedValue(error401)
 
