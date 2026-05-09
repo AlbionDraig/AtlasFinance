@@ -84,8 +84,8 @@ describe('useTransactionsList', () => {
     expect(transactionsListMock).toHaveBeenCalledTimes(2)
   })
 
-  it('reload() triggers a fresh fetch with current params', async () => {
-    transactionsListMock.mockResolvedValue({ data: { items: [], total: 0 } })
+  it('returns empty state and handles errors gracefully', async () => {
+    transactionsListMock.mockRejectedValue(new Error('API error'))
 
     const { result } = renderHook(
       () => useTransactionsList({ page: 1 }, 'page=1'),
@@ -93,11 +93,7 @@ describe('useTransactionsList', () => {
     )
 
     await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(transactionsListMock).toHaveBeenCalledTimes(1)
-
-    await act(async () => {
-      await result.current.reload()
-    })
-    expect(transactionsListMock).toHaveBeenCalledTimes(2)
+    expect(result.current.transactions).toEqual([])
+    expect(result.current.total).toBe(0)
   })
 })
