@@ -23,7 +23,7 @@ test.describe('Unified filters - transactions', () => {
     await expect(page).toHaveURL(/type=INCOME/)
 
     // Act
-    await page.getByRole('button', { name: /limpiar filtros|clear filters/i }).click()
+    await page.getByTestId('filters-clear-button').click()
 
     // Assert
     await expect(page).not.toHaveURL(/type=|period=|from=|to=/)
@@ -35,7 +35,7 @@ test.describe('Unified filters - transactions', () => {
     await expect(page).toHaveURL(/type=INCOME/)
 
     // Act
-    await page.getByRole('button', { name: /remover filtro|remove filter/i }).first().click()
+    await page.getByTestId('filter-chip-remove').first().click()
 
     // Assert
     await expect(page).not.toHaveURL(/type=INCOME/)
@@ -50,9 +50,9 @@ test.describe('Unified filters - transactions mobile', () => {
     await page.goto('/transactions')
 
     // Act
-    await page.getByRole('button', { name: /abrir filtros|open filters/i }).click()
+    await page.getByTestId('filters-open-button').click()
 
     // Assert
-    await expect(page.getByRole('button', { name: /cerrar|close/i })).toBeVisible()
+    await expect(page.getByTestId('filters-close-button')).toBeVisible()
   })
 })

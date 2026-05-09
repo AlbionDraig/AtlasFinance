@@ -17,14 +17,14 @@ test.describe('Unified filters - accounts', () => {
   test('should show clear filters action when a currency filter is selected', async ({ page }) => {
     await selectOptionFromFilter(page, /moneda|currency/i, /^COP$/)
 
-    await expect(page.getByRole('button', { name: /limpiar filtros|clear filters/i })).toBeVisible()
+    await expect(page.getByTestId('filters-clear-button')).toBeVisible()
   })
 
   test('should hide clear filters action after resetting selected filters', async ({ page }) => {
     await selectOptionFromFilter(page, /moneda|currency/i, /^COP$/)
-    await page.getByRole('button', { name: /limpiar filtros|clear filters/i }).click()
+    await page.getByTestId('filters-clear-button').click()
 
-    await expect(page.getByRole('button', { name: /limpiar filtros|clear filters/i })).toHaveCount(0)
+    await expect(page.getByTestId('filters-clear-button')).toHaveCount(0)
   })
 })
 
@@ -33,9 +33,9 @@ test.describe('Unified filters - accounts mobile', () => {
 
   test('should open filters modal on mobile', async ({ page }) => {
     await page.goto('/accounts')
-    await page.getByRole('button', { name: /abrir filtros|open filters/i }).click()
+    await page.getByTestId('filters-open-button').click()
 
-    await expect(page.getByRole('button', { name: /cerrar|close/i })).toBeVisible()
+    await expect(page.getByTestId('filters-close-button')).toBeVisible()
   })
 })
 
@@ -48,14 +48,14 @@ test.describe('Unified filters - pockets', () => {
   test('should show clear filters action when a currency filter is selected', async ({ page }) => {
     await selectOptionFromFilter(page, /moneda|currency/i, /^COP$/)
 
-    await expect(page.getByRole('button', { name: /limpiar filtros|clear filters/i })).toBeVisible()
+    await expect(page.getByTestId('filters-clear-button')).toBeVisible()
   })
 
   test('should hide clear filters action after resetting selected filters', async ({ page }) => {
     await selectOptionFromFilter(page, /moneda|currency/i, /^COP$/)
-    await page.getByRole('button', { name: /limpiar filtros|clear filters/i }).click()
+    await page.getByTestId('filters-clear-button').click()
 
-    await expect(page.getByRole('button', { name: /limpiar filtros|clear filters/i })).toHaveCount(0)
+    await expect(page.getByTestId('filters-clear-button')).toHaveCount(0)
   })
 })
 
@@ -64,9 +64,9 @@ test.describe('Unified filters - pockets mobile', () => {
 
   test('should open filters modal on mobile', async ({ page }) => {
     await page.goto('/pockets')
-    await page.getByRole('button', { name: /abrir filtros|open filters/i }).click()
+    await page.getByTestId('filters-open-button').click()
 
-    await expect(page.getByRole('button', { name: /cerrar|close/i })).toBeVisible()
+    await expect(page.getByTestId('filters-close-button')).toBeVisible()
   })
 })
 
@@ -79,14 +79,14 @@ test.describe('Unified filters - investments', () => {
   test('should show clear filters action when a currency filter is selected', async ({ page }) => {
     await selectOptionFromFilter(page, /moneda|currency/i, /^COP$/)
 
-    await expect(page.getByRole('button', { name: /limpiar filtros|clear filters/i })).toBeVisible()
+    await expect(page.getByTestId('filters-clear-button')).toBeVisible()
   })
 
   test('should hide clear filters action after resetting selected filters', async ({ page }) => {
     await selectOptionFromFilter(page, /moneda|currency/i, /^COP$/)
-    await page.getByRole('button', { name: /limpiar filtros|clear filters/i }).click()
+    await page.getByTestId('filters-clear-button').click()
 
-    await expect(page.getByRole('button', { name: /limpiar filtros|clear filters/i })).toHaveCount(0)
+    await expect(page.getByTestId('filters-clear-button')).toHaveCount(0)
   })
 })
 
@@ -95,8 +95,8 @@ test.describe('Unified filters - investments mobile', () => {
 
   test('should open filters modal on mobile', async ({ page }) => {
     await page.goto('/investments')
-    await page.getByRole('button', { name: /abrir filtros|open filters/i }).click()
+    await page.getByTestId('filters-open-button').click()
 
-    await expect(page.getByRole('button', { name: /cerrar|close/i })).toBeVisible()
+    await expect(page.getByTestId('filters-close-button')).toBeVisible()
   })
 })
