@@ -1,4 +1,6 @@
 """CRUD de bolsillos y movimientos de fondos a un bolsillo."""
+from dataclasses import dataclass
+
 from sqlalchemy.orm import Session
 
 from app.models.enums import TransactionType
@@ -16,17 +18,41 @@ from app.services._common import (
 )
 
 
-def create_pocket(db: Session, user_id: int, payload: PocketCreate) -> Pocket:
+@dataclass
+class PocketServiceDeps:
+    """Dependency container for pocket service repositories."""
+
+    accounts: AccountRepository
+    pockets: PocketRepository
+    transactions: TransactionRepository
+
+
+def build_pocket_service_deps(db: Session) -> PocketServiceDeps:
+    """Build default repository dependencies for pocket services."""
+    return PocketServiceDeps(
+        accounts=AccountRepository(db),
+        pockets=PocketRepository(db),
+        transactions=TransactionRepository(db),
+    )
+
+
+def create_pocket(
+    db: Session,
+    user_id: int,
+    payload: PocketCreate,
+    deps: PocketServiceDeps | None = None,
+) -> Pocket:
     """Crear un bolsillo bajo una cuenta propiedad del usuario."""
-    account = AccountRepository(db).get_owned(user_id, payload.account_id)
+    resolved_deps = deps or build_pocket_service_deps(db)
+
+    account = resolved_deps.accounts.get_owned(user_id, payload.account_id)
     if account is None:
         raise ValueError("Invalid account for user")
 
     if payload.currency != account.currency:
         raise ValueError("Pocket currency must match account currency")
 
-    pockets = PocketRepository(db)
-    if pockets.find_duplicate_name(payload.account_id, payload.name) is not None:
+    if resolved_deps.pockets.find_duplicate_name(payload.account_id, payload.name) is not None:
         raise ValueError("Pocket name already exists for account")
 
     pocket = Pocket(
@@ -35,32 +61,47 @@ def create_pocket(db: Session, user_id: int, payload: PocketCreate) -> Pocket:
         currency=payload.currency,
         account_id=payload.account_id,
     )
-    return pockets.add(pocket)
+    return resolved_deps.pockets.add(pocket)
 
 
-def list_pockets(db: Session, user_id: int) -> list[Pocket]:
+def list_pockets(
+    db: Session,
+    user_id: int,
+    deps: PocketServiceDeps | None = None,
+) -> list[Pocket]:
     """Listar los bolsillos del usuario."""
-    return PocketRepository(db).list_by_user(user_id)
+    resolved_deps = deps or build_pocket_service_deps(db)
+    return resolved_deps.pockets.list_by_user(user_id)
 
 
-def get_pocket(db: Session, user_id: int, pocket_id: int) -> Pocket:
+def get_pocket(
+    db: Session,
+    user_id: int,
+    pocket_id: int,
+    deps: PocketServiceDeps | None = None,
+) -> Pocket:
     """Recuperar un bolsillo propiedad del usuario."""
-    pocket = PocketRepository(db).get_owned(user_id, pocket_id)
+    resolved_deps = deps or build_pocket_service_deps(db)
+    pocket = resolved_deps.pockets.get_owned(user_id, pocket_id)
     if pocket is None:
         raise ValueError("Pocket not found")
     return pocket
 
 
 def update_pocket(
-    db: Session, user_id: int, pocket_id: int, payload: PocketUpdate
+    db: Session,
+    user_id: int,
+    pocket_id: int,
+    payload: PocketUpdate,
+    deps: PocketServiceDeps | None = None,
 ) -> Pocket:
     """Actualizar metadatos del bolsillo cuando ambos pertenecen al usuario."""
-    pockets = PocketRepository(db)
-    pocket = pockets.get_owned(user_id, pocket_id)
+    resolved_deps = deps or build_pocket_service_deps(db)
+    pocket = resolved_deps.pockets.get_owned(user_id, pocket_id)
     if pocket is None:
         raise ValueError("Pocket not found")
 
-    account = AccountRepository(db).get_owned(user_id, payload.account_id)
+    account = resolved_deps.accounts.get_owned(user_id, payload.account_id)
     if account is None:
         raise ValueError("Invalid account for user")
 
@@ -68,7 +109,7 @@ def update_pocket(
         raise ValueError("Cannot move pocket to account with different currency")
 
     if (
-        pockets.find_duplicate_name(
+        resolved_deps.pockets.find_duplicate_name(
             payload.account_id, payload.name, exclude_pocket_id=pocket_id
         )
         is not None
@@ -77,27 +118,37 @@ def update_pocket(
 
     pocket.name = payload.name
     pocket.account_id = payload.account_id
-    return pockets.commit_refresh(pocket)
+    return resolved_deps.pockets.commit_refresh(pocket)
 
 
-def delete_pocket(db: Session, user_id: int, pocket_id: int) -> None:
+def delete_pocket(
+    db: Session,
+    user_id: int,
+    pocket_id: int,
+    deps: PocketServiceDeps | None = None,
+) -> None:
     """Eliminar un bolsillo propiedad del usuario."""
-    pockets = PocketRepository(db)
-    pocket = pockets.get_owned(user_id, pocket_id)
+    resolved_deps = deps or build_pocket_service_deps(db)
+    pocket = resolved_deps.pockets.get_owned(user_id, pocket_id)
     if pocket is None:
         raise ValueError("Pocket not found")
-    pockets.delete(pocket)
+    resolved_deps.pockets.delete(pocket)
 
 
 def move_amount_to_pocket(
-    db: Session, user_id: int, payload: PocketMoveCreate
+    db: Session,
+    user_id: int,
+    payload: PocketMoveCreate,
+    deps: PocketServiceDeps | None = None,
 ) -> Transaction:
     """Mover fondos desde una cuenta a un bolsillo, registrado como gasto."""
-    account = AccountRepository(db).get_owned(user_id, payload.account_id)
+    resolved_deps = deps or build_pocket_service_deps(db)
+
+    account = resolved_deps.accounts.get_owned(user_id, payload.account_id)
     if account is None:
         raise ValueError("Invalid account for user")
 
-    pocket = PocketRepository(db).get_owned(user_id, payload.pocket_id)
+    pocket = resolved_deps.pockets.get_owned(user_id, payload.pocket_id)
     if pocket is None:
         raise ValueError("Pocket not found")
     if pocket.account_id != payload.account_id:
@@ -119,7 +170,7 @@ def move_amount_to_pocket(
         category_id=None,
         pocket_id=payload.pocket_id,
     )
-    TransactionRepository(db).add_pending(txn)
+    resolved_deps.transactions.add_pending(txn)
 
     apply_transaction_effect(account, TransactionType.EXPENSE, payload.amount)
     pocket.balance += payload.amount
@@ -130,17 +181,22 @@ def move_amount_to_pocket(
 
 
 def withdraw_amount_from_pocket(
-    db: Session, user_id: int, payload: PocketWithdrawCreate
+    db: Session,
+    user_id: int,
+    payload: PocketWithdrawCreate,
+    deps: PocketServiceDeps | None = None,
 ) -> Transaction:
     """Retirar fondos de un bolsillo y devolverlos al saldo de la cuenta, registrado como ingreso."""
-    pocket = PocketRepository(db).get_owned(user_id, payload.pocket_id)
+    resolved_deps = deps or build_pocket_service_deps(db)
+
+    pocket = resolved_deps.pockets.get_owned(user_id, payload.pocket_id)
     if pocket is None:
         raise ValueError("Pocket not found")
 
     if payload.amount > pocket.balance:
         raise ValueError("Insufficient pocket balance")
 
-    account = AccountRepository(db).get_owned(user_id, pocket.account_id)
+    account = resolved_deps.accounts.get_owned(user_id, pocket.account_id)
     if account is None:
         raise ValueError("Invalid account for user")
 
@@ -156,7 +212,7 @@ def withdraw_amount_from_pocket(
         category_id=None,
         pocket_id=payload.pocket_id,
     )
-    TransactionRepository(db).add_pending(txn)
+    resolved_deps.transactions.add_pending(txn)
 
     apply_transaction_effect(account, TransactionType.INCOME, payload.amount)
     pocket.balance -= payload.amount

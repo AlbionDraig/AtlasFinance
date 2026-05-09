@@ -1,4 +1,6 @@
 """CRUD de inversiones del usuario."""
+from dataclasses import dataclass
+
 from sqlalchemy.orm import Session
 
 from app.models.investment import Investment
@@ -7,10 +9,33 @@ from app.repositories.investments import InvestmentRepository
 from app.schemas.investment import InvestmentCreate, InvestmentUpdate
 
 
-def create_investment(db: Session, user_id: int, payload: InvestmentCreate) -> Investment:
+@dataclass
+class InvestmentServiceDeps:
+    """Dependency container for investment service repositories."""
+
+    entities: InvestmentEntityRepository
+    investments: InvestmentRepository
+
+
+def build_investment_service_deps(db: Session) -> InvestmentServiceDeps:
+    """Build default repository dependencies for investment services."""
+    return InvestmentServiceDeps(
+        entities=InvestmentEntityRepository(db),
+        investments=InvestmentRepository(db),
+    )
+
+
+def create_investment(
+    db: Session,
+    user_id: int,
+    payload: InvestmentCreate,
+    deps: InvestmentServiceDeps | None = None,
+) -> Investment:
     """Registrar una nueva inversión asociada a una entidad propia del usuario."""
+    resolved_deps = deps or build_investment_service_deps(db)
+
     if (
-        InvestmentEntityRepository(db).get_owned(user_id, payload.investment_entity_id)
+        resolved_deps.entities.get_owned(user_id, payload.investment_entity_id)
         is None
     ):
         raise ValueError("Invalid investment entity for user")
@@ -25,33 +50,48 @@ def create_investment(db: Session, user_id: int, payload: InvestmentCreate) -> I
         started_at=payload.started_at,
         user_id=user_id,
     )
-    return InvestmentRepository(db).add(investment)
+    return resolved_deps.investments.add(investment)
 
 
-def list_investments(db: Session, user_id: int) -> list[Investment]:
+def list_investments(
+    db: Session,
+    user_id: int,
+    deps: InvestmentServiceDeps | None = None,
+) -> list[Investment]:
     """Listar todas las inversiones del usuario."""
-    return InvestmentRepository(db).list_by_user(user_id)
+    resolved_deps = deps or build_investment_service_deps(db)
+    return resolved_deps.investments.list_by_user(user_id)
 
 
-def get_investment(db: Session, user_id: int, investment_id: int) -> Investment:
+def get_investment(
+    db: Session,
+    user_id: int,
+    investment_id: int,
+    deps: InvestmentServiceDeps | None = None,
+) -> Investment:
     """Recuperar una inversión propiedad del usuario."""
-    investment = InvestmentRepository(db).get_owned(user_id, investment_id)
+    resolved_deps = deps or build_investment_service_deps(db)
+    investment = resolved_deps.investments.get_owned(user_id, investment_id)
     if investment is None:
         raise ValueError("Investment not found")
     return investment
 
 
 def update_investment(
-    db: Session, user_id: int, investment_id: int, payload: InvestmentUpdate
+    db: Session,
+    user_id: int,
+    investment_id: int,
+    payload: InvestmentUpdate,
+    deps: InvestmentServiceDeps | None = None,
 ) -> Investment:
     """Actualizar metadatos de una inversión propiedad del usuario."""
-    repo = InvestmentRepository(db)
-    investment = repo.get_owned(user_id, investment_id)
+    resolved_deps = deps or build_investment_service_deps(db)
+    investment = resolved_deps.investments.get_owned(user_id, investment_id)
     if investment is None:
         raise ValueError("Investment not found")
 
     if (
-        InvestmentEntityRepository(db).get_owned(user_id, payload.investment_entity_id)
+        resolved_deps.entities.get_owned(user_id, payload.investment_entity_id)
         is None
     ):
         raise ValueError("Invalid investment entity for user")
@@ -61,13 +101,18 @@ def update_investment(
     investment.current_value = payload.current_value
     investment.investment_entity_id = payload.investment_entity_id
     investment.started_at = payload.started_at
-    return repo.commit_refresh(investment)
+    return resolved_deps.investments.commit_refresh(investment)
 
 
-def delete_investment(db: Session, user_id: int, investment_id: int) -> None:
+def delete_investment(
+    db: Session,
+    user_id: int,
+    investment_id: int,
+    deps: InvestmentServiceDeps | None = None,
+) -> None:
     """Eliminar una inversión propiedad del usuario."""
-    repo = InvestmentRepository(db)
-    investment = repo.get_owned(user_id, investment_id)
+    resolved_deps = deps or build_investment_service_deps(db)
+    investment = resolved_deps.investments.get_owned(user_id, investment_id)
     if investment is None:
         raise ValueError("Investment not found")
-    repo.delete(investment)
+    resolved_deps.investments.delete(investment)
