@@ -1,12 +1,12 @@
 import { useMemo, useRef, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { AxiosError } from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
 import { pocketsApi, type PocketPayload, type PocketUpdatePayload } from '@/api/pockets'
 import type { Account, Pocket } from '@/types'
 import { useToast } from '@/hooks/useToast'
 import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
+import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import { usePocketsData } from '@/hooks/usePocketsData'
 import PageSkeleton from '@/components/ui/PageSkeleton'
 import FormField from '@/components/ui/FormField'
@@ -23,14 +23,12 @@ import InlineAlert from '@/components/ui/InlineAlert'
 import PocketsFiltersCard, { type PocketFiltersState } from './components/PocketsFiltersCard'
 import WithdrawFromPocketModal, { type WithdrawFromPocketFormData } from './components/WithdrawFromPocketModal'
 import EntityCard from '@/components/ui/EntityCard'
-
-interface PocketFormState {
-  name: string
-  balance: string
-  account_id: string
-}
-
-type PocketFormErrors = Partial<Record<keyof PocketFormState, string>>
+import {
+  type PocketFormErrors,
+  type PocketFormState,
+  buildCreatePocketPayload,
+  buildUpdatePocketPayload,
+} from './pocketPayload'
 
 const EMPTY_FORM: PocketFormState = {
   name: '',
@@ -46,23 +44,6 @@ const DEFAULT_FILTERS: PocketFiltersState = {
 }
 
 const UNDO_WINDOW_MS = 5000
-
-function getApiErrorMessage(error: unknown, fallback: string): string {
-  // Align backend detail extraction with the rest of UI pages.
-  if (error instanceof AxiosError) {
-    const detail = error.response?.data?.detail
-    if (typeof detail === 'string' && detail.trim()) return detail
-  }
-  return fallback
-}
-
-function formatCurrency(value: number, currency: string): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value)
-}
 
 interface AccountVisualStyle {
   accent: string
@@ -387,78 +368,59 @@ export default function PocketsPage() {
   }
 
   function buildCreatePayloadFromForm(): PocketPayload | null {
-    const name = form.name.trim()
-    const accountId = Number(form.account_id)
-    const balance = Number(form.balance)
-    const errors: PocketFormErrors = {}
-
-    // Validate and normalize form state before calling API.
-    if (name.length < 2) {
-      errors.name = t('pockets.toast_name_short')
-    }
-    if (!Number.isInteger(accountId) || accountId <= 0) {
-      errors.account_id = t('pockets.toast_select_account')
-    }
-    if (!Number.isFinite(balance) || balance < 0) {
-      errors.balance = t('pockets.toast_balance_invalid')
-    }
+    const { payload, errors, fallbackError } = buildCreatePocketPayload(
+      form,
+      (accountId) => {
+        const account = accountById.get(accountId)
+        if (!account) return null
+        return account.currency as 'COP' | 'USD'
+      },
+      {
+        nameShort: t('pockets.toast_name_short'),
+        selectAccount: t('pockets.toast_select_account'),
+        invalidBalance: t('pockets.toast_balance_invalid'),
+        invalidAccount: t('pockets.toast_invalid_account'),
+      },
+    )
 
     setFormErrors(errors)
-    if (Object.keys(errors).length > 0) {
-      const firstError = errors.name ?? errors.account_id ?? errors.balance
+    if (!payload) {
+      const firstError = errors.name ?? errors.account_id ?? errors.balance ?? fallbackError
       if (firstError) {
         toast(firstError, 'error')
       }
       return null
     }
 
-    const selectedAccount = accountById.get(accountId)
-    if (!selectedAccount) {
-      setFormErrors((current) => ({ ...current, account_id: t('pockets.toast_invalid_account') }))
-      toast(t('pockets.toast_invalid_account'), 'error')
-      return null
-    }
-
-    return {
-      name,
-      balance,
-      account_id: accountId,
-      currency: selectedAccount.currency as 'COP' | 'USD',
-    }
+    return payload
   }
 
   function buildUpdatePayloadFromForm(): PocketUpdatePayload | null {
-    const name = form.name.trim()
-    const accountId = Number(form.account_id)
-    const errors: PocketFormErrors = {}
-
-    if (name.length < 2) {
-      errors.name = t('pockets.toast_name_short')
-    }
-    if (!Number.isInteger(accountId) || accountId <= 0) {
-      errors.account_id = t('pockets.toast_select_account')
-    }
+    const { payload, errors, fallbackError } = buildUpdatePocketPayload(
+      form,
+      (accountId) => {
+        const account = accountById.get(accountId)
+        if (!account) return null
+        return account.currency as 'COP' | 'USD'
+      },
+      {
+        nameShort: t('pockets.toast_name_short'),
+        selectAccount: t('pockets.toast_select_account'),
+        invalidBalance: t('pockets.toast_balance_invalid'),
+        invalidAccount: t('pockets.toast_invalid_account'),
+      },
+    )
 
     setFormErrors(errors)
-    if (Object.keys(errors).length > 0) {
-      const firstError = errors.name ?? errors.account_id
+    if (!payload) {
+      const firstError = errors.name ?? errors.account_id ?? fallbackError
       if (firstError) {
         toast(firstError, 'error')
       }
       return null
     }
 
-    const selectedAccount = accountById.get(accountId)
-    if (!selectedAccount) {
-      setFormErrors((current) => ({ ...current, account_id: t('pockets.toast_invalid_account') }))
-      toast(t('pockets.toast_invalid_account'), 'error')
-      return null
-    }
-
-    return {
-      name,
-      account_id: accountId,
-    }
+    return payload
   }
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {

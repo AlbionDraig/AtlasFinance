@@ -3,10 +3,11 @@ import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
 import { type InvestmentEntity } from '@/api/investmentEntities'
-import { investmentsApi, INSTRUMENT_TYPES, type InvestmentPayload, type InvestmentUpdatePayload } from '@/api/investments'
+import { investmentsApi, INSTRUMENT_TYPES } from '@/api/investments'
 import type { Investment } from '@/types'
 import { useToast } from '@/hooks/useToast'
 import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
+import { formatCurrency } from '@/lib/utils'
 import { useInvestmentsData } from '@/hooks/useInvestmentsData'
 import PageSkeleton from '@/components/ui/PageSkeleton'
 import Modal from '@/components/ui/Modal'
@@ -21,75 +22,15 @@ import TableActionGroup from '@/components/ui/TableActionGroup'
 import Select from '@/components/ui/Select'
 import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
-
-function formatCurrency(value: number, currency: string): string {
-  // Reuse localized formatting to keep financial values consistent across cards.
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })
-}
-
-function daysSince(iso: string): number {
-  return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
-}
-
-type InstrumentGroup = 'equity' | 'funds' | 'fixed' | 'crypto' | 'other'
-
-const INSTRUMENT_GROUP_BY_TYPE: Record<string, InstrumentGroup> = {
-  Acciones: 'equity',
-  Accion: 'equity',
-  'Acción': 'equity',
-  ETF: 'equity',
-  Fondos: 'funds',
-  Fondo: 'funds',
-  'Fondo de pensiones': 'funds',
-  Bonos: 'fixed',
-  CDT: 'fixed',
-  Cripto: 'crypto',
-  Criptomoneda: 'crypto',
-  Otro: 'other',
-}
-
-const GROUP_STYLE: Record<InstrumentGroup, { bg: string; text: string; ring: string; shadow: string }> = {
-  equity: { bg: 'bg-brand-light', text: 'text-brand', ring: 'ring-brand/45', shadow: 'shadow-[inset_0_0_0_1px_rgba(202,11,11,0.18)]' },
-  funds: { bg: 'bg-success-bg', text: 'text-success', ring: 'ring-success/45', shadow: 'shadow-[inset_0_0_0_1px_rgba(34,197,94,0.18)]' },
-  fixed: { bg: 'bg-warning-bg', text: 'text-warning', ring: 'ring-warning/45', shadow: 'shadow-[inset_0_0_0_1px_rgba(245,158,11,0.22)]' },
-  crypto: { bg: 'bg-warning-bg', text: 'text-warning', ring: 'ring-warning/45', shadow: 'shadow-[inset_0_0_0_1px_rgba(245,158,11,0.22)]' },
-  other: { bg: 'bg-neutral-100', text: 'text-neutral-700', ring: 'ring-neutral-300/90', shadow: 'shadow-[inset_0_0_0_1px_rgba(148,163,184,0.22)]' },
-}
-
-function getInstrumentGroup(type: string): InstrumentGroup {
-  return INSTRUMENT_GROUP_BY_TYPE[type] ?? 'other'
-}
-
-function instrumentBadge(type: string) {
-  const style = GROUP_STYLE[getInstrumentGroup(type)]
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${style.bg} ${style.text} ${style.ring} ${style.shadow}`}>
-      {type}
-    </span>
-  )
-}
-
-interface InvestmentFormState {
-  name: string
-  instrument_type: string
-  amount_invested: string
-  current_value: string
-  currency: string
-  investment_entity_id: string
-  started_at: string
-}
+import { daysSinceInvestment, formatInvestmentDate, renderInstrumentBadge } from './investmentDisplay'
+import {
+  type InvestmentFormErrors,
+  type InvestmentFormState,
+  buildCreateInvestmentPayload,
+  buildUpdateInvestmentPayload,
+} from './investmentPayload'
 
 const UNDO_WINDOW_MS = 5000
-
-type InvestmentFormErrors = Partial<Record<'name' | 'investment_entity_id' | 'amount_invested' | 'current_value' | 'started_at', string>>
 
 function emptyForm(): InvestmentFormState {
   // Default to current day and COP for faster data entry in local context.
@@ -420,72 +361,22 @@ export default function InvestmentsPage() {
     setEditingInvestment(inv)
   }
 
-  function buildCreatePayload(): InvestmentPayload | null {
-    const name = form.name.trim()
-    const investmentEntityId = Number(form.investment_entity_id)
-    const amountInvested = Number(form.amount_invested)
-    const errors: InvestmentFormErrors = {}
-
-    // Normalize user input into API payload and enforce business constraints.
-    if (name.length < 2) errors.name = t('investments.toast_name_short')
-    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) errors.investment_entity_id = t('investments.toast_select_entity')
-    if (!form.amount_invested || amountInvested <= 0) errors.amount_invested = t('investments.toast_amount_zero')
-    if (!form.started_at) errors.started_at = t('investments.toast_select_date')
-
-    setFormErrors(errors)
-    if (Object.keys(errors).length > 0) {
-      const firstError = errors.name ?? errors.investment_entity_id ?? errors.amount_invested ?? errors.started_at
-      if (firstError) {
-        toast(firstError, 'error')
-      }
-      return null
-    }
-
-    return {
-      name,
-      instrument_type: form.instrument_type,
-      amount_invested: amountInvested,
-      current_value: amountInvested,
-      currency: form.currency as 'COP' | 'USD',
-      investment_entity_id: investmentEntityId,
-      started_at: new Date(form.started_at).toISOString(),
-    }
-  }
-
-  function buildUpdatePayload(): InvestmentUpdatePayload | null {
-    const name = form.name.trim()
-    const investmentEntityId = Number(form.investment_entity_id)
-    const currentValue = Number(form.current_value)
-    const errors: InvestmentFormErrors = {}
-
-    // Editing flow only updates mutable fields (not amount_invested/currency).
-    if (name.length < 2) errors.name = t('investments.toast_name_short')
-    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) errors.investment_entity_id = t('investments.toast_select_entity')
-    if (form.current_value === '' || currentValue < 0) errors.current_value = t('investments.toast_value_negative')
-    if (!form.started_at) errors.started_at = t('investments.toast_select_date')
-
-    setFormErrors(errors)
-    if (Object.keys(errors).length > 0) {
-      const firstError = errors.name ?? errors.investment_entity_id ?? errors.current_value ?? errors.started_at
-      if (firstError) {
-        toast(firstError, 'error')
-      }
-      return null
-    }
-
-    return {
-      name,
-      instrument_type: form.instrument_type,
-      current_value: currentValue,
-      investment_entity_id: investmentEntityId,
-      started_at: new Date(form.started_at).toISOString(),
-    }
-  }
-
   async function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const payload = buildCreatePayload()
+    const { payload, errors } = buildCreateInvestmentPayload(form, {
+      nameShort: t('investments.toast_name_short'),
+      selectEntity: t('investments.toast_select_entity'),
+      amountZero: t('investments.toast_amount_zero'),
+      valueNegative: t('investments.toast_value_negative'),
+      selectDate: t('investments.toast_select_date'),
+    })
+    setFormErrors(errors)
     if (!payload) return
+    const firstError = errors.name ?? errors.investment_entity_id ?? errors.amount_invested ?? errors.started_at
+    if (firstError) {
+      toast(firstError, 'error')
+      return
+    }
     setSaving(true)
     try {
       const res = await investmentsApi.create(payload)
@@ -504,8 +395,20 @@ export default function InvestmentsPage() {
   async function handleUpdate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!editingInvestment) return
-    const payload = buildUpdatePayload()
+    const { payload, errors } = buildUpdateInvestmentPayload(form, {
+      nameShort: t('investments.toast_name_short'),
+      selectEntity: t('investments.toast_select_entity'),
+      amountZero: t('investments.toast_amount_zero'),
+      valueNegative: t('investments.toast_value_negative'),
+      selectDate: t('investments.toast_select_date'),
+    })
+    setFormErrors(errors)
     if (!payload) return
+    const firstError = errors.name ?? errors.investment_entity_id ?? errors.current_value ?? errors.started_at
+    if (firstError) {
+      toast(firstError, 'error')
+      return
+    }
     setSaving(true)
     try {
       const res = await investmentsApi.update(editingInvestment.id, payload)
@@ -760,7 +663,7 @@ export default function InvestmentsPage() {
             const perfPct = inv.amount_invested > 0
               ? Math.min(150, (inv.current_value / inv.amount_invested) * 100)
               : 100
-            const days = daysSince(inv.started_at)
+            const days = daysSinceInvestment(inv.started_at)
 
             return (
               <div
@@ -781,7 +684,7 @@ export default function InvestmentsPage() {
 
                 {/* Instrument type + currency */}
                 <div className="flex items-center gap-2">
-                  {instrumentBadge(inv.instrument_type)}
+                  {renderInstrumentBadge(inv.instrument_type)}
                   <span className="text-xs bg-neutral-100 text-neutral-700 rounded-full px-2 py-0.5 font-medium">
                     {inv.currency}
                   </span>
@@ -823,7 +726,7 @@ export default function InvestmentsPage() {
 
                 {/* Date + days */}
                 <p className="text-xs text-neutral-400">
-                  {t('investments.card_since', { date: formatDate(inv.started_at) })}
+                  {t('investments.card_since', { date: formatInvestmentDate(inv.started_at) })}
                   <span className="ml-1 text-neutral-400 opacity-60">· {days} {t('investments.card_days')}</span>
                 </p>
               </div>
@@ -859,7 +762,7 @@ export default function InvestmentsPage() {
                   >
                     <td className="px-3 py-2 text-neutral-900 font-medium">{inv.name}</td>
                     <td className="px-3 py-2 text-neutral-700">{entity?.name ?? '—'}</td>
-                    <td className="px-3 py-2">{instrumentBadge(inv.instrument_type)}</td>
+                    <td className="px-3 py-2">{renderInstrumentBadge(inv.instrument_type)}</td>
                     <td className="px-3 py-2 text-neutral-700 tabular-nums">{formatCurrency(inv.amount_invested, inv.currency)}</td>
                     <td className="px-3 py-2 text-neutral-700 tabular-nums">{formatCurrency(inv.current_value, inv.currency)}</td>
                     <td className="px-3 py-2">
@@ -868,7 +771,7 @@ export default function InvestmentsPage() {
                         <span>{positive ? '+' : ''}{pct}%</span>
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-neutral-400">{formatDate(inv.started_at)}</td>
+                    <td className="px-3 py-2 text-neutral-400">{formatInvestmentDate(inv.started_at)}</td>
                     <td className="px-3 py-2 text-center align-middle">
                       <TableActionGroup>
                         <EditButton onClick={() => openEdit(inv)} />
