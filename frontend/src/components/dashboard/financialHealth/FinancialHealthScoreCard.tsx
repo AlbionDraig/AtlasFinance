@@ -20,7 +20,7 @@ export default function FinancialHealthScoreCard({
   const healthLevel = financialHealth?.level ?? 'attention'
 
   return (
-    <div className="app-card p-5 lg:col-span-1 ring-2 ring-brand/20 relative overflow-hidden bg-gradient-to-br from-brand-light/70 via-white to-white">
+    <div className="app-card p-5 lg:col-span-1 lg:max-w-[360px] w-full lg:justify-self-center ring-2 ring-brand/20 relative overflow-hidden bg-gradient-to-br from-brand-light/70 via-white to-white">
       <div className="absolute -top-10 -right-8 w-32 h-32 rounded-full bg-brand/10 blur-2xl" />
       <div className="absolute top-0 left-0 right-0 h-1.5 bg-brand" />
       <div className="flex items-center justify-between gap-3 mb-3 relative">
@@ -31,19 +31,19 @@ export default function FinancialHealthScoreCard({
           hint={t('dashboard.health_history_hint')}
         />
       </div>
-      <div className="flex items-center gap-4 relative">
+      <div className="flex flex-col items-center text-center gap-3 relative min-h-[140px] justify-center">
         <div
-          className="h-20 w-20 rounded-full p-1.5"
+          className="h-24 w-24 rounded-full p-1.5"
           style={{
             background: `conic-gradient(var(--af-brand) ${Math.max(0, Math.min(100, healthScore))}%, rgba(214, 223, 230, 0.45) 0%)`,
           }}
         >
-          <div className="h-full w-full rounded-full bg-white flex items-center justify-center text-brand text-2xl font-medium">
+          <div className="h-full w-full rounded-full bg-white flex items-center justify-center text-brand text-3xl font-medium">
             {healthScore}
           </div>
         </div>
         <div className="space-y-1">
-          <p className="app-subtitle text-sm leading-snug">{scoreLevelLabel(healthLevel, t)}</p>
+          <p className="app-subtitle text-sm leading-snug max-w-[18rem] mx-auto">{scoreLevelLabel(healthLevel, t)}</p>
           <p className="text-xs text-neutral-700">
             {t('dashboard.health_history_title')}: {historyCount}
           </p>
