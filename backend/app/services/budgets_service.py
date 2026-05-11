@@ -1,6 +1,7 @@
 """Budget service with spending analysis and trend calculations."""
 from datetime import datetime
 from decimal import Decimal
+from typing import TypedDict
 
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
@@ -11,6 +12,38 @@ from app.models.transaction import Transaction
 from app.repositories.budgets import BudgetRepository
 from app.repositories.categories import CategoryRepository
 from app.schemas.budget import BudgetCreate, BudgetUpdate
+
+
+class BudgetWithSpending(TypedDict):
+    """Budget detail with computed spending metrics."""
+
+    budget: Budget
+    current_spent: Decimal
+    remaining: Decimal
+    status: str
+
+
+class BudgetMonthItem(TypedDict):
+    """Budget row for month summary payload."""
+
+    id: int
+    category_id: int
+    year: int
+    month: int
+    amount_limit: Decimal
+    current_spent: Decimal
+    remaining: Decimal
+    status: str
+
+
+class BudgetMonthSummary(TypedDict):
+    """Budgets summary payload for one month."""
+
+    year: int
+    month: int
+    budgets: list[BudgetMonthItem]
+    total_limit: Decimal
+    total_spent: Decimal
 
 
 def create_budget(db: Session, user_id: int, payload: BudgetCreate) -> Budget:
@@ -38,7 +71,7 @@ def create_budget(db: Session, user_id: int, payload: BudgetCreate) -> Budget:
 
 def get_budget_with_spending(
     db: Session, user_id: int, budget_id: int
-) -> dict:
+) -> BudgetWithSpending:
     """Get budget with current spending and status."""
     budget = BudgetRepository(db).get_owned(user_id, budget_id)
     if budget is None:
@@ -61,11 +94,11 @@ def get_budget_with_spending(
 
 def list_budgets_by_month(
     db: Session, user_id: int, year: int, month: int
-) -> dict:
+) -> BudgetMonthSummary:
     """Get all budgets for a user in a specific month with spending info."""
     budgets = BudgetRepository(db).list_by_user_month(user_id, year, month)
 
-    budget_list = []
+    budget_list: list[BudgetMonthItem] = []
     total_limit = Decimal("0")
     total_spent = Decimal("0")
 
