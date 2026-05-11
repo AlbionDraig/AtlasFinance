@@ -326,6 +326,14 @@ body {
     transition: filter 0.15s, box-shadow 0.15s;
   }
 
+  .app-slider-md {
+    height: 0.5rem;
+  }
+
+  .app-slider-sm {
+    height: 0.375rem;
+  }
+
   .app-slider:hover {
     filter: brightness(0.98);
   }
@@ -358,6 +366,18 @@ body {
     box-shadow: 0 1px 3px rgba(28, 27, 26, 0.25);
   }
 
+  .app-slider-md::-webkit-slider-thumb {
+    margin-top: -5px;
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .app-slider-sm::-webkit-slider-thumb {
+    margin-top: -4px;
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
   .app-slider::-moz-range-track {
     height: 0.5rem;
     border-radius: 9999px;
@@ -378,6 +398,16 @@ body {
     border: 2px solid var(--af-surface);
     background: var(--af-accent);
     box-shadow: 0 1px 3px rgba(28, 27, 26, 0.25);
+  }
+
+  .app-slider-md::-moz-range-thumb {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .app-slider-sm::-moz-range-thumb {
+    width: 0.875rem;
+    height: 0.875rem;
   }
 
   .app-menu {

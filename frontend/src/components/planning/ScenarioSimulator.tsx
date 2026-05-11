@@ -89,6 +89,9 @@ export default function ScenarioSimulator({
               step={1}
               onChange={setReductionPercent}
               valueSuffix="%"
+              size="md"
+              showTicks
+              tickStep={25}
               hint={t('planning.simulator.reduction_help')}
             />
 
@@ -100,6 +103,9 @@ export default function ScenarioSimulator({
               max={60}
               step={1}
               onChange={setMonthsAhead}
+              size="md"
+              showTicks
+              tickStep={12}
               hint={t('planning.simulator.months_help')}
             />
 
