@@ -175,7 +175,7 @@ def _apply_migrations() -> None:
     - Legacy DB (tables exist but no ``alembic_version``): create missing tables via
       ``create_all`` then stamp head so future runs use Alembic normally.
     """
-    from alembic import command  # noqa: PLC0415 (deferred import to avoid heavy cost in tests)
+    import alembic.command as alembic_command  # noqa: PLC0415 (deferred import to avoid heavy cost in tests)
     from alembic.config import Config
 
     _BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -191,11 +191,11 @@ def _apply_migrations() -> None:
 
         if not table_names or "alembic_version" in table_names:
             # Fresh DB or already managed by Alembic — run migrations normally.
-            command.upgrade(alembic_cfg, "head")
+            alembic_command.upgrade(alembic_cfg, "head")
         else:
             # Legacy DB: ensure all tables exist, then stamp so future runs are migration-based.
             Base.metadata.create_all(bind=connection)
-            command.stamp(alembic_cfg, "head")
+            alembic_command.stamp(alembic_cfg, "head")
         connection.commit()
 
 
