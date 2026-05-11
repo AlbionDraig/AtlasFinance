@@ -20,6 +20,7 @@ from app.schemas.savings_goal import (
     SavingsGoalUpdate,
 )
 from app.services.savings_goals_service import (
+    SavingsGoalProgress,
     create_savings_goal,
     delete_savings_goal,
     get_savings_goal_with_progress,
@@ -31,7 +32,7 @@ from app.services.savings_goals_service import (
 router = APIRouter()
 
 
-def _build_savings_goal_read(payload: dict) -> SavingsGoalRead:
+def _build_savings_goal_read(payload: SavingsGoalProgress) -> SavingsGoalRead:
     """Build API response from savings goal progress payload."""
     goal = payload["goal"]
     return SavingsGoalRead(

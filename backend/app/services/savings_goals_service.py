@@ -1,6 +1,7 @@
 """Savings goals service with progress tracking and scenario simulation."""
 from datetime import datetime, timedelta
 from decimal import Decimal
+from typing import TypedDict, cast
 
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
@@ -11,6 +12,29 @@ from app.models.transaction import Transaction
 from app.repositories.pockets import PocketRepository
 from app.repositories.savings_goals import SavingsGoalRepository
 from app.schemas.savings_goal import SavingsGoalCreate, SavingsGoalUpdate
+
+
+class SavingsGoalProgress(TypedDict):
+    """Computed progress payload for a savings goal."""
+
+    goal: SavingsGoal
+    current_amount: Decimal
+    progress_percent: float
+    days_remaining: int
+    is_completed: bool
+
+
+class SavingsGoalScenarioProjection(TypedDict):
+    """Scenario simulation projection for one savings goal."""
+
+    goal_id: int
+    goal_name: str
+    current_amount: Decimal
+    projected_amount: Decimal
+    target_amount: Decimal
+    projected_progress_percent: float
+    will_reach_target: bool
+    days_to_target: int | None
 
 
 def create_savings_goal(db: Session, user_id: int, payload: SavingsGoalCreate) -> SavingsGoal:
@@ -35,7 +59,7 @@ def create_savings_goal(db: Session, user_id: int, payload: SavingsGoalCreate) -
 
 def get_savings_goal_with_progress(
     db: Session, user_id: int, goal_id: int
-) -> dict:
+) -> SavingsGoalProgress:
     """Get a savings goal with progress metrics."""
     goal = SavingsGoalRepository(db).get_owned(user_id, goal_id)
     if goal is None:
@@ -55,11 +79,11 @@ def get_savings_goal_with_progress(
     }
 
 
-def list_savings_goals(db: Session, user_id: int) -> list[dict]:
+def list_savings_goals(db: Session, user_id: int) -> list[SavingsGoalProgress]:
     """Get all savings goals for a user with progress info."""
     goals = SavingsGoalRepository(db).list_by_user(user_id)
 
-    result = []
+    result: list[SavingsGoalProgress] = []
     for goal in goals:
         current_amount = _resolve_current_amount(goal)
         progress_percent = _calculate_progress_percent(current_amount, goal.target_amount)
@@ -129,7 +153,7 @@ def simulate_scenario(
     category_id: int,
     reduction_percent: float,
     months_ahead: int,
-) -> list[dict]:
+) -> list[SavingsGoalScenarioProjection]:
     """
     Simulate impact of reducing spending in a category on savings goals.
 
@@ -147,7 +171,7 @@ def simulate_scenario(
     # Get all active goals using effective current amount (manual or pocket-linked)
     goals = SavingsGoalRepository(db).list_by_user(user_id)
 
-    result = []
+    result: list[SavingsGoalScenarioProjection] = []
     for goal in goals:
         current_amount = _resolve_current_amount(goal)
         if current_amount >= goal.target_amount:
@@ -197,7 +221,7 @@ def _calculate_progress_percent(current: Decimal, target: Decimal) -> float:
 def _resolve_current_amount(goal: SavingsGoal) -> Decimal:
     """Resolve current amount from pocket balance when goal is pocket-linked."""
     if goal.pocket_id is not None and goal.pocket is not None:
-        return goal.pocket.balance
+        return cast(Decimal, goal.pocket.balance)
     return goal.current_amount
 
 
