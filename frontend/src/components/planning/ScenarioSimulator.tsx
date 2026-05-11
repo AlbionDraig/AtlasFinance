@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
+import Slider from '@/components/ui/Slider'
 import { useScenarioSimulation } from '@/hooks/useSavingsGoals'
 import type { ScenarioSimulationResponse } from '@/api/savings_goals'
 
@@ -80,40 +81,27 @@ export default function ScenarioSimulator({
             </div>
 
             {/* Reduction percentage slider */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                {t('planning.simulator.reduction')}: {reductionPercent}%
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={reductionPercent}
-                onChange={(e) => setReductionPercent(Number(e.target.value))}
-                className="w-full"
-              />
-              <p className="text-xs text-neutral-400 mt-1">
-                {t('planning.simulator.reduction_help')}
-              </p>
-            </div>
+            <Slider
+              label={t('planning.simulator.reduction')}
+              value={reductionPercent}
+              min={0}
+              max={100}
+              step={1}
+              onChange={setReductionPercent}
+              valueSuffix="%"
+              hint={t('planning.simulator.reduction_help')}
+            />
 
             {/* Months ahead slider */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                {t('planning.simulator.months')}: {monthsAhead}
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="60"
-                value={monthsAhead}
-                onChange={(e) => setMonthsAhead(Number(e.target.value))}
-                className="w-full"
-              />
-              <p className="text-xs text-neutral-400 mt-1">
-                {t('planning.simulator.months_help')}
-              </p>
-            </div>
+            <Slider
+              label={t('planning.simulator.months')}
+              value={monthsAhead}
+              min={1}
+              max={60}
+              step={1}
+              onChange={setMonthsAhead}
+              hint={t('planning.simulator.months_help')}
+            />
 
             {/* Simulate button */}
             <button
