@@ -5,6 +5,7 @@ import ScenarioSimulator from '@/components/planning/ScenarioSimulator'
 import AmountInput from '@/components/ui/AmountInput'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import DatePicker from '@/components/ui/DatePicker'
+import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
 import { useToast } from '@/hooks/useToast'
@@ -171,23 +172,7 @@ export default function SavingsGoalsPage() {
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <button
-          onClick={handleCreateNew}
-          className="app-btn-primary"
-        >
-          + {t('planning.goal.new')}
-        </button>
-        {categories && categories.length > 0 && (
-          <button
-            onClick={() => setSimulatorOpen(true)}
-            className="app-btn-secondary"
-          >
-            {t('planning.goal.simulator')}
-          </button>
-        )}
-      </div>
+
 
       {/* Goals List */}
       {isLoading ? (
@@ -318,6 +303,37 @@ export default function SavingsGoalsPage() {
         categories={(categories || []).map((cat: Category) => ({ id: cat.id, name: cat.name }))}
         isOpen={simulatorOpen}
         onClose={() => setSimulatorOpen(false)}
+      />
+
+      <FloatingActionMenu
+        hidden={formMode !== null}
+        ariaLabel={t('common.actions')}
+        items={[
+          {
+            key: 'create-goal',
+            label: t('planning.goal.new'),
+            onClick: handleCreateNew,
+            icon: (
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+                <path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+              </svg>
+            ),
+          },
+          ...(categories && categories.length > 0
+            ? [
+                {
+                  key: 'simulator',
+                  label: t('planning.goal.simulator'),
+                  onClick: () => setSimulatorOpen(true),
+                  icon: (
+                    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+                      <path d="M13 6H7m6 0L10 3M7 6L10 3m6 8h-6m6 0l-3-3m-3 3l3-3M6 14h4m0 0l-2-2m2 2l2-2M4 18h12a2 2 0 002-2v-4m-16 4a2 2 0 002 2h12a2 2 0 002-2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  ),
+                },
+              ]
+            : []),
+        ]}
       />
     </div>
   )

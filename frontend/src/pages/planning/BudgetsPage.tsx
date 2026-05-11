@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import BudgetCard from '@/components/planning/BudgetCard'
 import AmountInput from '@/components/ui/AmountInput'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
+import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
@@ -176,13 +177,7 @@ export default function BudgetsPage() {
         </button>
       </div>
 
-      {/* Create New Budget Button */}
-      <button
-        onClick={handleCreateNew}
-        className="app-btn-primary"
-      >
-        + {t('planning.budget.new')}
-      </button>
+
 
       {/* Budgets Grid */}
       {budgetsLoading ? (
@@ -311,6 +306,23 @@ export default function BudgetsPage() {
           </div>
         </Modal>
       )}
+
+      <FloatingActionMenu
+        hidden={formMode !== null}
+        ariaLabel={t('common.actions')}
+        items={[
+          {
+            key: 'create-budget',
+            label: t('planning.budget.new'),
+            onClick: handleCreateNew,
+            icon: (
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+                <path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+              </svg>
+            ),
+          },
+        ]}
+      />
     </div>
   )
 }
