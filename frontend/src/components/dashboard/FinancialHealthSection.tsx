@@ -25,20 +25,36 @@ export default function FinancialHealthSection({
   return (
     <section className="pt-1">
       <h2 className="app-section-title mb-3">{t('dashboard.section_fin_health')}</h2>
-      <div className="app-panel p-5 space-y-5 bg-gradient-to-br from-brand-light/50 via-white to-neutral-50/80 ring-1 ring-brand/10">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div className="app-panel p-4 xl:p-5 space-y-3 xl:space-y-4 bg-gradient-to-br from-brand-light/50 via-white to-neutral-50/80 ring-1 ring-brand/10">
+        {/* Compact layout: <xl */}
+        <div className="xl:hidden space-y-2">
           <FinancialHealthScoreCard
             financialHealth={financialHealth}
             historyCount={history.length}
             deltaBadge={deltaBadge}
             t={t}
+            compact
           />
-          <FinancialHealthFactorsGrid factors={factors} t={t} />
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <FinancialHealthFactorsGrid factors={factors} t={t} compact />
           <FinancialHealthWeeklyPlanCard weeklyPlan={weeklyPlan} t={t} />
           <FinancialHealthHistoryCard history={history} t={t} />
+        </div>
+
+        {/* Rich layout: ≥xl */}
+        <div className="hidden xl:block space-y-4">
+          <div className="grid grid-cols-3 gap-3">
+            <FinancialHealthScoreCard
+              financialHealth={financialHealth}
+              historyCount={history.length}
+              deltaBadge={deltaBadge}
+              t={t}
+            />
+            <FinancialHealthFactorsGrid factors={factors} t={t} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <FinancialHealthWeeklyPlanCard weeklyPlan={weeklyPlan} t={t} />
+            <FinancialHealthHistoryCard history={history} t={t} />
+          </div>
         </div>
       </div>
     </section>

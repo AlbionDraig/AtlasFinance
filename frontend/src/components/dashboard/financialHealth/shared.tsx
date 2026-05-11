@@ -16,7 +16,7 @@ export function FinancialHealthBadge({ text, variant, hint }: BadgeProps) {
   }[variant]
 
   const content = (
-    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${cls} ${hint ? 'cursor-help' : ''}`}>
+    <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${cls} ${hint ? 'cursor-help' : ''}`}>
       {text}
     </span>
   )

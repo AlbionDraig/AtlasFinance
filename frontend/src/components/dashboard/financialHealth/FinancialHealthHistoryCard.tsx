@@ -17,17 +17,19 @@ import type { HealthHistoryPointView } from './types'
 interface FinancialHealthHistoryCardProps {
   history: HealthHistoryPointView[]
   t: (key: string) => string
+  compact?: boolean
 }
 
 export default function FinancialHealthHistoryCard({
   history,
   t,
+  compact = false,
 }: FinancialHealthHistoryCardProps) {
   return (
     <div className="app-card p-4 space-y-3 bg-white/90 ring-1 ring-neutral-100">
       <div className="flex items-center justify-between gap-2">
         <p className="app-label uppercase tracking-wider">{t('dashboard.health_history_title')}</p>
-        <FinancialHealthHelpTooltip text={t('dashboard.health_history_help')} />
+        {!compact && <FinancialHealthHelpTooltip text={t('dashboard.health_history_help')} />}
       </div>
 
       {history.length > 0 ? (
