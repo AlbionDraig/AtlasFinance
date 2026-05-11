@@ -58,8 +58,8 @@ export default function TransferModal({
   )
 
   const autoDescription = fromAccount && toAccount
-    ? `Transferencia: ${fromAccount.name} a ${toAccount.name}`
-    : 'Transferencia: origen a destino'
+    ? t('transactions.transfer_auto_desc', { from: fromAccount.name, to: toAccount.name })
+    : t('transactions.transfer_auto_desc_default')
 
   function handleFromChange(value: string) {
     setForm((prev) => ({
@@ -182,7 +182,7 @@ export default function TransferModal({
           </div>
 
           <div className="space-y-1">
-            <label className="app-label">{t('common.description', 'Descripción')}</label>
+            <label className="app-label">{t('common.description')}</label>
             <p className="app-control w-full min-h-11 flex items-center text-neutral-700">
               {autoDescription}
             </p>

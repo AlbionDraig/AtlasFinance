@@ -58,7 +58,7 @@ export default function AccountEditModal({ account, banks, saving, onSubmit, onC
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="app-control w-full"
-              placeholder="Ej: Cuenta Ahorros Principal"
+              placeholder={t('accounts.field_name_placeholder')}
               autoFocus
               maxLength={120}
             />
@@ -66,7 +66,7 @@ export default function AccountEditModal({ account, banks, saving, onSubmit, onC
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1">
-              <label className="app-label">Tipo</label>
+              <label className="app-label">{t('accounts.field_type')}</label>
               <Select
                 value={accountType}
                 onChange={(value) => setAccountType(value as 'savings' | 'checking')}
@@ -79,7 +79,7 @@ export default function AccountEditModal({ account, banks, saving, onSubmit, onC
             </div>
 
             <div className="space-y-1">
-              <label className="app-label">Moneda</label>
+              <label className="app-label">{t('accounts.field_currency')}</label>
               <Select
                 value={currency}
                 onChange={(value) => setCurrency(value as 'COP' | 'USD')}
@@ -92,7 +92,7 @@ export default function AccountEditModal({ account, banks, saving, onSubmit, onC
             </div>
 
             <div className="space-y-1">
-              <label className="app-label">Banco</label>
+              <label className="app-label">{t('accounts.field_bank')}</label>
               <Select
                 value={bankId}
                 onChange={setBankId}

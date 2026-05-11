@@ -484,6 +484,8 @@
     "pocket_select_account": "Selecciona la cuenta origen",
     "pocket_select_pocket": "Selecciona el bolsillo",
     "pocket_no_pockets": "Sin bolsillos en esta cuenta",
+    "pocket_auto_desc": "Movimiento a bolsillo {{pocket}}",
+    "pocket_auto_desc_default": "Movimiento a bolsillo {Bolsillo}",
     "pocket_submit": "Mover a bolsillo",
     "pocket_submitting": "Moviendo...",
     "toast_load_error": "No se pudieron cargar los datos.",

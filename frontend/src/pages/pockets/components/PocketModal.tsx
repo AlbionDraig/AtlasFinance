@@ -1,5 +1,6 @@
 ﻿import type { Dispatch, FormEvent, SetStateAction } from 'react'
 import type { Account } from '@/types'
+import { useTranslation } from 'react-i18next'
 import { formatCurrency } from '@/lib/utils'
 import FloatingModalFrame from '@/components/ui/FloatingModalFrame'
 import FormField from '@/components/ui/FormField'
@@ -46,6 +47,7 @@ export default function PocketModal({
   onSubmit,
   onClose,
 }: PocketModalProps) {
+  const { t } = useTranslation()
   const selectedAccount = accounts.find((account) => String(account.id) === form.account_id)
 
   return (
@@ -66,24 +68,24 @@ export default function PocketModal({
       )}
     >
         <form onSubmit={onSubmit} className="space-y-4 p-6">
-          <FormField label="Nombre">
+          <FormField label={t('pockets.field_name')}>
             <input
               className="app-control"
               type="text"
               value={form.name}
               onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-              placeholder="Ej: Fondo de viajes"
+              placeholder={t('pockets.field_name_placeholder')}
               maxLength={120}
               autoFocus
             />
           </FormField>
 
-          <FormField label="Cuenta asociada">
+          <FormField label={t('pockets.field_account')}>
             <Select
               value={form.account_id}
               onChange={(value) => setForm((current) => ({ ...current, account_id: value }))}
               options={[
-                { value: '', label: 'Selecciona una cuenta' },
+                { value: '', label: t('pockets.field_account_select') },
                 ...accounts.map((account) => ({
                   value: String(account.id),
                   label: `${account.name} · ${account.currency}`,
@@ -95,7 +97,7 @@ export default function PocketModal({
           </FormField>
 
           {!isEditing ? (
-            <FormField label="Saldo inicial">
+            <FormField label={t('pockets.field_initial_balance')}>
               <AmountInput
                 value={form.balance}
                 onChange={(raw) => setForm((current) => ({ ...current, balance: raw }))}
@@ -107,14 +109,13 @@ export default function PocketModal({
                 className="mt-2"
                 message={
                   <>
-                    El saldo inicial no se puede modificar después de crear el bolsillo. Usa{' '}
-                    <span className="font-medium">Mover a bolsillo</span> para actualizar el saldo.
+                    {t('pockets.initial_balance_alert')}
                   </>
                 }
               />
             </FormField>
           ) : (
-            <FormField label="Saldo actual">
+            <FormField label={t('pockets.field_current_balance')}>
               <p className="app-control w-full min-h-10 flex items-center text-neutral-700">
                 {formatCurrency(currentBalance ?? 0, currentCurrency ?? selectedAccount?.currency ?? 'COP')}
               </p>
@@ -122,8 +123,7 @@ export default function PocketModal({
           )}
 
           <p className="text-xs text-neutral-400">
-            Los bolsillos solo guardan dinero para propósitos específicos y usan la misma moneda de la cuenta:
-            <span className="text-neutral-700"> {selectedAccount?.currency ?? 'N/A'}</span>
+            {t('pockets.currency_note', { currency: selectedAccount?.currency ?? 'N/A' })}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
@@ -132,14 +132,14 @@ export default function PocketModal({
               disabled={saving}
               className="app-btn-primary"
             >
-              {saving ? 'Guardando…' : submitLabel}
+              {saving ? t('pockets.submitting') : submitLabel}
             </button>
             <button
               type="button"
               onClick={onClose}
               className="app-btn-secondary"
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
           </div>
         </form>

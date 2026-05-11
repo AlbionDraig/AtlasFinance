@@ -482,6 +482,8 @@
     "pocket_select_account": "Select source account",
     "pocket_select_pocket": "Select pocket",
     "pocket_no_pockets": "No pockets in this account",
+    "pocket_auto_desc": "Move to pocket {{pocket}}",
+    "pocket_auto_desc_default": "Move to pocket {Pocket}",
     "pocket_submit": "Move to pocket",
     "pocket_submitting": "Moving...",
     "toast_load_error": "Could not load data.",

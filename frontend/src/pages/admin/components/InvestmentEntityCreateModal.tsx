@@ -66,7 +66,7 @@ export default function InvestmentEntityCreateModal({
     >
         <form onSubmit={handleSubmit} className="space-y-4 p-6">
           <div className="space-y-1">
-            <label className="app-label">Nombre de la entidad</label>
+            <label className="app-label">{t('admin.entities.field_name')}</label>
             <input
               type="text"
               value={name}
@@ -82,7 +82,7 @@ export default function InvestmentEntityCreateModal({
           </div>
 
           <div className="space-y-1">
-            <label className="app-label">Tipo de entidad</label>
+            <label className="app-label">{t('admin.entities.field_type')}</label>
             <Select
               value={entityType}
               onChange={(value) => setEntityType(value as InvestmentEntityType)}

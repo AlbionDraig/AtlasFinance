@@ -161,9 +161,11 @@ export default function MoveToPocketModal({
           </div>
 
           <div className="space-y-1">
-            <label className="app-label">Descripción</label>
+            <label className="app-label">{t('common.description')}</label>
             <p className="app-control w-full min-h-11 flex items-center text-neutral-700">
-              {selectedPocket ? `Movimiento a Bolsillo ${selectedPocket.name}` : 'Movimiento a Bolsillo {Bolsillo}'}
+              {selectedPocket
+                ? t('transactions.pocket_auto_desc', { pocket: selectedPocket.name })
+                : t('transactions.pocket_auto_desc_default')}
             </p>
           </div>
 
