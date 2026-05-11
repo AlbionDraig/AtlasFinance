@@ -7,6 +7,7 @@ import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import DatePicker from '@/components/ui/DatePicker'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
+import { useToast } from '@/hooks/useToast'
 import {
   useSavingsGoals,
   useCreateSavingsGoal,
@@ -14,6 +15,7 @@ import {
   useUpdateSavingsGoal,
 } from '@/hooks/useSavingsGoals'
 import { useCategoriesData } from '@/hooks/useCategoriesData'
+import { getApiErrorMessage } from '@/lib/utils'
 import type { Category } from '@/api/categories'
 import type { SavingsGoalRead, SavingsGoalCreatePayload, SavingsGoalUpdatePayload } from '@/api/savings_goals'
 
@@ -24,6 +26,7 @@ type FormMode = 'create' | 'edit' | null
  */
 export default function SavingsGoalsPage() {
   const { t } = useTranslation()
+  const { toast } = useToast()
   const [formMode, setFormMode] = useState<FormMode>(null)
   const [editingGoal, setEditingGoal] = useState<SavingsGoalRead | null>(null)
   const [deletingGoal, setDeletingGoal] = useState<SavingsGoalRead | null>(null)
@@ -73,7 +76,15 @@ export default function SavingsGoalsPage() {
   const handleConfirmDeleteGoal = () => {
     if (!deletingGoal) return
 
+    const goalName = deletingGoal.name
+
     deleteGoal.mutate(deletingGoal.id, {
+      onSuccess: () => {
+        toast(t('planning.goal.toast_deleted', { name: goalName }))
+      },
+      onError: (error) => {
+        toast(getApiErrorMessage(error, t('planning.goal.toast_delete_error')), 'error')
+      },
       onSettled: () => {
         setDeletingGoal(null)
       },
@@ -89,6 +100,7 @@ export default function SavingsGoalsPage() {
           target_amount: Number(formData.target_amount),
           target_date: formData.target_date,
         } as SavingsGoalCreatePayload)
+        toast(t('planning.goal.toast_created'))
       } else if (formMode === 'edit' && editingGoal) {
         await updateGoal.mutateAsync({
           id: editingGoal.id,
@@ -99,10 +111,14 @@ export default function SavingsGoalsPage() {
             target_date: formData.target_date,
           } as SavingsGoalUpdatePayload,
         })
+        toast(t('planning.goal.toast_updated'))
       }
       setFormMode(null)
     } catch (error) {
-      console.error('Error submitting goal:', error)
+      const fallback = formMode === 'create'
+        ? t('planning.goal.toast_create_error')
+        : t('planning.goal.toast_update_error')
+      toast(getApiErrorMessage(error, fallback), 'error')
     }
   }
 

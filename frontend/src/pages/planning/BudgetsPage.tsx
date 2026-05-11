@@ -6,8 +6,10 @@ import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
+import { useToast } from '@/hooks/useToast'
 import { useBudgetsByMonth, useCreateBudget, useDeleteBudget, useUpdateBudget } from '@/hooks/useBudgets'
 import { useCategoriesData } from '@/hooks/useCategoriesData'
+import { getApiErrorMessage } from '@/lib/utils'
 import type { Category } from '@/api/categories'
 import type { BudgetCreatePayload, BudgetRead } from '@/api/budgets'
 
@@ -22,6 +24,7 @@ interface BudgetFormData extends BudgetCreatePayload {
  */
 export default function BudgetsPage() {
   const { t } = useTranslation()
+  const { toast } = useToast()
   const [currentDate] = useState(new Date())
   const [year, setYear] = useState(currentDate.getFullYear())
   const [month, setMonth] = useState(currentDate.getMonth() + 1)
@@ -94,7 +97,15 @@ export default function BudgetsPage() {
   const handleConfirmDeleteBudget = () => {
     if (!deletingBudget) return
 
+    const budgetLabel = categoryMap[deletingBudget.category_id] || `Category ${deletingBudget.category_id}`
+
     deleteBudget.mutate(deletingBudget.id, {
+      onSuccess: () => {
+        toast(t('planning.budget.toast_deleted', { name: budgetLabel }))
+      },
+      onError: (error) => {
+        toast(getApiErrorMessage(error, t('planning.budget.toast_delete_error')), 'error')
+      },
       onSettled: () => {
         setDeletingBudget(null)
       },
@@ -110,6 +121,7 @@ export default function BudgetsPage() {
           month: formData.month,
           amount_limit: formData.amount_limit,
         })
+        toast(t('planning.budget.toast_created'))
       } else if (formMode === 'edit' && editingBudget) {
         await updateBudget.mutateAsync({
           id: editingBudget.id,
@@ -117,10 +129,14 @@ export default function BudgetsPage() {
             amount_limit: formData.amount_limit,
           },
         })
+        toast(t('planning.budget.toast_updated'))
       }
       setFormMode(null)
     } catch (error) {
-      console.error('Error submitting budget:', error)
+      const fallback = formMode === 'create'
+        ? t('planning.budget.toast_create_error')
+        : t('planning.budget.toast_update_error')
+      toast(getApiErrorMessage(error, fallback), 'error')
     }
   }
 
