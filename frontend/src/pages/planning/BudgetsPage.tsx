@@ -12,6 +12,7 @@ import { useBudgetsByMonth, useCreateBudget, useDeleteBudget, useUpdateBudget } 
 import { useCategoriesData } from '@/hooks/useCategoriesData'
 import { getApiErrorMessage } from '@/lib/utils'
 import type { Category } from '@/api/categories'
+import type { FormEvent } from 'react'
 import type { BudgetCreatePayload, BudgetRead } from '@/api/budgets'
 
 type BudgetFormMode = 'create' | 'edit' | null
@@ -113,7 +114,8 @@ export default function BudgetsPage() {
     })
   }
 
-  const handleSubmitForm = async () => {
+  const handleSubmitForm = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
     try {
       if (formMode === 'create') {
         await createBudget.mutateAsync({
@@ -242,17 +244,29 @@ export default function BudgetsPage() {
       {/* Budget Form Modal */}
       {formMode && (
         <Modal onClose={() => setFormMode(null)} maxWidth="max-w-md">
-          <div className="app-card w-full overflow-hidden">
-            <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
-              <h2 className="text-lg font-medium text-neutral-900">
+          <div className="w-full rounded-2xl border border-neutral-100 border-t-4 border-t-brand bg-white shadow-xl overflow-visible">
+            <div className="flex items-start gap-3 border-b border-brand/10 bg-brand-light px-6 py-4">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white shadow-[0_0_0_5px_rgba(202,11,11,0.10)]">
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
+                  <path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="app-section-title text-brand-text">
                 {formMode === 'create'
                   ? t('planning.budget.new')
                   : t('planning.budget.edit')}
               </h2>
+                <p className="mt-0.5 text-sm text-neutral-700">
+                  {formMode === 'create'
+                    ? t('planning.budget.create_desc')
+                    : t('planning.budget.edit_desc')}
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setFormMode(null)}
-                className="h-8 w-8 rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
+                className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
                 aria-label={t('common.close')}
               >
                 <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-4 w-4">
@@ -261,7 +275,7 @@ export default function BudgetsPage() {
               </button>
             </div>
 
-            <div className="space-y-4 p-5">
+            <form onSubmit={handleSubmitForm} className="space-y-4 p-6">
               {formMode === 'create' && (
                 <FormField label={t('planning.budget.category')}>
                   <Select
@@ -289,20 +303,20 @@ export default function BudgetsPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
-                  onClick={handleSubmitForm}
                   disabled={createBudget.isPending || updateBudget.isPending}
                   className="app-btn-primary disabled:opacity-50"
                 >
                   {formMode === 'create' ? t('common.create') : t('common.update')}
                 </button>
                 <button
-                  onClick={() => setFormMode(null)}
                   className="app-btn-secondary"
+                                  type="button"
+                                  onClick={() => setFormMode(null)}
                 >
                   {t('common.cancel')}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </Modal>
       )}

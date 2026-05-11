@@ -935,6 +935,8 @@
     },
     "budget": {
       "new": "New budget",
+        "create_desc": "Set a spending limit to control your expenses by category",
+        "edit_desc": "Update the spending limit for this category",
       "edit": "Edit",
       "delete": "Delete",
       "status_ok": "Good",
@@ -969,6 +971,8 @@
     },
     "goal": {
       "new": "New goal",
+        "create_desc": "Set a savings target and link it to a pocket",
+        "edit_desc": "Update the details of your savings goal",
       "edit": "Edit",
       "delete": "Delete",
       "name": "Goal name",

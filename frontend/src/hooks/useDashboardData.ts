@@ -91,7 +91,7 @@ export function useDashboardData({
     const status = (query.error as { response?: { status?: number } })?.response?.status
     if (status === 401) return
     toast(t('dashboard.error_load'), 'error')
-  }, [query.isError])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [query.isError])
 
   return {
     metrics: query.data?.metrics ?? null,

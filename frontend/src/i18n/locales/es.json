@@ -937,6 +937,8 @@
     },
     "budget": {
       "new": "Nuevo presupuesto",
+        "create_desc": "Define un límite de gasto para controlar tus gastos por categoría",
+        "edit_desc": "Actualiza el límite de gasto de esta categoría",
       "edit": "Editar",
       "delete": "Eliminar",
       "status_ok": "Bien",
@@ -971,6 +973,8 @@
     },
     "goal": {
       "new": "Nueva meta",
+        "create_desc": "Establece un objetivo de ahorro y vincula a un bolsillo",
+        "edit_desc": "Actualiza los detalles de tu meta de ahorro",
       "edit": "Editar",
       "delete": "Eliminar",
       "name": "Nombre de la meta",
