@@ -36,6 +36,7 @@ export default function SavingsGoalsPage() {
     name: '',
     description: '',
     target_amount: '',
+    current_amount: '',
     target_date: '',
   })
 
@@ -51,6 +52,7 @@ export default function SavingsGoalsPage() {
       name: '',
       description: '',
       target_amount: '',
+      current_amount: '',
       target_date: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000)
         .toISOString()
         .split('T')[0],
@@ -64,6 +66,7 @@ export default function SavingsGoalsPage() {
       name: goal.name,
       description: goal.description || '',
       target_amount: String(goal.target_amount),
+      current_amount: String(goal.current_amount),
       target_date: goal.target_date.split('T')[0],
     })
     setFormMode('edit')
@@ -108,6 +111,7 @@ export default function SavingsGoalsPage() {
             name: formData.name,
             description: formData.description || undefined,
             target_amount: Number(formData.target_amount),
+            current_amount: formData.current_amount ? Number(formData.current_amount) : undefined,
             target_date: formData.target_date,
           } as SavingsGoalUpdatePayload,
         })
@@ -269,6 +273,18 @@ export default function SavingsGoalsPage() {
                   placeholder="0.00"
                 />
               </FormField>
+
+              {formMode === 'edit' && (
+                <FormField label={t('planning.goal.saved')}>
+                  <AmountInput
+                    value={formData.current_amount}
+                    onChange={(raw) => setFormData({ ...formData, current_amount: raw })}
+                    currency="COP"
+                    className="w-full"
+                    placeholder="0.00"
+                  />
+                </FormField>
+              )}
 
               <DatePicker
                 label={t('planning.goal.target_date')}
