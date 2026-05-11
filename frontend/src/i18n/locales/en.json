@@ -84,7 +84,8 @@
     "no_results": "No results",
     "description": "Description",
     "entity": "Entity",
-    "sort": "Sort"
+    "sort": "Sort",
+    "loading": "Loading..."
   },
   "auth": {
     "login": {
@@ -975,6 +976,12 @@
       "description": "Description",
       "description_placeholder": "Describe your goal (optional)",
       "saved": "Saved",
+      "bank": "Bank",
+      "select_bank": "Select a bank",
+      "pocket": "Pocket",
+      "linked_pocket": "Linked pocket",
+      "no_pocket_manual": "No pocket (manual mode)",
+      "saved_auto_from_pocket": "Saved amount is automatically calculated from the linked pocket balance.",
       "target": "Target",
       "remaining": "Remaining",
       "progress": "Progress",

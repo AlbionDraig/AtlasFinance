@@ -12,6 +12,7 @@ class SavingsGoalCreate(BaseModel):
     name: str = Field(min_length=2, max_length=255)
     description: str | None = Field(default=None, max_length=1000)
     target_amount: Decimal = Field(gt=0, decimal_places=2)
+    pocket_id: int | None = Field(default=None, gt=0)
     target_date: datetime
 
 
@@ -21,6 +22,7 @@ class SavingsGoalUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=1000)
     target_amount: Decimal | None = Field(default=None, gt=0, decimal_places=2)
     current_amount: Decimal | None = Field(default=None, ge=0, decimal_places=2)
+    pocket_id: int | None = Field(default=None, gt=0)
     target_date: datetime | None = None
 
 
@@ -29,6 +31,8 @@ class SavingsGoalRead(BaseModel):
     id: int
     name: str
     description: str | None
+    pocket_id: int | None = None
+    pocket_name: str | None = None
     target_amount: MoneyDecimal
     current_amount: MoneyDecimal
     target_date: datetime

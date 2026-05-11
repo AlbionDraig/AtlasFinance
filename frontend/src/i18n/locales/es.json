@@ -84,7 +84,8 @@
     "no_results": "Sin resultados",
     "description": "Descripción",
     "entity": "Entidad",
-    "sort": "Ordenar"
+    "sort": "Ordenar",
+    "loading": "Cargando..."
   },
   "auth": {
     "login": {
@@ -977,6 +978,12 @@
       "description": "Descripción",
       "description_placeholder": "Describe tu meta (opcional)",
       "saved": "Ahorrado",
+      "bank": "Banco",
+      "select_bank": "Selecciona un banco",
+      "pocket": "Bolsillo",
+      "linked_pocket": "Bolsillo vinculado",
+      "no_pocket_manual": "Sin bolsillo (modo manual)",
+      "saved_auto_from_pocket": "El monto ahorrado se calcula automaticamente desde el saldo del bolsillo vinculado.",
       "target": "Objetivo",
       "remaining": "Falta",
       "progress": "Progreso",

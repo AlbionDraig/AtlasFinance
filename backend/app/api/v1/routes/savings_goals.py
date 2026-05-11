@@ -31,6 +31,24 @@ from app.services.savings_goals_service import (
 router = APIRouter()
 
 
+def _build_savings_goal_read(payload: dict) -> SavingsGoalRead:
+    """Build API response from savings goal progress payload."""
+    goal = payload["goal"]
+    return SavingsGoalRead(
+        id=goal.id,
+        name=goal.name,
+        description=goal.description,
+        pocket_id=goal.pocket_id,
+        pocket_name=goal.pocket.name if goal.pocket is not None else None,
+        target_amount=goal.target_amount,
+        current_amount=payload["current_amount"],
+        target_date=goal.target_date,
+        progress_percent=payload["progress_percent"],
+        days_remaining=payload["days_remaining"],
+        is_completed=payload["is_completed"],
+    )
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED, responses={400: {"description": "Bad Request"}})
 def create_savings_goal_endpoint(
     payload: SavingsGoalCreate,
@@ -40,16 +58,8 @@ def create_savings_goal_endpoint(
     """Create a new savings goal for the user."""
     try:
         goal = create_savings_goal(db, current_user.id, payload)
-        return SavingsGoalRead(
-            id=goal.id,
-            name=goal.name,
-            description=goal.description,
-            target_amount=goal.target_amount,
-            current_amount=goal.current_amount,
-            target_date=goal.target_date,
-            progress_percent=0.0,
-            days_remaining=0,
-            is_completed=False,
+        return _build_savings_goal_read(
+            get_savings_goal_with_progress(db, current_user.id, goal.id)
         )
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
@@ -62,20 +72,7 @@ def list_savings_goals_endpoint(
 ) -> list[SavingsGoalRead]:
     """Get all savings goals for the authenticated user."""
     goals = list_savings_goals(db, current_user.id)
-    return [
-        SavingsGoalRead(
-            id=g["goal"].id,
-            name=g["goal"].name,
-            description=g["goal"].description,
-            target_amount=g["goal"].target_amount,
-            current_amount=g["goal"].current_amount,
-            target_date=g["goal"].target_date,
-            progress_percent=g["progress_percent"],
-            days_remaining=g["days_remaining"],
-            is_completed=g["is_completed"],
-        )
-        for g in goals
-    ]
+    return [_build_savings_goal_read(goal) for goal in goals]
 
 
 @router.get("/{goal_id}")
@@ -86,17 +83,8 @@ def get_savings_goal_endpoint(
 ) -> SavingsGoalRead:
     """Get a specific savings goal with progress info."""
     try:
-        result = get_savings_goal_with_progress(db, current_user.id, goal_id)
-        return SavingsGoalRead(
-            id=result["goal"].id,
-            name=result["goal"].name,
-            description=result["goal"].description,
-            target_amount=result["goal"].target_amount,
-            current_amount=result["goal"].current_amount,
-            target_date=result["goal"].target_date,
-            progress_percent=result["progress_percent"],
-            days_remaining=result["days_remaining"],
-            is_completed=result["is_completed"],
+        return _build_savings_goal_read(
+            get_savings_goal_with_progress(db, current_user.id, goal_id)
         )
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)
@@ -112,17 +100,8 @@ def update_savings_goal_endpoint(
     """Update a savings goal."""
     try:
         goal = update_savings_goal(db, current_user.id, goal_id, payload)
-        result = get_savings_goal_with_progress(db, current_user.id, goal.id)
-        return SavingsGoalRead(
-            id=result["goal"].id,
-            name=result["goal"].name,
-            description=result["goal"].description,
-            target_amount=result["goal"].target_amount,
-            current_amount=result["goal"].current_amount,
-            target_date=result["goal"].target_date,
-            progress_percent=result["progress_percent"],
-            days_remaining=result["days_remaining"],
-            is_completed=result["is_completed"],
+        return _build_savings_goal_read(
+            get_savings_goal_with_progress(db, current_user.id, goal.id)
         )
     except ValueError as exc:
         raise_bad_request_from_value_error(exc)

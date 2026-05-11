@@ -7,6 +7,7 @@ export interface SavingsGoalCreatePayload {
   name: string
   description?: string
   target_amount: number
+  pocket_id?: number
   target_date: string // ISO 8601 date string
 }
 
@@ -16,6 +17,7 @@ export interface SavingsGoalUpdatePayload {
   description?: string
   target_amount?: number
   current_amount?: number
+  pocket_id?: number | null
   target_date?: string
 }
 
@@ -24,6 +26,8 @@ export interface SavingsGoalRead {
   id: number
   name: string
   description: string | null
+  pocket_id: number | null
+  pocket_name: string | null
   target_amount: Decimal
   current_amount: Decimal
   target_date: string // ISO 8601 date string

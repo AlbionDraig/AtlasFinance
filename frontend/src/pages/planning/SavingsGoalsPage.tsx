@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import SavingsGoalCard from '@/components/planning/SavingsGoalCard'
 import ScenarioSimulator from '@/components/planning/ScenarioSimulator'
@@ -8,6 +8,8 @@ import DatePicker from '@/components/ui/DatePicker'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
+import Select from '@/components/ui/Select'
+import { useBanksQuery, usePocketsQuery, useAccountsQuery } from '@/hooks/useCatalogQueries'
 import { useToast } from '@/hooks/useToast'
 import {
   useSavingsGoals,
@@ -38,11 +40,34 @@ export default function SavingsGoalsPage() {
     description: '',
     target_amount: '',
     current_amount: '',
+    bank_id: '',
+    pocket_id: '',
     target_date: '',
   })
 
   const { data: goals, isLoading } = useSavingsGoals()
+  const { data: banks } = useBanksQuery()
+  const { data: accounts } = useAccountsQuery()
+  const { data: pockets } = usePocketsQuery()
   const { categories } = useCategoriesData()
+
+  // Mapeo: banco_id -> [cuenta_id] para filtrar bolsillos por banco
+  const accountsByBank = useMemo(() => {
+    if (!accounts) return {}
+    const map: Record<number, number[]> = {}
+    accounts.forEach((acc) => {
+      if (!map[acc.bank_id]) map[acc.bank_id] = []
+      map[acc.bank_id].push(acc.id)
+    })
+    return map
+  }, [accounts])
+
+  // Bolsillos filtrados por banco seleccionado
+  const filteredPockets = useMemo(() => {
+    if (!pockets || !formData.bank_id) return []
+    const accountIds = accountsByBank[Number(formData.bank_id)] || []
+    return pockets.filter((p) => accountIds.includes(p.account_id))
+  }, [pockets, formData.bank_id, accountsByBank])
   const createGoal = useCreateSavingsGoal()
   const updateGoal = useUpdateSavingsGoal()
   const deleteGoal = useDeleteSavingsGoal()
@@ -54,6 +79,8 @@ export default function SavingsGoalsPage() {
       description: '',
       target_amount: '',
       current_amount: '',
+      bank_id: '',
+      pocket_id: '',
       target_date: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000)
         .toISOString()
         .split('T')[0],
@@ -63,11 +90,16 @@ export default function SavingsGoalsPage() {
 
   const handleEditGoal = (goal: SavingsGoalRead) => {
     setEditingGoal(goal)
+    // Si la meta está vinculada a un bolsillo, obtener el banco de ese bolsillo
+    const selectedPocket = goal.pocket_id ? pockets?.find((p) => p.id === goal.pocket_id) : null
+    const selectedAccount = selectedPocket ? accounts?.find((a) => a.id === selectedPocket.account_id) : null
     setFormData({
       name: goal.name,
       description: goal.description || '',
       target_amount: String(goal.target_amount),
       current_amount: String(goal.current_amount),
+      bank_id: selectedAccount ? String(selectedAccount.bank_id) : '',
+      pocket_id: goal.pocket_id ? String(goal.pocket_id) : '',
       target_date: goal.target_date.split('T')[0],
     })
     setFormMode('edit')
@@ -102,6 +134,7 @@ export default function SavingsGoalsPage() {
           name: formData.name,
           description: formData.description || undefined,
           target_amount: Number(formData.target_amount),
+          pocket_id: formData.pocket_id ? Number(formData.pocket_id) : undefined,
           target_date: formData.target_date,
         } as SavingsGoalCreatePayload)
         toast(t('planning.goal.toast_created'))
@@ -112,7 +145,10 @@ export default function SavingsGoalsPage() {
             name: formData.name,
             description: formData.description || undefined,
             target_amount: Number(formData.target_amount),
-            current_amount: formData.current_amount ? Number(formData.current_amount) : undefined,
+            pocket_id: formData.pocket_id ? Number(formData.pocket_id) : null,
+            current_amount: !formData.pocket_id && formData.current_amount
+              ? Number(formData.current_amount)
+              : undefined,
             target_date: formData.target_date,
           } as SavingsGoalUpdatePayload,
         })
@@ -259,7 +295,42 @@ export default function SavingsGoalsPage() {
                 />
               </FormField>
 
-              {formMode === 'edit' && (
+              <FormField label={t('planning.goal.bank')}>
+                <Select
+                  value={formData.bank_id}
+                  onChange={(value) => {
+                    setFormData({ ...formData, bank_id: value, pocket_id: '' })
+                  }}
+                  options={[
+                    { value: '', label: t('planning.goal.select_bank') },
+                    ...((banks || []).map((bank) => ({
+                      value: String(bank.id),
+                      label: bank.name,
+                    }))),
+                  ]}
+                  className="w-full"
+                  active={Boolean(formData.bank_id)}
+                />
+              </FormField>
+
+              <FormField label={t('planning.goal.pocket')}>
+                <Select
+                  value={formData.pocket_id}
+                  onChange={(value) => setFormData({ ...formData, pocket_id: value })}
+                  options={[
+                    { value: '', label: t('planning.goal.no_pocket_manual') },
+                    ...((filteredPockets || []).map((pocket) => ({
+                      value: String(pocket.id),
+                      label: `${pocket.name} ($${Number(pocket.balance).toFixed(2)})`,
+                    }))),
+                  ]}
+                  disabled={!formData.bank_id}
+                  className="w-full"
+                  active={Boolean(formData.pocket_id)}
+                />
+              </FormField>
+
+              {formMode === 'edit' && !formData.pocket_id && (
                 <FormField label={t('planning.goal.saved')}>
                   <AmountInput
                     value={formData.current_amount}
@@ -269,6 +340,12 @@ export default function SavingsGoalsPage() {
                     placeholder="0.00"
                   />
                 </FormField>
+              )}
+
+              {formMode === 'edit' && formData.pocket_id && (
+                <p className="app-subtitle text-xs">
+                  {t('planning.goal.saved_auto_from_pocket')}
+                </p>
               )}
 
               <DatePicker

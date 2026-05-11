@@ -22,3 +22,4 @@ class Pocket(Base):
 
     account = relationship("Account", back_populates="pockets")
     transactions = relationship("Transaction", back_populates="pocket")
+    savings_goals = relationship("SavingsGoal", back_populates="pocket")

@@ -39,6 +39,11 @@ export default function SavingsGoalCard({
           {goal.description && (
             <p className="app-subtitle text-xs mt-1 leading-snug">{goal.description}</p>
           )}
+          {goal.pocket_name && (
+            <p className="app-subtitle text-[11px] mt-1">
+              {t('planning.goal.linked_pocket')}: {goal.pocket_name}
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <EditButton onClick={() => onEdit(goal)} label={t('planning.goal.edit')} />

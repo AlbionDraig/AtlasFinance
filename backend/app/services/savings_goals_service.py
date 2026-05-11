@@ -8,18 +8,26 @@ from sqlalchemy.orm import Session
 from app.models.enums import TransactionType
 from app.models.savings_goal import SavingsGoal
 from app.models.transaction import Transaction
+from app.repositories.pockets import PocketRepository
 from app.repositories.savings_goals import SavingsGoalRepository
 from app.schemas.savings_goal import SavingsGoalCreate, SavingsGoalUpdate
 
 
 def create_savings_goal(db: Session, user_id: int, payload: SavingsGoalCreate) -> SavingsGoal:
     """Create a new savings goal for the user."""
+    pocket = None
+    if payload.pocket_id is not None:
+        pocket = PocketRepository(db).get_owned(user_id, payload.pocket_id)
+        if pocket is None:
+            raise ValueError("Pocket not found")
+
     goal = SavingsGoal(
         user_id=user_id,
+        pocket_id=payload.pocket_id,
         name=payload.name,
         description=payload.description,
         target_amount=payload.target_amount,
-        current_amount=Decimal("0"),
+        current_amount=pocket.balance if pocket is not None else Decimal("0"),
         target_date=payload.target_date,
     )
     return SavingsGoalRepository(db).add(goal)
@@ -33,12 +41,14 @@ def get_savings_goal_with_progress(
     if goal is None:
         raise ValueError("Savings goal not found")
 
-    progress_percent = _calculate_progress_percent(goal.current_amount, goal.target_amount)
+    current_amount = _resolve_current_amount(goal)
+    progress_percent = _calculate_progress_percent(current_amount, goal.target_amount)
     days_remaining = _calculate_days_remaining(goal.target_date)
-    is_completed = goal.current_amount >= goal.target_amount
+    is_completed = current_amount >= goal.target_amount
 
     return {
         "goal": goal,
+        "current_amount": current_amount,
         "progress_percent": progress_percent,
         "days_remaining": days_remaining,
         "is_completed": is_completed,
@@ -51,12 +61,14 @@ def list_savings_goals(db: Session, user_id: int) -> list[dict]:
 
     result = []
     for goal in goals:
-        progress_percent = _calculate_progress_percent(goal.current_amount, goal.target_amount)
+        current_amount = _resolve_current_amount(goal)
+        progress_percent = _calculate_progress_percent(current_amount, goal.target_amount)
         days_remaining = _calculate_days_remaining(goal.target_date)
-        is_completed = goal.current_amount >= goal.target_amount
+        is_completed = current_amount >= goal.target_amount
 
         result.append({
             "goal": goal,
+            "current_amount": current_amount,
             "progress_percent": progress_percent,
             "days_remaining": days_remaining,
             "is_completed": is_completed,
@@ -80,7 +92,21 @@ def update_savings_goal(
         goal.description = payload.description
     if payload.target_amount is not None:
         goal.target_amount = payload.target_amount
+
+    if "pocket_id" in payload.model_fields_set:
+        if payload.pocket_id is None:
+            goal.current_amount = _resolve_current_amount(goal)
+            goal.pocket_id = None
+        else:
+            pocket = PocketRepository(db).get_owned(user_id, payload.pocket_id)
+            if pocket is None:
+                raise ValueError("Pocket not found")
+            goal.pocket_id = pocket.id
+            goal.current_amount = pocket.balance
+
     if payload.current_amount is not None:
+        if goal.pocket_id is not None:
+            raise ValueError("Cannot manually update current amount for pocket-linked goals")
         goal.current_amount = payload.current_amount
     if payload.target_date is not None:
         goal.target_date = payload.target_date
@@ -118,13 +144,17 @@ def simulate_scenario(
     # Calculate monthly savings from reduction
     monthly_savings = avg_monthly_spending * Decimal(str(reduction_percent)) / Decimal("100")
 
-    # Get all active goals
-    goals = SavingsGoalRepository(db).list_active_by_user(user_id)
+    # Get all active goals using effective current amount (manual or pocket-linked)
+    goals = SavingsGoalRepository(db).list_by_user(user_id)
 
     result = []
     for goal in goals:
+        current_amount = _resolve_current_amount(goal)
+        if current_amount >= goal.target_amount:
+            continue
+
         # Project future amount
-        projected_amount = goal.current_amount + (monthly_savings * Decimal(str(months_ahead)))
+        projected_amount = current_amount + (monthly_savings * Decimal(str(months_ahead)))
 
         # Check if goal will be reached
         will_reach = projected_amount >= goal.target_amount
@@ -132,7 +162,7 @@ def simulate_scenario(
         # Calculate days to reach target
         days_to_target = None
         if monthly_savings > 0:
-            remaining_needed = goal.target_amount - goal.current_amount
+            remaining_needed = goal.target_amount - current_amount
             if remaining_needed > 0:
                 months_needed = float(remaining_needed / monthly_savings)
                 days_to_target = int(months_needed * 30)
@@ -145,7 +175,7 @@ def simulate_scenario(
         result.append({
             "goal_id": goal.id,
             "goal_name": goal.name,
-            "current_amount": goal.current_amount,
+            "current_amount": current_amount,
             "projected_amount": projected_amount,
             "target_amount": goal.target_amount,
             "projected_progress_percent": progress_percent,
@@ -162,6 +192,13 @@ def _calculate_progress_percent(current: Decimal, target: Decimal) -> float:
         return 0.0
     percent = float(current / target * 100)
     return min(100.0, percent)
+
+
+def _resolve_current_amount(goal: SavingsGoal) -> Decimal:
+    """Resolve current amount from pocket balance when goal is pocket-linked."""
+    if goal.pocket_id is not None and goal.pocket is not None:
+        return goal.pocket.balance
+    return goal.current_amount
 
 
 def _calculate_days_remaining(target_date: datetime) -> int:

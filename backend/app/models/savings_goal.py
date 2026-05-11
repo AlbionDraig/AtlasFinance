@@ -17,6 +17,11 @@ class SavingsGoal(Base):
         nullable=False,
         index=True,
     )
+    pocket_id: Mapped[int | None] = mapped_column(
+        ForeignKey("pockets.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     target_amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
@@ -38,3 +43,4 @@ class SavingsGoal(Base):
     )
 
     user = relationship("User", backref="savings_goals")
+    pocket = relationship("Pocket", back_populates="savings_goals")

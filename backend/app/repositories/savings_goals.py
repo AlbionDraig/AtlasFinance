@@ -1,5 +1,6 @@
 """Repository for SavingsGoal model."""
 from sqlalchemy import and_, select
+from sqlalchemy.orm import joinedload
 
 from app.models.savings_goal import SavingsGoal
 from app.repositories.base import BaseRepository
@@ -12,7 +13,7 @@ class SavingsGoalRepository(BaseRepository[SavingsGoal]):
 
     def get_owned(self, user_id: int, goal_id: int) -> SavingsGoal | None:
         """Get a savings goal by ID, verifying it belongs to the user."""
-        query = select(SavingsGoal).where(
+        query = select(SavingsGoal).options(joinedload(SavingsGoal.pocket)).where(
             and_(
                 SavingsGoal.id == goal_id,
                 SavingsGoal.user_id == user_id,
@@ -22,7 +23,7 @@ class SavingsGoalRepository(BaseRepository[SavingsGoal]):
 
     def list_by_user(self, user_id: int) -> list[SavingsGoal]:
         """Get all savings goals for a user."""
-        query = select(SavingsGoal).where(SavingsGoal.user_id == user_id).order_by(
+        query = select(SavingsGoal).options(joinedload(SavingsGoal.pocket)).where(SavingsGoal.user_id == user_id).order_by(
             SavingsGoal.target_date
         )
         return list(self.db.scalars(query).all())
