@@ -909,6 +909,7 @@
     "role_user": "User",
     "change_role_aria": "Change role for {{name}}",
     "current_user_locked": "You cannot change your own role from this screen.",
+    "current_user_label": "Your account",
     "toast_role_updated": "Role updated successfully.",
     "toast_role_update_error": "Could not update role.",
     "toast_forbidden": "You do not have permission to perform this action.",

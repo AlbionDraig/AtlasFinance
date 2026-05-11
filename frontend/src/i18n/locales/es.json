@@ -911,6 +911,7 @@
     "role_user": "Usuario",
     "change_role_aria": "Cambiar rol de {{name}}",
     "current_user_locked": "No puedes cambiar tu propio rol desde esta pantalla.",
+    "current_user_label": "Tu cuenta",
     "toast_role_updated": "Rol actualizado correctamente.",
     "toast_role_update_error": "No se pudo actualizar el rol.",
     "toast_forbidden": "No tienes permisos para realizar esta acción.",

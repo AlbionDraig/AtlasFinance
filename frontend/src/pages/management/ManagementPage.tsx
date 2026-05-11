@@ -198,37 +198,46 @@ export default function ManagementPage() {
                       return (
                         <tr key={managedUser.id} className="group transition-colors hover:bg-brand-light/40 odd:bg-white even:bg-neutral-50/50">
                           <td className="max-w-0 border-b border-r border-neutral-100 px-5 py-3.5 align-middle">
-                            <span className="block truncate text-sm font-medium text-neutral-900" title={managedUser.full_name}>
-                              {managedUser.full_name}
-                            </span>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="block truncate text-sm font-medium text-neutral-900" title={managedUser.full_name}>
+                                {managedUser.full_name}
+                              </span>
+                              {isOwnSession && (
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand text-white px-2.5 py-1 text-xs font-semibold whitespace-nowrap shadow-sm">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                                  </svg>
+                                  {t('management.current_user_label')}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="max-w-0 border-b border-r border-neutral-100 px-5 py-3.5 align-middle text-sm text-neutral-700">
                             <span className="block truncate" title={managedUser.email}>{managedUser.email}</span>
                           </td>
                           <td className="border-b border-neutral-100 px-5 py-3.5 align-middle">
-                            <div className="w-full max-w-[12rem]">
-                              <Select
-                                value={managedUser.role}
-                                options={roleOptions}
-                                disabled={isOwnSession || roleBusy}
-                                className="w-full"
-                                onChange={(nextRole) => {
-                                  if (!isUserRole(nextRole)) return
-                                  handleRoleSelection(
-                                    {
-                                      id: managedUser.id,
-                                      full_name: managedUser.full_name,
-                                      email: managedUser.email,
-                                      role: managedUser.role,
-                                    },
-                                    nextRole,
-                                  )
-                                }}
-                              />
+                            <div className="flex justify-center">
+                              <div className="w-full">
+                                <Select
+                                  value={managedUser.role}
+                                  options={roleOptions}
+                                  disabled={isOwnSession || roleBusy}
+                                  className="w-full"
+                                  onChange={(nextRole) => {
+                                    if (!isUserRole(nextRole)) return
+                                    handleRoleSelection(
+                                      {
+                                        id: managedUser.id,
+                                        full_name: managedUser.full_name,
+                                        email: managedUser.email,
+                                        role: managedUser.role,
+                                      },
+                                      nextRole,
+                                    )
+                                  }}
+                                />
+                              </div>
                             </div>
-                            {isOwnSession && (
-                              <p className="mt-1 text-xs text-neutral-400">{t('management.current_user_locked')}</p>
-                            )}
                           </td>
                         </tr>
                       )
