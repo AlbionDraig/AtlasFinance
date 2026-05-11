@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import SavingsGoalCard from '@/components/planning/SavingsGoalCard'
 import ScenarioSimulator from '@/components/planning/ScenarioSimulator'
+import AmountInput from '@/components/ui/AmountInput'
 import {
   useSavingsGoals,
   useCreateSavingsGoal,
@@ -216,16 +217,12 @@ export default function SavingsGoalsPage() {
               <label className="block text-sm font-medium text-neutral-700 mb-2">
                 {t('planning.goal.target_amount')}
               </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
+              <AmountInput
                 value={formData.target_amount}
-                onChange={(e) =>
-                  setFormData({ ...formData, target_amount: e.target.value })
-                }
+                onChange={(raw) => setFormData({ ...formData, target_amount: raw })}
+                currency="COP"
+                className="w-full"
                 placeholder="0.00"
-                className="w-full p-2 border border-neutral-100 rounded-lg text-sm text-neutral-900"
               />
             </div>
 

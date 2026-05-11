@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import BudgetCard from '@/components/planning/BudgetCard'
+import AmountInput from '@/components/ui/AmountInput'
 import Select from '@/components/ui/Select'
 import { useBudgetsByMonth, useCreateBudget, useDeleteBudget, useUpdateBudget } from '@/hooks/useBudgets'
 import { useCategoriesData } from '@/hooks/useCategoriesData'
@@ -235,15 +236,11 @@ export default function BudgetsPage() {
               <label className="block text-sm font-medium text-neutral-700 mb-2">
                 {t('planning.budget.amount_limit')}
               </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.amount_limit}
-                onChange={(e) =>
-                  setFormData({ ...formData, amount_limit: Number(e.target.value) })
-                }
-                className="w-full p-2 border border-neutral-100 rounded-lg text-sm text-neutral-900"
+              <AmountInput
+                value={formData.amount_limit ? String(formData.amount_limit) : ''}
+                onChange={(raw) => setFormData({ ...formData, amount_limit: Number(raw || '0') })}
+                currency="COP"
+                className="w-full"
                 placeholder="0.00"
               />
             </div>
