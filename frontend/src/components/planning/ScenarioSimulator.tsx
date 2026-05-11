@@ -193,7 +193,7 @@ export default function ScenarioSimulator({
 
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-neutral-700">
-                        {t('planning.simulator.progress')}:
+                        {t('planning.simulator.progress')}
                         {result.projected_progress_percent.toFixed(1)}%
                       </span>
                       {result.will_reach_target ? (
@@ -209,7 +209,7 @@ export default function ScenarioSimulator({
 
                     {result.days_to_target && (
                       <p className="text-xs text-neutral-400">
-                        {t('planning.simulator.days_to_reach')}: {result.days_to_target}
+                        {t('planning.simulator.days_to_reach')} {result.days_to_target}
                       </p>
                     )}
                   </div>
