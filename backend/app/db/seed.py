@@ -25,7 +25,7 @@ from app.models.account import Account
 from app.models.bank import Bank
 from app.models.category import Category
 from app.models.country import Country
-from app.models.enums import AccountType, Currency, InvestmentEntityType, TransactionType
+from app.models.enums import AccountType, Currency, InvestmentEntityType, TransactionType, UserRole
 from app.models.investment import Investment
 from app.models.investment_entity import InvestmentEntity
 from app.models.pocket import Pocket
@@ -149,6 +149,7 @@ def seed_demo() -> None:
             email=DEMO_EMAIL,
             full_name=DEMO_FULL_NAME,
             hashed_password=get_password_hash(DEMO_PASSWORD),
+            role=UserRole.ADMIN,
         )
         db.add(user)
         db.flush()
