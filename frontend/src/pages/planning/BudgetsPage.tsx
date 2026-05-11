@@ -145,6 +145,8 @@ export default function BudgetsPage() {
     year: 'numeric',
   })
 
+  const summaryCardClass = 'bg-white border border-neutral-100 rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md'
+
   return (
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       {/* Header */}
@@ -194,19 +196,19 @@ export default function BudgetsPage() {
       ) : (
         <>
           {/* Summary */}
-          <div className="app-card p-4 grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-xs text-neutral-400">{t('planning.budget.total_limit')}</p>
-              <p className="font-medium text-base text-neutral-900">${budgetData.total_limit}</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+            <div className={`${summaryCardClass} border-l-4 border-l-neutral-400 ring-1 ring-neutral-100`}>
+              <p className="app-label uppercase tracking-wider">{t('planning.budget.total_limit')}</p>
+              <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">${budgetData.total_limit}</p>
             </div>
-            <div>
-              <p className="text-xs text-neutral-400">{t('planning.budget.total_spent')}</p>
-              <p className="font-medium text-base text-neutral-900">${budgetData.total_spent}</p>
+            <div className={`${summaryCardClass} border-l-4 border-l-warning ring-1 ring-warning/20`}>
+              <p className="app-label uppercase tracking-wider">{t('planning.budget.total_spent')}</p>
+              <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">${budgetData.total_spent}</p>
             </div>
-            <div>
-              <p className="text-xs text-neutral-400">{t('planning.budget.total_remaining')}</p>
+            <div className={`${summaryCardClass} border-l-4 ${budgetData.total_limit - budgetData.total_spent >= 0 ? 'border-l-success ring-1 ring-success/20' : 'border-l-warning ring-1 ring-warning/20'}`}>
+              <p className="app-label uppercase tracking-wider">{t('planning.budget.total_remaining')}</p>
               <p
-                className={`font-medium text-base ${
+                className={`text-2xl font-medium leading-none mt-1 ${
                   budgetData.total_limit - budgetData.total_spent >= 0
                     ? 'text-success'
                     : 'text-warning'

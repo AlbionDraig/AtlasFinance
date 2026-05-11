@@ -42,6 +42,9 @@ export default function BudgetCard({
   }
 
   const colors = getStatusColor()
+  const cardAccentClass = budget.status === 'ok'
+    ? 'border-l-success ring-1 ring-success/20'
+    : 'border-l-warning ring-1 ring-warning/20'
 
   const getStatusLabel = () => {
     switch (budget.status) {
@@ -55,10 +58,10 @@ export default function BudgetCard({
   }
 
   return (
-    <div className="app-card p-4 space-y-3">
+    <div className={`bg-white border border-neutral-100 border-l-4 rounded-xl p-4 shadow-sm space-y-4 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ${cardAccentClass}`}>
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-medium text-sm">{categoryName}</h3>
+          <h3 className="font-medium text-sm text-neutral-900">{categoryName}</h3>
           <p className={`inline-flex mt-1 rounded-full px-2 py-0.5 text-xs font-medium ${colors.bg} ${colors.text}`}>
             {getStatusLabel()}
           </p>
@@ -70,18 +73,18 @@ export default function BudgetCard({
       </div>
 
       {/* Amount Info */}
-      <div className="grid grid-cols-3 gap-2 text-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
         <div>
-          <p className="text-neutral-400">{t('planning.budget.spent')}</p>
-          <p className="font-medium">${budget.current_spent}</p>
+          <p className="app-label uppercase tracking-wider">{t('planning.budget.spent')}</p>
+          <p className="font-medium text-neutral-900 mt-1">${budget.current_spent}</p>
         </div>
         <div>
-          <p className="text-neutral-400">{t('planning.budget.limit')}</p>
-          <p className="font-medium">${budget.amount_limit}</p>
+          <p className="app-label uppercase tracking-wider">{t('planning.budget.limit')}</p>
+          <p className="font-medium text-neutral-900 mt-1">${budget.amount_limit}</p>
         </div>
         <div>
-          <p className="text-neutral-400">{t('planning.budget.remaining')}</p>
-          <p className={`font-medium ${budget.remaining >= 0 ? 'text-success' : 'text-warning'}`}>
+          <p className="app-label uppercase tracking-wider">{t('planning.budget.remaining')}</p>
+          <p className={`font-medium mt-1 ${budget.remaining >= 0 ? 'text-success' : 'text-warning'}`}>
             ${budget.remaining}
           </p>
         </div>
@@ -95,7 +98,7 @@ export default function BudgetCard({
         />
       </div>
 
-      <p className="text-xs text-neutral-400">
+      <p className="app-subtitle text-xs">
         {percentage.toFixed(0)}% {t('planning.budget.of_limit')}
       </p>
     </div>

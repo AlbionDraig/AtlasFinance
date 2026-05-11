@@ -132,6 +132,9 @@ export default function SavingsGoalsPage() {
       }
     : { total_goals: 0, completed: 0, total_target: 0, total_saved: 0 }
 
+  const statsCardClass = 'bg-white border border-neutral-100 rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md'
+  const hasSavedAmount = stats.total_saved > 0
+
   return (
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       {/* Header */}
@@ -144,22 +147,22 @@ export default function SavingsGoalsPage() {
 
       {/* Statistics Cards */}
       {goals && goals.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="app-card p-3 text-center">
-            <p className="text-xs text-neutral-400">{t('planning.goals.total_goals')}</p>
-            <p className="text-xl font-medium text-brand">{stats.total_goals}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <div className={`${statsCardClass} border-l-4 border-l-neutral-400 ring-1 ring-neutral-100`}>
+            <p className="app-label uppercase tracking-wider">{t('planning.goals.total_goals')}</p>
+            <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">{stats.total_goals}</p>
           </div>
-          <div className="app-card p-3 text-center">
-            <p className="text-xs text-neutral-400">{t('planning.goals.completed')}</p>
-            <p className="text-xl font-medium text-success">{stats.completed}</p>
+          <div className={`${statsCardClass} border-l-4 border-l-success ring-1 ring-success/20`}>
+            <p className="app-label uppercase tracking-wider">{t('planning.goals.completed')}</p>
+            <p className="text-2xl font-medium leading-none text-success mt-1">{stats.completed}</p>
           </div>
-          <div className="app-card p-3 text-center">
-            <p className="text-xs text-neutral-400">{t('planning.goals.total_target')}</p>
-            <p className="text-lg font-medium text-neutral-900">${stats.total_target.toFixed(2)}</p>
+          <div className={`${statsCardClass} border-l-4 border-l-neutral-400 ring-1 ring-neutral-100`}>
+            <p className="app-label uppercase tracking-wider">{t('planning.goals.total_target')}</p>
+            <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">${stats.total_target.toFixed(2)}</p>
           </div>
-          <div className="app-card p-3 text-center">
-            <p className="text-xs text-neutral-400">{t('planning.goals.total_saved')}</p>
-            <p className="text-lg font-medium text-brand">${stats.total_saved.toFixed(2)}</p>
+          <div className={`${statsCardClass} border-l-4 ${hasSavedAmount ? 'border-l-success ring-1 ring-success/20' : 'border-l-neutral-400 ring-1 ring-neutral-100'}`}>
+            <p className="app-label uppercase tracking-wider">{t('planning.goals.total_saved')}</p>
+            <p className={`text-2xl font-medium leading-none mt-1 ${hasSavedAmount ? 'text-success' : 'text-neutral-900'}`}>${stats.total_saved.toFixed(2)}</p>
           </div>
         </div>
       )}

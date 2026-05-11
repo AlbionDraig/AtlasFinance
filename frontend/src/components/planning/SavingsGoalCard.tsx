@@ -18,6 +18,9 @@ export default function SavingsGoalCard({
   onDelete,
 }: SavingsGoalCardProps) {
   const { t } = useTranslation()
+  const cardAccentClass = goal.is_completed
+    ? 'border-l-success ring-1 ring-success/20'
+    : 'border-l-brand ring-1 ring-brand/15'
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -29,12 +32,12 @@ export default function SavingsGoalCard({
   }
 
   return (
-    <div className="app-card p-4 space-y-3">
+    <div className={`bg-white border border-neutral-100 border-l-4 rounded-xl p-4 shadow-sm space-y-4 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ${cardAccentClass}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <h3 className="font-medium text-sm">{goal.name}</h3>
+          <h3 className="font-medium text-sm text-neutral-900">{goal.name}</h3>
           {goal.description && (
-            <p className="text-xs text-neutral-400 mt-1">{goal.description}</p>
+            <p className="app-subtitle text-xs mt-1 leading-snug">{goal.description}</p>
           )}
         </div>
         <div className="flex gap-2">
@@ -44,18 +47,18 @@ export default function SavingsGoalCard({
       </div>
 
       {/* Amount info */}
-      <div className="grid grid-cols-3 gap-2 text-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
         <div>
-          <p className="text-neutral-400">{t('planning.goal.saved')}</p>
-          <p className="font-medium">${goal.current_amount}</p>
+          <p className="app-label uppercase tracking-wider">{t('planning.goal.saved')}</p>
+          <p className="font-medium text-neutral-900 mt-1">${goal.current_amount}</p>
         </div>
         <div>
-          <p className="text-neutral-400">{t('planning.goal.target')}</p>
-          <p className="font-medium">${goal.target_amount}</p>
+          <p className="app-label uppercase tracking-wider">{t('planning.goal.target')}</p>
+          <p className="font-medium text-neutral-900 mt-1">${goal.target_amount}</p>
         </div>
         <div>
-          <p className="text-neutral-400">{t('planning.goal.remaining')}</p>
-          <p className="font-medium">
+          <p className="app-label uppercase tracking-wider">{t('planning.goal.remaining')}</p>
+          <p className="font-medium text-neutral-900 mt-1">
             ${parseFloat(String(goal.target_amount)) - parseFloat(String(goal.current_amount))}
           </p>
         </div>
@@ -64,7 +67,7 @@ export default function SavingsGoalCard({
       {/* Progress bar */}
       <div>
         <div className="flex justify-between items-center mb-1">
-          <span className="text-xs font-medium text-neutral-700">
+          <span className="app-label uppercase tracking-wider text-neutral-700">
             {t('planning.goal.progress')}
           </span>
           <span className="text-xs font-medium text-brand">
@@ -83,7 +86,7 @@ export default function SavingsGoalCard({
 
       {/* Target date and remaining days */}
       <div className="flex items-center justify-between text-xs">
-        <span className="text-neutral-400">
+        <span className="app-subtitle text-xs">
           {t('planning.goal.target_date')}: {formatDate(goal.target_date)}
         </span>
         <span className={`font-medium ${
