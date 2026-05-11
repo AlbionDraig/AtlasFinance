@@ -2,7 +2,7 @@
 import { useTranslation } from 'react-i18next'
 import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
-import Modal from '@/components/ui/Modal'
+import FloatingModalFrame from '@/components/ui/FloatingModalFrame'
 import Select from '@/components/ui/Select'
 import TimePicker from '@/components/ui/TimePicker'
 import { useToast } from '@/hooks/useToast'
@@ -94,32 +94,21 @@ export default function WithdrawFromPocketModal({
   }
 
   return (
-    <Modal onClose={onClose} maxWidth="max-w-md">
-      <div className="w-full rounded-2xl border border-neutral-100 border-t-4 border-t-brand bg-white shadow-xl overflow-visible">
-        <div className="flex items-start gap-3 border-b border-brand/10 bg-brand-light px-6 py-4">
-          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white shadow-[0_0_0_5px_rgba(202,11,11,0.10)]">
-            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
-              <path d="M16 10H4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-              <path d="M9 7l-3 3 3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M16 6h-5M16 14h-5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.75" />
-            </svg>
-          </div>
-          <div>
-            <h2 className="app-section-title text-brand-text">{t('pockets.withdraw_title')}</h2>
-            <p className="text-sm text-neutral-700 mt-0.5">{t('pockets.withdraw_desc')}</p>
-          </div>
-          <button
-            type="button"
-            aria-label={t('common.close')}
-            className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
-            onClick={onClose}
-          >
-            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-4 w-4">
-              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          </button>
-        </div>
-
+    <FloatingModalFrame
+      title={t('pockets.withdraw_title')}
+      subtitle={t('pockets.withdraw_desc')}
+      onClose={onClose}
+      maxWidth="max-w-md"
+      overflow="visible"
+      bodyClassName="p-0"
+      icon={
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
+          <path d="M16 10H4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          <path d="M9 7l-3 3 3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M16 6h-5M16 14h-5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.75" />
+        </svg>
+      }
+    >
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-1">
             <label className="app-label">{t('pockets.withdraw_field_account')}</label>
@@ -201,8 +190,7 @@ export default function WithdrawFromPocketModal({
             </button>
           </div>
         </form>
-      </div>
-    </Modal>
+    </FloatingModalFrame>
   )
 }
 

@@ -1,6 +1,6 @@
 import type { Dispatch, FormEvent, SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
-import Modal from '@/components/ui/Modal'
+import FloatingModalFrame from '@/components/ui/FloatingModalFrame'
 import TransactionFormCard from './TransactionFormCard'
 import type { Account } from '@/types'
 import type { Category } from '@/api/categories'
@@ -56,41 +56,17 @@ export default function TransactionEditModal({
   const { t } = useTranslation()
   const isEditing = editingId != null
 
-  const accentClass = isEditing ? 'border-t-warning' : 'border-t-brand'
-  const headerClass = isEditing
-    ? 'border-b border-warning/10 bg-warning-bg'
-    : 'border-b border-brand/10 bg-brand-light'
-  const iconClass = isEditing
-    ? 'bg-warning text-white shadow-[0_0_0_5px_rgba(196,122,0,0.10)]'
-    : 'bg-brand text-white shadow-[0_0_0_5px_rgba(202,11,11,0.10)]'
-  const titleClass = isEditing ? 'text-warning-text' : 'text-brand-text'
-
   return (
-    <Modal onClose={onClose} maxWidth="max-w-4xl">
-      <div className={`w-full rounded-2xl border border-neutral-100 border-t-4 ${accentClass} bg-white shadow-xl overflow-visible`}>
-        <div className={`flex items-start gap-3 px-6 py-4 ${headerClass}`}>
-          <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconClass}`}>
-            {isEditing ? <EditModeIcon /> : <RegisterModeIcon />}
-          </div>
-          <div>
-            <h2 className={`app-section-title ${titleClass}`}>
-              {isEditing ? t('transactions.form_edit_title') : t('transactions.form_register_title')}
-            </h2>
-            <p className="mt-0.5 text-sm text-neutral-700">
-              {isEditing ? t('transactions.form_edit_desc') : t('transactions.form_register_desc')}
-            </p>
-          </div>
-          <button
-            type="button"
-            aria-label={t('common.close')}
-            className="ml-auto -mt-1 -mr-1 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
-            onClick={onClose}
-          >
-            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-4 w-4">
-              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          </button>
-        </div>
+    <FloatingModalFrame
+      title={isEditing ? t('transactions.form_edit_title') : t('transactions.form_register_title')}
+      subtitle={isEditing ? t('transactions.form_edit_desc') : t('transactions.form_register_desc')}
+      onClose={onClose}
+      maxWidth="max-w-4xl"
+      accent={isEditing ? 'warning' : 'brand'}
+      overflow="visible"
+      bodyClassName="p-0"
+      icon={isEditing ? <EditModeIcon /> : <RegisterModeIcon />}
+    >
         <TransactionFormCard
           form={form}
           errors={errors}
@@ -104,7 +80,6 @@ export default function TransactionEditModal({
           onSubmit={onSubmit}
           onReset={onClose}
         />
-      </div>
-    </Modal>
+    </FloatingModalFrame>
   )
 }

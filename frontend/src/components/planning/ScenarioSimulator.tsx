@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import Modal from '@/components/ui/Modal'
+import FloatingModalFrame from '@/components/ui/FloatingModalFrame'
 import Select from '@/components/ui/Select'
 import Slider from '@/components/ui/Slider'
 import { useToast } from '@/hooks/useToast'
@@ -74,32 +74,23 @@ export default function ScenarioSimulator({
 
   if (!isOpen) return null
 
-  return (
-    <Modal onClose={onClose} maxWidth="max-w-2xl">
-      <div className="w-full max-h-[90vh] overflow-y-auto rounded-2xl border border-neutral-100 border-t-4 border-t-brand bg-white shadow-xl overflow-hidden">
-        <div className="flex items-start gap-3 border-b border-brand/10 bg-brand-light px-6 py-4">
-          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white shadow-[0_0_0_5px_rgba(202,11,11,0.10)]">
-            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
-              <path d="M4 14.5h12M6 12V9.5m4 2.5V7m4 5v-3m-9.5 6 2.3-8.3a1 1 0 011-.7h4.4a1 1 0 011 .7L15.5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <div className="min-w-0">
-            <h2 className="app-section-title text-brand-text">{t('planning.simulator.title')}</h2>
-            <p className="text-sm text-neutral-700 mt-0.5">{t('planning.simulator.description')}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="ml-auto -mt-1 -mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
-            aria-label={t('common.close')}
-          >
-            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-4 w-4">
-              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          </button>
-        </div>
+  const simulatorIcon = (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
+      <path d="M4 14.5h12M6 12V9.5m4 2.5V7m4 5v-3m-9.5 6 2.3-8.3a1 1 0 011-.7h4.4a1 1 0 011 .7L15.5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
 
-        {!results ? (
-          <div className="space-y-4 p-6">
+  return (
+    <FloatingModalFrame
+      title={t('planning.simulator.title')}
+      subtitle={t('planning.simulator.description')}
+      icon={simulatorIcon}
+      onClose={onClose}
+      maxWidth="max-w-2xl"
+      bodyClassName="max-h-[70vh] overflow-y-auto p-6"
+    >
+      {!results ? (
+        <div className="space-y-4">
 
             {/* Category selection */}
             <div>
@@ -147,27 +138,27 @@ export default function ScenarioSimulator({
               hint={t('planning.simulator.months_help')}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <button
-                onClick={handleSimulate}
-                disabled={simulationMutation.isPending}
-                className="app-btn-primary disabled:opacity-50"
-              >
-                {simulationMutation.isPending
-                  ? t('planning.simulator.simulating')
-                  : t('planning.simulator.simulate')}
-              </button>
-              <button
-                onClick={onClose}
-                disabled={simulationMutation.isPending}
-                className="app-btn-secondary disabled:opacity-50"
-              >
-                {t('common.cancel')}
-              </button>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <button
+              onClick={handleSimulate}
+              disabled={simulationMutation.isPending}
+              className="app-btn-primary disabled:opacity-50"
+            >
+              {simulationMutation.isPending
+                ? t('planning.simulator.simulating')
+                : t('planning.simulator.simulate')}
+            </button>
+            <button
+              onClick={onClose}
+              disabled={simulationMutation.isPending}
+              className="app-btn-secondary disabled:opacity-50"
+            >
+              {t('common.cancel')}
+            </button>
           </div>
-        ) : (
-          <div className="space-y-4 p-6">
+        </div>
+      ) : (
+        <div className="space-y-4">
             <div className="bg-brand-light border border-neutral-100 rounded-lg p-3 text-sm">
               <p className="font-medium text-brand-text">
                 {t('planning.simulator.results')}
@@ -230,23 +221,22 @@ export default function ScenarioSimulator({
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <button
-                onClick={() => setResults(null)}
-                className="app-btn-secondary"
-              >
-                {t('planning.simulator.back')}
-              </button>
-              <button
-                onClick={onClose}
-                className="app-btn-primary"
-              >
-                {t('common.close')}
-              </button>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <button
+              onClick={() => setResults(null)}
+              className="app-btn-secondary"
+            >
+              {t('planning.simulator.back')}
+            </button>
+            <button
+              onClick={onClose}
+              className="app-btn-primary"
+            >
+              {t('common.close')}
+            </button>
           </div>
-        )}
-      </div>
-    </Modal>
+        </div>
+      )}
+    </FloatingModalFrame>
   )
 }
