@@ -4,12 +4,14 @@ from app.api.v1.routes import (
     accounts,
     auth,
     banks,
+    budgets,
     categories,
     countries,
     investment_entities,
     investments,
     metrics,
     pockets,
+    savings_goals,
     transactions,
 )
 
@@ -24,4 +26,6 @@ api_router.include_router(investments.router, prefix="/investments", tags=["inve
 api_router.include_router(categories.router, prefix="/categories", tags=["categories"])
 api_router.include_router(countries.router, prefix="/countries", tags=["countries"])
 api_router.include_router(transactions.router, prefix="/transactions", tags=["transactions"])
+api_router.include_router(budgets.router, prefix="/budgets", tags=["budgets"])
+api_router.include_router(savings_goals.router, prefix="/savings-goals", tags=["savings-goals"])
 api_router.include_router(metrics.router, prefix="/metrics", tags=["metrics"])
