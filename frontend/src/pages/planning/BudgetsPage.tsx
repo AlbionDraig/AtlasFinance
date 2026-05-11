@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import BudgetCard from '@/components/planning/BudgetCard'
 import AmountInput from '@/components/ui/AmountInput'
+import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
@@ -27,6 +28,7 @@ export default function BudgetsPage() {
 
   const [formMode, setFormMode] = useState<BudgetFormMode>(null)
   const [editingBudget, setEditingBudget] = useState<BudgetRead | null>(null)
+  const [deletingBudget, setDeletingBudget] = useState<BudgetRead | null>(null)
   const [formData, setFormData] = useState<BudgetFormData>({
     category_id: 0,
     year,
@@ -85,10 +87,18 @@ export default function BudgetsPage() {
     setFormMode('edit')
   }
 
-  const handleDeleteBudget = async (budgetId: number) => {
-    if (confirm(t('planning.budget.confirm_delete'))) {
-      deleteBudget.mutate(budgetId)
-    }
+  const handleDeleteBudget = (budget: BudgetRead) => {
+    setDeletingBudget(budget)
+  }
+
+  const handleConfirmDeleteBudget = () => {
+    if (!deletingBudget) return
+
+    deleteBudget.mutate(deletingBudget.id, {
+      onSettled: () => {
+        setDeletingBudget(null)
+      },
+    })
   }
 
   const handleSubmitForm = async () => {
@@ -204,6 +214,16 @@ export default function BudgetsPage() {
             ))}
           </div>
         </>
+      )}
+
+      {deletingBudget && (
+        <ConfirmDeleteModal
+          title={t('common.delete_item', { name: categoryMap[deletingBudget.category_id] || `Category ${deletingBudget.category_id}` })}
+          description={t('planning.budget.confirm_delete')}
+          loading={deleteBudget.isPending}
+          onConfirm={handleConfirmDeleteBudget}
+          onClose={() => setDeletingBudget(null)}
+        />
       )}
 
       {/* Budget Form Modal */}

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import SavingsGoalCard from '@/components/planning/SavingsGoalCard'
 import ScenarioSimulator from '@/components/planning/ScenarioSimulator'
 import AmountInput from '@/components/ui/AmountInput'
+import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import DatePicker from '@/components/ui/DatePicker'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
@@ -25,6 +26,7 @@ export default function SavingsGoalsPage() {
   const { t } = useTranslation()
   const [formMode, setFormMode] = useState<FormMode>(null)
   const [editingGoal, setEditingGoal] = useState<SavingsGoalRead | null>(null)
+  const [deletingGoal, setDeletingGoal] = useState<SavingsGoalRead | null>(null)
   const [simulatorOpen, setSimulatorOpen] = useState(false)
 
   const [formData, setFormData] = useState({
@@ -64,10 +66,18 @@ export default function SavingsGoalsPage() {
     setFormMode('edit')
   }
 
-  const handleDeleteGoal = async (goalId: number) => {
-    if (confirm(t('planning.goal.confirm_delete'))) {
-      deleteGoal.mutate(goalId)
-    }
+  const handleDeleteGoal = (goal: SavingsGoalRead) => {
+    setDeletingGoal(goal)
+  }
+
+  const handleConfirmDeleteGoal = () => {
+    if (!deletingGoal) return
+
+    deleteGoal.mutate(deletingGoal.id, {
+      onSettled: () => {
+        setDeletingGoal(null)
+      },
+    })
   }
 
   const handleSubmitForm = async () => {
@@ -176,6 +186,16 @@ export default function SavingsGoalsPage() {
             />
           ))}
         </div>
+      )}
+
+      {deletingGoal && (
+        <ConfirmDeleteModal
+          title={t('common.delete_item', { name: deletingGoal.name })}
+          description={t('planning.goal.confirm_delete')}
+          loading={deleteGoal.isPending}
+          onConfirm={handleConfirmDeleteGoal}
+          onClose={() => setDeletingGoal(null)}
+        />
       )}
 
       {/* Goal Form Modal */}

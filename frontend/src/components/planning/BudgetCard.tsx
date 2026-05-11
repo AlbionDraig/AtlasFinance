@@ -7,7 +7,7 @@ interface BudgetCardProps {
   budget: BudgetRead
   categoryName: string
   onEdit: (budget: BudgetRead) => void
-  onDelete: (budgetId: number) => void
+  onDelete: (budget: BudgetRead) => void
 }
 
 /**
@@ -65,7 +65,7 @@ export default function BudgetCard({
         </div>
         <div className="flex gap-2">
           <EditButton onClick={() => onEdit(budget)} label={t('planning.budget.edit')} />
-          <DeleteButton onClick={() => onDelete(budget.id)} label={t('planning.budget.delete')} />
+          <DeleteButton onClick={() => onDelete(budget)} label={t('planning.budget.delete')} />
         </div>
       </div>
 

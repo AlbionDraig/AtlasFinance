@@ -6,7 +6,7 @@ import type { SavingsGoalRead } from '@/api/savings_goals'
 interface SavingsGoalCardProps {
   goal: SavingsGoalRead
   onEdit: (goal: SavingsGoalRead) => void
-  onDelete: (goalId: number) => void
+  onDelete: (goal: SavingsGoalRead) => void
 }
 
 /**
@@ -39,7 +39,7 @@ export default function SavingsGoalCard({
         </div>
         <div className="flex gap-2">
           <EditButton onClick={() => onEdit(goal)} label={t('planning.goal.edit')} />
-          <DeleteButton onClick={() => onDelete(goal.id)} label={t('planning.goal.delete')} />
+          <DeleteButton onClick={() => onDelete(goal)} label={t('planning.goal.delete')} />
         </div>
       </div>
 
