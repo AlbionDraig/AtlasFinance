@@ -9,11 +9,12 @@ import { banksApi } from '@/api/banks'
 import { categoriesApi } from '@/api/categories'
 import { countriesApi } from '@/api/countries'
 import { investmentEntitiesApi } from '@/api/investmentEntities'
+import { pocketsApi } from '@/api/pockets'
 import type { Bank } from '@/api/banks'
 import type { Category } from '@/api/categories'
 import type { Country } from '@/api/countries'
 import type { InvestmentEntity } from '@/api/investmentEntities'
-import type { Account } from '@/types'
+import type { Account, Pocket } from '@/types'
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
 // Centralizados para invalidar desde cualquier mutación sin hardcodear strings.
@@ -83,5 +84,15 @@ export function useInvestmentEntitiesQuery() {
       return res.data
     },
     staleTime: 5 * 60_000,
+  })
+}
+
+export function usePocketsQuery() {
+  return useQuery<Pocket[]>({
+    queryKey: QUERY_KEYS.pockets,
+    queryFn: async () => {
+      const res = await pocketsApi.list()
+      return res.data
+    },
   })
 }

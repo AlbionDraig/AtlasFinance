@@ -11,6 +11,7 @@ from app.schemas.country import CountryCreate, CountryUpdate
 from app.schemas.investment import InvestmentCreate, InvestmentUpdate
 from app.schemas.investment_entity import InvestmentEntityCreate, InvestmentEntityUpdate
 from app.schemas.pocket import PocketCreate, PocketMoveCreate, PocketUpdate, PocketWithdrawCreate
+from app.schemas.savings_goal import SavingsGoalCreate, SavingsGoalUpdate
 from app.schemas.transaction import TransactionCreate, TransferCreate
 from app.schemas.user import UserCreate
 from app.services.accounts_service import (
@@ -58,6 +59,12 @@ from app.services.pockets_service import (
     move_amount_to_pocket,
     update_pocket,
     withdraw_amount_from_pocket,
+)
+from app.services.savings_goals_service import (
+    create_savings_goal,
+    get_savings_goal_with_progress,
+    list_savings_goals,
+    update_savings_goal,
 )
 from app.services.transactions_service import (
     create_transfer,
@@ -390,6 +397,138 @@ def test_withdraw_from_pocket_rejects_insufficient_balance(db_session):
                 pocket_id=pocket.id,
                 occurred_at=datetime.now(timezone.utc),
             ),
+        )
+
+
+def test_savings_goals_can_be_linked_to_pockets_and_use_effective_balance(db_session):
+    user = create_user(
+        db_session,
+        UserCreate(email="goal-pocket@test.com", full_name="Goal Pocket", password=TEST_PASSWORD),
+    )
+    bank = create_bank(db_session, user.id, BankCreate(name="Banco Meta", country_code="CO"))
+    account = create_account(
+        db_session,
+        user.id,
+        AccountCreate(
+            name="Cuenta Meta",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=bank.id,
+        ),
+    )
+    pocket = create_pocket(
+        db_session,
+        user.id,
+        PocketCreate(name="Viaje", balance=Decimal("350"), currency=Currency.COP, account_id=account.id),
+    )
+
+    goal = create_savings_goal(
+        db_session,
+        user.id,
+        SavingsGoalCreate(
+            name="Viaje de verano",
+            description="Meta vinculada",
+            target_amount=Decimal("500"),
+            pocket_id=pocket.id,
+            target_date=datetime(2027, 1, 1, tzinfo=timezone.utc),
+        ),
+    )
+    assert goal.pocket_id == pocket.id
+
+    progress = get_savings_goal_with_progress(db_session, user.id, goal.id)
+    assert progress["current_amount"] == Decimal("350")
+
+    with pytest.raises(ValueError, match="Cannot manually update current amount for pocket-linked goals"):
+        update_savings_goal(
+            db_session,
+            user.id,
+            goal.id,
+            SavingsGoalUpdate(current_amount=Decimal("400")),
+        )
+
+
+def test_savings_goals_manual_mode_and_pocket_ownership_validation(db_session):
+    owner = create_user(
+        db_session,
+        UserCreate(email="goal-owner@test.com", full_name="Goal Owner", password=TEST_PASSWORD),
+    )
+    other = create_user(
+        db_session,
+        UserCreate(email="goal-other@test.com", full_name="Goal Other", password=TEST_PASSWORD),
+    )
+
+    owner_bank = create_bank(db_session, owner.id, BankCreate(name="Banco Owner", country_code="CO"))
+    other_bank = create_bank(db_session, other.id, BankCreate(name="Banco Other", country_code="CO"))
+
+    owner_account = create_account(
+        db_session,
+        owner.id,
+        AccountCreate(
+            name="Cuenta Owner",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=owner_bank.id,
+        ),
+    )
+    other_account = create_account(
+        db_session,
+        other.id,
+        AccountCreate(
+            name="Cuenta Other",
+            account_type=AccountType.SAVINGS,
+            currency=Currency.COP,
+            current_balance=Decimal("0"),
+            bank_id=other_bank.id,
+        ),
+    )
+    owner_pocket = create_pocket(
+        db_session,
+        owner.id,
+        PocketCreate(name="Meta propia", balance=Decimal("180"), currency=Currency.COP, account_id=owner_account.id),
+    )
+    other_pocket = create_pocket(
+        db_session,
+        other.id,
+        PocketCreate(name="Meta ajena", balance=Decimal("220"), currency=Currency.COP, account_id=other_account.id),
+    )
+
+    manual_goal = create_savings_goal(
+        db_session,
+        owner.id,
+        SavingsGoalCreate(
+            name="Fondo manual",
+            description=None,
+            target_amount=Decimal("600"),
+            target_date=datetime(2027, 6, 1, tzinfo=timezone.utc),
+        ),
+    )
+    updated_manual_goal = update_savings_goal(
+        db_session,
+        owner.id,
+        manual_goal.id,
+        SavingsGoalUpdate(current_amount=Decimal("120")),
+    )
+    assert updated_manual_goal.current_amount == Decimal("120")
+
+    linked_goal = update_savings_goal(
+        db_session,
+        owner.id,
+        manual_goal.id,
+        SavingsGoalUpdate(pocket_id=owner_pocket.id),
+    )
+    assert linked_goal.pocket_id == owner_pocket.id
+
+    goals = list_savings_goals(db_session, owner.id)
+    assert goals[0]["current_amount"] == Decimal("180")
+
+    with pytest.raises(ValueError, match="Pocket not found"):
+        update_savings_goal(
+            db_session,
+            owner.id,
+            manual_goal.id,
+            SavingsGoalUpdate(pocket_id=other_pocket.id),
         )
 
 

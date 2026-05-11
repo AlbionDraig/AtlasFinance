@@ -308,6 +308,108 @@ body {
     border-color: var(--af-accent);
   }
 
+  .app-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 0.5rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--af-border) 75%, var(--af-surface) 25%);
+    background: linear-gradient(
+      to right,
+      var(--af-accent) 0%,
+      var(--af-accent) var(--slider-percent, 0%),
+      var(--af-border) var(--slider-percent, 0%),
+      var(--af-border) 100%
+    );
+    cursor: pointer;
+    transition: filter 0.15s, box-shadow 0.15s;
+  }
+
+  .app-slider-md {
+    height: 0.5rem;
+  }
+
+  .app-slider-sm {
+    height: 0.375rem;
+  }
+
+  .app-slider:hover {
+    filter: brightness(0.98);
+  }
+
+  .app-slider:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--af-accent) 35%, transparent);
+  }
+
+  .app-slider:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .app-slider::-webkit-slider-runnable-track {
+    height: 0.5rem;
+    border-radius: 9999px;
+    background: transparent;
+  }
+
+  .app-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -5px;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 9999px;
+    border: 2px solid var(--af-surface);
+    background: var(--af-accent);
+    box-shadow: 0 1px 3px rgba(28, 27, 26, 0.25);
+  }
+
+  .app-slider-md::-webkit-slider-thumb {
+    margin-top: -5px;
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .app-slider-sm::-webkit-slider-thumb {
+    margin-top: -4px;
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .app-slider::-moz-range-track {
+    height: 0.5rem;
+    border-radius: 9999px;
+    border: none;
+    background: var(--af-border);
+  }
+
+  .app-slider::-moz-range-progress {
+    height: 0.5rem;
+    border-radius: 9999px;
+    background: var(--af-accent);
+  }
+
+  .app-slider::-moz-range-thumb {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 9999px;
+    border: 2px solid var(--af-surface);
+    background: var(--af-accent);
+    box-shadow: 0 1px 3px rgba(28, 27, 26, 0.25);
+  }
+
+  .app-slider-md::-moz-range-thumb {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .app-slider-sm::-moz-range-thumb {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
   .app-menu {
     border: 1px solid var(--af-border);
     border-radius: 0.625rem;

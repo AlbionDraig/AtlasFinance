@@ -1,4 +1,4 @@
-import Modal from './Modal'
+import FloatingModalFrame from './FloatingModalFrame'
 import { useTranslation } from 'react-i18next'
 
 interface ConfirmDeleteModalProps {
@@ -23,33 +23,20 @@ export default function ConfirmDeleteModal({
   const resolvedDescription = description ?? t('common.defaultDeleteDesc')
   const resolvedConfirmLabel = confirmLabel ?? t('common.confirmDelete')
   return (
-    <Modal onClose={onClose} maxWidth="max-w-sm">
-      <div className="w-full rounded-2xl bg-white border border-neutral-100 shadow-xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-start gap-3 border-b border-neutral-100 px-5 py-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-light">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-brand-text" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-medium text-neutral-900">{resolvedTitle}</h2>
-            <p className="mt-0.5 text-xs text-neutral-700 leading-relaxed">{resolvedDescription}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-            aria-label={t('common.close')}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Footer */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-5 py-3">
+    <FloatingModalFrame
+      title={resolvedTitle}
+      subtitle={resolvedDescription}
+      onClose={onClose}
+      maxWidth="max-w-sm"
+      accent="neutral"
+      bodyClassName="p-0"
+      icon={
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      }
+      footer={
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             type="button"
             onClick={onConfirm}
@@ -72,7 +59,9 @@ export default function ConfirmDeleteModal({
             {t('common.cancel')}
           </button>
         </div>
-      </div>
-    </Modal>
+      }
+    >
+      <div />
+    </FloatingModalFrame>
   )
 }

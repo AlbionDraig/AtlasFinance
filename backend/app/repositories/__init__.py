@@ -13,11 +13,13 @@ Beneficios:
 from app.repositories.accounts import AccountRepository
 from app.repositories.banks import BankRepository
 from app.repositories.base import BaseRepository
+from app.repositories.budgets import BudgetRepository
 from app.repositories.categories import CategoryRepository
 from app.repositories.countries import CountryRepository
 from app.repositories.investment_entities import InvestmentEntityRepository
 from app.repositories.investments import InvestmentRepository
 from app.repositories.pockets import PocketRepository
+from app.repositories.savings_goals import SavingsGoalRepository
 from app.repositories.transactions import TransactionRepository
 from app.repositories.users import UserRepository
 
@@ -25,11 +27,13 @@ __all__ = [
     "AccountRepository",
     "BankRepository",
     "BaseRepository",
+    "BudgetRepository",
     "CategoryRepository",
     "CountryRepository",
     "InvestmentEntityRepository",
     "InvestmentRepository",
     "PocketRepository",
+    "SavingsGoalRepository",
     "TransactionRepository",
     "UserRepository",
 ]

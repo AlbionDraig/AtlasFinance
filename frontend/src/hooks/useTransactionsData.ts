@@ -68,7 +68,7 @@ export function useTransactionsCatalogs(): TransactionsCatalogs {
         'error',
       )
     }
-  }, [accountsQuery.isError, categoriesQuery.isError])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [accountsQuery.isError, categoriesQuery.isError])
 
   return {
     accounts: accountsQuery.data ?? [],
@@ -113,7 +113,7 @@ export function useTransactionsList(
     if (query.isError) {
       toast(getApiErrorMessage(query.error, t('transactions.toast_load_movements_error')), 'error')
     }
-  }, [query.isError])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [query.isError])
 
   return {
     transactions: query.data?.items ?? [],

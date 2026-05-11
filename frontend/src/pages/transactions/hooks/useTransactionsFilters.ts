@@ -181,7 +181,7 @@ export function useTransactionsFilters(accounts: Account[]): TransactionsFilters
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [filters])
 
   useEffect(() => {

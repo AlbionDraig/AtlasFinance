@@ -15,6 +15,9 @@ backend/coverage.xml
 .playwright-mcp/
 .playwright-cli/
 
+# Logs
+*.log
+
 # React / Vite / Tailwind
 node_modules/
 dist/
