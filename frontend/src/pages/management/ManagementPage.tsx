@@ -186,9 +186,9 @@ export default function ManagementPage() {
                   </colgroup>
                   <thead>
                     <tr>
-                      <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-left text-xs font-medium tracking-widest uppercase text-neutral-700">{t('management.col_name')}</th>
-                      <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-left text-xs font-medium tracking-widest uppercase text-neutral-700">{t('management.col_email')}</th>
-                      <th className="border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-left text-xs font-medium tracking-widest uppercase text-neutral-700">{t('management.col_role')}</th>
+                      <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('management.col_name')}</th>
+                      <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('management.col_email')}</th>
+                      <th className="border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('management.col_role')}</th>
                     </tr>
                   </thead>
                   <tbody>

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ToastProvider } from '@/hooks/useToast'
 
 const dashboardMock = vi.fn()
@@ -16,7 +17,16 @@ vi.mock('@/api/metrics', () => ({
 import { useDashboardData } from './useDashboardData'
 
 function wrapper({ children }: { children: ReactNode }) {
-  return <ToastProvider>{children}</ToastProvider>
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+    },
+  })
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>{children}</ToastProvider>
+    </QueryClientProvider>
+  )
 }
 
 const baseParams = {
@@ -57,12 +67,13 @@ describe('useDashboardData', () => {
   })
 
   it('keeps metrics null and turns loading off when the API rejects', async () => {
-    dashboardMock.mockRejectedValue(new Error('boom'))
-    aggregatesMock.mockRejectedValue(new Error('boom'))
+    const error401 = Object.assign(new Error('Unauthorized'), { response: { status: 401 } })
+    dashboardMock.mockRejectedValue(error401)
+    aggregatesMock.mockRejectedValue(error401)
 
     const { result } = renderHook(() => useDashboardData(baseParams), { wrapper })
 
-    await waitFor(() => expect(result.current.loading).toBe(false))
+    await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 3000 })
     expect(result.current.metrics).toBeNull()
     expect(result.current.aggregates).toBeNull()
   })

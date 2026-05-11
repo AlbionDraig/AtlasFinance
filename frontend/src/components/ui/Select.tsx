@@ -98,6 +98,7 @@ export default function Select({ value, onChange, options, className = '', disab
         type="button"
         onClick={handleOpen}
         disabled={isDisabled}
+        data-testid="select-trigger"
         className={`flex items-center justify-between gap-2 text-xs [transform:translateZ(0)] [backface-visibility:hidden] transition-colors ${
           isDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
         } ${
@@ -119,6 +120,7 @@ export default function Select({ value, onChange, options, className = '', disab
       {open && !isDisabled && createPortal(
         <ul
           ref={menuRef}
+          data-testid="select-menu"
           className="app-menu fixed z-[400] overflow-y-auto py-1 text-xs"
           style={{
             top: openUpward ? 'auto' : `${menuPosition.top}px`,
@@ -133,6 +135,8 @@ export default function Select({ value, onChange, options, className = '', disab
               <button
                 type="button"
                 onClick={() => { onChange(opt.value); setOpen(false) }}
+                data-testid={`select-option-${opt.value}`}
+                data-value={opt.value}
                 className={`w-full text-left px-3 py-2 transition-colors cursor-pointer
                   ${opt.value === value
                     ? 'bg-tone-neutral text-[var(--af-accent)]'

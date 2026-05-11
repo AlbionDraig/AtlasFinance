@@ -1,5 +1,6 @@
 {
   "nav": {
+    "navigation": "Navigation",
     "dashboard": "Dashboard",
     "transactions": "Transactions",
     "accounts": "Accounts",
@@ -8,7 +9,12 @@
     "admin": "Administration",
     "management": "Management",
     "myProfile": "My profile",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "pinSidebar": "Pin sidebar",
+    "unpinSidebar": "Unpin sidebar",
+    "openSidebar": "Open menu",
+    "closeSidebar": "Close menu",
+    "sidebarShortcut": "Ctrl+B"
   },
   "errors": {
     "app_title": "Something went wrong",
@@ -61,6 +67,9 @@
     "prevPage": "Previous page",
     "nextPage": "Next page",
     "clearFilters": "Clear filters",
+    "removeFilter": "Remove filter: {{value}}",
+    "openFilters": "Open filters",
+    "activeCount": "{{count}} active",
     "atlasFinance": "Atlas Finance",
     "confirmDelete": "Yes, delete",
     "defaultDeleteTitle": "Delete transaction",
@@ -394,6 +403,9 @@
     "fab_transfer": "Transfer between accounts",
     "fab_pocket": "Move to pocket",
     "fab_menu_label": "Open transaction actions",
+    "mobile_filters_open": "Open filters",
+    "mobile_filters_title": "Transaction filters",
+    "mobile_filters_count": "{{count}} active",
     "form_register_title": "Register transaction",
     "form_register_desc": "Fill in the details to register a new transaction.",
     "form_edit_title": "Edit transaction",
@@ -423,6 +435,7 @@
     "table_empty_title": "No transactions",
     "table_empty_desc": "Adjust the filters or register a new transaction.",
     "filter_search_placeholder": "Description, account or category",
+    "quick_filters": "Quick filters",
     "filter_type_all": "All",
     "filter_type_income": "Income",
     "filter_type_expense": "Expenses",
@@ -607,6 +620,7 @@
     "submit_edit": "Save changes",
     "submitting": "Saving…",
     "card_account": "Associated account: {{name}}",
+    "card_balance_label": "Balance",
     "filter_search_placeholder": "Search by pocket, account, bank or currency",
     "filter_account_all": "All accounts",
     "filter_bank_all": "All banks",
@@ -648,7 +662,20 @@
     "toast_withdraw_amount_zero": "Amount must be greater than 0.",
     "toast_withdraw_exceeds_balance": "Amount exceeds pocket balance.",
     "toast_withdraw_select_date": "Select the date.",
-    "toast_withdraw_select_time": "Select the time."
+    "toast_withdraw_select_time": "Select the time.",
+    "kpi_count": "Pockets",
+    "kpi_cop": "COP Balance",
+    "kpi_usd": "USD Balance",
+    "results_count": "{{count}} pockets",
+    "results_count_filtered": "{{shown}} of {{total}} pockets",
+    "view_cards": "Cards",
+    "view_table": "Table",
+    "table_name": "Pocket",
+    "table_account": "Account",
+    "table_bank": "Bank",
+    "table_currency": "Currency",
+    "table_balance": "Balance",
+    "table_actions": "Actions"
   },
   "categories": {
     "loading": "Loading categories...",

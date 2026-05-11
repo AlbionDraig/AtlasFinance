@@ -1,5 +1,6 @@
 {
   "nav": {
+    "navigation": "Navegación",
     "dashboard": "Dashboard",
     "transactions": "Movimientos",
     "accounts": "Cuentas",
@@ -8,7 +9,12 @@
     "admin": "Administración",
     "management": "Gestión",
     "myProfile": "Mi perfil",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "pinSidebar": "Fijar barra lateral",
+    "unpinSidebar": "Desfijar barra lateral",
+    "openSidebar": "Abrir menú",
+    "closeSidebar": "Cerrar menú",
+    "sidebarShortcut": "Ctrl+B"
   },
   "errors": {
     "app_title": "Algo salió mal",
@@ -61,6 +67,9 @@
     "prevPage": "Página anterior",
     "nextPage": "Página siguiente",
     "clearFilters": "Limpiar filtros",
+    "removeFilter": "Remover filtro: {{value}}",
+    "openFilters": "Abrir filtros",
+    "activeCount": "{{count}} activos",
     "atlasFinance": "Atlas Finance",
     "confirmDelete": "Sí, eliminar",
     "defaultDeleteTitle": "Eliminar movimiento",
@@ -396,6 +405,9 @@
     "fab_transfer": "Mover dinero entre cuentas",
     "fab_pocket": "Mover a bolsillo",
     "fab_menu_label": "Abrir acciones de movimientos",
+    "mobile_filters_open": "Abrir filtros",
+    "mobile_filters_title": "Filtros de movimientos",
+    "mobile_filters_count": "{{count}} activos",
     "form_register_title": "Registrar movimiento",
     "form_register_desc": "Completa los datos para registrar un nuevo movimiento.",
     "form_edit_title": "Editar movimiento",
@@ -425,6 +437,7 @@
     "table_empty_title": "No hay movimientos",
     "table_empty_desc": "Ajusta los filtros o registra un nuevo movimiento.",
     "filter_search_placeholder": "Descripción, cuenta o categoría",
+    "quick_filters": "Filtros rápidos",
     "filter_type_all": "Todos",
     "filter_type_income": "Ingresos",
     "filter_type_expense": "Gastos",
@@ -609,6 +622,7 @@
     "submit_edit": "Guardar cambios",
     "submitting": "Guardando…",
     "card_account": "Cuenta asociada: {{name}}",
+    "card_balance_label": "Saldo",
     "filter_search_placeholder": "Buscar por bolsillo, cuenta, banco o moneda",
     "filter_account_all": "Todas las cuentas",
     "filter_bank_all": "Todos los bancos",
@@ -650,7 +664,20 @@
     "toast_withdraw_amount_zero": "El monto debe ser mayor que 0.",
     "toast_withdraw_exceeds_balance": "El monto supera el saldo del bolsillo.",
     "toast_withdraw_select_date": "Selecciona la fecha.",
-    "toast_withdraw_select_time": "Selecciona la hora."
+    "toast_withdraw_select_time": "Selecciona la hora.",
+    "kpi_count": "Bolsillos",
+    "kpi_cop": "Saldo COP",
+    "kpi_usd": "Saldo USD",
+    "results_count": "{{count}} bolsillos",
+    "results_count_filtered": "{{shown}} de {{total}} bolsillos",
+    "view_cards": "Tarjetas",
+    "view_table": "Tabla",
+    "table_name": "Bolsillo",
+    "table_account": "Cuenta",
+    "table_bank": "Banco",
+    "table_currency": "Moneda",
+    "table_balance": "Saldo",
+    "table_actions": "Acciones"
   },
   "categories": {
     "loading": "Cargando categorías...",

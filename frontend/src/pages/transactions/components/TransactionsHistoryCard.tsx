@@ -4,6 +4,7 @@ import Tooltip from '@/components/ui/Tooltip'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 import SkeletonTable from '@/components/ui/SkeletonTable'
+import TableActionGroup from '@/components/ui/TableActionGroup'
 import { useTranslation } from 'react-i18next'
 import type { Category } from '@/api/categories'
 import type { Account, Transaction } from '@/types'
@@ -197,7 +198,7 @@ export default function TransactionsHistoryCard({
             })}
           </div>
           <div className="hidden md:block app-table-wrap">
-          <table className="app-table table-fixed">
+          <table className="app-table table-fixed w-full">
             <colgroup>
               <col className="w-36" />
               <col className="w-[26rem]" />
@@ -206,37 +207,38 @@ export default function TransactionsHistoryCard({
               <col className="w-40" />
               <col className="w-24" />
             </colgroup>
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_date')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_desc')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_account')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_category')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_amount')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_actions')}</th>
+                <th scope="col" className="border-b-2 border-neutral-200 bg-neutral-50 px-5 py-3 text-left align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_date')}</th>
+                <th scope="col" className="border-b-2 border-neutral-200 bg-neutral-50 px-5 py-3 text-left align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_desc')}</th>
+                <th scope="col" className="border-b-2 border-neutral-200 bg-neutral-50 px-5 py-3 text-left align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_account')}</th>
+                <th scope="col" className="border-b-2 border-neutral-200 bg-neutral-50 px-5 py-3 text-left align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_category')}</th>
+                <th scope="col" className="border-b-2 border-neutral-200 bg-neutral-50 px-5 py-3 text-right align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_amount')}</th>
+                <th scope="col" className="border-b-2 border-neutral-200 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('transactions.table_col_actions')}</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedTransactions.map((transaction) => {
+              {paginatedTransactions.map((transaction, idx) => {
                 const isIncome = normalizeTransactionType(String(transaction.transaction_type)) === 'INCOME'
                 const isTransfer = isTransferTransaction(transaction)
+                const isEvenRow = idx % 2 === 0
                 return (
-                  <tr key={transaction.id} className="group transition-colors hover:bg-brand-light/40 odd:bg-white even:bg-neutral-50/50">
+                  <tr key={transaction.id} className={`transition-colors hover:bg-brand/5 ${isEvenRow ? 'bg-white' : 'bg-neutral-50/30'} border-b border-neutral-100`}>
 
                     {/* Fecha */}
-                    <td className="border-b border-r border-neutral-100 px-5 py-3.5 whitespace-nowrap align-middle">
+                    <td className="px-5 py-3 whitespace-nowrap align-middle">
                       <div className="flex flex-col gap-0.5">
                         <span className="text-xs font-medium text-neutral-900">
                           {new Date(transaction.occurred_at).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                         </span>
-                        <span className="text-xs text-neutral-400">
+                        <span className="text-xs text-neutral-500">
                           {new Date(transaction.occurred_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                     </td>
 
                     {/* Descripción */}
-                    <td className="border-b border-r border-neutral-100 px-5 py-3.5 align-middle max-w-0">
+                    <td className="px-5 py-3 align-middle max-w-0">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="block min-w-0 flex-1 truncate whitespace-nowrap text-sm font-medium text-neutral-900" title={transaction.description}>
                           {transaction.description}
@@ -245,7 +247,10 @@ export default function TransactionsHistoryCard({
                           content={transaction.description}
                           ariaLabel={`Ver descripción completa: ${transaction.description}`}
                         >
-                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-md text-neutral-400 hover:text-brand">
+                          <span
+                            className="inline-flex h-5 w-5 items-center justify-center rounded-md text-neutral-400 hover:text-brand shrink-0"
+                            aria-hidden="true"
+                          >
                             <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
                               <path d="M1.5 10s3-5.5 8.5-5.5S18.5 10 18.5 10s-3 5.5-8.5 5.5S1.5 10 1.5 10Z" stroke="currentColor" strokeWidth="1.5" />
                               <circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5" />
@@ -256,42 +261,39 @@ export default function TransactionsHistoryCard({
                     </td>
 
                     {/* Cuenta */}
-                    <td className="border-b border-r border-neutral-100 px-5 py-3.5 align-middle">
+                    <td className="px-5 py-3 align-middle">
                       <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700 whitespace-nowrap">
                         {getCompactAccountName(transaction.account_id, accounts)}
                       </span>
                     </td>
 
                     {/* Categoría */}
-                    <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-sm text-neutral-700 align-middle">
+                    <td className="px-5 py-3 text-sm text-neutral-700 align-middle">
                       {getCategoryName(transaction.category_id, categories) || (
-                        <span className="text-xs italic text-neutral-300">{t('transactions.no_category')}</span>
+                        <span className="text-xs italic text-neutral-400">{t('transactions.no_category')}</span>
                       )}
                     </td>
 
-                    {/* Monto */}
-                    <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-right align-middle">
+                    {/* Monto — mejor contraste y énfasis */}
+                    <td className="px-5 py-3 text-right align-middle">
                       <span className={`tabular-nums text-sm font-medium ${isIncome ? 'text-success' : 'text-warning'}`}>
-                        <span className="mr-0.5 text-xs opacity-50">{isIncome ? '+' : '−'}</span>
+                        <span className="text-xs opacity-60 mr-0.5">{isIncome ? '+' : '−'}</span>
                         {formatCurrency(Number(transaction.amount), transaction.currency)}
                       </span>
                     </td>
 
                     {/* Acciones */}
-                    <td className="border-b border-r border-neutral-100 px-5 py-3.5 align-middle">
-                      <div className="flex items-center justify-end gap-1.5">
+                    <td className="px-5 py-3 text-center align-middle">
+                      <TableActionGroup>
                         {isTransfer ? (
-                          // Transfer rows cannot be edited, only removed as a pair operation.
                           <DeleteButton onClick={() => onDelete(transaction.id)} loading={deletingId === transaction.id} />
                         ) : (
                           <>
-                            {/* Editar */}
                             <EditButton onClick={() => onEdit(transaction)} />
-                            {/* Eliminar */}
                             <DeleteButton onClick={() => onDelete(transaction.id)} loading={deletingId === transaction.id} />
                           </>
                         )}
-                      </div>
+                      </TableActionGroup>
                     </td>
                   </tr>
                 )

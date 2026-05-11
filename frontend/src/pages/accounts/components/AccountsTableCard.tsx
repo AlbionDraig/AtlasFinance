@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import DeleteButton from '@/components/ui/DeleteButton'
 import EditButton from '@/components/ui/EditButton'
 import Pagination from '@/components/ui/Pagination'
+import TableActionGroup from '@/components/ui/TableActionGroup'
 import Tooltip from '@/components/ui/Tooltip'
 import type { Bank } from '@/api/banks'
 import type { Account } from '@/types'
@@ -170,12 +171,12 @@ export default function AccountsTableCard({
             </colgroup>
             <thead>
               <tr>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_account')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_type')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_currency')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_bank')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_balance')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_actions')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_account')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_type')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_currency')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_bank')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_balance')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('accounts.table_col_actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -208,11 +209,11 @@ export default function AccountsTableCard({
                         {formatCurrency(balance, account.currency)}
                       </span>
                     </td>
-                    <td className="border-b border-r border-neutral-100 px-5 py-3.5 align-middle">
-                      <div className="flex items-center justify-end gap-1.5">
+                    <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-center align-middle">
+                      <TableActionGroup>
                         <EditButton onClick={() => onEdit(account)} label={t('common.edit_item', { name: account.name })} />
                         <DeleteButton onClick={() => onDelete(account)} label={t('common.delete_item', { name: account.name })} />
-                      </div>
+                      </TableActionGroup>
                     </td>
                   </tr>
                 )

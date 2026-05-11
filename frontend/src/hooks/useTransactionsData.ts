@@ -1,18 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 import { accountsApi } from '@/api/accounts'
 import { categoriesApi } from '@/api/categories'
 import { pocketsApi } from '@/api/pockets'
-import { transactionsApi } from '@/api/transactions'
+import { transactionsApi, type TransactionFilters } from '@/api/transactions'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { useToast } from '@/hooks/useToast'
 import { getApiErrorMessage } from '@/lib/utils'
 import type { Account, Category, Pocket, Transaction } from '@/types'
 
 /**
- * Catálogos compartidos por la página de transacciones.
+ * Catálogos compartidos por la página de transacciones (accounts, categories, pockets).
  *
- * `pockets` se aísla en su propio try/catch porque su endpoint puede no estar
- * disponible en backends antiguos; preferimos una página utilizable a un fallo total.
+ * Cada catálogo es una query independiente; si pockets falla la página sigue siendo
+ * utilizable porque su queryFn absorbe el error y retorna [].
+ * React Query deduplica las peticiones cuando otros hooks ya cargaron el mismo key.
  */
 export interface TransactionsCatalogs {
   accounts: Account[]
@@ -24,87 +27,97 @@ export interface TransactionsCatalogs {
 export function useTransactionsCatalogs(): TransactionsCatalogs {
   const { t } = useTranslation()
   const { toast } = useToast()
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [pockets, setPockets] = useState<Pocket[]>([])
-  const [loading, setLoading] = useState(true)
+
+  const accountsQuery = useQuery<Account[]>({
+    queryKey: QUERY_KEYS.accounts,
+    queryFn: async () => {
+      const res = await accountsApi.list()
+      return res.data
+    },
+  })
+
+  const categoriesQuery = useQuery<Category[]>({
+    queryKey: QUERY_KEYS.categories,
+    queryFn: async () => {
+      const res = await categoriesApi.list()
+      return res.data
+    },
+    staleTime: 5 * 60_000,
+  })
+
+  const pocketsQuery = useQuery<Pocket[]>({
+    queryKey: QUERY_KEYS.pockets,
+    queryFn: async () => {
+      try {
+        const res = await pocketsApi.list()
+        return res.data
+      } catch {
+        // Mantener la página utilizable si /pockets falla.
+        return []
+      }
+    },
+  })
 
   useEffect(() => {
-    async function bootstrap() {
-      setLoading(true)
-      try {
-        const [accountsResponse, categoriesResponse] = await Promise.all([
-          accountsApi.list(),
-          categoriesApi.list(),
-        ])
-        setAccounts(accountsResponse.data)
-        setCategories(categoriesResponse.data)
-
-        try {
-          const pocketsResponse = await pocketsApi.list()
-          setPockets(pocketsResponse.data)
-        } catch {
-          // Mantener la página utilizable aún si /pockets falla.
-          setPockets([])
-        }
-      } catch (loadError) {
-        toast(getApiErrorMessage(loadError, t('transactions.toast_load_error')), 'error')
-      } finally {
-        setLoading(false)
-      }
+    if (accountsQuery.isError || categoriesQuery.isError) {
+      toast(
+        getApiErrorMessage(
+          accountsQuery.error ?? categoriesQuery.error,
+          t('transactions.toast_load_error'),
+        ),
+        'error',
+      )
     }
-    void bootstrap()
-  }, [])
+  }, [accountsQuery.isError, categoriesQuery.isError])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { accounts, categories, pockets, loading }
+  return {
+    accounts: accountsQuery.data ?? [],
+    categories: categoriesQuery.data ?? [],
+    pockets: pocketsQuery.data ?? [],
+    loading: accountsQuery.isLoading || categoriesQuery.isLoading || pocketsQuery.isLoading,
+  }
 }
 
 /**
- * Lista de transacciones recargada cuando cambian los parámetros del backend.
+ * Lista paginada de transacciones que se refetcha cuando cambia `paramsKey`.
  *
- * Se separa del hook de catálogos porque tiene un ciclo de vida distinto:
- * la lista se refetcha al cambiar filtros, los catálogos solo una vez.
+ * La clave incluye los params serializados para que React Query distinga
+ * cada combinación de filtros de forma automática y sin refetches espurios.
  */
 export interface TransactionsListResult {
   transactions: Transaction[]
   total: number
   loading: boolean
-  reload: () => Promise<void>
 }
 
 export function useTransactionsList(
-  params: Record<string, unknown>,
+  params: TransactionFilters,
   /**
-   * Clave estable derivada de `params` para evitar refetches espurios cuando
-   * el padre crea un objeto nuevo en cada render con el mismo contenido.
+   * Clave estable derivada de `params` (e.g. JSON.stringify).
+   * Cambia sólo cuando el contenido cambia, no en cada re-render del padre.
    */
   paramsKey: string,
 ): TransactionsListResult {
   const { t } = useTranslation()
   const { toast } = useToast()
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(true)
 
-  async function reload() {
-    setLoading(true)
-    try {
+  const query = useQuery({
+    queryKey: [...QUERY_KEYS.transactions, paramsKey],
+    queryFn: async () => {
       const response = await transactionsApi.list(params)
-      setTransactions(response.data.items)
-      setTotal(response.data.total)
-    } catch (error) {
-      toast(
-        getApiErrorMessage(error, t('transactions.toast_load_movements_error')),
-        'error',
-      )
-    } finally {
-      setLoading(false)
-    }
-  }
+      return response.data
+    },
+  })
 
   useEffect(() => {
-    void reload()
-  }, [paramsKey])
+    if (query.isError) {
+      toast(getApiErrorMessage(query.error, t('transactions.toast_load_movements_error')), 'error')
+    }
+  }, [query.isError])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { transactions, total, loading, reload }
+  return {
+    transactions: query.data?.items ?? [],
+    total: query.data?.total ?? 0,
+    loading: query.isLoading || query.isFetching,
+  }
 }

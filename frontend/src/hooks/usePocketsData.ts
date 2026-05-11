@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { accountsApi } from '@/api/accounts'
 import { banksApi, type Bank } from '@/api/banks'
 import { pocketsApi } from '@/api/pockets'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { useToast } from '@/hooks/useToast'
 import { getApiErrorMessage } from '@/lib/utils'
 import type { Account, Pocket } from '@/types'
@@ -26,31 +28,53 @@ interface PocketsDataResult {
 export function usePocketsData(): PocketsDataResult {
   const { t } = useTranslation()
   const { toast } = useToast()
-  const [pockets, setPockets] = useState<Pocket[]>([])
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [banks, setBanks] = useState<Bank[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
+
+  const pocketsQuery = useQuery<Pocket[]>({
+    queryKey: QUERY_KEYS.pockets,
+    queryFn: async () => {
+      const response = await pocketsApi.list()
+      return response.data
+    },
+  })
+
+  const accountsQuery = useQuery<Account[]>({
+    queryKey: QUERY_KEYS.accounts,
+    queryFn: async () => {
+      const response = await accountsApi.list()
+      return response.data
+    },
+  })
+
+  const banksQuery = useQuery<Bank[]>({
+    queryKey: QUERY_KEYS.banks,
+    queryFn: async () => {
+      const response = await banksApi.list()
+      return response.data
+    },
+    staleTime: 5 * 60_000,
+  })
 
   useEffect(() => {
-    async function load() {
-      setLoading(true)
-      try {
-        const [pocketsResponse, accountsResponse, banksResponse] = await Promise.all([
-          pocketsApi.list(),
-          accountsApi.list(),
-          banksApi.list(),
-        ])
-        setPockets(pocketsResponse.data)
-        setAccounts(accountsResponse.data)
-        setBanks(banksResponse.data)
-      } catch (error) {
-        toast(getApiErrorMessage(error, t('pockets.toast_load_error')), 'error')
-      } finally {
-        setLoading(false)
-      }
+    if (pocketsQuery.isError || accountsQuery.isError || banksQuery.isError) {
+      const candidate = pocketsQuery.error ?? accountsQuery.error ?? banksQuery.error
+      toast(getApiErrorMessage(candidate, t('pockets.toast_load_error')), 'error')
     }
-    void load()
-  }, [])
+  }, [pocketsQuery.isError, accountsQuery.isError, banksQuery.isError, pocketsQuery.error, accountsQuery.error, banksQuery.error, toast, t])
+
+  function setPockets(updater: React.SetStateAction<Pocket[]>) {
+    queryClient.setQueryData<Pocket[]>(QUERY_KEYS.pockets, (current) => {
+      const previous = current ?? []
+      return typeof updater === 'function'
+        ? (updater as (prevState: Pocket[]) => Pocket[])(previous)
+        : updater
+    })
+  }
+
+  const pockets = pocketsQuery.data ?? []
+  const accounts = accountsQuery.data ?? []
+  const banks = banksQuery.data ?? []
+  const loading = pocketsQuery.isLoading || accountsQuery.isLoading || banksQuery.isLoading
 
   return { pockets, setPockets, accounts, banks, loading }
 }

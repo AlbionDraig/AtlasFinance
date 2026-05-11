@@ -1,12 +1,12 @@
-import { useMemo, useRef, useState, type CSSProperties, type Dispatch, type FormEvent, type SetStateAction } from 'react'
+import { useRef, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { AxiosError } from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
-import { pocketsApi, type PocketPayload, type PocketUpdatePayload } from '@/api/pockets'
+import { pocketsApi } from '@/api/pockets'
 import type { Account, Pocket } from '@/types'
 import { useToast } from '@/hooks/useToast'
 import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
+import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import { usePocketsData } from '@/hooks/usePocketsData'
 import PageSkeleton from '@/components/ui/PageSkeleton'
 import FormField from '@/components/ui/FormField'
@@ -16,79 +16,51 @@ import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import EmptyState from '@/components/ui/EmptyState'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
+import TableActionGroup from '@/components/ui/TableActionGroup'
 import Select from '@/components/ui/Select'
 import AmountInput from '@/components/ui/AmountInput'
 import InlineAlert from '@/components/ui/InlineAlert'
-import PocketsFiltersCard, { type PocketFiltersState } from './components/PocketsFiltersCard'
+import PocketsFiltersCard from './components/PocketsFiltersCard'
 import WithdrawFromPocketModal, { type WithdrawFromPocketFormData } from './components/WithdrawFromPocketModal'
-
-interface PocketFormState {
-  name: string
-  balance: string
-  account_id: string
-}
-
-type PocketFormErrors = Partial<Record<keyof PocketFormState, string>>
-
-const EMPTY_FORM: PocketFormState = {
-  name: '',
-  balance: '',
-  account_id: '',
-}
-
-const DEFAULT_FILTERS: PocketFiltersState = {
-  query: '',
-  accountId: 'all',
-  bankId: 'all',
-  currency: 'all',
-}
+import EntityCard from '@/components/ui/EntityCard'
+import {
+  type PocketFormErrors,
+  type PocketFormState,
+} from './pocketPayload'
+import { usePocketForm } from './hooks/usePocketForm'
+import { usePocketsFilters } from './hooks/usePocketsFilters'
 
 const UNDO_WINDOW_MS = 5000
 
-function getApiErrorMessage(error: unknown, fallback: string): string {
-  // Align backend detail extraction with the rest of UI pages.
-  if (error instanceof AxiosError) {
-    const detail = error.response?.data?.detail
-    if (typeof detail === 'string' && detail.trim()) return detail
-  }
-  return fallback
+// ── KPI card ──────────────────────────────────────────────────────────────────
+interface KpiCardProps {
+  label: string
+  value: string
+  accent: 'brand' | 'success' | 'warning'
+  icon?: ReactNode
 }
+function KpiCard({ label, value, accent, icon }: KpiCardProps) {
+  const accentStyles = {
+    brand: { line: 'bg-brand', ring: 'ring-brand/15', glow: 'bg-brand/10', icon: 'bg-brand-light text-brand' },
+    success: { line: 'bg-success', ring: 'ring-success/15', glow: 'bg-success/10', icon: 'bg-success-bg text-success' },
+    warning: { line: 'bg-warning', ring: 'ring-warning/15', glow: 'bg-warning/10', icon: 'bg-warning-bg text-warning' },
+  }[accent]
 
-function formatCurrency(value: number, currency: string): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
-interface AccountVisualStyle {
-  accent: string
-  softBg: string
-  softBorder: string
-  softText: string
-}
-
-const ACCOUNT_BASE_COLORS: Array<{ accent: string; softText: string; label: string }> = [
-  { accent: 'var(--af-accent)', softText: 'var(--af-accent-soft-text)', label: 'Marca' },
-  { accent: 'var(--af-positive)', softText: 'var(--af-positive-soft-text)', label: 'Éxito' },
-  { accent: 'var(--af-warning)', softText: 'var(--af-negative-soft-text)', label: 'Advertencia' },
-  { accent: 'var(--af-accent-deep)', softText: 'var(--af-accent-deep)', label: 'Profundo' },
-]
-
-function buildAccountVisualStyle(_accountId: number, index: number): AccountVisualStyle {
-  // Deterministic color assignment keeps account visual identity stable.
-  const base = ACCOUNT_BASE_COLORS[index % ACCOUNT_BASE_COLORS.length]
-  const tier = Math.floor(index / ACCOUNT_BASE_COLORS.length)
-  const tint = Math.min(14 + tier * 8, 46)
-  const borderTint = Math.min(tint + 8, 58)
-
-  return {
-    accent: base.accent,
-    softBg: `color-mix(in srgb, ${base.accent} ${tint}%, white)`,
-    softBorder: `color-mix(in srgb, ${base.accent} ${borderTint}%, white)`,
-    softText: base.softText,
-  }
+  return (
+    <div className={`relative overflow-hidden rounded-xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/80 p-4 shadow-sm ring-1 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ${accentStyles.ring}`}>
+      <div className={`absolute inset-x-0 top-0 h-1.5 ${accentStyles.line}`} />
+      <div className={`absolute -right-8 -top-8 h-20 w-20 rounded-full blur-2xl ${accentStyles.glow}`} aria-hidden="true" />
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-neutral-700">{label}</p>
+        {icon && (
+          <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${accentStyles.icon}`}>
+            {icon}
+          </span>
+        )}
+      </div>
+      <p className="mt-2 text-[1.7rem] font-medium tracking-tight text-neutral-900">{value}</p>
+    </div>
+  )
 }
 
 interface PocketModalProps {
@@ -241,183 +213,48 @@ export default function PocketsPage() {
   const queryClient = useQueryClient()
 
   const [saving, setSaving] = useState(false)
-  const [filters, setFilters] = useState<PocketFiltersState>(DEFAULT_FILTERS)
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
 
   const { pockets, setPockets, accounts, banks, loading } = usePocketsData()
 
-  const [createOpen, setCreateOpen] = useState(false)
-  const [editingPocket, setEditingPocket] = useState<Pocket | null>(null)
   const [deletingPocket, setDeletingPocket] = useState<Pocket | null>(null)
   const [withdrawOpen, setWithdrawOpen] = useState(false)
-  const [form, setForm] = useState<PocketFormState>(EMPTY_FORM)
-  const [formErrors, setFormErrors] = useState<PocketFormErrors>({})
   const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
-  const accountById = useMemo(() => {
-    // Precompute lookup maps to avoid repeated O(n) searches in render/filter logic.
-    return new Map(accounts.map(account => [account.id, account]))
-  }, [accounts])
+  const {
+    filters,
+    setFilters,
+    resetFilters,
+    accountById,
+    bankById,
+    accountStyleById,
+    filteredPockets,
+    activeFilters,
+    totalCOP,
+    totalUSD,
+  } = usePocketsFilters({
+    pockets,
+    accounts,
+    banks,
+    t,
+  })
 
-  const bankById = useMemo(() => {
-    return new Map(banks.map(bank => [bank.id, bank]))
-  }, [banks])
-
-  const accountStyleById = useMemo(() => {
-    const uniqueAccountIds = [...new Set(accounts.map(account => account.id))].sort((a, b) => a - b)
-    return new Map(uniqueAccountIds.map((accountId, index) => [accountId, buildAccountVisualStyle(accountId, index)]))
-  }, [accounts])
-
-  const filteredPockets = useMemo(() => {
-    const normalizedQuery = filters.query.trim().toLowerCase()
-    // Apply text + structured filters in a single pass for predictable ordering.
-    return pockets
-      .filter((pocket) => {
-        const accountName = accountById.get(pocket.account_id)?.name ?? ''
-        const bankName = bankById.get(accountById.get(pocket.account_id)?.bank_id ?? -1)?.name ?? ''
-
-        if (normalizedQuery) {
-          const value = [pocket.name, accountName, bankName, pocket.currency].join(' ').toLowerCase()
-          if (!value.includes(normalizedQuery)) return false
-        }
-
-        if (filters.accountId !== 'all' && String(pocket.account_id) !== filters.accountId) {
-          return false
-        }
-
-        if (filters.bankId !== 'all') {
-          const pocketBankId = accountById.get(pocket.account_id)?.bank_id
-          if (String(pocketBankId) !== filters.bankId) return false
-        }
-
-        if (filters.currency !== 'all' && pocket.currency !== filters.currency) {
-          return false
-        }
-
-        return true
-      })
-      .sort((a, b) => a.name.localeCompare(b.name))
-  }, [accountById, bankById, pockets, filters])
-
-  const activeFilters = useMemo(() => {
-    const list: string[] = []
-    const normalizedQuery = filters.query.trim()
-    if (normalizedQuery) list.push(t('pockets.chip_search', { value: normalizedQuery }))
-
-    if (filters.accountId !== 'all') {
-      const accountName = accountById.get(Number(filters.accountId))?.name
-      list.push(t('pockets.chip_account', { value: accountName ?? `#${filters.accountId}` }))
-    }
-
-    if (filters.bankId !== 'all') {
-      const bankName = bankById.get(Number(filters.bankId))?.name
-      list.push(t('pockets.chip_bank', { value: bankName ?? `#${filters.bankId}` }))
-    }
-
-    if (filters.currency !== 'all') {
-      list.push(t('pockets.chip_currency', { value: filters.currency }))
-    }
-
-    return list
-  }, [filters, accountById, bankById, t])
-
-  function resetForm() {
-    setForm(EMPTY_FORM)
-    setFormErrors({})
-  }
-
-  function openCreateModal() {
-    resetForm()
-    setCreateOpen(true)
-  }
-
-  function closeCreateModal() {
-    setCreateOpen(false)
-    resetForm()
-  }
-
-  function prepareEdit(pocket: Pocket) {
-    setEditingPocket(pocket)
-    setForm({
-      name: pocket.name,
-      balance: String(pocket.balance),
-      account_id: String(pocket.account_id),
-    })
-  }
-
-  function buildCreatePayloadFromForm(): PocketPayload | null {
-    const name = form.name.trim()
-    const accountId = Number(form.account_id)
-    const balance = Number(form.balance)
-    const errors: PocketFormErrors = {}
-
-    // Validate and normalize form state before calling API.
-    if (name.length < 2) {
-      errors.name = t('pockets.toast_name_short')
-    }
-    if (!Number.isInteger(accountId) || accountId <= 0) {
-      errors.account_id = t('pockets.toast_select_account')
-    }
-    if (!Number.isFinite(balance) || balance < 0) {
-      errors.balance = t('pockets.toast_balance_invalid')
-    }
-
-    setFormErrors(errors)
-    if (Object.keys(errors).length > 0) {
-      const firstError = errors.name ?? errors.account_id ?? errors.balance
-      if (firstError) {
-        toast(firstError, 'error')
-      }
-      return null
-    }
-
-    const selectedAccount = accountById.get(accountId)
-    if (!selectedAccount) {
-      setFormErrors((current) => ({ ...current, account_id: t('pockets.toast_invalid_account') }))
-      toast(t('pockets.toast_invalid_account'), 'error')
-      return null
-    }
-
-    return {
-      name,
-      balance,
-      account_id: accountId,
-      currency: selectedAccount.currency as 'COP' | 'USD',
-    }
-  }
-
-  function buildUpdatePayloadFromForm(): PocketUpdatePayload | null {
-    const name = form.name.trim()
-    const accountId = Number(form.account_id)
-    const errors: PocketFormErrors = {}
-
-    if (name.length < 2) {
-      errors.name = t('pockets.toast_name_short')
-    }
-    if (!Number.isInteger(accountId) || accountId <= 0) {
-      errors.account_id = t('pockets.toast_select_account')
-    }
-
-    setFormErrors(errors)
-    if (Object.keys(errors).length > 0) {
-      const firstError = errors.name ?? errors.account_id
-      if (firstError) {
-        toast(firstError, 'error')
-      }
-      return null
-    }
-
-    const selectedAccount = accountById.get(accountId)
-    if (!selectedAccount) {
-      setFormErrors((current) => ({ ...current, account_id: t('pockets.toast_invalid_account') }))
-      toast(t('pockets.toast_invalid_account'), 'error')
-      return null
-    }
-
-    return {
-      name,
-      account_id: accountId,
-    }
-  }
+  const {
+    createOpen,
+    editingPocket,
+    closeEditModal,
+    form,
+    setForm,
+    formErrors,
+    openCreateModal,
+    closeCreateModal,
+    prepareEdit,
+    buildCreatePayloadFromForm,
+    buildUpdatePayloadFromForm,
+  } = usePocketForm({
+    accountById,
+    onValidationError: (message) => toast(message, 'error'),
+  })
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -450,8 +287,7 @@ export default function PocketsPage() {
       const response = await pocketsApi.update(editingPocket.id, payload)
       setPockets(current => current.map(pocket => (pocket.id === editingPocket.id ? response.data : pocket)))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
-      setEditingPocket(null)
-      resetForm()
+      closeEditModal()
       toast(t('pockets.toast_updated'))
     } catch (error) {
       toast(getApiErrorMessage(error, t('pockets.toast_update_error')), 'error')
@@ -538,6 +374,42 @@ export default function PocketsPage() {
         </p>
       </div>
 
+      {pockets.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <KpiCard
+            label={t('pockets.kpi_count')}
+            value={String(filteredPockets.length)}
+            accent="brand"
+            icon={
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
+                <path d="M3 6a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V6z" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M13 10a1 1 0 11-2 0 1 1 0 012 0z" fill="currentColor" />
+              </svg>
+            }
+          />
+          <KpiCard
+            label={t('pockets.kpi_cop')}
+            value={formatCurrency(totalCOP, 'COP')}
+            accent="success"
+            icon={
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
+                <path d="M10 2v16M5 7l5-5 5 5M5 17h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            }
+          />
+          <KpiCard
+            label={t('pockets.kpi_usd')}
+            value={formatCurrency(totalUSD, 'USD')}
+            accent="warning"
+            icon={
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
+                <path d="M10 3v14M7 6.5C7 5.12 8.34 4 10 4s3 1.12 3 2.5S11.66 9 10 9s-3 1.12-3 2.5S8.34 14 10 14s3-1.12 3-2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            }
+          />
+        </div>
+      )}
+
       {createOpen && (
         <PocketModal
           title={t('pockets.create_title')}
@@ -566,10 +438,7 @@ export default function PocketsPage() {
           saving={saving}
           submitLabel={t('pockets.submit_edit')}
           onSubmit={handleUpdate}
-          onClose={() => {
-            setEditingPocket(null)
-            resetForm()
-          }}
+          onClose={closeEditModal}
         />
       )}
 
@@ -600,7 +469,7 @@ export default function PocketsPage() {
         accounts={accounts}
         banks={banks}
         activeFilters={activeFilters}
-        onResetFilters={() => setFilters(DEFAULT_FILTERS)}
+        onResetFilters={resetFilters}
       />
 
       {accounts.length === 0 ? (
@@ -631,64 +500,140 @@ export default function PocketsPage() {
                 {t('pockets.fab_create')}
               </button>
             ) : (
-              <button type="button" className="app-btn-secondary" onClick={() => setFilters(DEFAULT_FILTERS)}>
+              <button type="button" className="app-btn-secondary" onClick={resetFilters}>
                 {t('common.clearFilters')}
               </button>
             )}
           />
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filteredPockets.map((pocket) => {
-            const account = accountById.get(pocket.account_id)
-            const accountStyle = accountStyleById.get(pocket.account_id)
-            // Inline styles derive from account palette to reinforce visual grouping.
-            const cardStyle: CSSProperties | undefined = accountStyle
-              ? {
-                  borderTopColor: accountStyle.accent,
-                  background: `linear-gradient(180deg, ${accountStyle.softBg} 0%, #ffffff 36%)`,
-                }
-              : undefined
+        <>
+          {/* Barra de resultados + toggle */}
+          <div className="flex flex-col gap-2 rounded-lg border border-brand/20 bg-gradient-to-r from-brand-light/70 to-white px-3 py-2 text-xs text-brand-text sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              {filteredPockets.length === pockets.length
+                ? t('pockets.results_count', { count: pockets.length })
+                : t('pockets.results_count_filtered', { shown: filteredPockets.length, total: pockets.length })}
+            </p>
+            <div className="inline-flex rounded-lg border border-brand/20 bg-white/80 p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode('cards')}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'cards' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
+                aria-pressed={viewMode === 'cards'}
+              >
+                {t('pockets.view_cards')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'table' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
+                aria-pressed={viewMode === 'table'}
+              >
+                {t('pockets.view_table')}
+              </button>
+            </div>
+          </div>
 
-            const currencyBadgeStyle: CSSProperties | undefined = accountStyle
-              ? {
-                  backgroundColor: accountStyle.softBg,
-                  color: accountStyle.softText,
-                  borderColor: accountStyle.softBorder,
-                }
-              : undefined
+          {viewMode === 'cards' ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredPockets.map((pocket) => {
+                const account = accountById.get(pocket.account_id)
+                const bankName = bankById.get(account?.bank_id ?? -1)?.name
+                const accountStyle = accountStyleById.get(pocket.account_id)
 
-            return (
-              <article key={pocket.id} className="app-card border-t-2 p-4 space-y-3" style={cardStyle}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-base text-neutral-900 font-medium">{pocket.name}</h2>
-                  </div>
-                  <span
-                    className="rounded-full border px-3 py-1 text-xs font-medium tracking-wide shadow-sm"
-                    style={currencyBadgeStyle}
-                  >
-                    {pocket.currency}
-                  </span>
-                </div>
+                const accentStyle = accountStyle
+                  ? {
+                      accentColor: accountStyle.accent,
+                      badgeBg: accountStyle.softBg,
+                      badgeText: accountStyle.softText,
+                      badgeBorder: accountStyle.softBorder,
+                    }
+                  : undefined
 
-                <div>
-                  <p className="text-2xl font-medium text-neutral-900">
-                    {formatCurrency(pocket.balance, pocket.currency)}
-                  </p>
-                  <p className="text-sm text-neutral-400 mt-1">
-                    {t('pockets.card_account', { name: account?.name ?? `#${pocket.account_id}` })}
-                  </p>
-                </div>
+                return (
+                  <EntityCard
+                    key={pocket.id}
+                    title={pocket.name}
+                    badge={pocket.currency}
+                    value={formatCurrency(pocket.balance, pocket.currency)}
+                    footerLabel={[bankName, account?.name ?? `#${pocket.account_id}`].filter(Boolean).join(' · ')}
+                    accentStyle={accentStyle}
+                    actions={
+                      <>
+                        <EditButton onClick={() => prepareEdit(pocket)} />
+                        <DeleteButton onClick={() => setDeletingPocket(pocket)} />
+                      </>
+                    }
+                  />
+                )
+              })}
+            </div>
+          ) : (
+            <div className="app-table-wrap">
+              <table className="app-table table-fixed text-sm">
+                <colgroup>
+                  <col className="w-[30%]" />
+                  <col className="w-[22%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[15%]" />
+                  <col className="w-[6%]" />
+                </colgroup>
+                <thead className="border-b border-brand/30 bg-brand text-xs text-white">
+                  <tr className="align-middle">
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('pockets.table_name')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('pockets.table_account')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('pockets.table_bank')}</th>
+                    <th className="whitespace-nowrap px-2 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('pockets.table_currency')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('pockets.table_balance')}</th>
+                    <th className="whitespace-nowrap px-2 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('pockets.table_actions')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPockets.map((pocket, index) => {
+                    const account = accountById.get(pocket.account_id)
+                    const bankName = bankById.get(account?.bank_id ?? -1)?.name
+                    const accountStyle = accountStyleById.get(pocket.account_id)
+                    const accentColor = accountStyle?.accent
 
-                <div className="flex items-center justify-end gap-2 pt-1">
-                  <EditButton onClick={() => prepareEdit(pocket)} />
-                  <DeleteButton onClick={() => setDeletingPocket(pocket)} />
-                </div>
-              </article>
-            )
-          })}
-        </div>
+                    return (
+                      <tr
+                        key={pocket.id}
+                        className={`border-b border-neutral-100 last:border-b-0 transition-colors hover:bg-brand-light/35 ${index % 2 === 0 ? 'bg-white' : 'bg-brand-light/10'}`}
+                      >
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            {accentColor && (
+                              <span className="shrink-0 w-1.5 h-4 rounded-full" style={{ backgroundColor: accentColor }} />
+                            )}
+                            <span className="font-medium text-neutral-900">{pocket.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 text-neutral-700">{account?.name ?? `#${pocket.account_id}`}</td>
+                        <td className="px-3 py-2 text-neutral-500">{bankName ?? '—'}</td>
+                        <td className="whitespace-nowrap px-2 py-2 text-center align-middle">
+                          <span className="mx-auto inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold tracking-wider text-neutral-600 bg-neutral-50">
+                            {pocket.currency}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-right font-medium text-neutral-900 tabular-nums">
+                          {formatCurrency(pocket.balance, pocket.currency)}
+                        </td>
+                        <td className="whitespace-nowrap px-2 py-2 text-center align-middle">
+                          <TableActionGroup>
+                            <EditButton onClick={() => prepareEdit(pocket)} />
+                            <DeleteButton onClick={() => setDeletingPocket(pocket)} />
+                          </TableActionGroup>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
 
       <FloatingActionMenu

@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 import { metricsApi } from '@/api/metrics'
+import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { useToast } from '@/hooks/useToast'
 import type { DashboardAggregates, DashboardMetrics } from '@/types'
 
 /**
  * Convierte un Date a string ISO de fecha (YYYY-MM-DD).
- *
- * Se usa para construir los rangos que la API consume en formato datetime.
  */
 function toISODate(d: Date): string {
   return d.toISOString().split('T')[0]
@@ -29,17 +29,17 @@ interface DashboardDataResult {
   loading: boolean
 }
 
+interface DashboardQueryData {
+  metrics: DashboardMetrics
+  aggregates: DashboardAggregates
+}
+
 /**
- * Hook de datos del dashboard.
+ * Hook de datos del dashboard migrado a React Query.
  *
- * Encapsula el fetching combinado de `metrics` (snapshot global) y
- * `aggregates` (rango con comparativo). Mantener esto fuera del componente
- * permite testear la página sin red y mejora SRP: la página solo consume
- * datos derivados; este hook solo orquesta API + toasts de error.
- *
- * Se reejecuta cuando cambia la moneda o los timestamps de los rangos para
- * evitar refetch innecesarios cuando React recrea instancias de Date con el
- * mismo valor temporal.
+ * La query key incluye los timestamps de los rangos para que React Query
+ * distinga cada combinación sin comparar instancias de Date (que cambian
+ * en cada render del padre aunque representen el mismo momento).
  */
 export function useDashboardData({
   currency,
@@ -50,39 +50,52 @@ export function useDashboardData({
 }: DashboardDataParams): DashboardDataResult {
   const { t } = useTranslation()
   const { toast } = useToast()
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
-  const [aggregates, setAggregates] = useState<DashboardAggregates | null>(null)
-  const [loading, setLoading] = useState(true)
+
+  const query = useQuery<DashboardQueryData>({
+    queryKey: [
+      ...QUERY_KEYS.dashboard,
+      currency,
+      dateFrom.getTime(),
+      dateTo.getTime(),
+      prevFrom.getTime(),
+      prevTo.getTime(),
+    ],
+    queryFn: async () => {
+      const dfStr = `${toISODate(dateFrom)}T00:00:00`
+      const dtStr = `${toISODate(dateTo)}T23:59:59`
+      const pfStr = `${toISODate(prevFrom)}T00:00:00`
+      const ptStr = `${toISODate(prevTo)}T23:59:59`
+      const [m, agg] = await Promise.all([
+        metricsApi.dashboard(currency),
+        metricsApi.aggregates({
+          currency,
+          start_date: dfStr,
+          end_date: dtStr,
+          prev_start_date: pfStr,
+          prev_end_date: ptStr,
+        }),
+      ])
+      return { metrics: m.data, aggregates: agg.data }
+    },
+    // No staleTime: the dashboard always needs fresh data per selected range.
+    retry: (failureCount, error) => {
+      // No reintentar en 401 — el interceptor de axios ya redirige.
+      const status = (error as { response?: { status?: number } })?.response?.status
+      if (status === 401) return false
+      return failureCount < 2
+    },
+  })
 
   useEffect(() => {
-    setLoading(true)
-    const dfStr = `${toISODate(dateFrom)}T00:00:00`
-    const dtStr = `${toISODate(dateTo)}T23:59:59`
-    const pfStr = `${toISODate(prevFrom)}T00:00:00`
-    const ptStr = `${toISODate(prevTo)}T23:59:59`
-    Promise.all([
-      metricsApi.dashboard(currency),
-      metricsApi.aggregates({
-        currency,
-        start_date: dfStr,
-        end_date: dtStr,
-        prev_start_date: pfStr,
-        prev_end_date: ptStr,
-      }),
-    ])
-      .then(([m, agg]) => {
-        setMetrics(m.data)
-        setAggregates(agg.data)
-      })
-      .catch((error: unknown) => {
-        const status = (error as { response?: { status?: number } })?.response?.status
-        if (status === 401) return
-        toast(t('dashboard.error_load'), 'error')
-      })
-      .finally(() => setLoading(false))
-    // Comparamos por timestamp porque las fechas se recalculan en cada render
-    // del padre y dispararían fetches duplicados al cambiar la referencia.
-  }, [currency, dateFrom.getTime(), dateTo.getTime(), prevFrom.getTime(), prevTo.getTime()])
+    if (!query.isError) return
+    const status = (query.error as { response?: { status?: number } })?.response?.status
+    if (status === 401) return
+    toast(t('dashboard.error_load'), 'error')
+  }, [query.isError])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { metrics, aggregates, loading }
+  return {
+    metrics: query.data?.metrics ?? null,
+    aggregates: query.data?.aggregates ?? null,
+    loading: query.isLoading || query.isFetching,
+  }
 }

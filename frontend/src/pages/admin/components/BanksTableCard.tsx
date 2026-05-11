@@ -2,6 +2,7 @@ import Badge from '@/components/ui/Badge'
 import DeleteButton from '@/components/ui/DeleteButton'
 import EditButton from '@/components/ui/EditButton'
 import Pagination from '@/components/ui/Pagination'
+import TableActionGroup from '@/components/ui/TableActionGroup'
 import Tooltip from '@/components/ui/Tooltip'
 import { useTranslation } from 'react-i18next'
 import type { Bank } from '@/api/banks'
@@ -129,9 +130,9 @@ export default function BanksTableCard({
             </colgroup>
             <thead>
               <tr>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('common.bank')}</th>
-                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('common.country_code')}</th>
-                <th className="border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-center text-xs font-medium tracking-widest uppercase text-neutral-700">{t('common.actions')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('common.bank')}</th>
+                <th className="border-b border-r border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('common.country_code')}</th>
+                <th className="border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-center align-middle text-xs font-medium tracking-widest uppercase text-neutral-700">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -142,16 +143,16 @@ export default function BanksTableCard({
                       {bank.name}
                     </span>
                   </td>
-                  <td className="border-b border-r border-neutral-100 px-5 py-3.5 align-middle text-sm text-neutral-700">
+                  <td className="border-b border-r border-neutral-100 px-5 py-3.5 text-center align-middle text-sm text-neutral-700">
                     <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700 whitespace-nowrap">
                       {bank.country_code}
                     </span>
                   </td>
-                  <td className="border-b border-neutral-100 px-5 py-3.5 align-middle">
-                    <div className="flex items-center justify-end gap-1.5">
+                  <td className="border-b border-neutral-100 px-5 py-3.5 text-center align-middle">
+                    <TableActionGroup>
                       <EditButton onClick={() => onEdit(bank)} label={`Editar ${bank.name}`} />
                       <DeleteButton onClick={() => onDelete(bank)} label={`Eliminar ${bank.name}`} />
-                    </div>
+                    </TableActionGroup>
                   </td>
                 </tr>
               ))}

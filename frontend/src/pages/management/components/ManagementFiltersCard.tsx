@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
-import FilterCard from '@/components/ui/FilterCard'
+import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import SearchInput from '@/components/ui/SearchInput'
 import Select from '@/components/ui/Select'
 
@@ -25,7 +25,12 @@ export default function ManagementFiltersCard({
   const { t } = useTranslation()
 
   return (
-    <FilterCard activeFilters={activeFilters} onReset={onResetFilters}>
+    <ResponsiveFilters
+      activeFilters={activeFilters}
+      onResetFilters={onResetFilters}
+      mobileTitle={t('management.title')}
+      stickyDesktop={false}
+    >
       <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
         <label className="app-label">{t('common.search')}</label>
         <SearchInput
@@ -49,6 +54,6 @@ export default function ManagementFiltersCard({
           active={filters.role !== 'all'}
         />
       </div>
-    </FilterCard>
+    </ResponsiveFilters>
   )
 }

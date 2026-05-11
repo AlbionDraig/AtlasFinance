@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { categoriesApi, type Category, type CategoryPayload } from '@/api/categories'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import PageSkeleton from '@/components/ui/PageSkeleton'
-import FilterCard from '@/components/ui/FilterCard'
+import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import SearchInput from '@/components/ui/SearchInput'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import { useToast } from '@/hooks/useToast'
@@ -131,12 +131,17 @@ export default function CategoriesPage({ embedded = false }: { embedded?: boolea
 
   const content = (
     <>
-      <FilterCard sticky activeFilters={activeFilters}>
+      <ResponsiveFilters
+        activeFilters={activeFilters}
+        onResetFilters={activeFilters.length ? () => setQuery('') : undefined}
+        mobileTitle={t('categories.title')}
+        stickyDesktop
+      >
         <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
           <label className="app-label">{t('common.search')}</label>
           <SearchInput value={query} onChange={setQuery} placeholder={t('categories.search_placeholder')} />
         </div>
-      </FilterCard>
+      </ResponsiveFilters>
 
       {categories.length === 0 ? (
         <div className="app-card flex flex-col items-center gap-3 p-12">

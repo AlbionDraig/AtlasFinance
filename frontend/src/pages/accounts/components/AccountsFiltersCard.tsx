@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
-import FilterCard from '@/components/ui/FilterCard'
+import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import SearchInput from '@/components/ui/SearchInput'
 import Select from '@/components/ui/Select'
 import type { Bank } from '@/api/banks'
@@ -30,7 +30,12 @@ export default function AccountsFiltersCard({
 }: AccountsFiltersCardProps) {
   const { t } = useTranslation()
   return (
-    <FilterCard sticky activeFilters={activeFilters} onReset={onResetFilters}>
+    <ResponsiveFilters
+      activeFilters={activeFilters}
+      onResetFilters={onResetFilters}
+      mobileTitle={t('accounts.title')}
+      stickyDesktop
+    >
       {/* Search runs against server-side filters in parent container. */}
       <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
         <label className="app-label">{t('common.search')}</label>
@@ -84,6 +89,6 @@ export default function AccountsFiltersCard({
           active={filters.bankId !== 'all'}
         />
       </div>
-    </FilterCard>
+    </ResponsiveFilters>
   )
 }

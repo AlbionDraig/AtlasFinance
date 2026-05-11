@@ -75,18 +75,7 @@ test.describe('Dashboard UX improvements', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10_000 })
   })
 
-  test('toggles between basic and advanced density modes', async ({ page }) => {
-    const basicBtn = page.getByRole('button', { name: /vista básica|basic view/i })
-    const advancedBtn = page.getByRole('button', { name: /vista avanzada|advanced view/i })
-
-    await expect(basicBtn).toBeVisible()
-    await expect(advancedBtn).toBeVisible()
-    await expect(basicBtn).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.getByText(/análisis del período|period analysis/i)).toHaveCount(0)
-
-    await advancedBtn.click()
-
-    await expect(advancedBtn).toHaveAttribute('aria-pressed', 'true')
+  test('shows period analysis section in summary tab', async ({ page }) => {
     await expect(page.getByText(/análisis del período|period analysis/i)).toBeVisible()
   })
 

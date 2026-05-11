@@ -1,7 +1,7 @@
 ---
 description: "Use when implementing new features, fixing bugs, creating endpoints, components, services, schemas, migrations, or tests. Triggers on: implement, create, add, fix, build, generate, write. Full edit and execute access."
 name: "Implementer"
-tools: [read, edit, search, execute, todo]
+tools: [read, edit, search, execute]
 agents: [Explore]
 user-invocable: true
 hooks:
@@ -22,7 +22,7 @@ You are a senior full-stack engineer. Your job is to implement changes correctly
 
 ## Approach
 1. **Explore** — read relevant files to understand context and existing patterns.
-2. **Plan** — use `todo` tool for multi-step tasks; update status as you go.
+2. **Plan** — define clear multi-step tasks and keep progress explicit as you go.
 3. **Implement** — follow Clean Architecture layers:
    - Presentation / Entry (controllers, routers, UI components)
    - Application (services, use cases)

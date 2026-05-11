@@ -1,107 +1,36 @@
-import { useMemo, useRef, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
+import { useRef, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
 import { type InvestmentEntity } from '@/api/investmentEntities'
-import { investmentsApi, INSTRUMENT_TYPES, type InvestmentPayload, type InvestmentUpdatePayload } from '@/api/investments'
+import { investmentsApi, INSTRUMENT_TYPES } from '@/api/investments'
 import type { Investment } from '@/types'
 import { useToast } from '@/hooks/useToast'
 import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
+import { formatCurrency } from '@/lib/utils'
 import { useInvestmentsData } from '@/hooks/useInvestmentsData'
 import PageSkeleton from '@/components/ui/PageSkeleton'
 import Modal from '@/components/ui/Modal'
-import FilterCard from '@/components/ui/FilterCard'
+import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import SearchInput from '@/components/ui/SearchInput'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import EmptyState from '@/components/ui/EmptyState'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
+import TableActionGroup from '@/components/ui/TableActionGroup'
 import Select from '@/components/ui/Select'
 import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
-
-function formatCurrency(value: number, currency: string): string {
-  // Reuse localized formatting to keep financial values consistent across cards.
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })
-}
-
-function daysSince(iso: string): number {
-  return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
-}
-
-type InstrumentGroup = 'equity' | 'funds' | 'fixed' | 'crypto' | 'other'
-
-const INSTRUMENT_GROUP_BY_TYPE: Record<string, InstrumentGroup> = {
-  Acciones: 'equity',
-  Accion: 'equity',
-  'Acción': 'equity',
-  ETF: 'equity',
-  Fondos: 'funds',
-  Fondo: 'funds',
-  'Fondo de pensiones': 'funds',
-  Bonos: 'fixed',
-  CDT: 'fixed',
-  Cripto: 'crypto',
-  Criptomoneda: 'crypto',
-  Otro: 'other',
-}
-
-const GROUP_STYLE: Record<InstrumentGroup, { bg: string; text: string; ring: string; shadow: string }> = {
-  equity: { bg: 'bg-brand-light', text: 'text-brand', ring: 'ring-brand/45', shadow: 'shadow-[inset_0_0_0_1px_rgba(202,11,11,0.18)]' },
-  funds: { bg: 'bg-success-bg', text: 'text-success', ring: 'ring-success/45', shadow: 'shadow-[inset_0_0_0_1px_rgba(34,197,94,0.18)]' },
-  fixed: { bg: 'bg-warning-bg', text: 'text-warning', ring: 'ring-warning/45', shadow: 'shadow-[inset_0_0_0_1px_rgba(245,158,11,0.22)]' },
-  crypto: { bg: 'bg-warning-bg', text: 'text-warning', ring: 'ring-warning/45', shadow: 'shadow-[inset_0_0_0_1px_rgba(245,158,11,0.22)]' },
-  other: { bg: 'bg-neutral-100', text: 'text-neutral-700', ring: 'ring-neutral-300/90', shadow: 'shadow-[inset_0_0_0_1px_rgba(148,163,184,0.22)]' },
-}
-
-function getInstrumentGroup(type: string): InstrumentGroup {
-  return INSTRUMENT_GROUP_BY_TYPE[type] ?? 'other'
-}
-
-function instrumentBadge(type: string) {
-  const style = GROUP_STYLE[getInstrumentGroup(type)]
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${style.bg} ${style.text} ${style.ring} ${style.shadow}`}>
-      {type}
-    </span>
-  )
-}
-
-interface InvestmentFormState {
-  name: string
-  instrument_type: string
-  amount_invested: string
-  current_value: string
-  currency: string
-  investment_entity_id: string
-  started_at: string
-}
+import { daysSinceInvestment, formatInvestmentDate, renderInstrumentBadge } from './investmentDisplay'
+import {
+  type InvestmentFormErrors,
+  type InvestmentFormState,
+} from './investmentPayload'
+import { useInvestmentForm } from './hooks/useInvestmentForm'
+import { useInvestmentsFilters } from './hooks/useInvestmentsFilters'
 
 const UNDO_WINDOW_MS = 5000
-
-type InvestmentFormErrors = Partial<Record<'name' | 'investment_entity_id' | 'amount_invested' | 'current_value' | 'started_at', string>>
-
-function emptyForm(): InvestmentFormState {
-  // Default to current day and COP for faster data entry in local context.
-  return {
-    name: '',
-    instrument_type: INSTRUMENT_TYPES[0],
-    amount_invested: '',
-    current_value: '',
-    currency: 'COP',
-    investment_entity_id: '',
-    started_at: new Date().toISOString().slice(0, 10),
-  }
-}
 
 interface InvestmentModalProps {
   title: string
@@ -320,177 +249,71 @@ export default function InvestmentsPage() {
 
   const { investments, setInvestments, entities, loading } = useInvestmentsData()
 
-  const [createOpen, setCreateOpen] = useState(false)
-  const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null)
+  const {
+    createOpen,
+    closeCreateModal,
+    editingInvestment,
+    closeEditModal,
+    form,
+    setForm,
+    formErrors,
+    openCreateModal,
+    prepareEdit,
+    buildCreatePayloadFromForm,
+    buildUpdatePayloadFromForm,
+  } = useInvestmentForm({
+    onValidationError: (message) => toast(message, 'error'),
+  })
   const [deletingInvestment, setDeletingInvestment] = useState<Investment | null>(null)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState<InvestmentFormState>(emptyForm())
-  const [formErrors, setFormErrors] = useState<InvestmentFormErrors>({})
   const pendingDeleteTimeoutsRef = useRef<Map<number, number>>(new Map())
 
-  // Filters
-  const [filterQuery, setFilterQuery] = useState('')
-  const [filterEntity, setFilterEntity] = useState('')
-  const [filterType, setFilterType] = useState('')
-  const [filterCurrency, setFilterCurrency] = useState('')
-  const [sortBy, setSortBy] = useState('')
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
 
-  const entityById = useMemo(() => new Map(entities.map(entity => [entity.id, entity])), [entities])
+  const {
+    filterQuery,
+    setFilterQuery,
+    filterEntity,
+    setFilterEntity,
+    filterType,
+    setFilterType,
+    filterCurrency,
+    setFilterCurrency,
+    sortBy,
+    setSortBy,
+    entityById,
+    filtered,
+    hasFilters,
+    activeFilters,
+    totalInvested,
+    totalCurrent,
+    sortOptions,
+    selectedSortLabel,
+    entityFilterOptions,
+    typeFilterOptions,
+    currencyFilterOptions,
+    clearFilters,
+  } = useInvestmentsFilters({
+    investments,
+    entities,
+    t,
+  })
 
-  const filtered = useMemo(() => {
-    const base = investments.filter(inv => {
-      // All selected filters are conjunctive (AND) to avoid ambiguous result sets.
-      if (filterQuery) {
-        const q = filterQuery.toLowerCase()
-        const entity = entityById.get(inv.investment_entity_id)
-        if (!inv.name.toLowerCase().includes(q) && !(entity?.name ?? '').toLowerCase().includes(q)) return false
-      }
-      if (filterEntity && String(inv.investment_entity_id) !== filterEntity) return false
-      if (filterType && inv.instrument_type !== filterType) return false
-      if (filterCurrency && inv.currency !== filterCurrency) return false
-      return true
-    })
-
-    if (!sortBy) return base
-    return [...base].sort((a, b) => {
-      const gainPctA = a.amount_invested > 0 ? (a.current_value - a.amount_invested) / a.amount_invested : 0
-      const gainPctB = b.amount_invested > 0 ? (b.current_value - b.amount_invested) / b.amount_invested : 0
-      switch (sortBy) {
-        case 'gain_desc':   return gainPctB - gainPctA
-        case 'gain_asc':    return gainPctA - gainPctB
-        case 'invested_desc': return b.amount_invested - a.amount_invested
-        case 'date_desc':   return new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
-        case 'date_asc':    return new Date(a.started_at).getTime() - new Date(b.started_at).getTime()
-        case 'name_asc':    return a.name.localeCompare(b.name, 'es')
-        default:            return 0
-      }
-    })
-  }, [investments, filterQuery, filterEntity, filterType, filterCurrency, entityById, sortBy])
-
-  const totalInvested = useMemo(() =>
-    filtered.reduce((sum, inv) => sum + inv.amount_invested, 0), [filtered])
-  const totalCurrent = useMemo(() =>
-    filtered.reduce((sum, inv) => sum + inv.current_value, 0), [filtered])
   // Derived KPIs shown in summary cards.
   const totalGain = totalCurrent - totalInvested
   const returnPct = totalInvested > 0 ? ((totalGain / totalInvested) * 100).toFixed(1) : '0.0'
   const gainPositive = totalGain >= 0
 
-  const sortOptions = [
-    { value: '', label: t('investments.sort_none') },
-    { value: 'gain_desc', label: t('investments.sort_gain_desc') },
-    { value: 'gain_asc', label: t('investments.sort_gain_asc') },
-    { value: 'invested_desc', label: t('investments.sort_invested_desc') },
-    { value: 'date_desc', label: t('investments.sort_date_desc') },
-    { value: 'date_asc', label: t('investments.sort_date_asc') },
-    { value: 'name_asc', label: t('investments.sort_name_asc') },
-  ]
-  const selectedSortLabel = sortBy
-    ? (sortOptions.find(option => option.value === sortBy)?.label ?? '')
-    : ''
-
-  const hasFilters = filterQuery || filterEntity || filterType || filterCurrency || sortBy
-  const activeFilters = [
-    filterQuery && t('investments.chip_search', { value: `"${filterQuery}"` }),
-    filterEntity && t('investments.chip_entity', { value: entityById.get(Number(filterEntity))?.name ?? '' }),
-    filterType && t('investments.chip_type', { value: filterType }),
-    filterCurrency && t('investments.chip_currency', { value: filterCurrency }),
-    selectedSortLabel && t('investments.chip_sort', { value: selectedSortLabel }),
-  ].filter(Boolean) as string[]
-
-  function openCreate() {
-    setForm(emptyForm())
-    setFormErrors({})
-    setCreateOpen(true)
-  }
-
-  function openEdit(inv: Investment) {
-    setForm({
-      name: inv.name,
-      instrument_type: inv.instrument_type,
-      amount_invested: String(inv.amount_invested),
-      current_value: String(inv.current_value),
-      currency: inv.currency,
-      investment_entity_id: String(inv.investment_entity_id),
-      started_at: inv.started_at.slice(0, 10),
-    })
-    setFormErrors({})
-    setEditingInvestment(inv)
-  }
-
-  function buildCreatePayload(): InvestmentPayload | null {
-    const name = form.name.trim()
-    const investmentEntityId = Number(form.investment_entity_id)
-    const amountInvested = Number(form.amount_invested)
-    const errors: InvestmentFormErrors = {}
-
-    // Normalize user input into API payload and enforce business constraints.
-    if (name.length < 2) errors.name = t('investments.toast_name_short')
-    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) errors.investment_entity_id = t('investments.toast_select_entity')
-    if (!form.amount_invested || amountInvested <= 0) errors.amount_invested = t('investments.toast_amount_zero')
-    if (!form.started_at) errors.started_at = t('investments.toast_select_date')
-
-    setFormErrors(errors)
-    if (Object.keys(errors).length > 0) {
-      const firstError = errors.name ?? errors.investment_entity_id ?? errors.amount_invested ?? errors.started_at
-      if (firstError) {
-        toast(firstError, 'error')
-      }
-      return null
-    }
-
-    return {
-      name,
-      instrument_type: form.instrument_type,
-      amount_invested: amountInvested,
-      current_value: amountInvested,
-      currency: form.currency as 'COP' | 'USD',
-      investment_entity_id: investmentEntityId,
-      started_at: new Date(form.started_at).toISOString(),
-    }
-  }
-
-  function buildUpdatePayload(): InvestmentUpdatePayload | null {
-    const name = form.name.trim()
-    const investmentEntityId = Number(form.investment_entity_id)
-    const currentValue = Number(form.current_value)
-    const errors: InvestmentFormErrors = {}
-
-    // Editing flow only updates mutable fields (not amount_invested/currency).
-    if (name.length < 2) errors.name = t('investments.toast_name_short')
-    if (!Number.isInteger(investmentEntityId) || investmentEntityId <= 0) errors.investment_entity_id = t('investments.toast_select_entity')
-    if (form.current_value === '' || currentValue < 0) errors.current_value = t('investments.toast_value_negative')
-    if (!form.started_at) errors.started_at = t('investments.toast_select_date')
-
-    setFormErrors(errors)
-    if (Object.keys(errors).length > 0) {
-      const firstError = errors.name ?? errors.investment_entity_id ?? errors.current_value ?? errors.started_at
-      if (firstError) {
-        toast(firstError, 'error')
-      }
-      return null
-    }
-
-    return {
-      name,
-      instrument_type: form.instrument_type,
-      current_value: currentValue,
-      investment_entity_id: investmentEntityId,
-      started_at: new Date(form.started_at).toISOString(),
-    }
-  }
-
   async function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const payload = buildCreatePayload()
+    const payload = buildCreatePayloadFromForm()
     if (!payload) return
     setSaving(true)
     try {
       const res = await investmentsApi.create(payload)
       setInvestments(prev => [res.data, ...prev])
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investments })
-      setCreateOpen(false)
+      closeCreateModal()
       toast(t('investments.toast_created'), 'success')
     } catch (err) {
       const msg = err instanceof AxiosError ? err.response?.data?.detail : null
@@ -503,14 +326,14 @@ export default function InvestmentsPage() {
   async function handleUpdate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!editingInvestment) return
-    const payload = buildUpdatePayload()
+    const payload = buildUpdatePayloadFromForm()
     if (!payload) return
     setSaving(true)
     try {
       const res = await investmentsApi.update(editingInvestment.id, payload)
       setInvestments(prev => prev.map(inv => inv.id === editingInvestment.id ? res.data : inv))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.investments })
-      setEditingInvestment(null)
+      closeEditModal()
       toast(t('investments.toast_updated'), 'success')
     } catch (err) {
       const msg = err instanceof AxiosError ? err.response?.data?.detail : null
@@ -564,20 +387,6 @@ export default function InvestmentsPage() {
     })
   }
 
-  const entityFilterOptions = [
-    { value: '', label: t('investments.filter_entity_all') },
-    ...entities.map(entity => ({ value: String(entity.id), label: entity.name })),
-  ]
-  const typeFilterOptions = [
-    { value: '', label: t('investments.filter_type_all') },
-    ...INSTRUMENT_TYPES.map(type => ({ value: type, label: type })),
-  ]
-  const currencyFilterOptions = [
-    { value: '', label: t('investments.filter_currency_all') },
-    { value: 'COP', label: 'COP' },
-    { value: 'USD', label: 'USD' },
-  ]
-
   if (loading) {
     return <PageSkeleton cards={2} rows={5} columns={5} />
   }
@@ -630,10 +439,11 @@ export default function InvestmentsPage() {
       </div>
 
       {/* Filters */}
-      <FilterCard
-        sticky
+      <ResponsiveFilters
         activeFilters={activeFilters}
-        onReset={hasFilters ? () => { setFilterQuery(''); setFilterEntity(''); setFilterType(''); setFilterCurrency(''); setSortBy('') } : undefined}
+        onResetFilters={hasFilters ? clearFilters : undefined}
+        mobileTitle={t('investments.title')}
+        stickyDesktop
       >
         <div className="flex min-w-[180px] flex-1 flex-col gap-1">
           <label className="app-label">{t('common.search')}</label>
@@ -683,7 +493,7 @@ export default function InvestmentsPage() {
             active={!!sortBy}
           />
         </div>
-      </FilterCard>
+      </ResponsiveFilters>
 
       <div className="flex flex-col gap-2 rounded-lg border border-brand/20 bg-gradient-to-r from-brand-light/70 to-white px-3 py-2 text-xs text-brand-text sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
@@ -726,7 +536,7 @@ export default function InvestmentsPage() {
               </svg>
             }
             action={investments.length === 0 ? (
-              <button type="button" className="app-btn-primary" onClick={openCreate}>
+              <button type="button" className="app-btn-primary" onClick={openCreateModal}>
                 {t('investments.fab_create')}
               </button>
             ) : (
@@ -758,7 +568,7 @@ export default function InvestmentsPage() {
             const perfPct = inv.amount_invested > 0
               ? Math.min(150, (inv.current_value / inv.amount_invested) * 100)
               : 100
-            const days = daysSince(inv.started_at)
+            const days = daysSinceInvestment(inv.started_at)
 
             return (
               <div
@@ -772,14 +582,14 @@ export default function InvestmentsPage() {
                     <p className="text-xs text-neutral-400 truncate">{entity?.name ?? '—'}</p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <EditButton onClick={() => openEdit(inv)} />
+                    <EditButton onClick={() => prepareEdit(inv)} />
                     <DeleteButton onClick={() => setDeletingInvestment(inv)} />
                   </div>
                 </div>
 
                 {/* Instrument type + currency */}
                 <div className="flex items-center gap-2">
-                  {instrumentBadge(inv.instrument_type)}
+                  {renderInstrumentBadge(inv.instrument_type)}
                   <span className="text-xs bg-neutral-100 text-neutral-700 rounded-full px-2 py-0.5 font-medium">
                     {inv.currency}
                   </span>
@@ -821,7 +631,7 @@ export default function InvestmentsPage() {
 
                 {/* Date + days */}
                 <p className="text-xs text-neutral-400">
-                  {t('investments.card_since', { date: formatDate(inv.started_at) })}
+                  {t('investments.card_since', { date: formatInvestmentDate(inv.started_at) })}
                   <span className="ml-1 text-neutral-400 opacity-60">· {days} {t('investments.card_days')}</span>
                 </p>
               </div>
@@ -833,14 +643,14 @@ export default function InvestmentsPage() {
           <table className="app-table text-left text-sm">
             <thead className="border-b border-brand/30 bg-brand text-xs text-white">
               <tr>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_name')}</th>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_entity')}</th>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_type')}</th>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_invested')}</th>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_current')}</th>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_performance')}</th>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide">{t('investments.table_since')}</th>
-                <th className="px-3 py-2 font-medium uppercase tracking-wide text-right">{t('investments.table_actions')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_name')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_entity')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_type')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_invested')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_current')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_performance')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_since')}</th>
+                <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('investments.table_actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -857,7 +667,7 @@ export default function InvestmentsPage() {
                   >
                     <td className="px-3 py-2 text-neutral-900 font-medium">{inv.name}</td>
                     <td className="px-3 py-2 text-neutral-700">{entity?.name ?? '—'}</td>
-                    <td className="px-3 py-2">{instrumentBadge(inv.instrument_type)}</td>
+                    <td className="px-3 py-2">{renderInstrumentBadge(inv.instrument_type)}</td>
                     <td className="px-3 py-2 text-neutral-700 tabular-nums">{formatCurrency(inv.amount_invested, inv.currency)}</td>
                     <td className="px-3 py-2 text-neutral-700 tabular-nums">{formatCurrency(inv.current_value, inv.currency)}</td>
                     <td className="px-3 py-2">
@@ -866,12 +676,12 @@ export default function InvestmentsPage() {
                         <span>{positive ? '+' : ''}{pct}%</span>
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-neutral-400">{formatDate(inv.started_at)}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center justify-end gap-1 rounded-md bg-brand-light/40 px-1 py-0.5">
-                        <EditButton onClick={() => openEdit(inv)} />
+                    <td className="px-3 py-2 text-neutral-400">{formatInvestmentDate(inv.started_at)}</td>
+                    <td className="px-3 py-2 text-center align-middle">
+                      <TableActionGroup>
+                        <EditButton onClick={() => prepareEdit(inv)} />
                         <DeleteButton onClick={() => setDeletingInvestment(inv)} />
-                      </div>
+                      </TableActionGroup>
                     </td>
                   </tr>
                 )
@@ -884,7 +694,7 @@ export default function InvestmentsPage() {
       {/* FAB */}
       <FloatingActionMenu
         ariaLabel={t('investments.fab_menu_label')}
-        items={[{ key: 'new', label: t('investments.fab_create'), onClick: openCreate }]}
+        items={[{ key: 'new', label: t('investments.fab_create'), onClick: openCreateModal }]}
       />
 
       {/* Create modal */}
@@ -899,7 +709,7 @@ export default function InvestmentsPage() {
           saving={saving}
           submitLabel={t('investments.submit_create')}
           onSubmit={handleCreate}
-          onClose={() => setCreateOpen(false)}
+          onClose={closeCreateModal}
         />
       )}
 
@@ -915,7 +725,7 @@ export default function InvestmentsPage() {
           saving={saving}
           submitLabel={t('investments.submit_edit')}
           onSubmit={handleUpdate}
-          onClose={() => setEditingInvestment(null)}
+          onClose={closeEditModal}
         />
       )}
 

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor, act } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ToastProvider } from '@/hooks/useToast'
 
 const accountsListMock = vi.fn()
@@ -24,7 +25,16 @@ vi.mock('@/api/transactions', () => ({
 import { useTransactionsCatalogs, useTransactionsList } from './useTransactionsData'
 
 function wrapper({ children }: { children: ReactNode }) {
-  return <ToastProvider>{children}</ToastProvider>
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+    },
+  })
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>{children}</ToastProvider>
+    </QueryClientProvider>
+  )
 }
 
 describe('useTransactionsCatalogs', () => {
@@ -69,7 +79,7 @@ describe('useTransactionsList', () => {
     transactionsListMock.mockResolvedValueOnce({ data: { items: [{ id: 1 }], total: 1 } })
 
     const { result, rerender } = renderHook(
-      ({ key }: { key: string }) => useTransactionsList({ q: key }, key),
+      ({ key }: { key: string }) => useTransactionsList({ search: key }, key),
       { wrapper, initialProps: { key: 'a' } },
     )
 
@@ -84,20 +94,16 @@ describe('useTransactionsList', () => {
     expect(transactionsListMock).toHaveBeenCalledTimes(2)
   })
 
-  it('reload() triggers a fresh fetch with current params', async () => {
-    transactionsListMock.mockResolvedValue({ data: { items: [], total: 0 } })
+  it('returns empty state and handles errors gracefully', async () => {
+    transactionsListMock.mockRejectedValue(new Error('API error'))
 
     const { result } = renderHook(
-      () => useTransactionsList({ page: 1 }, 'page=1'),
+      () => useTransactionsList({ skip: 0, limit: 10 }, 'skip=0&limit=10'),
       { wrapper },
     )
 
     await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(transactionsListMock).toHaveBeenCalledTimes(1)
-
-    await act(async () => {
-      await result.current.reload()
-    })
-    expect(transactionsListMock).toHaveBeenCalledTimes(2)
+    expect(result.current.transactions).toEqual([])
+    expect(result.current.total).toBe(0)
   })
 })
