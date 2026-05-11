@@ -15,6 +15,8 @@ interface SliderProps {
   size?: 'sm' | 'md'
   showTicks?: boolean
   tickStep?: number
+  tickValues?: number[]
+  tickFormatter?: (value: number) => string
 }
 
 function buildTicks(min: number, max: number, step: number): number[] {
@@ -54,6 +56,8 @@ export default function Slider({
   size = 'md',
   showTicks = false,
   tickStep,
+  tickValues,
+  tickFormatter,
 }: SliderProps) {
   const inputId = useId()
   const hintId = useId()
@@ -63,7 +67,9 @@ export default function Slider({
   const resolvedTickStep = tickStep && tickStep > 0
     ? tickStep
     : Math.max(step, Math.ceil((safeMax - min) / 4))
-  const ticks = showTicks ? buildTicks(min, max, resolvedTickStep) : []
+  const ticks = showTicks
+    ? (tickValues && tickValues.length > 0 ? tickValues : buildTicks(min, max, resolvedTickStep))
+    : []
   const sliderSizeClass = size === 'sm' ? 'app-slider-sm' : 'app-slider-md'
 
   return (
@@ -94,9 +100,9 @@ export default function Slider({
 
       {showTicks && ticks.length > 1 && (
         <div className="mt-1 flex items-center justify-between text-[11px] text-neutral-400">
-          {ticks.map((tick) => (
-            <span key={tick} className="select-none">
-              {tick}{valueSuffix}
+          {ticks.map((tick, index) => (
+            <span key={`${tick}-${index}`} className="select-none">
+              {tickFormatter ? tickFormatter(tick) : `${tick}${valueSuffix}`}
             </span>
           ))}
         </div>

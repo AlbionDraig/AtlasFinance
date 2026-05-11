@@ -999,6 +999,7 @@
       "reduction": "% de reducción",
       "reduction_help": "Desliza para ver cómo un ahorro en esta categoría impactaría tus metas",
       "months": "Meses a simular",
+      "years_short": "a",
       "months_help": "¿Cuántos meses adelante deseas proyectar?",
       "simulate": "Simular",
       "simulating": "Simulando...",

@@ -27,6 +27,7 @@ export default function ScenarioSimulator({
   const [results, setResults] = useState<ScenarioSimulationResponse[] | null>(null)
 
   const simulationMutation = useScenarioSimulation()
+  const yearShortLabel = t('planning.simulator.years_short')
 
   const handleSimulate = async () => {
     try {
@@ -105,7 +106,8 @@ export default function ScenarioSimulator({
               onChange={setMonthsAhead}
               size="md"
               showTicks
-              tickStep={12}
+              tickValues={[12, 24, 36, 48, 60]}
+              tickFormatter={(tick) => `${Math.round(tick / 12)}${yearShortLabel}`}
               hint={t('planning.simulator.months_help')}
             />
 

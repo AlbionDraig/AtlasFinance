@@ -997,6 +997,7 @@
       "reduction": "% reduction",
       "reduction_help": "Slide to see how savings in this category would impact your goals",
       "months": "Months to simulate",
+      "years_short": "y",
       "months_help": "How many months ahead do you want to project?",
       "simulate": "Simulate",
       "simulating": "Simulating...",
