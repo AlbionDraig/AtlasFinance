@@ -24,7 +24,7 @@ bandit==1.9.4
 pip-audit==2.8.0
 pre-commit==4.0.1
 mypy==1.13.0
-types-passlib==1.7.7.20240819
+types-passlib==1.7.7.20260211
 types-python-jose==3.3.4.20240106
 types-requests==2.32.0.20241016
 pyasn1==0.6.3
