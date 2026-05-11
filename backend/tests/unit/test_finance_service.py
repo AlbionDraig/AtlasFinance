@@ -1443,3 +1443,20 @@ def test_get_dashboard_aggregates_builds_expected_series_and_totals(db_session):
     assert aggregates.stacked[0].month == "2026-04"
     assert aggregates.stacked[0].categories["Arriendo"] == Decimal("400")
     assert aggregates.stacked[0].categories["Otras"] == Decimal("450")
+
+    assert 0 <= aggregates.financial_health.score <= 100
+    assert aggregates.financial_health.level in {"strong", "stable", "attention"}
+    assert len(aggregates.financial_health.factors) == 4
+    assert {factor.key for factor in aggregates.financial_health.factors} == {
+        "savings",
+        "debt",
+        "liquidity",
+        "diversification",
+    }
+    assert len(aggregates.financial_health.weekly_plan) >= 1
+    assert all(
+        action.factor in {"savings", "debt", "liquidity", "diversification"}
+        for action in aggregates.financial_health.weekly_plan
+    )
+    assert len(aggregates.financial_health.history) >= 1
+    assert all(0 <= point.score <= 100 for point in aggregates.financial_health.history)

@@ -97,6 +97,44 @@ export interface StackedMonthRow {
   categories: Record<string, number>
 }
 
+export interface FinancialHealthFactor {
+  key: 'savings' | 'debt' | 'liquidity' | 'diversification'
+  score: number
+  value: number
+  target: number
+  unit: '%' | 'months'
+  weight: number
+}
+
+export interface FinancialHealthAction {
+  factor: 'savings' | 'debt' | 'liquidity' | 'diversification'
+  priority: 'high' | 'medium' | 'low'
+  action_key:
+    | 'increase_savings_rate'
+    | 'reduce_debt_ratio'
+    | 'build_liquidity_buffer'
+    | 'diversify_portfolio'
+  target_value: number
+  target_unit: '%' | 'months'
+  estimated_score_gain: number
+}
+
+export interface FinancialHealthHistoryPoint {
+  month: string
+  score: number
+  delta: number | null
+  change_driver: 'baseline' | 'stable' | 'savings' | 'liquidity'
+  change_direction: 'up' | 'down' | 'stable'
+}
+
+export interface FinancialHealthSnapshot {
+  score: number
+  level: 'strong' | 'stable' | 'attention'
+  factors: FinancialHealthFactor[]
+  weekly_plan: FinancialHealthAction[]
+  history: FinancialHealthHistoryPoint[]
+}
+
 export interface DashboardAggregates {
   income: number
   expenses: number
@@ -110,6 +148,7 @@ export interface DashboardAggregates {
   biggest_expense_description: string | null
   prev_income: number
   prev_expenses: number
+  financial_health: FinancialHealthSnapshot
 }
 
 // Re-exports from api modules to allow single-import patterns in hooks/pages.
