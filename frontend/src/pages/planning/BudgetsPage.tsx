@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import BudgetCard from '@/components/planning/BudgetCard'
 import AmountInput from '@/components/ui/AmountInput'
+import FormField from '@/components/ui/FormField'
+import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
 import { useBudgetsByMonth, useCreateBudget, useDeleteBudget, useUpdateBudget } from '@/hooks/useBudgets'
 import { useCategoriesData } from '@/hooks/useCategoriesData'
@@ -149,7 +151,7 @@ export default function BudgetsPage() {
       {/* Create New Budget Button */}
       <button
         onClick={handleCreateNew}
-        className="w-full rounded-lg border border-brand bg-brand text-white py-2 text-sm font-medium hover:bg-brand-hover hover:border-brand-hover transition-colors"
+        className="app-btn-primary"
       >
         + {t('planning.budget.new')}
       </button>
@@ -206,62 +208,70 @@ export default function BudgetsPage() {
 
       {/* Budget Form Modal */}
       {formMode && (
-        <div className="fixed inset-0 bg-neutral-900/45 flex items-end sm:items-center justify-center z-50">
-          <div className="app-card w-full sm:w-full max-w-md sm:rounded-2xl rounded-t-2xl p-4 sm:p-6 space-y-4">
-            <h2 className="text-lg font-medium text-neutral-900">
-              {formMode === 'create'
-                ? t('planning.budget.new')
-                : t('planning.budget.edit')}
-            </h2>
-
-            {formMode === 'create' && (
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  {t('planning.budget.category')}
-                </label>
-                <Select
-                  value={String(formData.category_id || '')}
-                  onChange={(value) => setFormData({ ...formData, category_id: Number(value) })}
-                  options={[
-                    { value: '', label: t('planning.budget.select_category') },
-                    ...categories.map((cat) => ({ value: String(cat.id), label: cat.name })),
-                  ]}
-                  className="w-full"
-                  active={Boolean(formData.category_id)}
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                {t('planning.budget.amount_limit')}
-              </label>
-              <AmountInput
-                value={formData.amount_limit ? String(formData.amount_limit) : ''}
-                onChange={(raw) => setFormData({ ...formData, amount_limit: Number(raw || '0') })}
-                currency="COP"
-                className="w-full"
-                placeholder="0.00"
-              />
+        <Modal onClose={() => setFormMode(null)} maxWidth="max-w-md">
+          <div className="app-card w-full overflow-hidden">
+            <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+              <h2 className="text-lg font-medium text-neutral-900">
+                {formMode === 'create'
+                  ? t('planning.budget.new')
+                  : t('planning.budget.edit')}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setFormMode(null)}
+                className="h-8 w-8 rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
+                aria-label={t('common.close')}
+              >
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-4 w-4">
+                  <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+              </button>
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={handleSubmitForm}
-                disabled={createBudget.isPending || updateBudget.isPending}
-                className="flex-1 rounded-lg border border-brand bg-brand text-white py-2 text-sm font-medium hover:bg-brand-hover hover:border-brand-hover disabled:opacity-50 transition-colors"
-              >
-                {formMode === 'create' ? t('common.create') : t('common.update')}
-              </button>
-              <button
-                onClick={() => setFormMode(null)}
-                className="flex-1 rounded-lg border border-neutral-100 bg-neutral-50 text-neutral-700 py-2 text-sm font-medium hover:bg-neutral-100 transition-colors"
-              >
-                {t('common.cancel')}
-              </button>
+            <div className="space-y-4 p-5">
+              {formMode === 'create' && (
+                <FormField label={t('planning.budget.category')}>
+                  <Select
+                    value={String(formData.category_id || '')}
+                    onChange={(value) => setFormData({ ...formData, category_id: Number(value) })}
+                    options={[
+                      { value: '', label: t('planning.budget.select_category') },
+                      ...categories.map((cat) => ({ value: String(cat.id), label: cat.name })),
+                    ]}
+                    className="w-full"
+                    active={Boolean(formData.category_id)}
+                  />
+                </FormField>
+              )}
+
+              <FormField label={t('planning.budget.amount_limit')}>
+                <AmountInput
+                  value={formData.amount_limit ? String(formData.amount_limit) : ''}
+                  onChange={(raw) => setFormData({ ...formData, amount_limit: Number(raw || '0') })}
+                  currency="COP"
+                  className="w-full"
+                  placeholder="0.00"
+                />
+              </FormField>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  onClick={handleSubmitForm}
+                  disabled={createBudget.isPending || updateBudget.isPending}
+                  className="app-btn-primary disabled:opacity-50"
+                >
+                  {formMode === 'create' ? t('common.create') : t('common.update')}
+                </button>
+                <button
+                  onClick={() => setFormMode(null)}
+                  className="app-btn-secondary"
+                >
+                  {t('common.cancel')}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   )

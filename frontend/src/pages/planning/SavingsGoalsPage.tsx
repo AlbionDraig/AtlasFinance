@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next'
 import SavingsGoalCard from '@/components/planning/SavingsGoalCard'
 import ScenarioSimulator from '@/components/planning/ScenarioSimulator'
 import AmountInput from '@/components/ui/AmountInput'
+import DatePicker from '@/components/ui/DatePicker'
+import FormField from '@/components/ui/FormField'
+import Modal from '@/components/ui/Modal'
 import {
   useSavingsGoals,
   useCreateSavingsGoal,
@@ -139,14 +142,14 @@ export default function SavingsGoalsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
           onClick={handleCreateNew}
-          className="rounded-lg border border-brand bg-brand text-white py-2 text-sm font-medium hover:bg-brand-hover hover:border-brand-hover transition-colors"
+          className="app-btn-primary"
         >
           + {t('planning.goal.new')}
         </button>
         {categories && categories.length > 0 && (
           <button
             onClick={() => setSimulatorOpen(true)}
-            className="rounded-lg border border-warning bg-warning text-warning-text py-2 text-sm font-medium hover:opacity-90 transition-opacity"
+            className="app-btn-secondary border-warning text-warning-text bg-warning-bg hover:bg-warning-bg"
           >
             {t('planning.goal.simulator')}
           </button>
@@ -177,86 +180,82 @@ export default function SavingsGoalsPage() {
 
       {/* Goal Form Modal */}
       {formMode && (
-        <div className="fixed inset-0 bg-neutral-900/45 flex items-end sm:items-center justify-center z-50">
-          <div className="app-card w-full sm:w-full max-w-md sm:rounded-2xl rounded-t-2xl p-4 sm:p-6 space-y-4">
-            <h2 className="text-lg font-medium text-neutral-900">
-              {formMode === 'create'
-                ? t('planning.goal.new')
-                : t('planning.goal.edit')}
-            </h2>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                {t('planning.goal.name')}
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder={t('planning.goal.name_placeholder')}
-                className="w-full p-2 border border-neutral-100 rounded-lg text-sm text-neutral-900"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                {t('planning.goal.description')}
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder={t('planning.goal.description_placeholder')}
-                rows={2}
-                className="w-full p-2 border border-neutral-100 rounded-lg text-sm text-neutral-900"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                {t('planning.goal.target_amount')}
-              </label>
-              <AmountInput
-                value={formData.target_amount}
-                onChange={(raw) => setFormData({ ...formData, target_amount: raw })}
-                currency="COP"
-                className="w-full"
-                placeholder="0.00"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                {t('planning.goal.target_date')}
-              </label>
-              <input
-                type="date"
-                value={formData.target_date}
-                onChange={(e) =>
-                  setFormData({ ...formData, target_date: e.target.value })
-                }
-                className="w-full p-2 border border-neutral-100 rounded-lg text-sm text-neutral-900"
-              />
-            </div>
-
-            <div className="flex gap-3">
+        <Modal onClose={() => setFormMode(null)} maxWidth="max-w-md">
+          <div className="app-card w-full overflow-hidden">
+            <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+              <h2 className="text-lg font-medium text-neutral-900">
+                {formMode === 'create'
+                  ? t('planning.goal.new')
+                  : t('planning.goal.edit')}
+              </h2>
               <button
-                onClick={handleSubmitForm}
-                disabled={createGoal.isPending || updateGoal.isPending}
-                className="flex-1 rounded-lg border border-brand bg-brand text-white py-2 text-sm font-medium hover:bg-brand-hover hover:border-brand-hover disabled:opacity-50 transition-colors"
-              >
-                {formMode === 'create' ? t('common.create') : t('common.update')}
-              </button>
-              <button
+                type="button"
                 onClick={() => setFormMode(null)}
-                className="flex-1 rounded-lg border border-neutral-100 bg-neutral-50 text-neutral-700 py-2 text-sm font-medium hover:bg-neutral-100 transition-colors"
+                className="h-8 w-8 rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
+                aria-label={t('common.close')}
               >
-                {t('common.cancel')}
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-4 w-4">
+                  <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
               </button>
+            </div>
+
+            <div className="space-y-4 p-5">
+              <FormField label={t('planning.goal.name')}>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder={t('planning.goal.name_placeholder')}
+                  className="app-control"
+                />
+              </FormField>
+
+              <FormField label={t('planning.goal.description')}>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder={t('planning.goal.description_placeholder')}
+                  rows={2}
+                  className="w-full rounded-lg border border-neutral-100 bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition-colors hover:bg-neutral-50 focus:border-brand focus:ring-2 focus:ring-brand/30"
+                />
+              </FormField>
+
+              <FormField label={t('planning.goal.target_amount')}>
+                <AmountInput
+                  value={formData.target_amount}
+                  onChange={(raw) => setFormData({ ...formData, target_amount: raw })}
+                  currency="COP"
+                  className="w-full"
+                  placeholder="0.00"
+                />
+              </FormField>
+
+              <DatePicker
+                label={t('planning.goal.target_date')}
+                value={formData.target_date}
+                onChange={(value) => setFormData({ ...formData, target_date: value })}
+                className="w-full"
+              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  onClick={handleSubmitForm}
+                  disabled={createGoal.isPending || updateGoal.isPending}
+                  className="app-btn-primary disabled:opacity-50"
+                >
+                  {formMode === 'create' ? t('common.create') : t('common.update')}
+                </button>
+                <button
+                  onClick={() => setFormMode(null)}
+                  className="app-btn-secondary"
+                >
+                  {t('common.cancel')}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Scenario Simulator Modal */}

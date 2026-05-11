@@ -32,7 +32,7 @@ export default function SavingsGoalCard({
         <div className="flex-1">
           <h3 className="font-medium text-sm">{goal.name}</h3>
           {goal.description && (
-            <p className="text-xs text-gray-500 mt-1">{goal.description}</p>
+            <p className="text-xs text-neutral-400 mt-1">{goal.description}</p>
           )}
         </div>
         <div className="flex gap-2">
@@ -72,7 +72,7 @@ export default function SavingsGoalCard({
       {/* Progress bar */}
       <div>
         <div className="flex justify-between items-center mb-1">
-          <span className="text-xs font-medium text-gray-700">
+          <span className="text-xs font-medium text-neutral-700">
             {t('planning.goal.progress')}
           </span>
           <span className="text-xs font-medium text-brand">
@@ -91,7 +91,7 @@ export default function SavingsGoalCard({
 
       {/* Target date and remaining days */}
       <div className="flex items-center justify-between text-xs">
-        <span className="text-gray-500">
+        <span className="text-neutral-400">
           {t('planning.goal.target_date')}: {formatDate(goal.target_date)}
         </span>
         <span className={`font-medium ${

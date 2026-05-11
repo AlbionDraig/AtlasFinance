@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
 import { useScenarioSimulation } from '@/hooks/useSavingsGoals'
 import type { ScenarioSimulationResponse } from '@/api/savings_goals'
@@ -42,20 +43,23 @@ export default function ScenarioSimulator({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-neutral-900/45 flex items-end sm:items-center justify-center z-50">
-      <div className="app-card w-full sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto sm:rounded-2xl rounded-t-2xl p-4 sm:p-6">
-        <div className="flex items-center justify-between mb-4">
+    <Modal onClose={onClose} maxWidth="max-w-2xl">
+      <div className="app-card w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
           <h2 className="text-lg font-medium text-neutral-900">{t('planning.simulator.title')}</h2>
           <button
             onClick={onClose}
-            className="text-neutral-400 hover:text-neutral-700 text-2xl leading-none"
+            className="h-8 w-8 rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
+            aria-label={t('common.close')}
           >
-            ×
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-4 w-4">
+              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
           </button>
         </div>
 
         {!results ? (
-          <div className="space-y-4">
+          <div className="space-y-4 p-5">
             <p className="text-sm text-neutral-700">
               {t('planning.simulator.description')}
             </p>
@@ -115,7 +119,7 @@ export default function ScenarioSimulator({
             <button
               onClick={handleSimulate}
               disabled={simulationMutation.isPending}
-              className="w-full rounded-lg border border-brand bg-brand text-white py-2 text-sm font-medium hover:bg-brand-hover hover:border-brand-hover disabled:opacity-50 transition-colors"
+              className="app-btn-primary disabled:opacity-50"
             >
               {simulationMutation.isPending
                 ? t('planning.simulator.simulating')
@@ -123,7 +127,7 @@ export default function ScenarioSimulator({
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 p-5">
             <div className="bg-brand-light border border-neutral-100 rounded-lg p-3 text-sm">
               <p className="font-medium text-brand-text">
                 {t('planning.simulator.results')}
@@ -189,13 +193,13 @@ export default function ScenarioSimulator({
             {/* Back button */}
             <button
               onClick={() => setResults(null)}
-              className="w-full rounded-lg border border-neutral-100 bg-neutral-50 text-neutral-700 py-2 text-sm font-medium hover:bg-neutral-100 transition-colors"
+              className="app-btn-secondary"
             >
               {t('planning.simulator.back')}
             </button>
           </div>
         )}
       </div>
-    </div>
+    </Modal>
   )
 }
