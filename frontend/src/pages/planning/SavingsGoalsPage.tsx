@@ -103,7 +103,7 @@ export default function SavingsGoalsPage() {
     : { total_goals: 0, completed: 0, total_target: 0, total_saved: 0 }
 
   return (
-    <div className="app-shell w-full mx-auto space-y-6 md:space-y-8 max-w-[1440px] rounded-2xl p-4 md:p-6">
+    <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       {/* Header */}
       <div>
         <h1 className="app-title text-xl">{t('planning.goals.title')}</h1>
@@ -116,20 +116,20 @@ export default function SavingsGoalsPage() {
       {goals && goals.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="app-card p-3 text-center">
-            <p className="text-xs text-gray-500">{t('planning.goals.total_goals')}</p>
-            <p className="text-2xl font-bold text-blue-600">{stats.total_goals}</p>
+            <p className="text-xs text-neutral-400">{t('planning.goals.total_goals')}</p>
+            <p className="text-xl font-medium text-brand">{stats.total_goals}</p>
           </div>
           <div className="app-card p-3 text-center">
-            <p className="text-xs text-gray-500">{t('planning.goals.completed')}</p>
-            <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+            <p className="text-xs text-neutral-400">{t('planning.goals.completed')}</p>
+            <p className="text-xl font-medium text-success">{stats.completed}</p>
           </div>
           <div className="app-card p-3 text-center">
-            <p className="text-xs text-gray-500">{t('planning.goals.total_target')}</p>
-            <p className="text-xl font-bold">${stats.total_target.toFixed(2)}</p>
+            <p className="text-xs text-neutral-400">{t('planning.goals.total_target')}</p>
+            <p className="text-lg font-medium text-neutral-900">${stats.total_target.toFixed(2)}</p>
           </div>
           <div className="app-card p-3 text-center">
-            <p className="text-xs text-gray-500">{t('planning.goals.total_saved')}</p>
-            <p className="text-xl font-bold text-blue-600">${stats.total_saved.toFixed(2)}</p>
+            <p className="text-xs text-neutral-400">{t('planning.goals.total_saved')}</p>
+            <p className="text-lg font-medium text-brand">${stats.total_saved.toFixed(2)}</p>
           </div>
         </div>
       )}
@@ -138,27 +138,27 @@ export default function SavingsGoalsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
           onClick={handleCreateNew}
-          className="bg-blue-600 text-white py-2 rounded-lg font-medium text-sm hover:bg-blue-700 transition"
+          className="rounded-lg border border-brand bg-brand text-white py-2 text-sm font-medium hover:bg-brand-hover hover:border-brand-hover transition-colors"
         >
           + {t('planning.goal.new')}
         </button>
         {categories && categories.length > 0 && (
           <button
             onClick={() => setSimulatorOpen(true)}
-            className="bg-amber-600 text-white py-2 rounded-lg font-medium text-sm hover:bg-amber-700 transition"
+            className="rounded-lg border border-warning bg-warning text-warning-text py-2 text-sm font-medium hover:opacity-90 transition-opacity"
           >
-            🎯 {t('planning.goal.simulator')}
+            {t('planning.goal.simulator')}
           </button>
         )}
       </div>
 
       {/* Goals List */}
       {isLoading ? (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-neutral-400">
           {t('common.loading')}
         </div>
       ) : !goals || goals.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-neutral-400">
           <p>{t('planning.goal.empty')}</p>
         </div>
       ) : (
@@ -176,16 +176,16 @@ export default function SavingsGoalsPage() {
 
       {/* Goal Form Modal */}
       {formMode && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+        <div className="fixed inset-0 bg-neutral-900/45 flex items-end sm:items-center justify-center z-50">
           <div className="app-card w-full sm:w-full max-w-md sm:rounded-2xl rounded-t-2xl p-4 sm:p-6 space-y-4">
-            <h2 className="text-lg font-semibold">
+            <h2 className="text-lg font-medium text-neutral-900">
               {formMode === 'create'
                 ? t('planning.goal.new')
                 : t('planning.goal.edit')}
             </h2>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
                 {t('planning.goal.name')}
               </label>
               <input
@@ -193,12 +193,12 @@ export default function SavingsGoalsPage() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder={t('planning.goal.name_placeholder')}
-                className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full p-2 border border-neutral-100 rounded-lg text-sm text-neutral-900"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
                 {t('planning.goal.description')}
               </label>
               <textarea
@@ -208,12 +208,12 @@ export default function SavingsGoalsPage() {
                 }
                 placeholder={t('planning.goal.description_placeholder')}
                 rows={2}
-                className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full p-2 border border-neutral-100 rounded-lg text-sm text-neutral-900"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
                 {t('planning.goal.target_amount')}
               </label>
               <input
@@ -225,12 +225,12 @@ export default function SavingsGoalsPage() {
                   setFormData({ ...formData, target_amount: e.target.value })
                 }
                 placeholder="0.00"
-                className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full p-2 border border-neutral-100 rounded-lg text-sm text-neutral-900"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
                 {t('planning.goal.target_date')}
               </label>
               <input
@@ -239,21 +239,21 @@ export default function SavingsGoalsPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, target_date: e.target.value })
                 }
-                className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full p-2 border border-neutral-100 rounded-lg text-sm text-neutral-900"
               />
             </div>
 
             <div className="flex gap-3">
               <button
                 onClick={() => setFormMode(null)}
-                className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium text-sm hover:bg-gray-200 transition"
+                className="flex-1 rounded-lg border border-neutral-100 bg-neutral-50 text-neutral-700 py-2 text-sm font-medium hover:bg-neutral-100 transition-colors"
               >
                 {t('common.cancel')}
               </button>
               <button
                 onClick={handleSubmitForm}
                 disabled={createGoal.isPending || updateGoal.isPending}
-                className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium text-sm hover:bg-blue-700 disabled:opacity-50 transition"
+                className="flex-1 rounded-lg border border-brand bg-brand text-white py-2 text-sm font-medium hover:bg-brand-hover hover:border-brand-hover disabled:opacity-50 transition-colors"
               >
                 {formMode === 'create' ? t('common.create') : t('common.update')}
               </button>

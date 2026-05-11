@@ -31,11 +31,11 @@ export default function BudgetCard({
   const getStatusColor = () => {
     switch (budget.status) {
       case 'exceeded':
-        return { bg: 'bg-red-100', bar: 'bg-red-500', text: 'text-red-700' }
+        return { bg: 'bg-warning-bg', bar: 'bg-warning', text: 'text-warning-text' }
       case 'warning':
-        return { bg: 'bg-amber-100', bar: 'bg-amber-500', text: 'text-amber-700' }
+        return { bg: 'bg-warning-bg', bar: 'bg-warning', text: 'text-warning-text' }
       default:
-        return { bg: 'bg-green-100', bar: 'bg-green-500', text: 'text-green-700' }
+        return { bg: 'bg-success-bg', bar: 'bg-success', text: 'text-success-text' }
     }
   }
 
@@ -57,20 +57,20 @@ export default function BudgetCard({
       <div className="flex items-start justify-between">
         <div>
           <h3 className="font-medium text-sm">{categoryName}</h3>
-          <p className={`text-xs font-medium mt-1 ${colors.text}`}>
+          <p className={`inline-flex mt-1 rounded-full px-2 py-0.5 text-xs font-medium ${colors.bg} ${colors.text}`}>
             {getStatusLabel()}
           </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => onEdit(budget)}
-            className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
+            className="text-xs px-2 py-1 rounded border border-neutral-100 bg-neutral-50 text-neutral-700 hover:bg-neutral-100 transition-colors"
           >
             {t('planning.budget.edit')}
           </button>
           <button
             onClick={() => onDelete(budget.id)}
-            className="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 transition"
+            className="text-xs px-2 py-1 rounded border border-warning bg-warning-bg text-warning-text hover:opacity-90 transition-opacity"
           >
             {t('planning.budget.delete')}
           </button>
@@ -80,30 +80,30 @@ export default function BudgetCard({
       {/* Amount Info */}
       <div className="grid grid-cols-3 gap-2 text-xs">
         <div>
-          <p className="text-gray-500">{t('planning.budget.spent')}</p>
+          <p className="text-neutral-400">{t('planning.budget.spent')}</p>
           <p className="font-medium">${budget.current_spent}</p>
         </div>
         <div>
-          <p className="text-gray-500">{t('planning.budget.limit')}</p>
+          <p className="text-neutral-400">{t('planning.budget.limit')}</p>
           <p className="font-medium">${budget.amount_limit}</p>
         </div>
         <div>
-          <p className="text-gray-500">{t('planning.budget.remaining')}</p>
-          <p className={`font-medium ${budget.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <p className="text-neutral-400">{t('planning.budget.remaining')}</p>
+          <p className={`font-medium ${budget.remaining >= 0 ? 'text-success' : 'text-warning'}`}>
             ${budget.remaining}
           </p>
         </div>
       </div>
 
       {/* Progress bar */}
-      <div className="w-full bg-gray-200 rounded-full h-2">
+      <div className="w-full bg-neutral-100 rounded-full h-2">
         <div
           className={`h-2 rounded-full transition-all ${colors.bar}`}
           style={{ width: `${percentage}%` }}
         />
       </div>
 
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-neutral-400">
         {percentage.toFixed(0)}% {t('planning.budget.of_limit')}
       </p>
     </div>

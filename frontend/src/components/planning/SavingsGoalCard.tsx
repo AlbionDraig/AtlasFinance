@@ -38,13 +38,13 @@ export default function SavingsGoalCard({
         <div className="flex gap-2">
           <button
             onClick={() => onEdit(goal)}
-            className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
+            className="text-xs px-2 py-1 rounded border border-neutral-100 bg-neutral-50 text-neutral-700 hover:bg-neutral-100 transition-colors"
           >
             {t('planning.goal.edit')}
           </button>
           <button
             onClick={() => onDelete(goal.id)}
-            className="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 transition"
+            className="text-xs px-2 py-1 rounded border border-warning bg-warning-bg text-warning-text hover:opacity-90 transition-opacity"
           >
             {t('planning.goal.delete')}
           </button>
@@ -54,15 +54,15 @@ export default function SavingsGoalCard({
       {/* Amount info */}
       <div className="grid grid-cols-3 gap-2 text-xs">
         <div>
-          <p className="text-gray-500">{t('planning.goal.saved')}</p>
+          <p className="text-neutral-400">{t('planning.goal.saved')}</p>
           <p className="font-medium">${goal.current_amount}</p>
         </div>
         <div>
-          <p className="text-gray-500">{t('planning.goal.target')}</p>
+          <p className="text-neutral-400">{t('planning.goal.target')}</p>
           <p className="font-medium">${goal.target_amount}</p>
         </div>
         <div>
-          <p className="text-gray-500">{t('planning.goal.remaining')}</p>
+          <p className="text-neutral-400">{t('planning.goal.remaining')}</p>
           <p className="font-medium">
             ${parseFloat(String(goal.target_amount)) - parseFloat(String(goal.current_amount))}
           </p>
@@ -75,14 +75,14 @@ export default function SavingsGoalCard({
           <span className="text-xs font-medium text-gray-700">
             {t('planning.goal.progress')}
           </span>
-          <span className="text-xs font-semibold text-blue-600">
+          <span className="text-xs font-medium text-brand">
             {goal.progress_percent.toFixed(1)}%
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-neutral-100 rounded-full h-2">
           <div
             className={`h-2 rounded-full transition-all ${
-              goal.is_completed ? 'bg-green-500' : 'bg-blue-500'
+              goal.is_completed ? 'bg-success' : 'bg-brand'
             }`}
             style={{ width: `${Math.min(100, goal.progress_percent)}%` }}
           />
@@ -96,10 +96,10 @@ export default function SavingsGoalCard({
         </span>
         <span className={`font-medium ${
           goal.days_remaining <= 30
-            ? 'text-red-600'
+            ? 'text-warning'
             : goal.days_remaining <= 90
-              ? 'text-amber-600'
-              : 'text-gray-600'
+              ? 'text-warning-text'
+              : 'text-neutral-700'
         }`}>
           {goal.days_remaining} {t('planning.goal.days_left')}
         </span>
@@ -107,8 +107,8 @@ export default function SavingsGoalCard({
 
       {/* Completion status */}
       {goal.is_completed && (
-        <div className="p-2 bg-green-50 rounded border border-green-200">
-          <p className="text-xs font-medium text-green-700 text-center">
+        <div className="p-2 rounded border border-success bg-success-bg">
+          <p className="text-xs font-medium text-success-text text-center">
             ✓ {t('planning.goal.completed_message')}
           </p>
         </div>
