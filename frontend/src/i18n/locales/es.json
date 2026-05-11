@@ -6,6 +6,8 @@
     "accounts": "Cuentas",
     "pockets": "Bolsillos",
     "investments": "Inversiones",
+      "planning_budgets": "Presupuestos",
+      "planning_goals": "Metas de ahorro",
     "admin": "Administración",
     "management": "Gestión",
     "myProfile": "Mi perfil",
@@ -31,7 +33,9 @@
     "page_label_investments": "las inversiones",
     "page_label_admin": "la administración",
     "page_label_management": "la gestión",
-    "page_label_profile": "el perfil"
+    "page_label_profile": "el perfil",
+    "page_label_budgets": "los presupuestos",
+    "page_label_savings_goals": "las metas de ahorro"
   },
   "common": {
     "save": "Guardar cambios",
@@ -922,6 +926,81 @@
     "promote_confirm_warning": "Este cambio dará acceso a funciones administrativas y gestión de usuarios.",
     "promote_confirm_action": "Sí, convertir en admin"
   },
+  "planning": {
+    "budgets": {
+      "title": "Presupuestos",
+      "subtitle": "Establece límites de gasto por categoría y monitorea tu situación"
+    },
+    "budget": {
+      "new": "Nuevo presupuesto",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "status_ok": "Bien",
+      "status_warning": "Alerta",
+      "status_exceeded": "Excedido",
+      "spent": "Gastado",
+      "limit": "Límite",
+      "remaining": "Disponible",
+      "of_limit": "del límite",
+      "category": "Categoría",
+      "select_category": "Selecciona una categoría",
+      "amount_limit": "Límite de gasto",
+      "confirm_delete": "¿Estás seguro de que deseas eliminar este presupuesto?",
+      "empty": "No hay presupuestos para este mes. Crea uno nuevo.",
+      "total_limit": "Límite total",
+      "total_spent": "Gastado total",
+      "total_remaining": "Disponible total"
+    },
+    "goals": {
+      "title": "Metas de Ahorro",
+      "subtitle": "Define tus objetivos financieros y monitorea tu progreso",
+      "total_goals": "Total de metas",
+      "completed": "Completadas",
+      "total_target": "Objetivo total",
+      "total_saved": "Total ahorrado"
+    },
+    "goal": {
+      "new": "Nueva meta",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "name": "Nombre de la meta",
+      "name_placeholder": "Ej: Vacaciones, Auto nuevo, Casa",
+      "description": "Descripción",
+      "description_placeholder": "Describe tu meta (opcional)",
+      "saved": "Ahorrado",
+      "target": "Objetivo",
+      "remaining": "Falta",
+      "progress": "Progreso",
+      "target_date": "Fecha objetivo",
+      "days_left": "días",
+      "completed_message": "¡Meta alcanzada!",
+      "target_amount": "Monto objetivo",
+      "confirm_delete": "¿Estás seguro de que deseas eliminar esta meta?",
+      "empty": "No tienes metas de ahorro. Crea una para comenzar.",
+      "simulator": "Simulador de escenarios"
+    },
+    "simulator": {
+      "title": "Simulador de Escenarios",
+      "description": "Simula cómo un cambio en tus gastos podría ayudarte a alcanzar tus metas más rápido.",
+      "category": "¿Cuál categoría deseas reducir?",
+      "reduction": "% de reducción",
+      "reduction_help": "Desliza para ver cómo un ahorro en esta categoría impactaría tus metas",
+      "months": "Meses a simular",
+      "months_help": "¿Cuántos meses adelante deseas proyectar?",
+      "simulate": "Simular",
+      "simulating": "Simulando...",
+      "results": "Resultados de la simulación",
+      "no_goals": "No tienes metas activas para simular.",
+      "current": "Cantidad actual",
+      "projected": "Proyectada",
+      "progress": "Progreso proyectado:",
+      "will_reach": "¡Alcanzarías tu meta!",
+      "will_not_reach": "Aún no alcanzarías tu meta",
+      "days_to_reach": "Días estimados:",
+      "back": "Volver"
+    }
+  },
+  "loading": "Cargando...",
   "lang": {
     "selector_label": "Idioma",
     "es": "Español",

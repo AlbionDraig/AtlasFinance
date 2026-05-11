@@ -33,6 +33,8 @@ const TransactionsPage = lazy(() => import('@/pages/transactions/TransactionsPag
 const AccountsPage = lazy(() => import('@/pages/accounts/AccountsPage'))
 const PocketsPage = lazy(() => import('@/pages/pockets/PocketsPage'))
 const InvestmentsPage = lazy(() => import('@/pages/investments/InvestmentsPage'))
+const BudgetsPage = lazy(() => import('@/pages/planning/BudgetsPage'))
+const SavingsGoalsPage = lazy(() => import('@/pages/planning/SavingsGoalsPage'))
 const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'))
 const AdminPage = lazy(() => import('@/pages/admin/AdminPage'))
 const ManagementPage = lazy(() => import('@/pages/management/ManagementPage'))
@@ -99,6 +101,22 @@ export default function App() {
                 element={
                   <PageErrorBoundary labelKey="errors.page_label_investments" invalidateKeys={[QUERY_KEYS.investments, QUERY_KEYS.investmentEntities]}>
                     <LazyPage><InvestmentsPage /></LazyPage>
+                  </PageErrorBoundary>
+                }
+              />
+              <Route
+                path="/planning/budgets"
+                element={
+                  <PageErrorBoundary labelKey="errors.page_label_budgets" invalidateKeys={[QUERY_KEYS.categories]}>
+                    <LazyPage><BudgetsPage /></LazyPage>
+                  </PageErrorBoundary>
+                }
+              />
+              <Route
+                path="/planning/savings-goals"
+                element={
+                  <PageErrorBoundary labelKey="errors.page_label_savings_goals" invalidateKeys={[QUERY_KEYS.categories]}>
+                    <LazyPage><SavingsGoalsPage /></LazyPage>
                   </PageErrorBoundary>
                 }
               />

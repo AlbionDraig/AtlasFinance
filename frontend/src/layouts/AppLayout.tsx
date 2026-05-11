@@ -1,7 +1,7 @@
-// AppLayout — chrome compartido por todas las páginas privadas.
-// Aporta sidebar (navegación + perfil + logout) y un área principal con <Outlet/>.
-// El sidebar usa hover-expansion (icon-only → expandido) para maximizar área
-// útil en desktop sin sacrificar acceso rápido al menú.
+﻿// AppLayout â€” chrome compartido por todas las pÃ¡ginas privadas.
+// Aporta sidebar (navegaciÃ³n + perfil + logout) y un Ã¡rea principal con <Outlet/>.
+// El sidebar usa hover-expansion (icon-only â†’ expandido) para maximizar Ã¡rea
+// Ãºtil en desktop sin sacrificar acceso rÃ¡pido al menÃº.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -9,7 +9,7 @@ import { useAuthStore } from '@/store/authStore'
 import { authApi } from '@/api/auth'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
 
-// Catálogo declarativo de items del sidebar. Mantenerlo aquí (vs. en cada NavLink)
+// CatÃ¡logo declarativo de items del sidebar. Mantenerlo aquÃ­ (vs. en cada NavLink)
 // permite reordenar/agregar entradas sin tocar el JSX del render.
 const navItems = [
   {
@@ -63,6 +63,25 @@ const navItems = [
     ),
   },
   {
+    to: '/planning/budgets',
+    labelKey: 'nav.planning_budgets',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6M3 20h18" />
+      </svg>
+    ),
+  },
+  {
+    to: '/planning/savings-goals',
+    labelKey: 'nav.planning_goals',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+    ),
+  },
+  {
     to: '/admin',
     labelKey: 'nav.admin',
     adminOnly: true,
@@ -98,8 +117,8 @@ export default function AppLayout() {
   })
   const [expanded, setExpanded] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  // Refs (no state) para los timers porque su mutación no debe disparar re-render
-  // y debemos poder cancelarlos sincrónicamente desde otros handlers.
+  // Refs (no state) para los timers porque su mutaciÃ³n no debe disparar re-render
+  // y debemos poder cancelarlos sincrÃ³nicamente desde otros handlers.
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -107,12 +126,12 @@ export default function AppLayout() {
   // en otras sesiones (e.g. email/nombre actualizados).
   useEffect(() => {
     authApi.me().then((res) => setUser(res.data)).catch(() => {
-      // Silencioso: si falla (401) el interceptor de axios maneja la sesión.
+      // Silencioso: si falla (401) el interceptor de axios maneja la sesiÃ³n.
     })
   }, [])
 
-  // Delays pequeños para evitar parpadeos cuando el cursor cruza el sidebar
-  // accidentalmente (e.g. moverse hacia el menú desde el contenido).
+  // Delays pequeÃ±os para evitar parpadeos cuando el cursor cruza el sidebar
+  // accidentalmente (e.g. moverse hacia el menÃº desde el contenido).
   const OPEN_DELAY_MS = 140
   const CLOSE_DELAY_MS = 180
 
@@ -157,10 +176,10 @@ export default function AppLayout() {
 
   function handleLogout() {
     // Fire-and-forget: revocamos el token en el backend pero no bloqueamos
-    // la navegación esperando la respuesta. El usuario sale inmediatamente.
+    // la navegaciÃ³n esperando la respuesta. El usuario sale inmediatamente.
     authApi.logout().catch(() => {})
     logout()
-    // replace: true evita que "atrás" en el navegador regrese a la app autenticada.
+    // replace: true evita que "atrÃ¡s" en el navegador regrese a la app autenticada.
     navigate('/login', { replace: true })
   }
 

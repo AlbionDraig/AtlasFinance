@@ -6,6 +6,8 @@
     "accounts": "Accounts",
     "pockets": "Pockets",
     "investments": "Investments",
+      "planning_budgets": "Budgets",
+      "planning_goals": "Savings Goals",
     "admin": "Administration",
     "management": "Management",
     "myProfile": "My profile",
@@ -31,7 +33,9 @@
     "page_label_investments": "investments",
     "page_label_admin": "the admin area",
     "page_label_management": "the management area",
-    "page_label_profile": "the profile"
+    "page_label_profile": "the profile",
+    "page_label_budgets": "budgets",
+    "page_label_savings_goals": "savings goals"
   },
   "common": {
     "save": "Save changes",
@@ -920,6 +924,81 @@
     "promote_confirm_warning": "This change grants access to administrative features and user management.",
     "promote_confirm_action": "Yes, make admin"
   },
+  "planning": {
+    "budgets": {
+      "title": "Budgets",
+      "subtitle": "Set spending limits by category and monitor your situation"
+    },
+    "budget": {
+      "new": "New budget",
+      "edit": "Edit",
+      "delete": "Delete",
+      "status_ok": "Good",
+      "status_warning": "Warning",
+      "status_exceeded": "Exceeded",
+      "spent": "Spent",
+      "limit": "Limit",
+      "remaining": "Available",
+      "of_limit": "of limit",
+      "category": "Category",
+      "select_category": "Select a category",
+      "amount_limit": "Spending limit",
+      "confirm_delete": "Are you sure you want to delete this budget?",
+      "empty": "No budgets for this month. Create a new one.",
+      "total_limit": "Total limit",
+      "total_spent": "Total spent",
+      "total_remaining": "Total available"
+    },
+    "goals": {
+      "title": "Savings Goals",
+      "subtitle": "Define your financial objectives and monitor your progress",
+      "total_goals": "Total goals",
+      "completed": "Completed",
+      "total_target": "Total target",
+      "total_saved": "Total saved"
+    },
+    "goal": {
+      "new": "New goal",
+      "edit": "Edit",
+      "delete": "Delete",
+      "name": "Goal name",
+      "name_placeholder": "E.g: Vacation, New car, House",
+      "description": "Description",
+      "description_placeholder": "Describe your goal (optional)",
+      "saved": "Saved",
+      "target": "Target",
+      "remaining": "Remaining",
+      "progress": "Progress",
+      "target_date": "Target date",
+      "days_left": "days left",
+      "completed_message": "Goal reached!",
+      "target_amount": "Target amount",
+      "confirm_delete": "Are you sure you want to delete this goal?",
+      "empty": "You have no savings goals. Create one to get started.",
+      "simulator": "Scenario simulator"
+    },
+    "simulator": {
+      "title": "Scenario Simulator",
+      "description": "Simulate how a change in your spending could help you reach your goals faster.",
+      "category": "Which category do you want to reduce?",
+      "reduction": "% reduction",
+      "reduction_help": "Slide to see how savings in this category would impact your goals",
+      "months": "Months to simulate",
+      "months_help": "How many months ahead do you want to project?",
+      "simulate": "Simulate",
+      "simulating": "Simulating...",
+      "results": "Simulation results",
+      "no_goals": "You have no active goals to simulate.",
+      "current": "Current amount",
+      "projected": "Projected",
+      "progress": "Projected progress:",
+      "will_reach": "You would reach your goal!",
+      "will_not_reach": "You would not reach your goal yet",
+      "days_to_reach": "Estimated days:",
+      "back": "Back"
+    }
+  },
+  "loading": "Loading...",
   "lang": {
     "selector_label": "Language",
     "es": "Español",
