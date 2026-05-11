@@ -242,17 +242,17 @@ export default function SavingsGoalsPage() {
 
             <div className="flex gap-3">
               <button
-                onClick={() => setFormMode(null)}
-                className="flex-1 rounded-lg border border-neutral-100 bg-neutral-50 text-neutral-700 py-2 text-sm font-medium hover:bg-neutral-100 transition-colors"
-              >
-                {t('common.cancel')}
-              </button>
-              <button
                 onClick={handleSubmitForm}
                 disabled={createGoal.isPending || updateGoal.isPending}
                 className="flex-1 rounded-lg border border-brand bg-brand text-white py-2 text-sm font-medium hover:bg-brand-hover hover:border-brand-hover disabled:opacity-50 transition-colors"
               >
                 {formMode === 'create' ? t('common.create') : t('common.update')}
+              </button>
+              <button
+                onClick={() => setFormMode(null)}
+                className="flex-1 rounded-lg border border-neutral-100 bg-neutral-50 text-neutral-700 py-2 text-sm font-medium hover:bg-neutral-100 transition-colors"
+              >
+                {t('common.cancel')}
               </button>
             </div>
           </div>
