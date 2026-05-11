@@ -11,6 +11,7 @@ interface SliderProps {
   className?: string
   disabled?: boolean
   valueSuffix?: string
+  valueFormatter?: (value: number) => string
   ariaLabel?: string
   size?: 'sm' | 'md'
   showTicks?: boolean
@@ -52,6 +53,7 @@ export default function Slider({
   className = '',
   disabled = false,
   valueSuffix = '',
+  valueFormatter,
   ariaLabel,
   size = 'md',
   showTicks = false,
@@ -79,7 +81,7 @@ export default function Slider({
           {label}
         </label>
         <span className={`inline-flex min-w-14 items-center justify-center rounded-md border border-neutral-100 bg-neutral-50 px-2 font-medium text-neutral-700 ${size === 'sm' ? 'py-0.5 text-[11px]' : 'py-1 text-xs'}`}>
-          {clampedValue}{valueSuffix}
+          {valueFormatter ? valueFormatter(clampedValue) : `${clampedValue}${valueSuffix}`}
         </span>
       </div>
 

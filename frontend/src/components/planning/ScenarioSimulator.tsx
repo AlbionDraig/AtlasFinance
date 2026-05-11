@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
 import Slider from '@/components/ui/Slider'
+import { useToast } from '@/hooks/useToast'
 import { useScenarioSimulation } from '@/hooks/useSavingsGoals'
+import { getApiErrorMessage } from '@/lib/utils'
 import type { ScenarioSimulationResponse } from '@/api/savings_goals'
 
 interface ScenarioSimulatorProps {
@@ -21,6 +23,7 @@ export default function ScenarioSimulator({
   onClose,
 }: ScenarioSimulatorProps) {
   const { t } = useTranslation()
+  const { toast } = useToast()
   const [categoryId, setCategoryId] = useState<number>(categories[0]?.id ?? 0)
   const [reductionPercent, setReductionPercent] = useState(15)
   const [monthsAhead, setMonthsAhead] = useState(6)
@@ -28,8 +31,35 @@ export default function ScenarioSimulator({
 
   const simulationMutation = useScenarioSimulation()
   const yearShortLabel = t('planning.simulator.years_short')
+  const monthShortLabel = t('planning.simulator.months_short')
+
+  useEffect(() => {
+    if (!categories.length) {
+      setCategoryId(0)
+      return
+    }
+
+    const exists = categories.some((cat) => cat.id === categoryId)
+    if (!exists) {
+      setCategoryId(categories[0].id)
+    }
+  }, [categories, categoryId])
+
+  const formatMonthsValue = (months: number) => {
+    const years = Math.floor(months / 12)
+    const remainingMonths = months % 12
+
+    if (years === 0) return `${remainingMonths}${monthShortLabel}`
+    if (remainingMonths === 0) return `${years}${yearShortLabel}`
+    return `${years}${yearShortLabel} ${remainingMonths}${monthShortLabel}`
+  }
 
   const handleSimulate = async () => {
+    if (!categoryId) {
+      toast(t('planning.simulator.select_category_error'), 'error')
+      return
+    }
+
     try {
       const data = await simulationMutation.mutateAsync({
         category_id: categoryId,
@@ -38,7 +68,7 @@ export default function ScenarioSimulator({
       })
       setResults(data)
     } catch (error) {
-      console.error('Simulation failed:', error)
+      toast(getApiErrorMessage(error, t('planning.simulator.simulation_error')), 'error')
     }
   }
 
@@ -104,6 +134,7 @@ export default function ScenarioSimulator({
               max={60}
               step={1}
               onChange={setMonthsAhead}
+              valueFormatter={formatMonthsValue}
               size="md"
               showTicks
               tickValues={[12, 24, 36, 48, 60]}
