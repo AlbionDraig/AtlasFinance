@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import DeleteButton from '@/components/ui/DeleteButton'
+import EditButton from '@/components/ui/EditButton'
 import type { SavingsGoalRead } from '@/api/savings_goals'
 
 interface SavingsGoalCardProps {
@@ -36,18 +38,8 @@ export default function SavingsGoalCard({
           )}
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => onEdit(goal)}
-            className="text-xs px-2 py-1 rounded border border-neutral-100 bg-neutral-50 text-neutral-700 hover:bg-neutral-100 transition-colors"
-          >
-            {t('planning.goal.edit')}
-          </button>
-          <button
-            onClick={() => onDelete(goal.id)}
-            className="text-xs px-2 py-1 rounded border border-warning bg-warning-bg text-warning-text hover:opacity-90 transition-opacity"
-          >
-            {t('planning.goal.delete')}
-          </button>
+          <EditButton onClick={() => onEdit(goal)} label={t('planning.goal.edit')} />
+          <DeleteButton onClick={() => onDelete(goal.id)} label={t('planning.goal.delete')} />
         </div>
       </div>
 

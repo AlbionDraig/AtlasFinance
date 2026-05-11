@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import DeleteButton from '@/components/ui/DeleteButton'
+import EditButton from '@/components/ui/EditButton'
 import type { BudgetRead } from '@/api/budgets'
 
 interface BudgetCardProps {
@@ -62,18 +64,8 @@ export default function BudgetCard({
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => onEdit(budget)}
-            className="text-xs px-2 py-1 rounded border border-neutral-100 bg-neutral-50 text-neutral-700 hover:bg-neutral-100 transition-colors"
-          >
-            {t('planning.budget.edit')}
-          </button>
-          <button
-            onClick={() => onDelete(budget.id)}
-            className="text-xs px-2 py-1 rounded border border-warning bg-warning-bg text-warning-text hover:opacity-90 transition-opacity"
-          >
-            {t('planning.budget.delete')}
-          </button>
+          <EditButton onClick={() => onEdit(budget)} label={t('planning.budget.edit')} />
+          <DeleteButton onClick={() => onDelete(budget.id)} label={t('planning.budget.delete')} />
         </div>
       </div>
 

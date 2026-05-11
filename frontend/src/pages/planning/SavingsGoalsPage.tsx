@@ -149,7 +149,7 @@ export default function SavingsGoalsPage() {
         {categories && categories.length > 0 && (
           <button
             onClick={() => setSimulatorOpen(true)}
-            className="app-btn-secondary border-warning text-warning-text bg-warning-bg hover:bg-warning-bg"
+            className="app-btn-secondary"
           >
             {t('planning.goal.simulator')}
           </button>
