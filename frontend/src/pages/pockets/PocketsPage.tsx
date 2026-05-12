@@ -509,13 +509,8 @@ export default function PocketsPage() {
         </div>
       ) : (
         <>
-          {/* Barra de resultados + toggle */}
-          <div className="flex flex-col gap-2 rounded-lg border border-brand/20 bg-gradient-to-r from-brand-light/70 to-white px-3 py-2 text-xs text-brand-text sm:flex-row sm:items-center sm:justify-between">
-            <p>
-              {filteredPockets.length === pockets.length
-                ? t('pockets.results_count', { count: pockets.length })
-                : t('pockets.results_count_filtered', { shown: filteredPockets.length, total: pockets.length })}
-            </p>
+          {/* Toggle de vista */}
+          <div className="flex justify-end">
             <ViewToggle value={viewMode} onChange={(m) => setViewMode(m as 'cards' | 'table')} />
           </div>
 

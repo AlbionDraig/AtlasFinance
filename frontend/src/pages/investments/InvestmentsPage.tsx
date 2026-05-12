@@ -289,7 +289,7 @@ export default function InvestmentsPage() {
     totalInvested,
     totalCurrent,
     sortOptions,
-    selectedSortLabel,
+
     entityFilterOptions,
     typeFilterOptions,
     currencyFilterOptions,
@@ -496,15 +496,7 @@ export default function InvestmentsPage() {
         </div>
       </ResponsiveFilters>
 
-      <div className="flex flex-col gap-2 rounded-lg border border-brand/20 bg-gradient-to-r from-brand-light/70 to-white px-3 py-2 text-xs text-brand-text sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <p>
-            {filtered.length === investments.length
-              ? t('investments.results_count_total', { total: investments.length })
-              : t('investments.results_count_filtered', { shown: filtered.length, total: investments.length })}
-          </p>
-          {selectedSortLabel && <p className="text-neutral-700">{t('investments.chip_sort', { value: selectedSortLabel })}</p>}
-        </div>
+      <div className="flex justify-end">
         <ViewToggle value={viewMode} onChange={(m) => setViewMode(m as 'cards' | 'table')} />
       </div>
 
