@@ -488,11 +488,11 @@ export default function SmartAlertsPage() {
               <table className="app-table text-sm">
                 <thead>
                   <tr>
-                    <th className="px-3 py-2 text-center font-medium align-middle">{t('planning.alerts.severity_label')}</th>
+                    <th className="px-3 py-2 text-center font-medium align-middle whitespace-nowrap">{t('planning.alerts.severity_label')}</th>
                     <th className="px-3 py-2 text-center font-medium align-middle">{t('common.title')}</th>
                     <th className="px-3 py-2 text-center font-medium align-middle">{t('common.detail')}</th>
                     <th className="px-3 py-2 text-center font-medium align-middle">{t('common.amount')}</th>
-                    <th className="px-3 py-2 text-center font-medium align-middle">{t('common.due_date')}</th>
+                    <th className="px-3 py-2 text-center font-medium align-middle whitespace-nowrap">{t('common.due_date')}</th>
                     <th className="px-3 py-2 text-center font-medium align-middle">{t('common.action')}</th>
                   </tr>
                 </thead>
@@ -502,10 +502,12 @@ export default function SmartAlertsPage() {
                     const severityUi = getSeverityClasses(alert.severity)
                     return (
                       <tr key={`${alert.code}-${alert.transaction_id ?? index}`}>
-                        <td className="px-3 py-2">
-                          <Badge variant={severityUi.badge}>
-                            {getLocalizedSeverityLabel(alert.severity, t)}
-                          </Badge>
+                        <td className="px-3 py-2 text-center">
+                          <div className="flex justify-center">
+                            <Badge variant={severityUi.badge}>
+                              {getLocalizedSeverityLabel(alert.severity, t)}
+                            </Badge>
+                          </div>
                         </td>
                         <td className="px-3 py-2 text-neutral-900 font-medium">{getLocalizedAlertText(alert, t).title}</td>
                         <td className="px-3 py-2 text-neutral-700 text-sm">{getLocalizedAlertText(alert, t).detail}</td>
