@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+### Added
+
+- Financial health score module in dashboard metrics with deterministic backend scoring for savings, debt, liquidity and diversification.
+- Weekly improvement plan with prioritized actions and expected score gain.
+- Financial health history visualization with monthly evolution context.
+
+### Changed
+
+- Dashboard financial health UI refined with responsive compact/rich layouts and improved accessibility for small-text labels.
+- Weekly plan priority indicators now use clearer semantic color mapping (high, medium, low) across badges and card accents.
+- Health level descriptive copy was simplified in Spanish and English to remove redundant status wording.
+
+### Tests
+
+- Added and updated unit/frontend coverage for financial health rendering and backend financial score service behavior.
+
 ---
 
 ## [1.0.3] - 2026-05-05
