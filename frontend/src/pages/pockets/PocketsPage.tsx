@@ -17,10 +17,10 @@ import EmptyState from '@/components/ui/EmptyState'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 import TableActionGroup from '@/components/ui/TableActionGroup'
-import ViewModeToggle from '@/components/ui/ViewModeToggle'
 import Select from '@/components/ui/Select'
 import AmountInput from '@/components/ui/AmountInput'
 import InlineAlert from '@/components/ui/InlineAlert'
+import ViewModeToggle from '@/components/ui/ViewModeToggle'
 import PocketsFiltersCard from './components/PocketsFiltersCard'
 import WithdrawFromPocketModal, { type WithdrawFromPocketFormData } from './components/WithdrawFromPocketModal'
 import EntityCard from '@/components/ui/EntityCard'
@@ -518,10 +518,10 @@ export default function PocketsPage() {
             </p>
             <ViewModeToggle
               value={viewMode}
-              onChange={setViewMode}
+              onChange={(mode) => setViewMode(mode as 'cards' | 'table')}
               options={[
-                { value: 'cards', label: t('common.grid') },
-                { value: 'table', label: t('common.table') },
+                { value: 'cards', label: t('pockets.view_cards') },
+                { value: 'table', label: t('pockets.view_table') },
               ]}
             />
           </div>

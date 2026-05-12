@@ -414,11 +414,12 @@ export default function SmartAlertsPage() {
           <div className="flex items-center justify-end gap-2 -mx-2 mb-2">
             <ViewModeToggle
               value={alertViewMode}
-              onChange={setAlertViewMode}
+              onChange={(mode) => setAlertViewMode(mode as 'grid' | 'table')}
               options={[
                 { value: 'grid', label: t('common.grid') },
                 { value: 'table', label: t('common.table') },
               ]}
+              className="border-neutral-100"
             />
           </div>
         )}

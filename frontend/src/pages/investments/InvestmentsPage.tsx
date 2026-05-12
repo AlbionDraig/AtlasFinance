@@ -19,10 +19,10 @@ import EmptyState from '@/components/ui/EmptyState'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 import TableActionGroup from '@/components/ui/TableActionGroup'
-import ViewModeToggle from '@/components/ui/ViewModeToggle'
 import Select from '@/components/ui/Select'
 import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
+import ViewModeToggle from '@/components/ui/ViewModeToggle'
 import { daysSinceInvestment, formatInvestmentDate, renderInstrumentBadge } from './investmentDisplay'
 import {
   type InvestmentFormErrors,
@@ -507,10 +507,10 @@ export default function InvestmentsPage() {
         </div>
         <ViewModeToggle
           value={viewMode}
-          onChange={setViewMode}
+          onChange={(mode) => setViewMode(mode as 'cards' | 'table')}
           options={[
-            { value: 'cards', label: t('common.grid') },
-            { value: 'table', label: t('common.table') },
+            { value: 'cards', label: t('investments.view_cards') },
+            { value: 'table', label: t('investments.view_table') },
           ]}
         />
       </div>
