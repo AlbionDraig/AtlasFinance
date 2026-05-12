@@ -1,7 +1,6 @@
 ﻿import type { FinancialHealthSnapshot } from '@/types'
-import { scoreLevelLabel, toneToVariant } from './helpers'
+import { scoreLevelLabel } from './helpers'
 import type { DeltaBadge } from './types'
-import { FinancialHealthBadge } from './shared'
 
 interface FinancialHealthScoreCardProps {
   financialHealth: FinancialHealthSnapshot | null
@@ -34,53 +33,59 @@ export default function FinancialHealthScoreCard({
       <div className="app-card w-full ring-2 ring-brand/20 relative overflow-hidden bg-gradient-to-br from-brand-light/70 via-white to-white">
         <div className="absolute top-0 left-0 right-0 h-1 bg-brand" />
 
-        <div className="p-3.5 space-y-2.5">
-          <div className="flex items-start justify-center gap-2">
-            <div className="flex items-center gap-3 min-w-0">
-              <div
-                className="h-14 w-14 flex-shrink-0 rounded-full p-1"
-                style={{
-                  background: `conic-gradient(var(--af-brand) ${Math.max(0, Math.min(100, healthScore))}%, rgba(214, 223, 230, 0.45) 0%)`,
-                }}
-              >
-                <div className="h-full w-full rounded-full bg-white flex items-center justify-center text-brand text-2xl font-bold">
-                  {healthScore}
-                </div>
+        <div className="px-3.5 pt-3.5 pb-2.5 md:pb-3 space-y-3 md:space-y-0">
+          <div className="grid grid-cols-[auto_1fr] md:grid-cols-[auto_minmax(0,1fr)_minmax(360px,1fr)] items-start md:items-center gap-3">
+            <div
+              className="h-16 w-16 flex-shrink-0 rounded-full p-1"
+              style={{
+                background: `conic-gradient(var(--af-brand) ${Math.max(0, Math.min(100, healthScore))}%, rgba(214, 223, 230, 0.45) 0%)`,
+              }}
+            >
+              <div className="h-full w-full rounded-full bg-white flex items-center justify-center text-brand text-3xl font-bold">
+                {healthScore}
               </div>
-              <div className="min-w-0">
-                <p className="app-label text-[10px] uppercase tracking-wider text-neutral-600 mb-0.5">
-                  {t('dashboard.health_score_title')}
-                </p>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className={`inline-block px-2 py-0.5 text-sm font-semibold rounded-md leading-tight ${levelCls}`}>
-                    {healthLevel === 'strong'
-                      ? t('dashboard.health_state_strong')
-                      : healthLevel === 'stable'
-                        ? t('dashboard.health_state_stable')
-                        : t('dashboard.health_state_attention')}
-                  </span>
-                  <FinancialHealthBadge
-                    text={deltaBadge.text}
-                    variant={toneToVariant(deltaBadge.tone)}
-                    hint={t('dashboard.health_history_hint')}
-                  />
-                </div>
+            </div>
+
+            <div className="min-w-0 space-y-1.5 pt-0.5 self-start">
+              <p className="app-label text-[10px] uppercase tracking-wider text-neutral-600">
+                {t('dashboard.health_score_title')}
+              </p>
+              <span className={`inline-block pl-0 pr-2 py-0.5 text-sm font-semibold rounded-md leading-tight ${levelCls}`}>
+                {healthLevel === 'strong'
+                  ? t('dashboard.health_state_strong')
+                  : healthLevel === 'stable'
+                    ? t('dashboard.health_state_stable')
+                    : t('dashboard.health_state_attention')}
+              </span>
+              <p className="app-subtitle text-sm leading-snug text-neutral-700">{scoreLevelLabel(healthLevel, t)}</p>
+            </div>
+
+            <div className="hidden md:grid grid-cols-3 gap-1.5 self-center">
+              <div className="rounded-md border border-neutral-100 bg-white/85 px-2 py-1.5 text-center">
+                <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500">{t('dashboard.health_mini_delta')}</p>
+                <p className="text-sm text-neutral-900 font-semibold leading-tight">{deltaBadge.text}</p>
+              </div>
+              <div className="rounded-md border border-neutral-100 bg-white/85 px-2 py-1.5 text-center">
+                <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500">{t('dashboard.health_mini_strengths')}</p>
+                <p className="text-sm text-neutral-900 font-semibold leading-tight">{strengths}</p>
+              </div>
+              <div className="rounded-md border border-neutral-100 bg-white/85 px-2 py-1.5 text-center">
+                <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500">{t('dashboard.health_mini_focus')}</p>
+                <p className="text-sm text-neutral-900 font-semibold leading-tight">{focus}</p>
               </div>
             </div>
           </div>
 
-          <p className="app-subtitle text-sm leading-snug text-neutral-700 text-center max-w-[32rem] mx-auto">{scoreLevelLabel(healthLevel, t)}</p>
-
-          <div className="grid grid-cols-3 gap-1.5">
-            <div className="rounded-md border border-neutral-100 bg-white/80 px-2 py-1.5 text-center">
+          <div className="grid grid-cols-3 gap-1.5 md:hidden">
+            <div className="rounded-md border border-neutral-100 bg-white/85 px-2 py-1.5 text-center">
               <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500">{t('dashboard.health_mini_delta')}</p>
               <p className="text-sm text-neutral-900 font-semibold leading-tight">{deltaBadge.text}</p>
             </div>
-            <div className="rounded-md border border-neutral-100 bg-white/80 px-2 py-1.5 text-center">
+            <div className="rounded-md border border-neutral-100 bg-white/85 px-2 py-1.5 text-center">
               <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500">{t('dashboard.health_mini_strengths')}</p>
               <p className="text-sm text-neutral-900 font-semibold leading-tight">{strengths}</p>
             </div>
-            <div className="rounded-md border border-neutral-100 bg-white/80 px-2 py-1.5 text-center">
+            <div className="rounded-md border border-neutral-100 bg-white/85 px-2 py-1.5 text-center">
               <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500">{t('dashboard.health_mini_focus')}</p>
               <p className="text-sm text-neutral-900 font-semibold leading-tight">{focus}</p>
             </div>
@@ -94,13 +99,8 @@ export default function FinancialHealthScoreCard({
     <div className="app-card p-5 col-span-1 lg:max-w-[360px] lg:justify-self-center min-h-[360px] w-full ring-2 ring-brand/20 relative overflow-hidden bg-gradient-to-br from-brand-light/70 via-white to-white motion-safe:transition-all motion-safe:duration-300 hover:shadow-md">
       <div className="absolute -top-10 -right-8 w-32 h-32 rounded-full bg-brand/10 blur-2xl" />
       <div className="absolute top-0 left-0 right-0 h-1.5 bg-brand" />
-      <div className="flex items-center justify-between gap-3 mb-3 relative">
+      <div className="flex items-center gap-3 mb-3 relative">
         <p className="app-label uppercase tracking-wider">{t('dashboard.health_score_title')}</p>
-        <FinancialHealthBadge
-          text={deltaBadge.text}
-          variant={toneToVariant(deltaBadge.tone)}
-          hint={t('dashboard.health_history_hint')}
-        />
       </div>
 
       <div className="mb-3 flex items-center justify-center">
