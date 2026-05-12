@@ -4,11 +4,10 @@ import { useNavigate } from 'react-router-dom'
 import Badge from '@/components/ui/Badge'
 import InlineAlert from '@/components/ui/InlineAlert'
 import PageSkeleton from '@/components/ui/PageSkeleton'
-import Tooltip from '@/components/ui/Tooltip'
 import { useSmartAlertsData } from '@/hooks/useSmartAlertsData'
 import { trackUxEvent } from '@/lib/uxTelemetry'
 import { formatCurrency } from '@/lib/utils'
-import type { SmartAlertItem } from '@/types'
+import type { SmartAlertItem, SmartAlertsKpiItem } from '@/types'
 
 const ALERT_PREFERENCES_KEY = 'atlasfinance.smartAlerts.preferences'
 
@@ -86,6 +85,25 @@ function getLocalizedAlertText(alert: SmartAlertItem, t: (key: string, options?:
   }
 }
 
+function getLocalizedKpiText(
+  kpi: SmartAlertsKpiItem,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): { title: string; description: string; unit: string } {
+  const titleKey = `planning.alerts.kpi_${kpi.key}_title`
+  const descriptionKey = `planning.alerts.kpi_${kpi.key}_description`
+  const unitKey = `planning.alerts.kpi_unit_${kpi.unit}`
+
+  const localizedTitle = t(titleKey)
+  const localizedDescription = t(descriptionKey)
+  const localizedUnit = t(unitKey)
+
+  return {
+    title: localizedTitle === titleKey ? kpi.title : localizedTitle,
+    description: localizedDescription === descriptionKey ? kpi.description : localizedDescription,
+    unit: localizedUnit === unitKey ? kpi.unit : localizedUnit,
+  }
+}
+
 export default function SmartAlertsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -104,6 +122,15 @@ export default function SmartAlertsPage() {
         : activeAlerts.filter((alert) => alert.severity === severityFilter)
     ),
     [activeAlerts, severityFilter],
+  )
+  const severityCounts = useMemo(
+    () => ({
+      all: activeAlerts.length,
+      high: activeAlerts.filter((alert) => alert.severity === 'high').length,
+      medium: activeAlerts.filter((alert) => alert.severity === 'medium').length,
+      low: activeAlerts.filter((alert) => alert.severity === 'low').length,
+    }),
+    [activeAlerts],
   )
 
   const generatedAtLabel = useMemo(() => {
@@ -242,35 +269,38 @@ export default function SmartAlertsPage() {
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="app-section-title">{t('planning.alerts.alerts_title')}</h2>
-          <Badge variant="neutral">{t('planning.alerts.alerts_count', { count: filteredAlerts.length })}</Badge>
         </div>
 
         <div className="app-card p-2">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2" role="tablist" aria-label={t('planning.alerts.quick_filters_title')}>
             {[
-              { key: 'all', label: t('planning.alerts.filter_all'), help: t('planning.alerts.quick_filter_help_all') },
-              { key: 'high', label: t('planning.alerts.filter_high'), help: t('planning.alerts.quick_filter_help_high') },
-              { key: 'medium', label: t('planning.alerts.filter_medium'), help: t('planning.alerts.quick_filter_help_medium') },
-              { key: 'low', label: t('planning.alerts.filter_low'), help: t('planning.alerts.quick_filter_help_low') },
+              { key: 'all', label: t('planning.alerts.filter_all'), example: t('planning.alerts.quick_filter_example_all') },
+              { key: 'high', label: t('planning.alerts.filter_high'), example: t('planning.alerts.quick_filter_example_high') },
+              { key: 'medium', label: t('planning.alerts.filter_medium'), example: t('planning.alerts.quick_filter_example_medium') },
+              { key: 'low', label: t('planning.alerts.filter_low'), example: t('planning.alerts.quick_filter_example_low') },
             ].map((item) => (
-              <div key={item.key} className="flex items-center gap-1">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={severityFilter === item.key}
-                  onClick={() => setSeverityFilter(item.key as AlertSeverityFilter)}
-                  className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    severityFilter === item.key
-                      ? 'bg-brand text-white shadow-sm'
-                      : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'
-                  }`}
-                >
-                  {item.label}
-                </button>
-                <Tooltip content={item.help} ariaLabel={item.help} widthClassName="w-56">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-neutral-100 text-[10px] text-neutral-400">i</span>
-                </Tooltip>
-              </div>
+              <button
+                key={item.key}
+                type="button"
+                role="tab"
+                aria-selected={severityFilter === item.key}
+                onClick={() => setSeverityFilter(item.key as AlertSeverityFilter)}
+                className={`rounded-lg px-3 py-2 text-left transition-colors ${
+                  severityFilter === item.key
+                    ? 'bg-brand text-white shadow-sm'
+                    : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">{item.label}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] ${severityFilter === item.key ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-600'}`}>
+                    {severityCounts[item.key as AlertSeverityFilter]}
+                  </span>
+                </div>
+                <p className={`mt-1 text-[11px] ${severityFilter === item.key ? 'text-white/90' : 'text-neutral-500'}`}>
+                  {item.example}
+                </p>
+              </button>
             ))}
           </div>
         </div>
@@ -436,13 +466,16 @@ export default function SmartAlertsPage() {
       <section className="app-card p-4 md:p-5 space-y-3">
         <h2 className="app-section-title">{t('planning.alerts.kpis_title')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {(data?.kpis ?? []).map((kpi) => (
-            <article key={kpi.key} className="rounded-lg border border-neutral-100 p-3">
-              <p className="text-xs uppercase tracking-wide text-neutral-400">{kpi.title}</p>
-              <p className="mt-1 text-xl font-medium text-neutral-900">{kpi.value} {kpi.unit}</p>
-              <p className="mt-1 text-xs text-neutral-400">{kpi.description}</p>
-            </article>
-          ))}
+          {(data?.kpis ?? []).map((kpi) => {
+            const localized = getLocalizedKpiText(kpi, t)
+            return (
+              <article key={kpi.key} className="rounded-lg border border-neutral-100 p-3">
+                <p className="text-xs uppercase tracking-wide text-neutral-400">{localized.title}</p>
+                <p className="mt-1 text-xl font-medium text-neutral-900">{kpi.value} {localized.unit}</p>
+                <p className="mt-1 text-xs text-neutral-400">{localized.description}</p>
+              </article>
+            )
+          })}
         </div>
       </section>
     </div>
