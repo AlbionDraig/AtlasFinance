@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import Badge from '@/components/ui/Badge'
 import InlineAlert from '@/components/ui/InlineAlert'
 import PageSkeleton from '@/components/ui/PageSkeleton'
+import ViewModeToggle from '@/components/ui/ViewModeToggle'
 import { useSmartAlertsData } from '@/hooks/useSmartAlertsData'
 import { trackUxEvent } from '@/lib/uxTelemetry'
 import { formatCurrency } from '@/lib/utils'
@@ -411,28 +412,14 @@ export default function SmartAlertsPage() {
 
         {filteredAlerts.length > 0 && (
           <div className="flex items-center justify-end gap-2 -mx-2 mb-2">
-            <button
-              type="button"
-              onClick={() => setAlertViewMode('grid')}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                alertViewMode === 'grid'
-                  ? 'bg-brand text-white shadow-sm'
-                  : 'border border-neutral-100 bg-white text-neutral-700 hover:border-brand hover:text-brand'
-              }`}
-            >
-              ⊞ {t('common.grid')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setAlertViewMode('table')}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                alertViewMode === 'table'
-                  ? 'bg-brand text-white shadow-sm'
-                  : 'border border-neutral-100 bg-white text-neutral-700 hover:border-brand hover:text-brand'
-              }`}
-            >
-              ≡ {t('common.table')}
-            </button>
+            <ViewModeToggle
+              value={alertViewMode}
+              onChange={setAlertViewMode}
+              options={[
+                { value: 'grid', label: t('common.grid') },
+                { value: 'table', label: t('common.table') },
+              ]}
+            />
           </div>
         )}
 

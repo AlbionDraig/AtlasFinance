@@ -19,6 +19,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 import TableActionGroup from '@/components/ui/TableActionGroup'
+import ViewModeToggle from '@/components/ui/ViewModeToggle'
 import Select from '@/components/ui/Select'
 import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
@@ -504,24 +505,14 @@ export default function InvestmentsPage() {
           </p>
           {selectedSortLabel && <p className="text-neutral-700">{t('investments.chip_sort', { value: selectedSortLabel })}</p>}
         </div>
-        <div className="inline-flex rounded-lg border border-brand/20 bg-white/80 p-0.5">
-          <button
-            type="button"
-            onClick={() => setViewMode('cards')}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'cards' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
-            aria-pressed={viewMode === 'cards'}
-          >
-            {t('investments.view_cards')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('table')}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'table' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
-            aria-pressed={viewMode === 'table'}
-          >
-            {t('investments.view_table')}
-          </button>
-        </div>
+        <ViewModeToggle
+          value={viewMode}
+          onChange={setViewMode}
+          options={[
+            { value: 'cards', label: t('common.grid') },
+            { value: 'table', label: t('common.table') },
+          ]}
+        />
       </div>
 
       {/* Cards grid */}
