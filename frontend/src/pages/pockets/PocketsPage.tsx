@@ -508,7 +508,7 @@ export default function PocketsPage() {
           />
         </div>
       ) : (
-        <>
+        <div className="space-y-3">
           {/* Toggle de vista */}
           <div className="flex justify-end">
             <ViewToggle value={viewMode} onChange={(m) => setViewMode(m as 'cards' | 'table')} />
@@ -612,7 +612,7 @@ export default function PocketsPage() {
               </table>
             </div>
           )}
-        </>
+        </div>
       )}
 
       <FloatingActionMenu

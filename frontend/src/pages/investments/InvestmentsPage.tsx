@@ -496,12 +496,13 @@ export default function InvestmentsPage() {
         </div>
       </ResponsiveFilters>
 
-      <div className="flex justify-end">
-        <ViewToggle value={viewMode} onChange={(m) => setViewMode(m as 'cards' | 'table')} />
-      </div>
+      <div className="space-y-3">
+        <div className="flex justify-end">
+          <ViewToggle value={viewMode} onChange={(m) => setViewMode(m as 'cards' | 'table')} />
+        </div>
 
-      {/* Cards grid */}
-      {filtered.length === 0 ? (
+        {/* Cards grid */}
+        {filtered.length === 0 ? (
         <div className="app-card">
           <EmptyState
             title={investments.length === 0 ? t('investments.empty_no_investments') : t('investments.empty_no_results')}
@@ -666,6 +667,7 @@ export default function InvestmentsPage() {
           </table>
         </div>
       )}
+      </div>
 
       {/* FAB */}
       <FloatingActionMenu
