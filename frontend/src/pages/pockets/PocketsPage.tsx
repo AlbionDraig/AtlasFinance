@@ -510,7 +510,7 @@ export default function PocketsPage() {
       ) : (
         <div className="space-y-3">
           {/* Toggle de vista */}
-          <div className="flex justify-end">
+          <div className="flex justify-start">
             <ViewToggle value={viewMode} onChange={(m) => setViewMode(m as 'cards' | 'table')} />
           </div>
 

@@ -240,7 +240,7 @@ export default function BudgetsPage() {
           </div>
 
           <div className="space-y-3">
-            <div className="flex justify-end">
+            <div className="flex justify-start">
               <ViewToggle value={viewMode} onChange={(m) => setViewMode(m as 'cards' | 'table')} />
             </div>
 

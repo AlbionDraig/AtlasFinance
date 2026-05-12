@@ -411,7 +411,7 @@ export default function SmartAlertsPage() {
         )}
 
         {filteredAlerts.length > 0 && (
-          <div className="flex items-center justify-end gap-2 -mx-2 mb-2">
+          <div className="flex items-center justify-start gap-2 -mx-2 mb-2">
             <ViewToggle
               value={alertViewMode}
               onChange={(m) => setAlertViewMode(m as 'grid' | 'table')}
