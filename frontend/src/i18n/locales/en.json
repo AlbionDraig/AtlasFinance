@@ -1132,6 +1132,7 @@
       "sub_actions": "Actions",
       "action_open_subscription_transactions": "View transactions",
       "due_date": "Due date: {{date}}",
+      "no_due_date": "Not applicable",
       "kpis_title": "Suggested KPIs",
       "kpi_users_activating_alerts_title": "Users activating alerts",
       "kpi_users_activating_alerts_description": "Track users that enable at least one smart alert in the controls panel.",

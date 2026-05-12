@@ -1134,6 +1134,7 @@
       "sub_actions": "Acciones",
       "action_open_subscription_transactions": "Ver movimientos",
       "due_date": "Vence: {{date}}",
+      "no_due_date": "No aplica",
       "kpis_title": "KPI sugeridos",
       "kpi_users_activating_alerts_title": "Usuarios que activan alertas",
       "kpi_users_activating_alerts_description": "Seguimiento de usuarios que activan al menos una alerta en el panel de controles.",

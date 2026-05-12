@@ -516,7 +516,7 @@ export default function SmartAlertsPage() {
                               {formatIsoDate(alert.due_date)}
                             </Badge>
                           ) : (
-                            '-'
+                            <span className="text-xs text-neutral-500">{t('planning.alerts.no_due_date')}</span>
                           )}
                         </td>
                         <td className="px-3 py-2 text-center">
