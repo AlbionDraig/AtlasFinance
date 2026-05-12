@@ -490,7 +490,7 @@ export default function SmartAlertsPage() {
                   <tr>
                     <th className="px-3 py-2 text-center font-medium align-middle whitespace-nowrap">{t('planning.alerts.severity_label')}</th>
                     <th className="px-3 py-2 text-center font-medium align-middle">{t('common.title')}</th>
-                    <th className="px-3 py-2 text-center font-medium align-middle">{t('common.detail')}</th>
+                    <th className="px-3 py-2 text-center font-medium align-middle max-w-xs">{t('common.detail')}</th>
                     <th className="px-3 py-2 text-center font-medium align-middle">{t('common.amount')}</th>
                     <th className="px-3 py-2 text-center font-medium align-middle whitespace-nowrap">{t('common.due_date')}</th>
                     <th className="px-3 py-2 text-center font-medium align-middle">{t('common.action')}</th>
@@ -502,15 +502,13 @@ export default function SmartAlertsPage() {
                     const severityUi = getSeverityClasses(alert.severity)
                     return (
                       <tr key={`${alert.code}-${alert.transaction_id ?? index}`}>
-                        <td className="px-3 py-2 text-center">
-                          <div className="flex justify-center">
-                            <Badge variant={severityUi.badge}>
-                              {getLocalizedSeverityLabel(alert.severity, t)}
-                            </Badge>
-                          </div>
+                        <td className="px-3 py-2">
+                          <Badge variant={severityUi.badge}>
+                            {getLocalizedSeverityLabel(alert.severity, t)}
+                          </Badge>
                         </td>
                         <td className="px-3 py-2 text-neutral-900 font-medium">{getLocalizedAlertText(alert, t).title}</td>
-                        <td className="px-3 py-2 text-neutral-700 text-sm">{getLocalizedAlertText(alert, t).detail}</td>
+                        <td className="px-3 py-2 text-neutral-700 text-sm max-w-xs truncate" title={getLocalizedAlertText(alert, t).detail}>{getLocalizedAlertText(alert, t).detail}</td>
                         <td className="px-3 py-2 text-neutral-900 font-medium">{alert.amount ? formatCurrency(Number(alert.amount), 'COP') : '-'}</td>
                         <td className="px-3 py-2 text-neutral-700">
                           {alert.due_date ? (
