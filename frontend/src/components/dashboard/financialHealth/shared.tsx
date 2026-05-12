@@ -9,14 +9,16 @@ interface BadgeProps {
 
 export function FinancialHealthBadge({ text, variant, hint }: BadgeProps) {
   const cls = {
-    brand: 'bg-brand-light text-brand-text',
-    success: 'bg-success-bg text-success-text',
-    warning: 'bg-warning-bg text-warning-text',
-    neutral: 'bg-neutral-100 text-neutral-700',
+    brand: 'bg-brand/10 text-brand-text border border-brand/20 shadow-sm',
+    success: 'bg-success-bg/95 text-success-text border border-success/20 shadow-sm',
+    warning: 'bg-warning-bg/95 text-warning-text border border-warning/20 shadow-sm',
+    neutral: 'bg-neutral-100 text-neutral-800 border border-neutral-200 shadow-sm',
   }[variant]
 
   const content = (
-    <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${cls} ${hint ? 'cursor-help' : ''}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide ${cls} ${hint ? 'cursor-help' : ''}`}
+    >
       {text}
     </span>
   )

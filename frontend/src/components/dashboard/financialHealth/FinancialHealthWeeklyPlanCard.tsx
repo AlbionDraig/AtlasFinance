@@ -40,12 +40,12 @@ export default function FinancialHealthWeeklyPlanCard({
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-light text-brand-text">
+                  <span className="inline-flex items-center rounded-full border border-brand/10 bg-gradient-to-r from-brand-light via-white to-brand-light/50 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-brand-text shadow-sm whitespace-nowrap">
                     +{action.estimated_score_gain} {t('dashboard.health_points_short')}
                   </span>
                   <FinancialHealthBadge
                     text={actionPriorityLabel(action.priority, t)}
-                    variant={action.priority === 'high' ? 'warning' : action.priority === 'medium' ? 'brand' : 'neutral'}
+                    variant={action.priority === 'high' ? 'warning' : action.priority === 'medium' ? 'brand' : 'success'}
                   />
                 </div>
               </div>
