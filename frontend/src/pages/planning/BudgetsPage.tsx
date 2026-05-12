@@ -3,10 +3,14 @@ import { useTranslation } from 'react-i18next'
 import BudgetCard from '@/components/planning/BudgetCard'
 import AmountInput from '@/components/ui/AmountInput'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
+import DeleteButton from '@/components/ui/DeleteButton'
+import EditButton from '@/components/ui/EditButton'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
+import TableActionGroup from '@/components/ui/TableActionGroup'
+import ViewToggle from '@/components/ui/ViewToggle'
 import { useToast } from '@/hooks/useToast'
 import { useBudgetsByMonth, useCreateBudget, useDeleteBudget, useUpdateBudget } from '@/hooks/useBudgets'
 import { useCategoriesData } from '@/hooks/useCategoriesData'
@@ -30,6 +34,7 @@ export default function BudgetsPage() {
   const [currentDate] = useState(new Date())
   const [year, setYear] = useState(currentDate.getFullYear())
   const [month, setMonth] = useState(currentDate.getMonth() + 1)
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
 
   const [formMode, setFormMode] = useState<BudgetFormMode>(null)
   const [editingBudget, setEditingBudget] = useState<BudgetRead | null>(null)
@@ -150,6 +155,24 @@ export default function BudgetsPage() {
 
   const summaryCardClass = 'bg-white border border-neutral-100 rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md'
 
+  const getBudgetStatusLabel = (status: BudgetRead['status']) => {
+    switch (status) {
+      case 'exceeded':
+        return t('planning.budget.status_exceeded')
+      case 'warning':
+        return t('planning.budget.status_warning')
+      default:
+        return t('planning.budget.status_ok')
+    }
+  }
+
+  const getBudgetStatusBadgeClass = (status: BudgetRead['status']) => {
+    if (status === 'ok') {
+      return 'bg-success-bg text-success-text'
+    }
+    return 'bg-warning-bg text-warning-text'
+  }
+
   return (
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       {/* Header */}
@@ -216,17 +239,65 @@ export default function BudgetsPage() {
             </div>
           </div>
 
-          {/* Budgets Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {budgetData.budgets.map((budget) => (
-              <BudgetCard
-                key={budget.id}
-                budget={budget}
-                categoryName={categoryMap[budget.category_id] || `Category ${budget.category_id}`}
-                onEdit={handleEditBudget}
-                onDelete={handleDeleteBudget}
-              />
-            ))}
+          <div className="space-y-3">
+            <div className="flex justify-end">
+              <ViewToggle value={viewMode} onChange={(m) => setViewMode(m as 'cards' | 'table')} />
+            </div>
+
+            {viewMode === 'cards' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {budgetData.budgets.map((budget) => (
+                  <BudgetCard
+                    key={budget.id}
+                    budget={budget}
+                    categoryName={categoryMap[budget.category_id] || `Category ${budget.category_id}`}
+                    onEdit={handleEditBudget}
+                    onDelete={handleDeleteBudget}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="app-table-wrap">
+                <table className="app-table text-sm">
+                  <thead className="border-b border-brand/30 bg-brand text-xs text-white">
+                    <tr>
+                      <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.budget.category')}</th>
+                      <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.budget.status_warning')}</th>
+                      <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.budget.spent')}</th>
+                      <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.budget.limit')}</th>
+                      <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.budget.remaining')}</th>
+                      <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('common.action')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {budgetData.budgets.map((budget, index) => (
+                      <tr
+                        key={budget.id}
+                        className={`border-b border-neutral-100 last:border-b-0 transition-colors hover:bg-brand-light/35 ${index % 2 === 0 ? 'bg-white' : 'bg-brand-light/10'}`}
+                      >
+                        <td className="px-3 py-2 text-neutral-900 font-medium">{categoryMap[budget.category_id] || `Category ${budget.category_id}`}</td>
+                        <td className="px-3 py-2 text-center align-middle">
+                          <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${getBudgetStatusBadgeClass(budget.status)}`}>
+                            {getBudgetStatusLabel(budget.status)}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-neutral-700 tabular-nums text-center align-middle">${Number(budget.current_spent).toFixed(2)}</td>
+                        <td className="px-3 py-2 text-neutral-700 tabular-nums text-center align-middle">${Number(budget.amount_limit).toFixed(2)}</td>
+                        <td className={`px-3 py-2 tabular-nums text-center align-middle ${budget.remaining >= 0 ? 'text-success' : 'text-warning'}`}>
+                          ${Number(budget.remaining).toFixed(2)}
+                        </td>
+                        <td className="px-3 py-2 text-center align-middle">
+                          <TableActionGroup>
+                            <EditButton onClick={() => handleEditBudget(budget)} label={t('planning.budget.edit')} />
+                            <DeleteButton onClick={() => handleDeleteBudget(budget)} label={t('planning.budget.delete')} />
+                          </TableActionGroup>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </>
       )}

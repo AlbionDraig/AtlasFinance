@@ -6,10 +6,14 @@ import ScenarioSimulator from '@/components/planning/ScenarioSimulator'
 import AmountInput from '@/components/ui/AmountInput'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import DatePicker from '@/components/ui/DatePicker'
+import DeleteButton from '@/components/ui/DeleteButton'
+import EditButton from '@/components/ui/EditButton'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
 import Select from '@/components/ui/Select'
+import TableActionGroup from '@/components/ui/TableActionGroup'
+import ViewToggle from '@/components/ui/ViewToggle'
 import { useBanksQuery, usePocketsQuery, useAccountsQuery } from '@/hooks/useCatalogQueries'
 import { useToast } from '@/hooks/useToast'
 import {
@@ -35,6 +39,7 @@ export default function SavingsGoalsPage() {
   const [editingGoal, setEditingGoal] = useState<SavingsGoalRead | null>(null)
   const [deletingGoal, setDeletingGoal] = useState<SavingsGoalRead | null>(null)
   const [simulatorOpen, setSimulatorOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
 
   const [formData, setFormData] = useState({
     name: '',
@@ -178,6 +183,21 @@ export default function SavingsGoalsPage() {
   const statsCardClass = 'bg-white border border-neutral-100 rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md'
   const hasSavedAmount = stats.total_saved > 0
 
+  const formatGoalDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('es-CO', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  }
+
+  const getDaysRemainingClass = (daysRemaining: number) => {
+    if (daysRemaining <= 30) return 'text-warning'
+    if (daysRemaining <= 90) return 'text-warning-text'
+    return 'text-neutral-700'
+  }
+
     if (isLoading) return <div>Loading...</div>
 
   return (
@@ -224,15 +244,79 @@ export default function SavingsGoalsPage() {
           <p>{t('planning.goal.empty')}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {goals.map((goal: SavingsGoalRead) => (
-            <SavingsGoalCard
-              key={goal.id}
-              goal={goal}
-              onEdit={handleEditGoal}
-              onDelete={handleDeleteGoal}
-            />
-          ))}
+        <div className="space-y-3">
+          <div className="flex justify-end">
+            <ViewToggle value={viewMode} onChange={(m) => setViewMode(m as 'cards' | 'table')} />
+          </div>
+
+          {viewMode === 'cards' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {goals.map((goal: SavingsGoalRead) => (
+                <SavingsGoalCard
+                  key={goal.id}
+                  goal={goal}
+                  onEdit={handleEditGoal}
+                  onDelete={handleDeleteGoal}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="app-table-wrap">
+              <table className="app-table text-sm">
+                <thead className="border-b border-brand/30 bg-brand text-xs text-white">
+                  <tr>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.goal.name')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.goal.saved')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.goal.target')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.goal.remaining')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.goal.progress')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.goal.target_date')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.goal.days_left')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('common.action')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {goals.map((goal, index) => {
+                    const remaining = Number(goal.target_amount) - Number(goal.current_amount)
+
+                    return (
+                      <tr
+                        key={goal.id}
+                        className={`border-b border-neutral-100 last:border-b-0 transition-colors hover:bg-brand-light/35 ${index % 2 === 0 ? 'bg-white' : 'bg-brand-light/10'}`}
+                      >
+                        <td className="px-3 py-2 text-neutral-900 font-medium">
+                          <div className="max-w-[240px]">
+                            <p className="truncate">{goal.name}</p>
+                            {goal.description && (
+                              <p className="text-xs text-neutral-400 truncate">{goal.description}</p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 text-neutral-700 tabular-nums text-center align-middle">${Number(goal.current_amount).toFixed(2)}</td>
+                        <td className="px-3 py-2 text-neutral-700 tabular-nums text-center align-middle">${Number(goal.target_amount).toFixed(2)}</td>
+                        <td className="px-3 py-2 text-neutral-700 tabular-nums text-center align-middle">${remaining.toFixed(2)}</td>
+                        <td className="px-3 py-2 text-center align-middle">
+                          <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${goal.is_completed ? 'bg-success-bg text-success-text' : 'bg-brand-light text-brand-text'}`}>
+                            {goal.progress_percent.toFixed(1)}%
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-neutral-700 text-center align-middle whitespace-nowrap">{formatGoalDate(goal.target_date)}</td>
+                        <td className={`px-3 py-2 text-center align-middle whitespace-nowrap ${getDaysRemainingClass(goal.days_remaining)}`}>
+                          {goal.days_remaining} {t('planning.goal.days_left')}
+                        </td>
+                        <td className="px-3 py-2 text-center align-middle">
+                          <TableActionGroup>
+                            <EditButton onClick={() => handleEditGoal(goal)} label={t('planning.goal.edit')} />
+                            <DeleteButton onClick={() => handleDeleteGoal(goal)} label={t('planning.goal.delete')} />
+                          </TableActionGroup>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
