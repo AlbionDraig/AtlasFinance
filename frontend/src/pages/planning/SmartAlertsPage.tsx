@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import Badge from '@/components/ui/Badge'
 import InlineAlert from '@/components/ui/InlineAlert'
 import PageSkeleton from '@/components/ui/PageSkeleton'
-import ViewModeToggle from '@/components/ui/ViewModeToggle'
+import ViewToggle from '@/components/ui/ViewToggle'
 import { useSmartAlertsData } from '@/hooks/useSmartAlertsData'
 import { trackUxEvent } from '@/lib/uxTelemetry'
 import { formatCurrency } from '@/lib/utils'
@@ -411,14 +411,14 @@ export default function SmartAlertsPage() {
         )}
 
         {filteredAlerts.length > 0 && (
-          <div className="flex justify-end mb-2">
-            <ViewModeToggle
-              value={alertViewMode}
-              onChange={setAlertViewMode}
-              options={[
+          <div className="flex items-center justify-end -mx-2 mb-2">
+            <ViewToggle
+              modes={[
                 { value: 'grid', label: t('common.grid') },
                 { value: 'table', label: t('common.table') },
               ]}
+              current={alertViewMode}
+              onChange={setAlertViewMode}
             />
           </div>
         )}

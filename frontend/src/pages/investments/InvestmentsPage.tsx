@@ -10,7 +10,7 @@ import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { formatCurrency } from '@/lib/utils'
 import { useInvestmentsData } from '@/hooks/useInvestmentsData'
 import PageSkeleton from '@/components/ui/PageSkeleton'
-import ViewModeToggle from '@/components/ui/ViewModeToggle'
+import ViewToggle from '@/components/ui/ViewToggle'
 import Modal from '@/components/ui/Modal'
 import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import SearchInput from '@/components/ui/SearchInput'
@@ -505,13 +505,13 @@ export default function InvestmentsPage() {
           </p>
           {selectedSortLabel && <p className="text-neutral-700">{t('investments.chip_sort', { value: selectedSortLabel })}</p>}
         </div>
-        <ViewModeToggle
-          value={viewMode}
-          onChange={setViewMode}
-          options={[
+        <ViewToggle
+          modes={[
             { value: 'cards', label: t('investments.view_cards') },
             { value: 'table', label: t('investments.view_table') },
           ]}
+          current={viewMode}
+          onChange={setViewMode}
         />
       </div>
 

@@ -9,7 +9,7 @@ import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import { usePocketsData } from '@/hooks/usePocketsData'
 import PageSkeleton from '@/components/ui/PageSkeleton'
-import ViewModeToggle from '@/components/ui/ViewModeToggle'
+import ViewToggle from '@/components/ui/ViewToggle'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
@@ -516,13 +516,13 @@ export default function PocketsPage() {
                 ? t('pockets.results_count', { count: pockets.length })
                 : t('pockets.results_count_filtered', { shown: filteredPockets.length, total: pockets.length })}
             </p>
-            <ViewModeToggle
-              value={viewMode}
-              onChange={setViewMode}
-              options={[
+            <ViewToggle
+              modes={[
                 { value: 'cards', label: t('pockets.view_cards') },
                 { value: 'table', label: t('pockets.view_table') },
               ]}
+              current={viewMode}
+              onChange={setViewMode}
             />
           </div>
 
