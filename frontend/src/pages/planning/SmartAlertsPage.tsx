@@ -4,11 +4,11 @@ import { useNavigate } from 'react-router-dom'
 import Badge from '@/components/ui/Badge'
 import InlineAlert from '@/components/ui/InlineAlert'
 import PageSkeleton from '@/components/ui/PageSkeleton'
-import ViewToggle from '@/components/ui/ViewToggle'
 import { useSmartAlertsData } from '@/hooks/useSmartAlertsData'
 import { trackUxEvent } from '@/lib/uxTelemetry'
 import { formatCurrency } from '@/lib/utils'
 import type { SmartAlertItem, SmartAlertsKpiItem } from '@/types'
+import ViewToggle from '@/components/ui/ViewToggle'
 
 const ALERT_PREFERENCES_KEY = 'atlasfinance.smartAlerts.preferences'
 
@@ -411,14 +411,14 @@ export default function SmartAlertsPage() {
         )}
 
         {filteredAlerts.length > 0 && (
-          <div className="flex items-center justify-end -mx-2 mb-2">
+          <div className="flex items-center justify-end gap-2 -mx-2 mb-2">
             <ViewToggle
-              modes={[
-                { value: 'grid', label: t('common.grid') },
-                { value: 'table', label: t('common.table') },
+              value={alertViewMode}
+              onChange={(m) => setAlertViewMode(m as 'grid' | 'table')}
+              options={[
+                { value: 'grid', labelKey: 'common.view_cards', icon: '⊞' },
+                { value: 'table', labelKey: 'common.view_table', icon: '≡' },
               ]}
-              current={alertViewMode}
-              onChange={setAlertViewMode}
             />
           </div>
         )}

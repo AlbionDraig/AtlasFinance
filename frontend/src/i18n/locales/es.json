@@ -90,6 +90,8 @@
     "loading": "Cargando...",
     "grid": "Cuadrícula",
     "table": "Tabla",
+    "view_cards": "Cuadrícula",
+    "view_table": "Tabla",
     "title": "Título",
     "detail": "Detalle",
     "action": "Acción",

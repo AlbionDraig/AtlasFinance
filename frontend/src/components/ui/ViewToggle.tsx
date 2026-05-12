@@ -1,34 +1,52 @@
-interface ViewToggleMode<T extends string> {
-  value: T
-  label: string
+import { useTranslation } from 'react-i18next'
+
+export type ViewMode = 'cards' | 'table' | 'grid'
+
+interface ViewOption {
+  value: ViewMode
+  labelKey: string
+  icon: string
 }
 
-interface ViewToggleProps<T extends string> {
-  modes: ViewToggleMode<T>[]
-  current: T
-  onChange: (value: T) => void
+interface ViewToggleProps {
+  value: ViewMode
+  onChange: (mode: ViewMode) => void
+  options?: ViewOption[]
 }
+
+const DEFAULT_OPTIONS: ViewOption[] = [
+  { value: 'cards', labelKey: 'common.view_cards', icon: '⊞' },
+  { value: 'table', labelKey: 'common.view_table', icon: '≡' },
+]
+
+const GRID_OPTIONS: ViewOption[] = [
+  { value: 'grid', labelKey: 'common.view_cards', icon: '⊞' },
+  { value: 'table', labelKey: 'common.view_table', icon: '≡' },
+]
 
 /**
- * Generic view-mode toggle button group (e.g., Cards / Table, Grid / Table).
- * Renders a pill-shaped segmented control that matches the design system brand tokens.
+ * Reusable view mode toggle (cards/grid vs table).
+ * Renders a segmented control that matches the app's brand design.
  */
-export default function ViewToggle<T extends string>({ modes, current, onChange }: ViewToggleProps<T>) {
+export default function ViewToggle({ value, onChange, options }: ViewToggleProps) {
+  const { t } = useTranslation()
+  const resolvedOptions = options ?? (value === 'grid' ? GRID_OPTIONS : DEFAULT_OPTIONS)
+
   return (
-    <div className="inline-flex rounded-lg border border-brand/20 bg-white/80 p-0.5" role="group">
-      {modes.map((mode) => (
+    <div className="inline-flex rounded-lg border border-brand/20 bg-white/80 p-0.5">
+      {resolvedOptions.map((option) => (
         <button
-          key={mode.value}
+          key={option.value}
           type="button"
-          onClick={() => onChange(mode.value)}
-          aria-pressed={current === mode.value}
+          onClick={() => onChange(option.value)}
+          aria-pressed={value === option.value}
           className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-            current === mode.value
+            value === option.value
               ? 'bg-brand text-white shadow-sm'
               : 'text-brand-text hover:bg-brand-light hover:text-brand-text'
           }`}
         >
-          {mode.label}
+          {option.icon} {t(option.labelKey)}
         </button>
       ))}
     </div>

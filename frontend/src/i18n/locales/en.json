@@ -90,6 +90,8 @@
     "loading": "Loading...",
     "grid": "Grid",
     "table": "Table",
+    "view_cards": "Grid",
+    "view_table": "Table",
     "title": "Title",
     "detail": "Detail",
     "action": "Action",

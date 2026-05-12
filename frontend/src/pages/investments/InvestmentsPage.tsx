@@ -10,7 +10,6 @@ import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { formatCurrency } from '@/lib/utils'
 import { useInvestmentsData } from '@/hooks/useInvestmentsData'
 import PageSkeleton from '@/components/ui/PageSkeleton'
-import ViewToggle from '@/components/ui/ViewToggle'
 import Modal from '@/components/ui/Modal'
 import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import SearchInput from '@/components/ui/SearchInput'
@@ -21,6 +20,7 @@ import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 import TableActionGroup from '@/components/ui/TableActionGroup'
 import Select from '@/components/ui/Select'
+import ViewToggle from '@/components/ui/ViewToggle'
 import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
 import { daysSinceInvestment, formatInvestmentDate, renderInstrumentBadge } from './investmentDisplay'
@@ -505,14 +505,7 @@ export default function InvestmentsPage() {
           </p>
           {selectedSortLabel && <p className="text-neutral-700">{t('investments.chip_sort', { value: selectedSortLabel })}</p>}
         </div>
-        <ViewToggle
-          modes={[
-            { value: 'cards', label: t('investments.view_cards') },
-            { value: 'table', label: t('investments.view_table') },
-          ]}
-          current={viewMode}
-          onChange={setViewMode}
-        />
+        <ViewToggle value={viewMode} onChange={(m) => setViewMode(m as 'cards' | 'table')} />
       </div>
 
       {/* Cards grid */}
