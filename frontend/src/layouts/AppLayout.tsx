@@ -82,6 +82,16 @@ const navItems = [
     ),
   },
   {
+    to: '/planning/smart-alerts',
+    labelKey: 'nav.planning_alerts',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3a6 6 0 00-6 6v3.2l-1.5 2.5A1 1 0 005.35 16h13.3a1 1 0 00.85-1.5L18 12.2V9a6 6 0 00-6-6z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10 19a2 2 0 004 0" />
+      </svg>
+    ),
+  },
+  {
     to: '/admin',
     labelKey: 'nav.admin',
     adminOnly: true,
