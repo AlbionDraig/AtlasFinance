@@ -45,7 +45,7 @@ export default function FinancialHealthWeeklyPlanCard({
                   </span>
                   <FinancialHealthBadge
                     text={actionPriorityLabel(action.priority, t)}
-                    variant={action.priority === 'high' ? 'warning' : action.priority === 'medium' ? 'brand' : 'success'}
+                    variant={action.priority === 'high' ? 'brand' : action.priority === 'medium' ? 'warning' : 'success'}
                   />
                 </div>
               </div>

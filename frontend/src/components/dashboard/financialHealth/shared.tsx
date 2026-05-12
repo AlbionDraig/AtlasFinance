@@ -9,10 +9,10 @@ interface BadgeProps {
 
 export function FinancialHealthBadge({ text, variant, hint }: BadgeProps) {
   const cls = {
-    brand: 'bg-brand/10 text-brand-text border border-brand/20 shadow-sm',
-    success: 'bg-success-bg/95 text-success-text border border-success/20 shadow-sm',
-    warning: 'bg-warning-bg/95 text-warning-text border border-warning/20 shadow-sm',
-    neutral: 'bg-neutral-100 text-neutral-800 border border-neutral-200 shadow-sm',
+    brand: 'bg-brand/15 text-brand border border-brand/40 shadow-sm',
+    success: 'bg-success/15 text-success-text border border-success/40 shadow-sm',
+    warning: 'bg-warning/15 text-warning-text border border-warning/40 shadow-sm',
+    neutral: 'bg-neutral-400/20 text-neutral-700 border border-neutral-400/30 shadow-sm',
   }[variant]
 
   const content = (
