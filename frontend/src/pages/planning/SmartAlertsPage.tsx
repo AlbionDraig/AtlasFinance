@@ -488,12 +488,12 @@ export default function SmartAlertsPage() {
               <table className="app-table text-sm">
                 <thead>
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium">{t('planning.alerts.severity_label')}</th>
-                    <th className="px-3 py-2 text-left font-medium">{t('common.title')}</th>
-                    <th className="px-3 py-2 text-left font-medium">{t('common.detail')}</th>
-                    <th className="px-3 py-2 text-left font-medium">{t('common.amount')}</th>
-                    <th className="px-3 py-2 text-left font-medium">{t('common.due_date')}</th>
-                    <th className="px-3 py-2 text-center font-medium">{t('common.action')}</th>
+                    <th className="px-3 py-2 text-center font-medium align-middle">{t('planning.alerts.severity_label')}</th>
+                    <th className="px-3 py-2 text-center font-medium align-middle">{t('common.title')}</th>
+                    <th className="px-3 py-2 text-center font-medium align-middle">{t('common.detail')}</th>
+                    <th className="px-3 py-2 text-center font-medium align-middle">{t('common.amount')}</th>
+                    <th className="px-3 py-2 text-center font-medium align-middle">{t('common.due_date')}</th>
+                    <th className="px-3 py-2 text-center font-medium align-middle">{t('common.action')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -612,11 +612,11 @@ export default function SmartAlertsPage() {
               <table className="app-table text-sm">
                 <thead>
                 <tr>
-                  <th className="px-3 py-2 text-left font-medium">{t('planning.alerts.sub_name')}</th>
-                  <th className="px-3 py-2 text-left font-medium">{t('planning.alerts.sub_monthly')}</th>
-                  <th className="px-3 py-2 text-left font-medium">{t('planning.alerts.sub_annual')}</th>
-                  <th className="px-3 py-2 text-left font-medium">{t('planning.alerts.sub_next_due')}</th>
-                  <th className="px-3 py-2 text-left font-medium">{t('planning.alerts.sub_actions')}</th>
+                  <th className="px-3 py-2 text-center font-medium align-middle">{t('planning.alerts.sub_name')}</th>
+                  <th className="px-3 py-2 text-center font-medium align-middle">{t('planning.alerts.sub_monthly')}</th>
+                  <th className="px-3 py-2 text-center font-medium align-middle">{t('planning.alerts.sub_annual')}</th>
+                  <th className="px-3 py-2 text-center font-medium align-middle">{t('planning.alerts.sub_next_due')}</th>
+                  <th className="px-3 py-2 text-center font-medium align-middle">{t('planning.alerts.sub_actions')}</th>
                 </tr>
                 </thead>
                 <tbody>
