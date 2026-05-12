@@ -13,8 +13,12 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.db.base import get_db
 from app.models.user import User
-from app.schemas.metric import DashboardAggregates, DashboardMetrics
-from app.services.metrics_service import get_dashboard_aggregates, get_dashboard_metrics
+from app.schemas.metric import DashboardAggregates, DashboardMetrics, SmartAlertsSummary
+from app.services.metrics_service import (
+    get_dashboard_aggregates,
+    get_dashboard_metrics,
+    get_smart_alerts_summary,
+)
 
 router = APIRouter()
 
@@ -50,4 +54,20 @@ def get_aggregates_endpoint(
         target_currency=currency.upper(),
         prev_start_date=prev_start_date,
         prev_end_date=prev_end_date,
+    )
+
+
+@router.get("/smart-alerts")
+def get_smart_alerts_endpoint(
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    lookback_days: Annotated[int, Query(ge=30, le=365)] = 90,
+    reminder_window_days: Annotated[int, Query(ge=1, le=30)] = 7,
+) -> SmartAlertsSummary:
+    """Return smart spending alerts, payment reminders and subscriptions center summary."""
+    return get_smart_alerts_summary(
+        db,
+        current_user.id,
+        lookback_days=lookback_days,
+        reminder_window_days=reminder_window_days,
     )

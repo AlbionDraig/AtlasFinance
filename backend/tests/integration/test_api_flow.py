@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 from app.models.enums import UserRole
@@ -646,3 +647,117 @@ def test_investment_entities_crud_endpoints(client):
 
     delete_missing_resp = client.delete(f"/api/v1/investment-entities/{entity_id}", headers=headers)
     assert delete_missing_resp.status_code == 400
+
+
+def test_metrics_smart_alerts_returns_overrun_and_subscriptions(client, db_session):
+    email = "api-smart-alerts@test.com"
+    headers = _auth_headers(client, email=email)
+    _set_user_role(db_session, email, UserRole.ADMIN)
+
+    category_resp = client.post(
+        "/api/v1/categories/",
+        json={
+            "name": "Streaming QA",
+            "description": "Recurring subscription",
+            "is_fixed": True,
+            "category_type": "expense",
+        },
+        headers=headers,
+    )
+    assert category_resp.status_code == 201
+    category_id = category_resp.json()["id"]
+
+    bank_resp = client.post(
+        "/api/v1/banks/",
+        json={"name": "Banco Alertas", "country_code": "CO"},
+        headers=headers,
+    )
+    assert bank_resp.status_code == 201
+    bank_id = bank_resp.json()["id"]
+
+    account_resp = client.post(
+        "/api/v1/accounts/",
+        json={
+            "name": "Cuenta Alertas",
+            "account_type": "savings",
+            "currency": "COP",
+            "current_balance": 0,
+            "bank_id": bank_id,
+        },
+        headers=headers,
+    )
+    assert account_resp.status_code == 201
+    account_id = account_resp.json()["id"]
+
+    now = datetime.utcnow()
+    previous_month = now - timedelta(days=35)
+
+    funding_resp = client.post(
+        "/api/v1/transactions/",
+        json={
+            "description": "Saldo inicial",
+            "amount": 200000,
+            "currency": "COP",
+            "transaction_type": "income",
+            "occurred_at": f"{now.isoformat()}Z",
+            "account_id": account_id,
+            "is_initial_balance": True,
+        },
+        headers=headers,
+    )
+    assert funding_resp.status_code == 201
+
+    budget_resp = client.post(
+        "/api/v1/budgets/",
+        json={
+            "category_id": category_id,
+            "year": now.year,
+            "month": now.month,
+            "amount_limit": 10000,
+        },
+        headers=headers,
+    )
+    assert budget_resp.status_code == 201
+
+    recurring_old_resp = client.post(
+        "/api/v1/transactions/",
+        json={
+            "description": "Streaming QA",
+            "amount": 8000,
+            "currency": "COP",
+            "transaction_type": "expense",
+            "occurred_at": f"{previous_month.isoformat()}Z",
+            "account_id": account_id,
+            "category_id": category_id,
+        },
+        headers=headers,
+    )
+    assert recurring_old_resp.status_code == 201
+
+    recurring_current_resp = client.post(
+        "/api/v1/transactions/",
+        json={
+            "description": "Streaming QA",
+            "amount": 12000,
+            "currency": "COP",
+            "transaction_type": "expense",
+            "occurred_at": f"{now.isoformat()}Z",
+            "account_id": account_id,
+            "category_id": category_id,
+        },
+        headers=headers,
+    )
+    assert recurring_current_resp.status_code == 201
+
+    smart_alerts_resp = client.get(
+        "/api/v1/metrics/smart-alerts?lookback_days=120&reminder_window_days=10",
+        headers=headers,
+    )
+    assert smart_alerts_resp.status_code == 200
+    payload = smart_alerts_resp.json()
+
+    alert_codes = {item["code"] for item in payload["alerts"]}
+    assert "budget_overrun" in alert_codes
+    assert payload["subscriptions"]
+    assert payload["subscriptions_annual_total"] > 0
+    assert any(kpi["key"] == "users_activating_alerts" for kpi in payload["kpis"])

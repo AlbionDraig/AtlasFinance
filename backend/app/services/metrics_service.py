@@ -1,6 +1,7 @@
 """Métricas y agregados del dashboard."""
+import calendar
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy.orm import Session
@@ -11,6 +12,7 @@ from app.models.enums import TransactionType
 from app.models.investment import Investment
 from app.models.transaction import Transaction
 from app.repositories.accounts import AccountRepository
+from app.repositories.budgets import BudgetRepository
 from app.repositories.categories import CategoryRepository
 from app.repositories.investments import InvestmentRepository
 from app.repositories.transactions import TransactionRepository
@@ -23,7 +25,11 @@ from app.schemas.metric import (
     FinancialHealthHistoryPoint,
     FinancialHealthSnapshot,
     MonthlyBreakdown,
+    SmartAlertItem,
+    SmartAlertsKpiItem,
+    SmartAlertsSummary,
     StackedMonthRow,
+    SubscriptionCenterItem,
 )
 from app.services._common import get_cached_metrics, set_cached_metrics
 from app.services.transactions_service import list_transactions
@@ -429,6 +435,287 @@ def _build_financial_health(
         factors=factors,
         weekly_plan=_build_weekly_plan(factors),
         history=history,
+    )
+
+
+def _normalize_subscription_name(description: str) -> str:
+    """Normalize descriptions to group recurring charges with minor text variations."""
+    compact = " ".join(description.strip().lower().split())
+    return compact[:80] if compact else "sin descripcion"
+
+
+def _current_month_due_date(now: datetime, day: int) -> datetime:
+    """Build a due date in the current month clamping days like 31 for short months."""
+    last_day = calendar.monthrange(now.year, now.month)[1]
+    return datetime(now.year, now.month, min(day, last_day), tzinfo=now.tzinfo)
+
+
+def _next_due_date(now: datetime, day: int) -> datetime:
+    """Build next due date from current date and expected billing day."""
+    current_month_due = _current_month_due_date(now, day)
+    if now <= current_month_due:
+        return current_month_due
+
+    next_month = 1 if now.month == 12 else now.month + 1
+    next_year = now.year + 1 if now.month == 12 else now.year
+    next_last_day = calendar.monthrange(next_year, next_month)[1]
+    return datetime(next_year, next_month, min(day, next_last_day), tzinfo=now.tzinfo)
+
+
+def _to_utc_aware(value: datetime) -> datetime:
+    """Normalize datetimes to UTC-aware objects for safe comparisons."""
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def get_smart_alerts_summary(
+    db: Session,
+    user_id: int,
+    lookback_days: int = 90,
+    reminder_window_days: int = 7,
+) -> SmartAlertsSummary:
+    """Build smart alerts, payment reminders and subscription center overview."""
+    now = datetime.now(timezone.utc)
+    month_start = datetime(now.year, now.month, 1, tzinfo=now.tzinfo)
+    if now.month == 12:
+        next_month_start = datetime(now.year + 1, 1, 1, tzinfo=now.tzinfo)
+    else:
+        next_month_start = datetime(now.year, now.month + 1, 1, tzinfo=now.tzinfo)
+    month_end = next_month_start - timedelta(microseconds=1)
+    lookback_start = now - timedelta(days=lookback_days)
+
+    current_month_txns, _ = list_transactions(
+        db,
+        user_id,
+        start_date=month_start,
+        end_date=month_end,
+        limit=10_000,
+    )
+    lookback_txns, _ = list_transactions(
+        db,
+        user_id,
+        start_date=lookback_start,
+        end_date=now,
+        limit=10_000,
+    )
+
+    category_map = _resolve_categories(db, lookback_txns + current_month_txns)
+    alerts: list[SmartAlertItem] = []
+
+    # 1) Budget over-spend alerts for the current month.
+    budget_repo = BudgetRepository(db)
+    category_spend: dict[int, Decimal] = defaultdict(lambda: Decimal("0"))
+    for tx in current_month_txns:
+        if tx.transaction_type != TransactionType.EXPENSE or tx.category_id is None:
+            continue
+        category_spend[tx.category_id] += tx.amount
+
+    for budget in budget_repo.list_by_user_month(user_id, now.year, now.month):
+        spent = category_spend.get(budget.category_id, Decimal("0"))
+        if budget.amount_limit <= 0:
+            continue
+        usage_ratio = spent / budget.amount_limit
+
+        if usage_ratio >= Decimal("1"):
+            overspent = spent - budget.amount_limit
+            alerts.append(
+                SmartAlertItem(
+                    code="budget_overrun",
+                    title="Budget exceeded",
+                    severity="high",
+                    detail=f"Category exceeded monthly limit by {overspent.quantize(Decimal('0.01'))}",
+                    amount=overspent,
+                    category_id=budget.category_id,
+                )
+            )
+        elif usage_ratio >= Decimal("0.85"):
+            remaining = budget.amount_limit - spent
+            alerts.append(
+                SmartAlertItem(
+                    code="budget_near_limit",
+                    title="Budget near limit",
+                    severity="medium",
+                    detail=f"Only {remaining.quantize(Decimal('0.01'))} left before reaching your limit",
+                    amount=remaining,
+                    category_id=budget.category_id,
+                )
+            )
+
+    # 2) Build fixed-expense recurring groups (subscriptions) and reminders.
+    fixed_expenses = [
+        tx
+        for tx in lookback_txns
+        if tx.transaction_type == TransactionType.EXPENSE
+        and tx.category_id is not None
+        and category_map.get(tx.category_id)
+        and category_map[tx.category_id].is_fixed
+    ]
+    recurring_groups: dict[tuple[int, str], list[Transaction]] = defaultdict(list)
+    for tx in fixed_expenses:
+        recurring_groups[(tx.category_id or 0, _normalize_subscription_name(tx.description))].append(tx)
+
+    subscriptions: list[SubscriptionCenterItem] = []
+    overdue_reminders = 0
+    for (category_id, normalized_name), txns in recurring_groups.items():
+        txns.sort(key=lambda tx: _to_utc_aware(tx.occurred_at))
+        month_keys = {
+            (_to_utc_aware(tx.occurred_at).year, _to_utc_aware(tx.occurred_at).month)
+            for tx in txns
+        }
+        if len(txns) < 2 or len(month_keys) < 2:
+            continue
+
+        monthly_estimate = (sum((tx.amount for tx in txns), Decimal("0")) / Decimal(str(len(txns)))).quantize(Decimal("0.01"))
+        annual_cost = (monthly_estimate * Decimal("12")).quantize(Decimal("0.01"))
+        day_freq: dict[int, int] = defaultdict(int)
+        for tx in txns:
+            day_freq[tx.occurred_at.day] += 1
+        expected_day = max(day_freq.items(), key=lambda item: item[1])[0]
+        next_due_date = _next_due_date(now, expected_day)
+        last_charge = txns[-1]
+
+        confidence = min(Decimal("1.00"), Decimal(str(len(month_keys))) / Decimal("6"))
+        subscriptions.append(
+            SubscriptionCenterItem(
+                key=f"{category_id}:{normalized_name}",
+                name=last_charge.description,
+                category_id=category_id,
+                monthly_estimate=monthly_estimate,
+                annual_cost=annual_cost,
+                last_charge_at=_to_utc_aware(last_charge.occurred_at).date().isoformat(),
+                next_due_date=next_due_date.date().isoformat(),
+                confidence=confidence.quantize(Decimal("0.01")),
+            )
+        )
+
+        paid_this_month = any(
+            _to_utc_aware(tx.occurred_at).year == now.year
+            and _to_utc_aware(tx.occurred_at).month == now.month
+            for tx in txns
+        )
+        if paid_this_month:
+            continue
+
+        due_this_month = _current_month_due_date(now, expected_day)
+        days_to_due = (due_this_month.date() - now.date()).days
+        if days_to_due < 0:
+            overdue_reminders += 1
+            alerts.append(
+                SmartAlertItem(
+                    code="fixed_payment_overdue",
+                    title="Fixed payment overdue",
+                    severity="high",
+                    detail=f"{last_charge.description} looks overdue for this month",
+                    amount=monthly_estimate,
+                    category_id=category_id,
+                    due_date=due_this_month.date().isoformat(),
+                )
+            )
+        elif days_to_due <= reminder_window_days:
+            alerts.append(
+                SmartAlertItem(
+                    code="fixed_payment_due_soon",
+                    title="Payment reminder",
+                    severity="low",
+                    detail=f"{last_charge.description} is expected in {days_to_due} days",
+                    amount=monthly_estimate,
+                    category_id=category_id,
+                    due_date=due_this_month.date().isoformat(),
+                )
+            )
+
+    # 3) Atypical movement detection using per-category historical baseline.
+    anomaly_window_start = now - timedelta(days=7)
+    recent_expenses = [
+        tx for tx in lookback_txns
+        if tx.transaction_type == TransactionType.EXPENSE
+        and _to_utc_aware(tx.occurred_at) >= anomaly_window_start
+    ]
+    historical_expenses = [
+        tx for tx in lookback_txns
+        if tx.transaction_type == TransactionType.EXPENSE
+        and _to_utc_aware(tx.occurred_at) < anomaly_window_start
+    ]
+
+    hist_by_category: dict[int, list[Decimal]] = defaultdict(list)
+    for tx in historical_expenses:
+        if tx.category_id is None:
+            continue
+        hist_by_category[tx.category_id].append(tx.amount)
+
+    for tx in sorted(recent_expenses, key=lambda item: item.amount, reverse=True):
+        if tx.category_id is None:
+            continue
+        samples = hist_by_category.get(tx.category_id, [])
+        if len(samples) < 4:
+            continue
+
+        sample_floats = [float(amount) for amount in samples]
+        mean = sum(sample_floats) / len(sample_floats)
+        variance = sum((value - mean) ** 2 for value in sample_floats) / len(sample_floats)
+        std_dev = variance ** 0.5
+        threshold = max(mean * 1.8, mean + (2 * std_dev))
+
+        if float(tx.amount) <= threshold:
+            continue
+
+        category_name = (
+            category_map[tx.category_id].name
+            if tx.category_id in category_map
+            else "unknown category"
+        )
+        alerts.append(
+            SmartAlertItem(
+                code="atypical_movement",
+                title="Atypical movement detected",
+                severity="high",
+                detail=f"{tx.description} is above your normal spending in {category_name}",
+                amount=tx.amount,
+                category_id=tx.category_id,
+                transaction_id=tx.id,
+            )
+        )
+
+    alerts.sort(
+        key=lambda item: (
+            0 if item.severity == "high" else 1 if item.severity == "medium" else 2,
+            -(item.amount or Decimal("0")),
+        )
+    )
+    subscriptions.sort(key=lambda item: item.annual_cost, reverse=True)
+
+    subscriptions_annual_total = sum((item.annual_cost for item in subscriptions), Decimal("0"))
+    kpis = [
+        SmartAlertsKpiItem(
+            key="users_activating_alerts",
+            title="Usuarios que activan alertas",
+            description="Track users that enable at least one smart alert in the controls panel.",
+            value=Decimal("0"),
+            unit="users",
+        ),
+        SmartAlertsKpiItem(
+            key="reduction_of_omitted_charges",
+            title="Reduccion de cargos omitidos",
+            description="Baseline count of overdue fixed payments detected in the current month.",
+            value=Decimal(str(overdue_reminders)),
+            unit="charges",
+        ),
+        SmartAlertsKpiItem(
+            key="subscription_cancellation_rate",
+            title="Tasa de cancelacion de suscripciones",
+            description="Track percentage of active subscriptions canceled month over month.",
+            value=Decimal("0"),
+            unit="%",
+        ),
+    ]
+
+    return SmartAlertsSummary(
+        generated_at=now.isoformat(),
+        alerts=alerts[:25],
+        subscriptions=subscriptions,
+        subscriptions_annual_total=subscriptions_annual_total.quantize(Decimal("0.01")),
+        kpis=kpis,
     )
 
 

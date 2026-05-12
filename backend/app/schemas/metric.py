@@ -74,6 +74,52 @@ class StackedMonthRow(BaseModel):
     categories: dict[str, Decimal]
 
 
+class SmartAlertItem(BaseModel):
+    """Single smart alert item emitted by the alerting engine."""
+
+    code: str
+    title: str
+    severity: str
+    detail: str
+    amount: MoneyDecimal | None = None
+    category_id: int | None = None
+    transaction_id: int | None = None
+    due_date: str | None = None
+
+
+class SubscriptionCenterItem(BaseModel):
+    """Detected fixed recurring charge grouped as one subscription."""
+
+    key: str
+    name: str
+    category_id: int | None = None
+    monthly_estimate: MoneyDecimal
+    annual_cost: MoneyDecimal
+    last_charge_at: str
+    next_due_date: str | None = None
+    confidence: MoneyDecimal
+
+
+class SmartAlertsKpiItem(BaseModel):
+    """Suggested KPI definition for tracking alert impact."""
+
+    key: str
+    title: str
+    description: str
+    value: MoneyDecimal
+    unit: str
+
+
+class SmartAlertsSummary(BaseModel):
+    """Payload aggregating smart alerts, subscriptions and suggested KPIs."""
+
+    generated_at: str
+    alerts: list[SmartAlertItem]
+    subscriptions: list[SubscriptionCenterItem]
+    subscriptions_annual_total: MoneyDecimal
+    kpis: list[SmartAlertsKpiItem]
+
+
 class DashboardAggregates(BaseModel):
     """Pre-computed chart data and period totals for the financial dashboard."""
     income: MoneyDecimal
