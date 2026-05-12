@@ -1,5 +1,4 @@
 import type { FinancialHealthHistoryPoint, FinancialHealthSnapshot } from '@/types'
-import type { DeltaBadge, HealthBadgeVariant } from './types'
 
 export function scoreTone(score: number): 'positive' | 'negative' | 'flat' {
   if (score >= 80) return 'positive'
@@ -17,12 +16,6 @@ export function actionPriorityLabel(priority: 'high' | 'medium' | 'low', t: (key
   if (priority === 'high') return t('dashboard.health_priority_high')
   if (priority === 'medium') return t('dashboard.health_priority_medium')
   return t('dashboard.health_priority_low')
-}
-
-export function actionPriorityStyles(priority: 'high' | 'medium' | 'low'): string {
-  if (priority === 'high') return 'border-l-warning bg-warning-bg/35'
-  if (priority === 'medium') return 'border-l-brand bg-brand-light/40'
-  return 'border-l-neutral-300 bg-neutral-50'
 }
 
 export function historyChangeLabel(
@@ -56,9 +49,4 @@ export function actionDescription(
   })
 }
 
-export function toneToVariant(tone: DeltaBadge['tone']): HealthBadgeVariant {
-  if (tone === 'positive') return 'success'
-  if (tone === 'negative') return 'brand'
-  if (tone === 'flat') return 'neutral'
-  return 'neutral'
-}
+
