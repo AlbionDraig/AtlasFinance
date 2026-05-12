@@ -105,6 +105,34 @@ function getLocalizedKpiText(
   }
 }
 
+function getKpiCardVisuals(kpiKey: string): {
+  accent: string
+  value: string
+} {
+  if (kpiKey === 'users_activating_alerts') {
+    return {
+      accent: 'bg-brand',
+      value: 'text-brand',
+    }
+  }
+  if (kpiKey === 'reduction_of_omitted_charges') {
+    return {
+      accent: 'bg-warning',
+      value: 'text-warning-text',
+    }
+  }
+  if (kpiKey === 'subscription_cancellation_rate') {
+    return {
+      accent: 'bg-success',
+      value: 'text-success-text',
+    }
+  }
+  return {
+    accent: 'bg-neutral-100',
+    value: 'text-neutral-900',
+  }
+}
+
 function getSeverityClasses(severity: string): { badge: 'warning' | 'neutral' | 'positive'; border: string; soft: string } {
   if (severity === 'high') {
     return { badge: 'warning', border: 'border-l-warning', soft: 'bg-warning-bg/30' }
@@ -163,7 +191,7 @@ export default function SmartAlertsPage() {
     [activeAlerts],
   )
 
-  const generatedAtLabel = useMemo(() => {
+  const generatedAtLabel = (() => {
     if (!data?.generated_at) return '-'
     const parsed = new Date(data.generated_at)
     if (Number.isNaN(parsed.getTime())) return '-'
@@ -171,7 +199,7 @@ export default function SmartAlertsPage() {
       dateStyle: 'medium',
       timeStyle: 'short',
     }).format(parsed)
-  }, [data?.generated_at])
+  })()
 
   const detectedAlertsCount = data?.alerts.length ?? 0
   const preferenceFiltersHideAlerts = detectedAlertsCount > 0 && activeAlerts.length === 0
@@ -322,17 +350,17 @@ export default function SmartAlertsPage() {
         <h2 className="app-section-title">{t('planning.alerts.guide_title')}</h2>
         <p className="text-sm text-neutral-700">{t('planning.alerts.guide_subtitle')}</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <article className="rounded-2xl border border-warning bg-gradient-to-b from-warning-bg/60 to-warning-bg/30 p-4 shadow-sm">
-            <p className="text-xs uppercase tracking-wide text-warning-text">{t('planning.alerts.guide_high_title')}</p>
-            <p className="mt-1 text-sm text-warning-text">{t('planning.alerts.guide_high_body')}</p>
+          <article className="bg-white border border-neutral-100 rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md border-l-4 border-l-warning ring-1 ring-warning/20">
+            <p className="app-label uppercase tracking-wider">{t('planning.alerts.guide_high_title')}</p>
+            <p className="mt-1 text-sm text-neutral-900 leading-snug">{t('planning.alerts.guide_high_body')}</p>
           </article>
-          <article className="rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50 p-4 shadow-sm">
-            <p className="text-xs uppercase tracking-wide text-neutral-700">{t('planning.alerts.guide_medium_title')}</p>
-            <p className="mt-1 text-sm text-neutral-700">{t('planning.alerts.guide_medium_body')}</p>
+          <article className="bg-white border border-neutral-100 rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md border-l-4 border-l-neutral-400 ring-1 ring-neutral-100">
+            <p className="app-label uppercase tracking-wider">{t('planning.alerts.guide_medium_title')}</p>
+            <p className="mt-1 text-sm text-neutral-900 leading-snug">{t('planning.alerts.guide_medium_body')}</p>
           </article>
-          <article className="rounded-2xl border border-success bg-gradient-to-b from-success-bg/70 to-success-bg/40 p-4 shadow-sm">
-            <p className="text-xs uppercase tracking-wide text-success-text">{t('planning.alerts.guide_low_title')}</p>
-            <p className="mt-1 text-sm text-success-text">{t('planning.alerts.guide_low_body')}</p>
+          <article className="bg-white border border-neutral-100 rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md border-l-4 border-l-success ring-1 ring-success/20">
+            <p className="app-label uppercase tracking-wider">{t('planning.alerts.guide_low_title')}</p>
+            <p className="mt-1 text-sm text-neutral-900 leading-snug">{t('planning.alerts.guide_low_body')}</p>
           </article>
         </div>
       </section>
@@ -646,12 +674,22 @@ export default function SmartAlertsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {(data?.kpis ?? []).map((kpi) => {
             const localized = getLocalizedKpiText(kpi, t)
+            const visuals = getKpiCardVisuals(kpi.key)
             return (
-              <article key={kpi.key} className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/70 p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
-                <div className="absolute left-0 right-0 top-0 h-1.5 bg-brand-light" />
-                <p className="text-xs uppercase tracking-wide text-neutral-400">{localized.title}</p>
-                <p className="mt-1 text-xl font-medium text-neutral-900">{kpi.value} {localized.unit}</p>
-                <p className="mt-1 text-xs text-neutral-400">{localized.description}</p>
+              <article key={kpi.key} className="app-card relative p-5 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
+                <div className={`absolute top-0 left-0 right-0 h-1.5 ${visuals.accent}`} />
+                <div className="flex items-center gap-1.5 mb-1">
+                  <p className="app-label uppercase tracking-wider">{localized.title}</p>
+                </div>
+
+                <p className={`text-2xl font-medium leading-none ${visuals.value}`}>{kpi.value}</p>
+
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                  <p className="app-subtitle text-xs leading-snug">{localized.description}</p>
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-700 uppercase tracking-wide">
+                    {localized.unit}
+                  </span>
+                </div>
               </article>
             )
           })}
