@@ -7,17 +7,20 @@ interface BadgeProps {
   hint?: string
 }
 
+const BADGE_STYLES: Record<HealthBadgeVariant, { background: string; color: string; border: string }> = {
+  brand:   { background: '#f5bcbc', color: '#7a0505', border: '#e08080' },
+  success: { background: '#b8e3d4', color: '#0a4a32', border: '#6fc4a8' },
+  warning: { background: '#ffd98a', color: '#6b4000', border: '#f0b030' },
+  neutral: { background: '#edeceb', color: '#4a4845', border: '#b0aeab' },
+}
+
 export function FinancialHealthBadge({ text, variant, hint }: BadgeProps) {
-  const cls = {
-    brand: 'bg-brand/15 text-brand border border-brand/40 shadow-sm',
-    success: 'bg-success/15 text-success-text border border-success/40 shadow-sm',
-    warning: 'bg-warning/15 text-warning-text border border-warning/40 shadow-sm',
-    neutral: 'bg-neutral-400/20 text-neutral-700 border border-neutral-400/30 shadow-sm',
-  }[variant]
+  const { background, color, border } = BADGE_STYLES[variant]
 
   const content = (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide ${cls} ${hint ? 'cursor-help' : ''}`}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide shadow-sm${hint ? ' cursor-help' : ''}`}
+      style={{ background, color, border: `1px solid ${border}` }}
     >
       {text}
     </span>

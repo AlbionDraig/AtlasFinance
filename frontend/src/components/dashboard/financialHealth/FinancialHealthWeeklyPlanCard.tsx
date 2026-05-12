@@ -1,6 +1,12 @@
 import type { FinancialHealthSnapshot } from '@/types'
-import { actionDescription, actionPriorityLabel, actionPriorityStyles } from './helpers'
+import { actionDescription, actionPriorityLabel } from './helpers'
 import { FinancialHealthBadge, FinancialHealthHelpTooltip } from './shared'
+
+const PRIORITY_CARD_STYLES: Record<'high' | 'medium' | 'low', { borderLeft: string; background: string }> = {
+  high:   { borderLeft: '4px solid #e08080', background: '#fdf2f2' },
+  medium: { borderLeft: '4px solid #f0b030', background: '#fffbf0' },
+  low:    { borderLeft: '4px solid #6fc4a8', background: '#f2fbf8' },
+}
 
 interface FinancialHealthWeeklyPlanCardProps {
   weeklyPlan: FinancialHealthSnapshot['weekly_plan']
@@ -29,7 +35,7 @@ export default function FinancialHealthWeeklyPlanCard({
       {weeklyPlan.length > 0 ? (
         <div className="space-y-2.5">
           {weeklyPlan.map((action, idx) => (
-            <div key={`${action.factor}-${idx}`} className={`border border-neutral-100 border-l-4 rounded-lg p-3 ${actionPriorityStyles(action.priority)} motion-safe:transition-all motion-safe:duration-300 hover:shadow-sm`}>
+            <div key={`${action.factor}-${idx}`} className="border border-neutral-100 rounded-lg p-3 motion-safe:transition-all motion-safe:duration-300 hover:shadow-sm" style={PRIORITY_CARD_STYLES[action.priority]}>
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
                   <span className="inline-flex w-6 h-6 items-center justify-center rounded-full bg-white border border-neutral-100 text-[11px] font-medium text-neutral-700">
