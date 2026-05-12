@@ -450,11 +450,11 @@ export default function SmartAlertsPage() {
               <div className="absolute inset-x-0 top-0 h-px bg-white/70" aria-hidden="true" />
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
-                  <Badge variant={severityUi.badge} className="text-xs">
+                  <Badge variant={severityUi.badge}>
                     {getLocalizedSeverityLabel(alert.severity, t)}
                   </Badge>
                   {alert.due_date && (
-                    <Badge variant={alert.severity === 'high' ? 'warning' : 'neutral'} className="text-xs">
+                    <Badge variant={alert.severity === 'high' ? 'warning' : 'neutral'}>
                       {formatIsoDate(alert.due_date)}
                     </Badge>
                   )}
@@ -503,7 +503,7 @@ export default function SmartAlertsPage() {
                     return (
                       <tr key={`${alert.code}-${alert.transaction_id ?? index}`}>
                         <td className="px-3 py-2">
-                          <Badge variant={severityUi.badge} className="text-xs">
+                          <Badge variant={severityUi.badge}>
                             {getLocalizedSeverityLabel(alert.severity, t)}
                           </Badge>
                         </td>
@@ -512,7 +512,7 @@ export default function SmartAlertsPage() {
                         <td className="px-3 py-2 text-neutral-900 font-medium">{alert.amount ? formatCurrency(Number(alert.amount), 'COP') : '-'}</td>
                         <td className="px-3 py-2 text-neutral-700">
                           {alert.due_date ? (
-                            <Badge variant={alert.severity === 'high' ? 'warning' : 'neutral'} className="text-xs">
+                            <Badge variant={alert.severity === 'high' ? 'warning' : 'neutral'}>
                               {formatIsoDate(alert.due_date)}
                             </Badge>
                           ) : (
