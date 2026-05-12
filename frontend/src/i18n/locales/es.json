@@ -87,7 +87,13 @@
     "description": "Descripción",
     "entity": "Entidad",
     "sort": "Ordenar",
-    "loading": "Cargando..."
+    "loading": "Cargando...",
+    "grid": "Cuadrícula",
+    "table": "Tabla",
+    "title": "Título",
+    "detail": "Detalle",
+    "action": "Acción",
+    "due_date": "Fecha vencimiento"
   },
   "auth": {
     "login": {
@@ -1102,6 +1108,7 @@
       "hidden_by_filters": "Hay alertas detectadas, pero están ocultas por los filtros activos.",
       "hidden_by_severity_filter": "No hay alertas para la severidad seleccionada.",
       "enable_all": "Activar todas las alertas",
+      "severity_label": "Severidad",
       "severity_high": "alta",
       "severity_medium": "media",
       "severity_low": "baja",

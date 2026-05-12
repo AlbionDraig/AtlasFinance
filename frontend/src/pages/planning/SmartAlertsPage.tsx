@@ -104,11 +104,40 @@ function getLocalizedKpiText(
   }
 }
 
+function getSeverityClasses(severity: string): { badge: 'warning' | 'neutral' | 'positive'; border: string; soft: string } {
+  if (severity === 'high') {
+    return { badge: 'warning', border: 'border-l-warning', soft: 'bg-warning-bg/30' }
+  }
+  if (severity === 'medium') {
+    return { badge: 'neutral', border: 'border-l-neutral-400', soft: 'bg-neutral-50' }
+  }
+  return { badge: 'positive', border: 'border-l-success', soft: 'bg-success-bg/30' }
+}
+
+function getDaysToDate(isoDate?: string | null): number | null {
+  if (!isoDate) return null
+  const now = new Date()
+  const target = new Date(isoDate)
+  if (Number.isNaN(target.getTime())) return null
+  const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const targetOnly = new Date(target.getFullYear(), target.getMonth(), target.getDate())
+  const diffMs = targetOnly.getTime() - nowOnly.getTime()
+  return Math.round(diffMs / (1000 * 60 * 60 * 24))
+}
+
+function formatIsoDate(isoDate?: string | null): string {
+  if (!isoDate) return '-'
+  const parsed = new Date(isoDate)
+  if (Number.isNaN(parsed.getTime())) return isoDate
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(parsed)
+}
+
 export default function SmartAlertsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [preferences, setPreferences] = useState<AlertPreferences>(loadPreferences)
   const [severityFilter, setSeverityFilter] = useState<AlertSeverityFilter>('all')
+  const [alertViewMode, setAlertViewMode] = useState<'grid' | 'table'>('grid')
   const { data, loading } = useSmartAlertsData()
 
   const activeAlerts = useMemo(
@@ -146,6 +175,13 @@ export default function SmartAlertsPage() {
   const detectedAlertsCount = data?.alerts.length ?? 0
   const preferenceFiltersHideAlerts = detectedAlertsCount > 0 && activeAlerts.length === 0
   const severityFilterHideAlerts = activeAlerts.length > 0 && filteredAlerts.length === 0
+  const dueSoonSubscriptionsCount = useMemo(
+    () => (data?.subscriptions ?? []).filter((subscription) => {
+      const days = getDaysToDate(subscription.next_due_date)
+      return days !== null && days >= 0 && days <= 7
+    }).length,
+    [data?.subscriptions],
+  )
 
   const togglePreference = (key: keyof AlertPreferences) => {
     const next = { ...preferences, [key]: !preferences[key] }
@@ -186,26 +222,60 @@ export default function SmartAlertsPage() {
   }
 
   return (
-    <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
-      <div>
-        <h1 className="app-title text-xl">{t('planning.alerts.title')}</h1>
-        <p className="app-subtitle text-sm mt-0.5">{t('planning.alerts.subtitle')}</p>
-        <p className="mt-1 text-xs text-neutral-400">
-          {t('planning.alerts.updated_at', { value: generatedAtLabel })}
-        </p>
+    <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] rounded-2xl p-4 md:p-6 pb-20">
+      <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/80 shadow-sm ring-1 ring-neutral-100/70">
+        <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-brand-light opacity-30 blur-2xl" aria-hidden="true" />
+        <div className="absolute -left-10 -bottom-10 h-24 w-24 rounded-full bg-warning-bg opacity-20 blur-2xl" aria-hidden="true" />
+        <div className="relative bg-brand-light/30 px-4 py-5 md:px-6 md:py-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="app-title text-xl md:text-2xl">{t('planning.alerts.title')}</h1>
+              <p className="app-subtitle text-sm mt-0.5">{t('planning.alerts.subtitle')}</p>
+            </div>
+            <Badge variant={severityCounts.high > 0 ? 'warning' : 'positive'}>
+              {severityCounts.high > 0 ? `${severityCounts.high} ${t('planning.alerts.filter_high')}` : t('planning.alerts.empty_alerts')}
+            </Badge>
+          </div>
+          <p className="mt-2 text-xs text-neutral-400">
+            {t('planning.alerts.updated_at', { value: generatedAtLabel })}
+          </p>
+        </div>
+        <div className="relative grid grid-cols-2 md:grid-cols-4 gap-2 border-t border-neutral-100 bg-white/90 px-4 py-3 md:px-6">
+          <div className="rounded-xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/60 px-3 py-2 shadow-sm">
+            <p className="text-[11px] uppercase tracking-wide text-neutral-400">{t('planning.alerts.filter_all')}</p>
+            <p className="text-lg font-medium text-neutral-900">{severityCounts.all}</p>
+          </div>
+          <div className="rounded-xl border border-warning bg-gradient-to-b from-warning-bg/70 to-warning-bg/40 px-3 py-2 shadow-sm">
+            <p className="text-[11px] uppercase tracking-wide text-warning-text">{t('planning.alerts.filter_high')}</p>
+            <p className="text-lg font-medium text-warning-text">{severityCounts.high}</p>
+          </div>
+          <div className="rounded-xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50 px-3 py-2 shadow-sm">
+            <p className="text-[11px] uppercase tracking-wide text-neutral-700">{t('planning.alerts.filter_medium')}</p>
+            <p className="text-lg font-medium text-neutral-900">{severityCounts.medium}</p>
+          </div>
+          <div className="rounded-xl border border-success bg-gradient-to-b from-success-bg/70 to-success-bg/40 px-3 py-2 shadow-sm">
+            <p className="text-[11px] uppercase tracking-wide text-success-text">{t('planning.alerts.filter_low')}</p>
+            <p className="text-lg font-medium text-success-text">{severityCounts.low}</p>
+          </div>
+        </div>
       </div>
 
-      <section className="app-card p-4 md:p-5">
+      <section className="app-card rounded-2xl p-4 md:p-5">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <article className="rounded-lg border border-neutral-100 p-3">
+          <article className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/80 p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
+            <div className="absolute left-0 right-0 top-0 h-1.5 bg-neutral-100" />
             <p className="app-label uppercase tracking-wide">{t('planning.alerts.alerts_title')}</p>
             <p className="mt-1 text-2xl font-medium text-neutral-900">{filteredAlerts.length}</p>
+            <p className="mt-1 text-xs text-neutral-400">{detectedAlertsCount} {t('planning.alerts.filter_all').toLowerCase()}</p>
           </article>
-          <article className="rounded-lg border border-neutral-100 p-3">
+          <article className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/80 p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
+            <div className="absolute left-0 right-0 top-0 h-1.5 bg-warning-bg" />
             <p className="app-label uppercase tracking-wide">{t('planning.alerts.subscriptions_title')}</p>
             <p className="mt-1 text-2xl font-medium text-neutral-900">{data?.subscriptions.length ?? 0}</p>
+            <p className="mt-1 text-xs text-neutral-400">{dueSoonSubscriptionsCount} próximos 7 días</p>
           </article>
-          <article className="rounded-lg border border-neutral-100 p-3">
+          <article className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-gradient-to-b from-brand-light/35 to-white p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ring-1 ring-brand/20">
+            <div className="absolute left-0 right-0 top-0 h-1.5 bg-brand" />
             <p className="app-label uppercase tracking-wide">{t('planning.alerts.annual_total')}</p>
             <p className="mt-1 text-xl font-medium text-neutral-900">
               {formatCurrency(Number(data?.subscriptions_annual_total ?? 0), 'COP')}
@@ -214,7 +284,7 @@ export default function SmartAlertsPage() {
         </div>
       </section>
 
-      <section className="app-card p-4 md:p-5 space-y-3">
+      <section className="app-card rounded-2xl p-4 md:p-5 space-y-3">
         <h2 className="app-section-title">{t('planning.alerts.switches_title')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
@@ -226,7 +296,7 @@ export default function SmartAlertsPage() {
               key={item.key}
               type="button"
               onClick={() => togglePreference(item.key as keyof AlertPreferences)}
-              className="flex items-center justify-between rounded-lg border border-neutral-100 bg-white px-3 py-2 text-left transition-colors hover:bg-neutral-50"
+              className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left shadow-sm transition-[transform,box-shadow,border-color,background-color] hover:-translate-y-0.5 hover:shadow-md ${preferences[item.key as keyof AlertPreferences] ? 'border-neutral-100 bg-gradient-to-b from-brand-light/30 to-white ring-1 ring-brand/20' : 'border-neutral-100 bg-gradient-to-b from-white to-neutral-50/70 hover:border-neutral-400'}`}
             >
               <div className="flex items-center gap-2">
                 <span className="text-sm text-neutral-700">{item.label}</span>
@@ -247,19 +317,19 @@ export default function SmartAlertsPage() {
         </div>
       </section>
 
-      <section className="app-card p-4 md:p-5 space-y-3">
+      <section className="app-card rounded-2xl p-4 md:p-5 space-y-3">
         <h2 className="app-section-title">{t('planning.alerts.guide_title')}</h2>
         <p className="text-sm text-neutral-700">{t('planning.alerts.guide_subtitle')}</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <article className="rounded-lg border border-warning bg-warning-bg/40 p-3">
+          <article className="rounded-2xl border border-warning bg-gradient-to-b from-warning-bg/60 to-warning-bg/30 p-4 shadow-sm">
             <p className="text-xs uppercase tracking-wide text-warning-text">{t('planning.alerts.guide_high_title')}</p>
             <p className="mt-1 text-sm text-warning-text">{t('planning.alerts.guide_high_body')}</p>
           </article>
-          <article className="rounded-lg border border-neutral-100 bg-neutral-50 p-3">
+          <article className="rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50 p-4 shadow-sm">
             <p className="text-xs uppercase tracking-wide text-neutral-700">{t('planning.alerts.guide_medium_title')}</p>
             <p className="mt-1 text-sm text-neutral-700">{t('planning.alerts.guide_medium_body')}</p>
           </article>
-          <article className="rounded-lg border border-success bg-success-bg/60 p-3">
+          <article className="rounded-2xl border border-success bg-gradient-to-b from-success-bg/70 to-success-bg/40 p-4 shadow-sm">
             <p className="text-xs uppercase tracking-wide text-success-text">{t('planning.alerts.guide_low_title')}</p>
             <p className="mt-1 text-sm text-success-text">{t('planning.alerts.guide_low_body')}</p>
           </article>
@@ -269,9 +339,19 @@ export default function SmartAlertsPage() {
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="app-section-title">{t('planning.alerts.alerts_title')}</h2>
+          <p className="text-xs text-neutral-400">
+            {filteredAlerts.length} / {activeAlerts.length}
+          </p>
         </div>
 
-        <div className="app-card p-2">
+        {severityCounts.high > 0 && (
+          <InlineAlert
+            variant="warning"
+            message={`${severityCounts.high} ${t('planning.alerts.filter_high')} · ${t('planning.alerts.quick_filter_example_high')}`}
+          />
+        )}
+
+        <div className="app-card rounded-2xl bg-gradient-to-b from-white to-neutral-50/60 p-2 md:p-3 ring-1 ring-neutral-100/70">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2" role="tablist" aria-label={t('planning.alerts.quick_filters_title')}>
             {[
               { key: 'all', label: t('planning.alerts.filter_all'), example: t('planning.alerts.quick_filter_example_all') },
@@ -285,10 +365,10 @@ export default function SmartAlertsPage() {
                 role="tab"
                 aria-selected={severityFilter === item.key}
                 onClick={() => setSeverityFilter(item.key as AlertSeverityFilter)}
-                className={`rounded-lg px-3 py-2 text-left transition-colors ${
+                className={`rounded-xl px-3 py-2 text-left shadow-sm transition-all ${
                   severityFilter === item.key
-                    ? 'bg-brand text-white shadow-sm'
-                    : 'border border-neutral-100 text-neutral-700 hover:border-brand hover:text-brand'
+                    ? 'bg-brand text-white shadow-md ring-2 ring-brand-light'
+                    : 'border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/70 text-neutral-700 hover:-translate-y-0.5 hover:border-brand hover:text-brand hover:shadow-md'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
@@ -329,38 +409,71 @@ export default function SmartAlertsPage() {
           </div>
         )}
 
-        {filteredAlerts.map((alert, index) => {
+        {filteredAlerts.length > 0 && (
+          <div className="flex items-center justify-end gap-2 -mx-2 mb-2">
+            <button
+              type="button"
+              onClick={() => setAlertViewMode('grid')}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                alertViewMode === 'grid'
+                  ? 'bg-brand text-white shadow-sm'
+                  : 'border border-neutral-100 bg-white text-neutral-700 hover:border-brand hover:text-brand'
+              }`}
+            >
+              ⊞ {t('common.grid')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setAlertViewMode('table')}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                alertViewMode === 'table'
+                  ? 'bg-brand text-white shadow-sm'
+                  : 'border border-neutral-100 bg-white text-neutral-700 hover:border-brand hover:text-brand'
+              }`}
+            >
+              ≡ {t('common.table')}
+            </button>
+          </div>
+        )}
+
+        {alertViewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {filteredAlerts.map((alert, index) => {
           const action = resolveAlertAction(alert)
+          const severityUi = getSeverityClasses(alert.severity)
 
           return (
             <article
               key={`${alert.code}-${alert.transaction_id ?? index}`}
-              className={`app-card border-l-4 p-4 ${alert.severity === 'high' ? 'border-l-warning' : alert.severity === 'medium' ? 'border-l-neutral-400' : 'border-l-success'}`}
+              className={`relative overflow-hidden rounded-2xl border border-neutral-100 border-l-4 bg-gradient-to-b from-white to-neutral-50/70 p-3 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ${severityUi.border} ${severityUi.soft}`}
             >
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={alert.severity === 'high' ? 'warning' : alert.severity === 'medium' ? 'neutral' : 'positive'}>
-                  {getLocalizedSeverityLabel(alert.severity, t)}
-                </Badge>
-                <p className="text-sm font-medium text-neutral-900">{getLocalizedAlertText(alert, t).title}</p>
+              <div className="absolute inset-x-0 top-0 h-px bg-white/70" aria-hidden="true" />
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Badge variant={severityUi.badge} className="text-xs">
+                    {getLocalizedSeverityLabel(alert.severity, t)}
+                  </Badge>
+                  {alert.due_date && (
+                    <Badge variant={alert.severity === 'high' ? 'warning' : 'neutral'} className="text-xs">
+                      {formatIsoDate(alert.due_date)}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm font-medium text-neutral-900 leading-tight">{getLocalizedAlertText(alert, t).title}</p>
+                <p className="text-xs text-neutral-700 leading-tight">{getLocalizedAlertText(alert, t).detail}</p>
+                {alert.amount && (
+                  <p className="text-xs font-medium text-neutral-900">{formatCurrency(Number(alert.amount), 'COP')}</p>
+                )}
               </div>
-              <p className="mt-2 text-sm text-neutral-700">{getLocalizedAlertText(alert, t).detail}</p>
-              {(alert.amount || alert.due_date) && (
-                <p className="mt-2 text-xs text-neutral-400">
-                  {alert.amount ? formatCurrency(Number(alert.amount), 'COP') : ''}
-                  {alert.amount && alert.due_date ? ' • ' : ''}
-                  {alert.due_date ? t('planning.alerts.due_date', { date: alert.due_date }) : ''}
-                </p>
-              )}
-
               {action && (
-                <div className="mt-3 flex justify-end">
+                <div className="mt-2 flex justify-end">
                   <button
                     type="button"
                     onClick={() => {
                       trackUxEvent('smart_alert_action_clicked', { code: alert.code, to: action.to })
                       navigate(action.to)
                     }}
-                    className="rounded-md border border-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:border-brand hover:text-brand"
+                    className="rounded-md border border-neutral-100 bg-white px-2 py-1 text-xs font-medium text-neutral-700 transition-all hover:-translate-y-0.5 hover:border-brand hover:text-brand hover:shadow-sm"
                   >
                     {action.label}
                   </button>
@@ -368,15 +481,77 @@ export default function SmartAlertsPage() {
               )}
             </article>
           )
-        })}
-      </section>
+          })}
+        </div>        ) : (
+          <div className="app-card rounded-2xl bg-gradient-to-b from-white to-neutral-50/70 p-3 ring-1 ring-neutral-100/70">
+            <div className="app-table-wrap overflow-x-auto">
+              <table className="app-table text-sm">
+                <thead>
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium">{t('planning.alerts.severity_label')}</th>
+                    <th className="px-3 py-2 text-left font-medium">{t('common.title')}</th>
+                    <th className="px-3 py-2 text-left font-medium">{t('common.detail')}</th>
+                    <th className="px-3 py-2 text-left font-medium">{t('common.amount')}</th>
+                    <th className="px-3 py-2 text-left font-medium">{t('common.due_date')}</th>
+                    <th className="px-3 py-2 text-center font-medium">{t('common.action')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAlerts.map((alert, index) => {
+                    const action = resolveAlertAction(alert)
+                    const severityUi = getSeverityClasses(alert.severity)
+                    return (
+                      <tr key={`${alert.code}-${alert.transaction_id ?? index}`}>
+                        <td className="px-3 py-2">
+                          <Badge variant={severityUi.badge} className="text-xs">
+                            {getLocalizedSeverityLabel(alert.severity, t)}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2 text-neutral-900 font-medium">{getLocalizedAlertText(alert, t).title}</td>
+                        <td className="px-3 py-2 text-neutral-700 text-sm">{getLocalizedAlertText(alert, t).detail}</td>
+                        <td className="px-3 py-2 text-neutral-900 font-medium">{alert.amount ? formatCurrency(Number(alert.amount), 'COP') : '-'}</td>
+                        <td className="px-3 py-2 text-neutral-700">
+                          {alert.due_date ? (
+                            <Badge variant={alert.severity === 'high' ? 'warning' : 'neutral'} className="text-xs">
+                              {formatIsoDate(alert.due_date)}
+                            </Badge>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          {action && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                trackUxEvent('smart_alert_action_clicked', { code: alert.code, to: action.to })
+                                navigate(action.to)
+                              }}
+                              className="rounded-md border border-neutral-100 bg-white px-2 py-1 text-xs font-medium text-neutral-700 transition-all hover:border-brand hover:text-brand hover:shadow-sm"
+                            >
+                              {action.label}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}      </section>
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <h2 className="app-section-title">{t('planning.alerts.subscriptions_title')}</h2>
-          <p className="text-sm text-neutral-700">
-            {t('planning.alerts.annual_total')}: <span className="font-medium text-neutral-900">{formatCurrency(Number(data?.subscriptions_annual_total ?? 0), 'COP')}</span>
-          </p>
+          <div className="flex items-center gap-2">
+            <Badge variant="neutral">{data?.subscriptions.length ?? 0}</Badge>
+            <Badge variant={dueSoonSubscriptionsCount > 0 ? 'warning' : 'positive'}>{dueSoonSubscriptionsCount} próximos</Badge>
+            <p className="text-sm text-neutral-700">
+              {t('planning.alerts.annual_total')}: <span className="font-medium text-neutral-900">{formatCurrency(Number(data?.subscriptions_annual_total ?? 0), 'COP')}</span>
+            </p>
+          </div>
         </div>
 
         {!data?.subscriptions.length && (
@@ -384,13 +559,13 @@ export default function SmartAlertsPage() {
         )}
 
         {!!data?.subscriptions.length && (
-          <div className="app-card p-3">
+          <div className="app-card rounded-2xl bg-gradient-to-b from-white to-neutral-50/70 p-3 ring-1 ring-neutral-100/70">
             <div className="space-y-3 md:hidden">
               {data.subscriptions.map((subscription) => (
-                <article key={subscription.key} className="rounded-xl border border-neutral-100 bg-white p-4 shadow-sm">
+                <article key={subscription.key} className="rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/70 p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-sm font-medium text-neutral-900">{subscription.name}</p>
-                    <Badge variant="neutral">{subscription.next_due_date ?? '-'}</Badge>
+                    <Badge variant={(getDaysToDate(subscription.next_due_date) ?? 999) <= 7 ? 'warning' : 'neutral'}>{formatIsoDate(subscription.next_due_date)}</Badge>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-neutral-700">
                     <p>{t('planning.alerts.sub_monthly')}</p>
@@ -402,6 +577,18 @@ export default function SmartAlertsPage() {
                       {formatCurrency(Number(subscription.annual_cost), 'COP')}
                     </p>
                   </div>
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between text-[11px] text-neutral-500">
+                      <span>Confianza</span>
+                      <span>{Math.round(Number(subscription.confidence) * 100)}%</span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full rounded-full bg-neutral-100">
+                      <div
+                        className="h-full rounded-full bg-brand"
+                        style={{ width: `${Math.min(100, Math.max(0, Math.round(Number(subscription.confidence) * 100)))}%` }}
+                      />
+                    </div>
+                  </div>
                   <div className="mt-3 flex justify-end">
                     <button
                       type="button"
@@ -412,7 +599,7 @@ export default function SmartAlertsPage() {
                         })
                         navigate(`/transactions?q=${encodeURIComponent(subscription.name)}`)
                       }}
-                      className="rounded-md border border-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:border-brand hover:text-brand"
+                      className="rounded-md border border-neutral-100 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-all hover:-translate-y-0.5 hover:border-brand hover:text-brand hover:shadow-sm"
                     >
                       {t('planning.alerts.action_open_subscription_transactions')}
                     </button>
@@ -438,7 +625,11 @@ export default function SmartAlertsPage() {
                       <td className="px-3 py-2 text-neutral-900">{subscription.name}</td>
                       <td className="px-3 py-2 text-neutral-700">{formatCurrency(Number(subscription.monthly_estimate), 'COP')}</td>
                       <td className="px-3 py-2 text-neutral-700">{formatCurrency(Number(subscription.annual_cost), 'COP')}</td>
-                      <td className="px-3 py-2 text-neutral-700">{subscription.next_due_date ?? '-'}</td>
+                      <td className="px-3 py-2 text-neutral-700">
+                        <Badge variant={(getDaysToDate(subscription.next_due_date) ?? 999) <= 7 ? 'warning' : 'neutral'}>
+                          {formatIsoDate(subscription.next_due_date)}
+                        </Badge>
+                      </td>
                       <td className="px-3 py-2 text-neutral-700">
                         <button
                           type="button"
@@ -449,7 +640,7 @@ export default function SmartAlertsPage() {
                             })
                             navigate(`/transactions?q=${encodeURIComponent(subscription.name)}`)
                           }}
-                          className="rounded-md border border-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-700 transition-colors hover:border-brand hover:text-brand"
+                          className="rounded-md border border-neutral-100 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700 transition-all hover:-translate-y-0.5 hover:border-brand hover:text-brand hover:shadow-sm"
                         >
                           {t('planning.alerts.action_open_subscription_transactions')}
                         </button>
@@ -463,13 +654,14 @@ export default function SmartAlertsPage() {
         )}
       </section>
 
-      <section className="app-card p-4 md:p-5 space-y-3">
+      <section className="app-card rounded-2xl p-4 md:p-5 space-y-3">
         <h2 className="app-section-title">{t('planning.alerts.kpis_title')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {(data?.kpis ?? []).map((kpi) => {
             const localized = getLocalizedKpiText(kpi, t)
             return (
-              <article key={kpi.key} className="rounded-lg border border-neutral-100 p-3">
+              <article key={kpi.key} className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/70 p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
+                <div className="absolute left-0 right-0 top-0 h-1.5 bg-brand-light" />
                 <p className="text-xs uppercase tracking-wide text-neutral-400">{localized.title}</p>
                 <p className="mt-1 text-xl font-medium text-neutral-900">{kpi.value} {localized.unit}</p>
                 <p className="mt-1 text-xs text-neutral-400">{localized.description}</p>

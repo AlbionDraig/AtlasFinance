@@ -87,7 +87,13 @@
     "description": "Description",
     "entity": "Entity",
     "sort": "Sort",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "grid": "Grid",
+    "table": "Table",
+    "title": "Title",
+    "detail": "Detail",
+    "action": "Action",
+    "due_date": "Due date"
   },
   "auth": {
     "login": {
@@ -1100,6 +1106,7 @@
       "hidden_by_filters": "Alerts were detected, but current filters are hiding them.",
       "hidden_by_severity_filter": "No alerts match the selected severity.",
       "enable_all": "Enable all alert types",
+      "severity_label": "Severity",
       "severity_high": "high",
       "severity_medium": "medium",
       "severity_low": "low",
