@@ -25,6 +25,12 @@ export default function FinancialHealthHistoryCard({
   t,
   compact = false,
 }: FinancialHealthHistoryCardProps) {
+  const formatScoreDelta = (delta: number | null): string => {
+    if (delta == null) return `0 ${t('dashboard.health_points_short')}`
+    const normalized = Number.isInteger(delta) ? String(delta) : delta.toFixed(1)
+    return `${delta > 0 ? '+' : ''}${normalized} ${t('dashboard.health_points_short')}`
+  }
+
   return (
     <div className="app-card p-4 space-y-3 bg-white/90 ring-1 ring-neutral-100">
       <div className="flex items-center justify-between gap-2">
@@ -90,7 +96,7 @@ export default function FinancialHealthHistoryCard({
                   {point.label}: {historyChangeLabel(point, t)}
                 </p>
                 <p className={`font-medium ${historyDeltaTone(point.change_direction)}`}>
-                  {point.delta != null ? `${point.delta > 0 ? '+' : ''}${point.delta}` : '0'}
+                  {formatScoreDelta(point.delta)}
                 </p>
               </div>
             ))}
