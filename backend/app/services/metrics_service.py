@@ -565,12 +565,11 @@ def get_smart_alerts_summary(
         }
         if len(txns) < 2 or len(month_keys) < 2:
             continue
-
         monthly_estimate = (sum((tx.amount for tx in txns), Decimal("0")) / Decimal(str(len(txns)))).quantize(Decimal("0.01"))
         annual_cost = (monthly_estimate * Decimal("12")).quantize(Decimal("0.01"))
         day_freq: dict[int, int] = defaultdict(int)
         for tx in txns:
-            day_freq[tx.occurred_at.day] += 1
+            day_freq[_to_utc_aware(tx.occurred_at).day] += 1
         expected_day = max(day_freq.items(), key=lambda item: item[1])[0]
         next_due_date = _next_due_date(now, expected_day)
         last_charge = txns[-1]
