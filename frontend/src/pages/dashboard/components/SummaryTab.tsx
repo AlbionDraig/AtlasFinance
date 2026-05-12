@@ -10,6 +10,7 @@ import DatePicker from '@/components/ui/DatePicker'
 import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import SkeletonCard from '@/components/ui/SkeletonCard'
 import AppTooltip from '@/components/ui/Tooltip'
+import FinancialHealthSection from '@/components/dashboard/FinancialHealthSection'
 import { useDashboardData } from '@/hooks/useDashboardData'
 import {
   type Period, type Tone, type BadgeVariant,
@@ -216,6 +217,17 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
   const expVariation = prevExpense > 0 ? ((expense - prevExpense) / prevExpense) * 100 : null
   const fixedTotal = aggregates ? Number(aggregates.fixed_total) : 0
   const fixedShare = expense > 0 ? (fixedTotal / expense) * 100 : null
+  const financialHealth = aggregates?.financial_health ?? null
+  const healthHistory = useMemo(
+    () => (financialHealth?.history ?? []).map(point => ({
+      ...point,
+      label: fmtMonthLabel(point.month),
+    })),
+    [financialHealth],
+  )
+  const healthScore = financialHealth?.score ?? 0
+  const prevHealthScore = healthHistory.length > 1 ? healthHistory[healthHistory.length - 2].score : healthScore
+  const healthBadge = deltaPointsBadge(healthScore, prevHealthScore, healthHistory.length > 1)
 
   const fixedVarData = [
     { name: t('dashboard.chart_label_fixed'), value: fixedTotal },
@@ -370,6 +382,12 @@ export default function SummaryTab({ currency, onCurrencyChange }: SummaryTabPro
           />
         </div>
       </section>
+
+      <FinancialHealthSection
+        financialHealth={financialHealth}
+        history={healthHistory}
+        deltaBadge={{ text: healthBadge.text, tone: healthBadge.tone }}
+      />
 
       {/* Analysis section */}
       <section className="pt-1">

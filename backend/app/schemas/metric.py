@@ -30,6 +30,44 @@ class CategoryExpenseRow(BaseModel):
     is_fixed: bool
 
 
+class FinancialHealthFactor(BaseModel):
+    """Score and observed value for one financial health factor."""
+    key: str
+    score: int
+    value: MoneyDecimal
+    target: MoneyDecimal
+    unit: str
+    weight: MoneyDecimal
+
+
+class FinancialHealthAction(BaseModel):
+    """Concrete weekly action associated with one factor."""
+    factor: str
+    priority: str
+    action_key: str
+    target_value: MoneyDecimal
+    target_unit: str
+    estimated_score_gain: int
+
+
+class FinancialHealthHistoryPoint(BaseModel):
+    """Monthly evolution point for the financial health score."""
+    month: str
+    score: int
+    delta: int | None
+    change_driver: str
+    change_direction: str
+
+
+class FinancialHealthSnapshot(BaseModel):
+    """Current financial health score with factors, plan and history."""
+    score: int
+    level: str
+    factors: list[FinancialHealthFactor]
+    weekly_plan: list[FinancialHealthAction]
+    history: list[FinancialHealthHistoryPoint]
+
+
 class StackedMonthRow(BaseModel):
     """Per-month expense breakdown keyed by category name (for stacked charts)."""
     month: str  # "YYYY-MM"
@@ -50,4 +88,5 @@ class DashboardAggregates(BaseModel):
     biggest_expense_description: str | None
     prev_income: MoneyDecimal
     prev_expenses: MoneyDecimal
+    financial_health: FinancialHealthSnapshot
 

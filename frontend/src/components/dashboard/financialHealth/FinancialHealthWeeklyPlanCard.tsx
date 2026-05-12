@@ -1,0 +1,67 @@
+import type { FinancialHealthSnapshot } from '@/types'
+import { actionDescription, actionPriorityLabel } from './helpers'
+import { FinancialHealthBadge, FinancialHealthHelpTooltip } from './shared'
+
+const PRIORITY_CARD_STYLES: Record<'high' | 'medium' | 'low', { borderLeft: string; background: string }> = {
+  high:   { borderLeft: '4px solid #e08080', background: '#fdf2f2' },
+  medium: { borderLeft: '4px solid #f0b030', background: '#fffbf0' },
+  low:    { borderLeft: '4px solid #6fc4a8', background: '#f2fbf8' },
+}
+
+interface FinancialHealthWeeklyPlanCardProps {
+  weeklyPlan: FinancialHealthSnapshot['weekly_plan']
+  t: (key: string, params?: Record<string, string | number>) => string
+  compact?: boolean
+}
+
+function factorInitial(factor: FinancialHealthSnapshot['weekly_plan'][number]['factor']): string {
+  if (factor === 'savings') return 'A'
+  if (factor === 'debt') return 'D'
+  if (factor === 'liquidity') return 'L'
+  return 'V'
+}
+
+export default function FinancialHealthWeeklyPlanCard({
+  weeklyPlan,
+  t,
+  compact = false,
+}: FinancialHealthWeeklyPlanCardProps) {
+  return (
+    <div className="app-card p-4 space-y-3 bg-white/90 ring-1 ring-neutral-100">
+      <div className="flex items-center justify-between gap-2">
+        <p className="app-label uppercase tracking-wider">{t('dashboard.health_weekly_plan')}</p>
+        {!compact && <FinancialHealthHelpTooltip text={t('dashboard.health_weekly_plan_help')} />}
+      </div>
+      {weeklyPlan.length > 0 ? (
+        <div className="space-y-2.5">
+          {weeklyPlan.map((action, idx) => (
+            <div key={`${action.factor}-${idx}`} className="border border-neutral-100 rounded-lg p-3 motion-safe:transition-all motion-safe:duration-300 hover:shadow-sm" style={PRIORITY_CARD_STYLES[action.priority]}>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex w-6 h-6 items-center justify-center rounded-full bg-white border border-neutral-100 text-[11px] font-medium text-neutral-700">
+                    {factorInitial(action.factor)}
+                  </span>
+                  <p className="text-sm font-medium text-neutral-900">
+                    {t(`dashboard.health_factor_${action.factor}`)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center rounded-full border border-brand/10 bg-gradient-to-r from-brand-light via-white to-brand-light/50 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-brand-text shadow-sm whitespace-nowrap">
+                    +{action.estimated_score_gain} {t('dashboard.health_points_short')}
+                  </span>
+                  <FinancialHealthBadge
+                    text={actionPriorityLabel(action.priority, t)}
+                    variant={action.priority === 'high' ? 'brand' : action.priority === 'medium' ? 'warning' : 'success'}
+                  />
+                </div>
+              </div>
+              <p className="app-subtitle text-xs leading-relaxed">{actionDescription(action, t)}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="app-subtitle text-sm">{t('dashboard.chart_empty')}</p>
+      )}
+    </div>
+  )
+}
