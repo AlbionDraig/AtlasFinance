@@ -10,6 +10,7 @@ import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { formatCurrency } from '@/lib/utils'
 import { useInvestmentsData } from '@/hooks/useInvestmentsData'
 import PageSkeleton from '@/components/ui/PageSkeleton'
+import ViewModeToggle from '@/components/ui/ViewModeToggle'
 import Modal from '@/components/ui/Modal'
 import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import SearchInput from '@/components/ui/SearchInput'
@@ -22,7 +23,6 @@ import TableActionGroup from '@/components/ui/TableActionGroup'
 import Select from '@/components/ui/Select'
 import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
-import ViewModeToggle from '@/components/ui/ViewModeToggle'
 import { daysSinceInvestment, formatInvestmentDate, renderInstrumentBadge } from './investmentDisplay'
 import {
   type InvestmentFormErrors,
@@ -507,7 +507,7 @@ export default function InvestmentsPage() {
         </div>
         <ViewModeToggle
           value={viewMode}
-          onChange={(mode) => setViewMode(mode as 'cards' | 'table')}
+          onChange={setViewMode}
           options={[
             { value: 'cards', label: t('investments.view_cards') },
             { value: 'table', label: t('investments.view_table') },
