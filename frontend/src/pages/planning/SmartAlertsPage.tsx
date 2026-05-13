@@ -503,20 +503,28 @@ export default function SmartAlertsPage() {
         )}      </section>
 
       <section className="space-y-3">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <h2 className="app-section-title">{t('planning.alerts.subscriptions_title')}</h2>
-          <div className="flex items-center gap-2">
-            <Badge variant="neutral">{data?.subscriptions.length ?? 0}</Badge>
-            <Badge variant={dueSoonSubscriptionsCount > 0 ? 'warning' : 'positive'}>{t('planning.alerts.due_soon_count', { count: dueSoonSubscriptionsCount })}</Badge>
-          </div>
-        </div>
-
         {!data?.subscriptions.length && (
-          <InlineAlert message={t('planning.alerts.empty_subscriptions')} variant="info" />
+          <div className="app-card rounded-2xl p-4 md:p-5 space-y-3">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <h2 className="app-section-title">{t('planning.alerts.subscriptions_title')}</h2>
+              <div className="flex items-center gap-2">
+                <Badge variant="neutral">{data?.subscriptions.length ?? 0}</Badge>
+                <Badge variant={dueSoonSubscriptionsCount > 0 ? 'warning' : 'positive'}>{t('planning.alerts.due_soon_count', { count: dueSoonSubscriptionsCount })}</Badge>
+              </div>
+            </div>
+            <InlineAlert message={t('planning.alerts.empty_subscriptions')} variant="info" />
+          </div>
         )}
 
         {!!data?.subscriptions.length && (
-          <div className="app-card rounded-2xl bg-gradient-to-b from-white to-neutral-50/70 p-3 ring-1 ring-neutral-100/70">
+          <div className="app-card rounded-2xl bg-gradient-to-b from-white to-neutral-50/70 p-3 ring-1 ring-neutral-100/70 space-y-3">
+            <div className="flex flex-wrap items-end justify-between gap-2 px-1">
+              <h2 className="app-section-title">{t('planning.alerts.subscriptions_title')}</h2>
+              <div className="flex items-center gap-2">
+                <Badge variant="neutral">{data?.subscriptions.length ?? 0}</Badge>
+                <Badge variant={dueSoonSubscriptionsCount > 0 ? 'warning' : 'positive'}>{t('planning.alerts.due_soon_count', { count: dueSoonSubscriptionsCount })}</Badge>
+              </div>
+            </div>
             <div className="space-y-3 md:hidden">
               {data.subscriptions.map((subscription) => (
                 <article key={subscription.key} className="rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/70 p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
