@@ -191,16 +191,6 @@ export default function SmartAlertsPage() {
     [activeAlerts],
   )
 
-  const generatedAtLabel = (() => {
-    if (!data?.generated_at) return '-'
-    const parsed = new Date(data.generated_at)
-    if (Number.isNaN(parsed.getTime())) return '-'
-    return new Intl.DateTimeFormat(undefined, {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(parsed)
-  })()
-
   const detectedAlertsCount = data?.alerts.length ?? 0
   const preferenceFiltersHideAlerts = detectedAlertsCount > 0 && activeAlerts.length === 0
   const severityFilterHideAlerts = activeAlerts.length > 0 && filteredAlerts.length === 0
@@ -252,41 +242,9 @@ export default function SmartAlertsPage() {
 
   return (
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] rounded-2xl p-4 md:p-6 pb-20">
-      <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/80 shadow-sm ring-1 ring-neutral-100/70">
-        <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-brand-light opacity-30 blur-2xl" aria-hidden="true" />
-        <div className="absolute -left-10 -bottom-10 h-24 w-24 rounded-full bg-warning-bg opacity-20 blur-2xl" aria-hidden="true" />
-        <div className="relative bg-brand-light/30 px-4 py-5 md:px-6 md:py-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h1 className="app-title text-xl md:text-2xl">{t('planning.alerts.title')}</h1>
-              <p className="app-subtitle text-sm mt-0.5">{t('planning.alerts.subtitle')}</p>
-            </div>
-            <Badge variant={severityCounts.high > 0 ? 'warning' : 'positive'}>
-              {severityCounts.high > 0 ? `${severityCounts.high} ${t('planning.alerts.filter_high')}` : t('planning.alerts.empty_alerts')}
-            </Badge>
-          </div>
-          <p className="mt-2 text-xs text-neutral-400">
-            {t('planning.alerts.updated_at', { value: generatedAtLabel })}
-          </p>
-        </div>
-        <div className="relative grid grid-cols-2 md:grid-cols-4 gap-2 border-t border-neutral-100 bg-white/90 px-4 py-3 md:px-6">
-          <div className="rounded-xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/60 px-3 py-2 shadow-sm">
-            <p className="text-[11px] uppercase tracking-wide text-neutral-400">{t('planning.alerts.filter_all')}</p>
-            <p className="text-lg font-medium text-neutral-900">{severityCounts.all}</p>
-          </div>
-          <div className="rounded-xl border border-warning bg-gradient-to-b from-warning-bg/70 to-warning-bg/40 px-3 py-2 shadow-sm">
-            <p className="text-[11px] uppercase tracking-wide text-warning-text">{t('planning.alerts.filter_high')}</p>
-            <p className="text-lg font-medium text-warning-text">{severityCounts.high}</p>
-          </div>
-          <div className="rounded-xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50 px-3 py-2 shadow-sm">
-            <p className="text-[11px] uppercase tracking-wide text-neutral-700">{t('planning.alerts.filter_medium')}</p>
-            <p className="text-lg font-medium text-neutral-900">{severityCounts.medium}</p>
-          </div>
-          <div className="rounded-xl border border-success bg-gradient-to-b from-success-bg/70 to-success-bg/40 px-3 py-2 shadow-sm">
-            <p className="text-[11px] uppercase tracking-wide text-success-text">{t('planning.alerts.filter_low')}</p>
-            <p className="text-lg font-medium text-success-text">{severityCounts.low}</p>
-          </div>
-        </div>
+      <div>
+        <h1 className="app-title text-xl">{t('planning.alerts.title')}</h1>
+        <p className="app-subtitle text-sm mt-0.5">{t('planning.alerts.subtitle')}</p>
       </div>
 
       <section className="app-card rounded-2xl p-4 md:p-5">
