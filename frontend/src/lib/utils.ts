@@ -1,6 +1,6 @@
 import { AxiosError } from 'axios'
 
-const LEGACY_SEED_DESCRIPTION_PATTERN = /^\[seed-state\]\s*([a-z_]+)\s*-\s*(.*)$/i
+const LEGACY_SEED_DESCRIPTION_PATTERN = /^\[seed-state\]\s*([a-z0-9_]+)\s*-\s*(.*)$/i
 
 const LEGACY_SEED_DESCRIPTION_BY_CODE = {
   zero_progress: {
