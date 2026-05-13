@@ -344,10 +344,7 @@ export default function SmartAlertsPage() {
       <section className="space-y-3">
         {activeAlerts.length === 0 && (
           <div className="app-card rounded-2xl p-4 md:p-5 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="app-section-title">{t('planning.alerts.alerts_title')}</h2>
-              <Badge variant="neutral">{t('planning.alerts.alerts_count', { count: activeAlerts.length })}</Badge>
-            </div>
+            <h2 className="app-section-title">{t('planning.alerts.alerts_title')}</h2>
             <InlineAlert
               message={
                 preferenceFiltersHideAlerts
@@ -370,10 +367,7 @@ export default function SmartAlertsPage() {
 
         {activeAlerts.length > 0 && (
           <div className="app-card rounded-2xl bg-gradient-to-b from-white to-neutral-50/70 p-3 ring-1 ring-neutral-100/70 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="app-section-title">{t('planning.alerts.alerts_title')}</h2>
-              <Badge variant="neutral">{t('planning.alerts.alerts_count', { count: activeAlerts.length })}</Badge>
-            </div>
+            <h2 className="app-section-title">{t('planning.alerts.alerts_title')}</h2>
             <div className="flex items-center justify-start gap-2">
               <ViewToggle
                 value={alertViewMode}
@@ -508,7 +502,6 @@ export default function SmartAlertsPage() {
             <div className="flex flex-wrap items-end justify-between gap-2">
               <h2 className="app-section-title">{t('planning.alerts.subscriptions_title')}</h2>
               <div className="flex items-center gap-2">
-                <Badge variant="neutral">{data?.subscriptions.length ?? 0}</Badge>
                 <Badge variant={dueSoonSubscriptionsCount > 0 ? 'warning' : 'positive'}>{t('planning.alerts.due_soon_count', { count: dueSoonSubscriptionsCount })}</Badge>
               </div>
             </div>
@@ -521,7 +514,6 @@ export default function SmartAlertsPage() {
             <div className="flex flex-wrap items-end justify-between gap-2 px-1">
               <h2 className="app-section-title">{t('planning.alerts.subscriptions_title')}</h2>
               <div className="flex items-center gap-2">
-                <Badge variant="neutral">{data?.subscriptions.length ?? 0}</Badge>
                 <Badge variant={dueSoonSubscriptionsCount > 0 ? 'warning' : 'positive'}>{t('planning.alerts.due_soon_count', { count: dueSoonSubscriptionsCount })}</Badge>
               </div>
             </div>
