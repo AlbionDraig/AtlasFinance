@@ -1,8 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ToastProvider } from '@/hooks/useToast'
+import { ToastProvider, useToast } from '@/hooks/useToast'
 
 const accountsListMock = vi.fn()
 const categoriesListMock = vi.fn()
@@ -24,6 +24,11 @@ vi.mock('@/api/transactions', () => ({
 
 import { useTransactionsCatalogs, useTransactionsList } from './useTransactionsData'
 
+function ToastProbe() {
+  const { toasts } = useToast()
+  return <span data-testid="toast-messages">{toasts.map((toast) => toast.message).join(',')}</span>
+}
+
 function wrapper({ children }: { children: ReactNode }) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -32,7 +37,10 @@ function wrapper({ children }: { children: ReactNode }) {
   })
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>{children}</ToastProvider>
+      <ToastProvider>
+        {children}
+        <ToastProbe />
+      </ToastProvider>
     </QueryClientProvider>
   )
 }
@@ -67,6 +75,19 @@ describe('useTransactionsCatalogs', () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.accounts).toHaveLength(1)
     expect(result.current.pockets).toEqual([])
+  })
+
+  it('shows an error toast when accounts or categories fail', async () => {
+    accountsListMock.mockRejectedValue(new Error('accounts failed'))
+    categoriesListMock.mockResolvedValue({ data: [{ id: 2 }] })
+    pocketsListMock.mockResolvedValue({ data: [{ id: 3 }] })
+
+    const { result } = renderHook(() => useTransactionsCatalogs(), { wrapper })
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    await waitFor(() => expect(screen.getByTestId('toast-messages').textContent).not.toBe(''))
+
+    expect(result.current.accounts).toEqual([])
   })
 })
 

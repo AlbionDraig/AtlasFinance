@@ -1,8 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ToastProvider } from '@/hooks/useToast'
+import { ToastProvider, useToast } from '@/hooks/useToast'
 
 const dashboardMock = vi.fn()
 const aggregatesMock = vi.fn()
@@ -16,15 +16,23 @@ vi.mock('@/api/metrics', () => ({
 
 import { useDashboardData } from './useDashboardData'
 
+function ToastProbe() {
+  const { toasts } = useToast()
+  return <span data-testid="toast-messages">{toasts.map((toast) => toast.message).join(',')}</span>
+}
+
 function wrapper({ children }: { children: ReactNode }) {
   const queryClient = new QueryClient({
     defaultOptions: {
-      queries: { retry: false },
+      queries: { retry: false, retryDelay: 1 },
     },
   })
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>{children}</ToastProvider>
+      <ToastProvider>
+        {children}
+        <ToastProbe />
+      </ToastProvider>
     </QueryClientProvider>
   )
 }
@@ -74,6 +82,20 @@ describe('useDashboardData', () => {
     const { result } = renderHook(() => useDashboardData(baseParams), { wrapper })
 
     await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 3000 })
+    expect(result.current.metrics).toBeNull()
+    expect(result.current.aggregates).toBeNull()
+  })
+
+  it('shows an error toast when the API fails with a non-auth error', async () => {
+    const genericError = new Error('Server exploded')
+    dashboardMock.mockRejectedValue(genericError)
+    aggregatesMock.mockRejectedValue(genericError)
+
+    const { result } = renderHook(() => useDashboardData(baseParams), { wrapper })
+
+    await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 5000 })
+    await waitFor(() => expect(screen.getByTestId('toast-messages').textContent).not.toBe(''))
+
     expect(result.current.metrics).toBeNull()
     expect(result.current.aggregates).toBeNull()
   })
