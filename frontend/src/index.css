@@ -241,6 +241,20 @@ body {
     word-break: normal !important;
   }
 
+  .savings-goals-table-wrap {
+    overflow-x: auto;
+  }
+
+  .app-table.savings-goals-table {
+    min-width: 980px;
+  }
+
+  .app-table.savings-goals-table thead th {
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+  }
+
   @media (max-width: 1024px) {
     .app-table th,
     .app-table td {

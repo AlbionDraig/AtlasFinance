@@ -23,7 +23,8 @@ import {
   useUpdateSavingsGoal,
 } from '@/hooks/useSavingsGoals'
 import { useCategoriesData } from '@/hooks/useCategoriesData'
-import { getApiErrorMessage } from '@/lib/utils'
+import { formatSavingsGoalDescription, getApiErrorMessage } from '@/lib/utils'
+import SavingsGoalsFiltersCard, { type SavingsGoalsFiltersState } from './components/SavingsGoalsFiltersCard'
 import type { Category } from '@/api/categories'
 import type { SavingsGoalRead, SavingsGoalCreatePayload, SavingsGoalUpdatePayload } from '@/api/savings_goals'
 
@@ -33,13 +34,19 @@ type FormMode = 'create' | 'edit' | null
  * Savings goals page - display savings goals with progress and scenario simulator.
  */
 export default function SavingsGoalsPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { toast } = useToast()
   const [formMode, setFormMode] = useState<FormMode>(null)
   const [editingGoal, setEditingGoal] = useState<SavingsGoalRead | null>(null)
   const [deletingGoal, setDeletingGoal] = useState<SavingsGoalRead | null>(null)
   const [simulatorOpen, setSimulatorOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
+  const [filters, setFilters] = useState<SavingsGoalsFiltersState>({
+    query: '',
+    progress: 'all',
+    status: 'all',
+    pocketId: 'all',
+  })
 
   const [formData, setFormData] = useState({
     name: '',
@@ -180,12 +187,92 @@ export default function SavingsGoalsPage() {
       }
     : { total_goals: 0, completed: 0, total_target: 0, total_saved: 0 }
 
-  const statsCardClass = 'bg-white border border-neutral-100 rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md'
+  const statsCardClass = 'bg-white border border-neutral-100 rounded-2xl p-4 md:p-5 shadow-sm relative overflow-hidden transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md'
   const hasSavedAmount = stats.total_saved > 0
+
+  // Opciones de bolsillos vinculados a metas
+  const linkedPocketOptions = useMemo(() => {
+    if (!goals) return []
+    const seen = new Set<number>()
+    const result: { id: number; name: string }[] = []
+    for (const g of goals) {
+      if (g.pocket_id && g.pocket_name && !seen.has(g.pocket_id)) {
+        seen.add(g.pocket_id)
+        result.push({ id: g.pocket_id, name: g.pocket_name })
+      }
+    }
+    return result.sort((a, b) => a.name.localeCompare(b.name))
+  }, [goals])
+
+  const activeFilters = useMemo(() => {
+    const chips: Array<{ id: string; label: string }> = []
+    if (filters.query.trim()) chips.push({ id: 'query', label: `"${filters.query.trim()}"` })
+    if (filters.status !== 'all') {
+      const labels: Record<string, string> = {
+        active: t('planning.goal.filter_status_active'),
+        completed: t('planning.goal.filter_status_completed'),
+        overdue: t('planning.goal.filter_status_overdue'),
+      }
+      chips.push({ id: 'status', label: labels[filters.status] ?? '' })
+    }
+    if (filters.progress !== 'all') {
+      const labels: Record<string, string> = {
+        early: t('planning.goal.filter_early'),
+        mid: t('planning.goal.filter_mid'),
+        completed: t('planning.goal.filter_completed'),
+      }
+      chips.push({ id: 'progress', label: labels[filters.progress] ?? '' })
+    }
+    if (filters.pocketId === 'none') chips.push({ id: 'pocketId', label: t('planning.goal.filter_pocket_none') })
+    else if (filters.pocketId !== 'all') {
+      const pocket = linkedPocketOptions.find((p) => String(p.id) === filters.pocketId)
+      if (pocket) chips.push({ id: 'pocketId', label: pocket.name })
+    }
+    return chips
+  }, [filters, linkedPocketOptions, t])
+
+  const handleResetFilters = () => setFilters({ query: '', progress: 'all', status: 'all', pocketId: 'all' })
+  const handleRemoveFilter = (id: string) => {
+    setFilters((current) => ({
+      ...current,
+      ...(id === 'query' && { query: '' }),
+      ...(id === 'status' && { status: 'all' }),
+      ...(id === 'progress' && { progress: 'all' }),
+      ...(id === 'pocketId' && { pocketId: 'all' }),
+    }))
+  }
+
+  const filteredGoals = useMemo(() => {
+    if (!goals) return []
+    const q = filters.query.trim().toLowerCase()
+
+    return goals.filter((goal) => {
+      // Búsqueda por nombre
+      if (q && !goal.name.toLowerCase().includes(q)) return false
+
+      // Estado
+      if (filters.status === 'completed' && !goal.is_completed) return false
+      if (filters.status === 'overdue' && (goal.is_completed || goal.days_remaining >= 0)) return false
+      if (filters.status === 'active' && (goal.is_completed || goal.days_remaining < 0)) return false
+
+      // Progreso
+      const progress = Number(goal.progress_percent)
+      if (filters.progress === 'completed' && progress < 100) return false
+      if (filters.progress === 'mid' && (progress < 50 || progress >= 100)) return false
+      if (filters.progress === 'early' && progress >= 50) return false
+
+      // Bolsillo
+      if (filters.pocketId === 'none' && goal.pocket_id !== null) return false
+      if (filters.pocketId !== 'all' && filters.pocketId !== 'none' && String(goal.pocket_id) !== filters.pocketId) return false
+
+      return true
+    })
+  }, [goals, filters])
 
   const formatGoalDate = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString('es-CO', {
+    const locale = i18n.resolvedLanguage?.startsWith('es') ? 'es-CO' : 'en-US'
+    return date.toLocaleDateString(locale, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -197,8 +284,6 @@ export default function SavingsGoalsPage() {
     if (daysRemaining <= 90) return 'text-warning-text'
     return 'text-neutral-700'
   }
-
-    if (isLoading) return <div>Loading...</div>
 
   return (
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
@@ -212,27 +297,41 @@ export default function SavingsGoalsPage() {
 
       {/* Statistics Cards */}
       {goals && goals.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-          <div className={`${statsCardClass} border-l-4 border-l-neutral-400 ring-1 ring-neutral-100`}>
-            <p className="app-label uppercase tracking-wider">{t('planning.goals.total_goals')}</p>
-            <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">{stats.total_goals}</p>
+        <div className="grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={`${statsCardClass}`}>
+            <span className="absolute left-0 top-0 block h-1 w-full bg-neutral-400" aria-hidden="true" />
+            <p className="text-xs font-medium uppercase tracking-wider text-neutral-600">{t('planning.goals.total_goals')}</p>
+            <p className="mt-2 text-4xl font-semibold leading-none text-neutral-900 tabular-nums">{stats.total_goals}</p>
           </div>
-          <div className={`${statsCardClass} border-l-4 border-l-success ring-1 ring-success/20`}>
-            <p className="app-label uppercase tracking-wider">{t('planning.goals.completed')}</p>
-            <p className="text-2xl font-medium leading-none text-success mt-1">{stats.completed}</p>
+          <div className={`${statsCardClass}`}>
+            <span className="absolute left-0 top-0 block h-1 w-full bg-success/70" aria-hidden="true" />
+            <p className="text-xs font-medium uppercase tracking-wider text-neutral-600">{t('planning.goals.completed')}</p>
+            <p className="mt-2 text-4xl font-semibold leading-none text-success tabular-nums">{stats.completed}</p>
           </div>
-          <div className={`${statsCardClass} border-l-4 border-l-neutral-400 ring-1 ring-neutral-100`}>
-            <p className="app-label uppercase tracking-wider">{t('planning.goals.total_target')}</p>
-            <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">${stats.total_target.toFixed(2)}</p>
+          <div className={`${statsCardClass}`}>
+            <span className="absolute left-0 top-0 block h-1 w-full bg-brand" aria-hidden="true" />
+            <p className="text-xs font-medium uppercase tracking-wider text-neutral-600">{t('planning.goals.total_target')}</p>
+            <p className="mt-2 text-3xl font-semibold leading-none text-neutral-900 tabular-nums">${stats.total_target.toFixed(2)}</p>
           </div>
-          <div className={`${statsCardClass} border-l-4 ${hasSavedAmount ? 'border-l-success ring-1 ring-success/20' : 'border-l-neutral-400 ring-1 ring-neutral-100'}`}>
-            <p className="app-label uppercase tracking-wider">{t('planning.goals.total_saved')}</p>
-            <p className={`text-2xl font-medium leading-none mt-1 ${hasSavedAmount ? 'text-success' : 'text-neutral-900'}`}>${stats.total_saved.toFixed(2)}</p>
+          <div className={`${statsCardClass}`}>
+            <span className={`absolute left-0 top-0 block h-1 w-full ${hasSavedAmount ? 'bg-success' : 'bg-neutral-400'}`} aria-hidden="true" />
+            <p className="text-xs font-medium uppercase tracking-wider text-neutral-600">{t('planning.goals.total_saved')}</p>
+            <p className={`mt-2 text-3xl font-semibold leading-none tabular-nums ${hasSavedAmount ? 'text-success-text' : 'text-neutral-900'}`}>${stats.total_saved.toFixed(2)}</p>
           </div>
         </div>
       )}
 
-
+      {/* Filters — visible once goals are loaded */}
+      {goals && goals.length > 0 && (
+        <SavingsGoalsFiltersCard
+          filters={filters}
+          setFilters={setFilters}
+          pockets={linkedPocketOptions}
+          activeFilters={activeFilters}
+          onResetFilters={handleResetFilters}
+          onRemoveFilter={handleRemoveFilter}
+        />
+      )}
 
       {/* Goals List */}
       {isLoading ? (
@@ -245,39 +344,53 @@ export default function SavingsGoalsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="flex justify-start">
-            <ViewToggle value={viewMode} onChange={(m) => setViewMode(m as 'cards' | 'table')} />
-          </div>
-
-          {viewMode === 'cards' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {goals.map((goal: SavingsGoalRead) => (
-                <SavingsGoalCard
-                  key={goal.id}
-                  goal={goal}
-                  onEdit={handleEditGoal}
-                  onDelete={handleDeleteGoal}
-                />
-              ))}
+          <div className="app-card rounded-2xl p-3 md:p-4">
+            <div className="flex justify-start mb-3">
+              <ViewToggle value={viewMode} onChange={(m) => setViewMode(m as 'cards' | 'table')} />
             </div>
-          ) : (
-            <div className="app-table-wrap">
-              <table className="app-table text-sm">
+
+            {filteredGoals.length === 0 ? (
+              <div className="rounded-xl border border-neutral-100 bg-white p-6 text-center text-sm text-neutral-400">
+                {t('planning.goal.empty_filter')}
+              </div>
+            ) : viewMode === 'cards' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredGoals.map((goal: SavingsGoalRead) => (
+                  <SavingsGoalCard
+                    key={goal.id}
+                    goal={goal}
+                    onEdit={handleEditGoal}
+                    onDelete={handleDeleteGoal}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="app-table-wrap savings-goals-table-wrap">
+                <table className="app-table savings-goals-table text-sm">
                 <thead className="border-b border-brand/30 bg-brand text-xs text-white">
                   <tr>
-                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.goal.name')}</th>
-                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.goal.saved')}</th>
-                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.goal.target')}</th>
-                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.goal.remaining')}</th>
-                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.goal.progress')}</th>
-                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.goal.target_date')}</th>
-                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('planning.goal.days_left')}</th>
-                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle">{t('common.action')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle whitespace-nowrap">{t('planning.goal.name')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle whitespace-nowrap">{t('planning.goal.saved')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle whitespace-nowrap">{t('planning.goal.target')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle whitespace-nowrap">{t('planning.goal.remaining')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle whitespace-nowrap">{t('planning.goal.progress')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle whitespace-nowrap">{t('planning.goal.target_date')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle whitespace-nowrap">{t('planning.goal.days_left')}</th>
+                    <th className="px-3 py-2 font-medium uppercase tracking-wide text-center align-middle whitespace-nowrap">{t('common.action')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {goals.map((goal, index) => {
+                  {filteredGoals.map((goal, index) => {
                     const remaining = Number(goal.target_amount) - Number(goal.current_amount)
+                    const displayDescription = formatSavingsGoalDescription(
+                      goal.description,
+                      i18n.resolvedLanguage ?? i18n.language,
+                    )
+                    const progressTextClass = goal.progress_percent >= 100
+                      ? 'text-success'
+                      : goal.progress_percent >= 50
+                        ? 'text-warning'
+                        : 'text-brand'
 
                     return (
                       <tr
@@ -287,8 +400,8 @@ export default function SavingsGoalsPage() {
                         <td className="px-3 py-2 text-neutral-900 font-medium">
                           <div className="max-w-[240px]">
                             <p className="truncate">{goal.name}</p>
-                            {goal.description && (
-                              <p className="text-xs text-neutral-400 truncate">{goal.description}</p>
+                            {displayDescription && (
+                              <p className="text-xs text-neutral-400 truncate">{displayDescription}</p>
                             )}
                           </div>
                         </td>
@@ -296,7 +409,7 @@ export default function SavingsGoalsPage() {
                         <td className="px-3 py-2 text-neutral-700 tabular-nums text-center align-middle">${Number(goal.target_amount).toFixed(2)}</td>
                         <td className="px-3 py-2 text-neutral-700 tabular-nums text-center align-middle">${remaining.toFixed(2)}</td>
                         <td className="px-3 py-2 text-center align-middle">
-                          <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${goal.is_completed ? 'bg-success-bg text-success-text' : 'bg-brand-light text-brand-text'}`}>
+                          <span className={`text-xs font-semibold ${progressTextClass}`}>
                             {goal.progress_percent.toFixed(1)}%
                           </span>
                         </td>
@@ -315,8 +428,9 @@ export default function SavingsGoalsPage() {
                   })}
                 </tbody>
               </table>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
