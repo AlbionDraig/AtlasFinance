@@ -327,15 +327,15 @@ export default function SmartAlertsPage() {
         <p className="text-sm text-neutral-700">{t('planning.alerts.guide_subtitle')}</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <article className="bg-white border border-neutral-100 rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md border-l-4 border-l-brand ring-1 ring-brand/20">
-            <p className="app-label uppercase tracking-wider">{t('planning.alerts.guide_high_title')}</p>
+            <p className="text-xs uppercase tracking-wider font-bold" style={{ color: '#8a0808' }}>{t('planning.alerts.guide_high_title')}</p>
             <p className="mt-1 text-sm text-neutral-900 leading-snug">{t('planning.alerts.guide_high_body')}</p>
           </article>
           <article className="bg-white border border-neutral-100 rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md border-l-4 border-l-warning ring-1 ring-warning/20">
-            <p className="app-label uppercase tracking-wider">{t('planning.alerts.guide_medium_title')}</p>
+            <p className="text-xs uppercase tracking-wider font-bold" style={{ color: '#8a5200' }}>{t('planning.alerts.guide_medium_title')}</p>
             <p className="mt-1 text-sm text-neutral-900 leading-snug">{t('planning.alerts.guide_medium_body')}</p>
           </article>
           <article className="bg-white border border-neutral-100 rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md border-l-4 border-l-success ring-1 ring-success/20">
-            <p className="app-label uppercase tracking-wider">{t('planning.alerts.guide_low_title')}</p>
+            <p className="text-xs uppercase tracking-wider font-bold" style={{ color: '#0f5c40' }}>{t('planning.alerts.guide_low_title')}</p>
             <p className="mt-1 text-sm text-neutral-900 leading-snug">{t('planning.alerts.guide_low_body')}</p>
           </article>
         </div>
