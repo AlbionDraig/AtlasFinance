@@ -522,7 +522,7 @@ export default function SmartAlertsPage() {
                 <article key={subscription.key} className="rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/70 p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-sm font-medium text-neutral-900">{subscription.name}</p>
-                    <Badge variant={(getDaysToDate(subscription.next_due_date) ?? 999) <= 7 ? 'warning' : 'neutral'}>{formatIsoDate(subscription.next_due_date)}</Badge>
+                    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${ (getDaysToDate(subscription.next_due_date) ?? 999) <= 7 ? 'bg-[#f5bcbc] text-[#7a0505]' : (getDaysToDate(subscription.next_due_date) ?? 999) <= 30 ? 'bg-[#ffd98a] text-[#6b4000]' : 'bg-[#b8e3d4] text-[#0a4a32]' }`}>{formatIsoDate(subscription.next_due_date)}</span>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-neutral-700">
                     <p>{t('planning.alerts.sub_monthly')}</p>
@@ -593,9 +593,9 @@ export default function SmartAlertsPage() {
                       <td className="px-3 py-2.5 text-neutral-900 font-medium align-middle whitespace-nowrap">{formatCurrency(Number(subscription.monthly_estimate), 'COP')}</td>
                       <td className="px-3 py-2.5 text-neutral-900 font-medium align-middle whitespace-nowrap">{formatCurrency(Number(subscription.annual_cost), 'COP')}</td>
                       <td className="px-3 py-2.5 text-neutral-700 align-middle whitespace-nowrap">
-                        <Badge variant={(getDaysToDate(subscription.next_due_date) ?? 999) <= 7 ? 'warning' : 'neutral'}>
+                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${ (getDaysToDate(subscription.next_due_date) ?? 999) <= 7 ? 'bg-[#f5bcbc] text-[#7a0505]' : (getDaysToDate(subscription.next_due_date) ?? 999) <= 30 ? 'bg-[#ffd98a] text-[#6b4000]' : 'bg-[#b8e3d4] text-[#0a4a32]' }`}>
                           {formatIsoDate(subscription.next_due_date)}
-                        </Badge>
+                        </span>
                       </td>
                       <td className="px-3 py-2.5 text-center align-middle whitespace-nowrap">
                         <button
