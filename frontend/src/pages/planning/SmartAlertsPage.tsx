@@ -8,7 +8,7 @@ import PageSkeleton from '@/components/ui/PageSkeleton'
 import { useSmartAlertsData } from '@/hooks/useSmartAlertsData'
 import { trackUxEvent } from '@/lib/uxTelemetry'
 import { formatCurrency } from '@/lib/utils'
-import type { SmartAlertItem, SmartAlertsKpiItem } from '@/types'
+import type { SmartAlertItem } from '@/types'
 import ViewToggle from '@/components/ui/ViewToggle'
 
 const ALERT_PREFERENCES_KEY = 'atlasfinance.smartAlerts.preferences'
@@ -85,53 +85,6 @@ function getLocalizedAlertText(alert: SmartAlertItem, t: (key: string, options?:
   }
 }
 
-function getLocalizedKpiText(
-  kpi: SmartAlertsKpiItem,
-  t: (key: string, options?: Record<string, unknown>) => string,
-): { title: string; description: string; unit: string } {
-  const titleKey = `planning.alerts.kpi_${kpi.key}_title`
-  const descriptionKey = `planning.alerts.kpi_${kpi.key}_description`
-  const unitKey = `planning.alerts.kpi_unit_${kpi.unit}`
-
-  const localizedTitle = t(titleKey)
-  const localizedDescription = t(descriptionKey)
-  const localizedUnit = t(unitKey)
-
-  return {
-    title: localizedTitle === titleKey ? kpi.title : localizedTitle,
-    description: localizedDescription === descriptionKey ? kpi.description : localizedDescription,
-    unit: localizedUnit === unitKey ? kpi.unit : localizedUnit,
-  }
-}
-
-function getKpiCardVisuals(kpiKey: string): {
-  accent: string
-  value: string
-} {
-  if (kpiKey === 'users_activating_alerts') {
-    return {
-      accent: 'bg-brand',
-      value: 'text-brand',
-    }
-  }
-  if (kpiKey === 'reduction_of_omitted_charges') {
-    return {
-      accent: 'bg-warning',
-      value: 'text-warning-text',
-    }
-  }
-  if (kpiKey === 'subscription_cancellation_rate') {
-    return {
-      accent: 'bg-success',
-      value: 'text-success-text',
-    }
-  }
-  return {
-    accent: 'bg-neutral-100',
-    value: 'text-neutral-900',
-  }
-}
-
 function getSeverityClasses(severity: string): { chip: string; border: string; soft: string } {
   if (severity === 'high') {
     return { chip: 'bg-[#f5bcbc] text-[#7a0505]', border: 'border-l-brand', soft: 'bg-brand-light/40' }
@@ -173,6 +126,10 @@ export default function SmartAlertsPage() {
   )
 
   const detectedAlertsCount = data?.alerts.length ?? 0
+  const highPriorityAlertsCount = useMemo(
+    () => (data?.alerts ?? []).filter((alert) => alert.severity === 'high').length,
+    [data?.alerts],
+  )
   const preferenceFiltersHideAlerts = detectedAlertsCount > 0 && activeAlerts.length === 0
   const dueSoonSubscriptionsCount = useMemo(
     () => (data?.subscriptions ?? []).filter((subscription) => {
@@ -180,6 +137,56 @@ export default function SmartAlertsPage() {
       return days !== null && days >= 0 && days <= 7
     }).length,
     [data?.subscriptions],
+  )
+  const subscriptionsCount = data?.subscriptions.length ?? 0
+  const subscriptionsAnnualTotal = Number(data?.subscriptions_annual_total ?? 0)
+  const userKpis = useMemo(
+    () => [
+      {
+        key: 'high_priority_alerts',
+        title: t('planning.alerts.kpi_high_priority_alerts_title'),
+        description:
+          detectedAlertsCount > 0
+            ? t('planning.alerts.kpi_high_priority_alerts_subtitle', { total: detectedAlertsCount })
+            : t('planning.alerts.kpi_no_data_alerts_subtitle'),
+        value: String(highPriorityAlertsCount),
+        unit: t('planning.alerts.severity_high').toUpperCase(),
+        accent: 'bg-brand',
+        valueClass: 'text-brand',
+      },
+      {
+        key: 'due_payments',
+        title: t('planning.alerts.kpi_due_payments_title'),
+        description:
+          subscriptionsCount > 0
+            ? t('planning.alerts.kpi_due_payments_subtitle', { count: subscriptionsCount })
+            : t('planning.alerts.kpi_no_data_subscriptions_subtitle'),
+        value: String(dueSoonSubscriptionsCount),
+        unit: t('planning.alerts.due_soon_count', { count: dueSoonSubscriptionsCount }),
+        accent: 'bg-warning',
+        valueClass: 'text-warning-text',
+      },
+      {
+        key: 'annual_subscription_cost',
+        title: t('planning.alerts.kpi_annual_cost_title'),
+        description:
+          subscriptionsAnnualTotal > 0
+            ? t('planning.alerts.kpi_annual_cost_subtitle', { count: subscriptionsCount })
+            : t('planning.alerts.kpi_no_data_annual_subtitle'),
+        value: formatCurrency(subscriptionsAnnualTotal, 'COP'),
+        unit: 'COP',
+        accent: 'bg-success',
+        valueClass: 'text-success-text',
+      },
+    ],
+    [
+      detectedAlertsCount,
+      highPriorityAlertsCount,
+      dueSoonSubscriptionsCount,
+      subscriptionsCount,
+      subscriptionsAnnualTotal,
+      t,
+    ],
   )
   const hasDisabledPreferences = !preferences.budget || !preferences.reminders || !preferences.atypical
 
@@ -228,53 +235,27 @@ export default function SmartAlertsPage() {
         <p className="app-subtitle text-sm mt-0.5">{t('planning.alerts.subtitle')}</p>
       </div>
 
-      <section>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
-          <article className="group relative overflow-hidden rounded-2xl border border-warning/30 bg-gradient-to-b from-warning-bg/55 to-white p-4 md:p-5 shadow-sm ring-1 ring-warning/20 transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:border-warning/50 hover:shadow-md">
-            <div className="absolute left-0 right-0 top-0 h-1.5 bg-warning" />
-            <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-warning-bg blur-2xl" aria-hidden="true" />
-            <div className="relative flex items-start justify-between gap-2">
-              <p className="app-label uppercase tracking-wide text-warning-text">{t('planning.alerts.alerts_title')}</p>
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-warning text-white">
-                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
-                  <path d="M4 10h12M10 4v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </span>
-            </div>
-            <p className="relative mt-3 text-3xl leading-none font-medium text-warning-text">{activeAlerts.length}</p>
-            <p className="relative mt-2 text-xs text-neutral-400">{detectedAlertsCount} {t('planning.alerts.filter_all').toLowerCase()}</p>
-          </article>
-          <article className="group relative overflow-hidden rounded-2xl border border-success/30 bg-gradient-to-b from-success-bg/70 to-white p-4 md:p-5 shadow-sm ring-1 ring-success/20 transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:border-success/50 hover:shadow-md">
-            <div className="absolute left-0 right-0 top-0 h-1.5 bg-success" />
-            <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-success-bg blur-2xl" aria-hidden="true" />
-            <div className="relative flex items-start justify-between gap-2">
-              <p className="app-label uppercase tracking-wide text-success-text">{t('planning.alerts.subscriptions_title')}</p>
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-success text-white">
-                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
-                  <path d="M4 6h12M4 10h12M4 14h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </span>
-            </div>
-            <p className="relative mt-3 text-3xl leading-none font-medium text-success-text">{data?.subscriptions.length ?? 0}</p>
-            <p className="relative mt-2 text-xs text-neutral-400">{t('planning.alerts.next_7_days_count', { count: dueSoonSubscriptionsCount })}</p>
-          </article>
-          <article className="group relative overflow-hidden rounded-2xl border border-brand/35 bg-gradient-to-b from-brand-light/60 to-white p-4 md:p-5 shadow-sm ring-1 ring-brand/20 transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:border-brand/55 hover:shadow-md">
-            <div className="absolute left-0 right-0 top-0 h-1.5 bg-brand" />
-            <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-brand-light/80 blur-2xl" aria-hidden="true" />
-            <div className="relative flex items-start justify-between gap-2">
-              <p className="app-label uppercase tracking-wide text-brand-text">{t('planning.alerts.annual_total')}</p>
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-light text-brand">
-                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
-                  <path d="M10 3v14M7 6.5C7 5.12 8.34 4 10 4s3 1.12 3 2.5S11.66 9 10 9s-3 1.12-3 2.5S8.34 14 10 14s3-1.12 3-2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </span>
-            </div>
-            <p className="relative mt-3 text-[1.85rem] leading-none font-medium tracking-tight text-brand-text">
-              {formatCurrency(Number(data?.subscriptions_annual_total ?? 0), 'COP')}
-            </p>
-          </article>
-        </div>
-      </section>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+        {userKpis.map((kpi) => {
+          return (
+            <article key={kpi.key} className="app-card relative p-5 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
+              <div className={`absolute top-0 left-0 right-0 h-1.5 ${kpi.accent}`} />
+              <div className="flex items-center gap-1.5 mb-1">
+                <p className="app-label uppercase tracking-wider">{kpi.title}</p>
+              </div>
+
+              <p className={`text-2xl font-medium leading-none ${kpi.valueClass}`}>{kpi.value}</p>
+
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <p className="app-subtitle text-xs leading-snug">{kpi.description}</p>
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-700 uppercase tracking-wide">
+                  {kpi.unit}
+                </span>
+              </div>
+            </article>
+          )
+        })}
+      </div>
 
       <section className="space-y-2">
         <FilterCard
@@ -621,32 +602,6 @@ export default function SmartAlertsPage() {
         )}
       </section>
 
-      <section className="app-card rounded-2xl p-4 md:p-5 space-y-3">
-        <h2 className="app-section-title">{t('planning.alerts.kpis_title')}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {(data?.kpis ?? []).map((kpi) => {
-            const localized = getLocalizedKpiText(kpi, t)
-            const visuals = getKpiCardVisuals(kpi.key)
-            return (
-              <article key={kpi.key} className="app-card relative p-5 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
-                <div className={`absolute top-0 left-0 right-0 h-1.5 ${visuals.accent}`} />
-                <div className="flex items-center gap-1.5 mb-1">
-                  <p className="app-label uppercase tracking-wider">{localized.title}</p>
-                </div>
-
-                <p className={`text-2xl font-medium leading-none ${visuals.value}`}>{kpi.value}</p>
-
-                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                  <p className="app-subtitle text-xs leading-snug">{localized.description}</p>
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-700 uppercase tracking-wide">
-                    {localized.unit}
-                  </span>
-                </div>
-              </article>
-            )
-          })}
-        </div>
-      </section>
     </div>
   )
 }
