@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import Badge from '@/components/ui/Badge'
+import FilterCard from '@/components/ui/FilterCard'
 import InlineAlert from '@/components/ui/InlineAlert'
 import PageSkeleton from '@/components/ui/PageSkeleton'
 import { useSmartAlertsData } from '@/hooks/useSmartAlertsData'
@@ -17,8 +18,6 @@ interface AlertPreferences {
   reminders: boolean
   atypical: boolean
 }
-
-type AlertSeverityFilter = 'all' | 'high' | 'medium' | 'low'
 
 function loadPreferences(): AlertPreferences {
   if (typeof window === 'undefined') return { budget: true, reminders: true, atypical: true }
@@ -165,7 +164,6 @@ export default function SmartAlertsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [preferences, setPreferences] = useState<AlertPreferences>(loadPreferences)
-  const [severityFilter, setSeverityFilter] = useState<AlertSeverityFilter>('all')
   const [alertViewMode, setAlertViewMode] = useState<'grid' | 'table'>('grid')
   const { data, loading } = useSmartAlertsData()
 
@@ -173,27 +171,9 @@ export default function SmartAlertsPage() {
     () => (data?.alerts ?? []).filter((alert) => isAlertEnabled(alert, preferences)),
     [data?.alerts, preferences],
   )
-  const filteredAlerts = useMemo(
-    () => (
-      severityFilter === 'all'
-        ? activeAlerts
-        : activeAlerts.filter((alert) => alert.severity === severityFilter)
-    ),
-    [activeAlerts, severityFilter],
-  )
-  const severityCounts = useMemo(
-    () => ({
-      all: activeAlerts.length,
-      high: activeAlerts.filter((alert) => alert.severity === 'high').length,
-      medium: activeAlerts.filter((alert) => alert.severity === 'medium').length,
-      low: activeAlerts.filter((alert) => alert.severity === 'low').length,
-    }),
-    [activeAlerts],
-  )
 
   const detectedAlertsCount = data?.alerts.length ?? 0
   const preferenceFiltersHideAlerts = detectedAlertsCount > 0 && activeAlerts.length === 0
-  const severityFilterHideAlerts = activeAlerts.length > 0 && filteredAlerts.length === 0
   const dueSoonSubscriptionsCount = useMemo(
     () => (data?.subscriptions ?? []).filter((subscription) => {
       const days = getDaysToDate(subscription.next_due_date)
@@ -201,16 +181,17 @@ export default function SmartAlertsPage() {
     }).length,
     [data?.subscriptions],
   )
+  const hasDisabledPreferences = !preferences.budget || !preferences.reminders || !preferences.atypical
 
-  const togglePreference = (key: keyof AlertPreferences) => {
-    const next = { ...preferences, [key]: !preferences[key] }
+  const setPreference = (key: keyof AlertPreferences, enabled: boolean) => {
+    const next = { ...preferences, [key]: enabled }
     setPreferences(next)
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(ALERT_PREFERENCES_KEY, JSON.stringify(next))
     }
     trackUxEvent('smart_alerts_toggle_changed', {
       key,
-      enabled: next[key],
+      enabled,
     })
   }
 
@@ -247,61 +228,98 @@ export default function SmartAlertsPage() {
         <p className="app-subtitle text-sm mt-0.5">{t('planning.alerts.subtitle')}</p>
       </div>
 
-      <section className="app-card rounded-2xl p-4 md:p-5">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <article className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/80 p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
-            <div className="absolute left-0 right-0 top-0 h-1.5 bg-neutral-100" />
-            <p className="app-label uppercase tracking-wide">{t('planning.alerts.alerts_title')}</p>
-            <p className="mt-1 text-2xl font-medium text-neutral-900">{filteredAlerts.length}</p>
-            <p className="mt-1 text-xs text-neutral-400">{detectedAlertsCount} {t('planning.alerts.filter_all').toLowerCase()}</p>
+      <section>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+          <article className="group relative overflow-hidden rounded-2xl border border-warning/30 bg-gradient-to-b from-warning-bg/55 to-white p-4 md:p-5 shadow-sm ring-1 ring-warning/20 transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:border-warning/50 hover:shadow-md">
+            <div className="absolute left-0 right-0 top-0 h-1.5 bg-warning" />
+            <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-warning-bg blur-2xl" aria-hidden="true" />
+            <div className="relative flex items-start justify-between gap-2">
+              <p className="app-label uppercase tracking-wide text-warning-text">{t('planning.alerts.alerts_title')}</p>
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-warning text-white">
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+                  <path d="M4 10h12M10 4v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </span>
+            </div>
+            <p className="relative mt-3 text-3xl leading-none font-medium text-warning-text">{activeAlerts.length}</p>
+            <p className="relative mt-2 text-xs text-neutral-400">{detectedAlertsCount} {t('planning.alerts.filter_all').toLowerCase()}</p>
           </article>
-          <article className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/80 p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
-            <div className="absolute left-0 right-0 top-0 h-1.5 bg-warning-bg" />
-            <p className="app-label uppercase tracking-wide">{t('planning.alerts.subscriptions_title')}</p>
-            <p className="mt-1 text-2xl font-medium text-neutral-900">{data?.subscriptions.length ?? 0}</p>
-            <p className="mt-1 text-xs text-neutral-400">{dueSoonSubscriptionsCount} próximos 7 días</p>
+          <article className="group relative overflow-hidden rounded-2xl border border-success/30 bg-gradient-to-b from-success-bg/70 to-white p-4 md:p-5 shadow-sm ring-1 ring-success/20 transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:border-success/50 hover:shadow-md">
+            <div className="absolute left-0 right-0 top-0 h-1.5 bg-success" />
+            <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-success-bg blur-2xl" aria-hidden="true" />
+            <div className="relative flex items-start justify-between gap-2">
+              <p className="app-label uppercase tracking-wide text-success-text">{t('planning.alerts.subscriptions_title')}</p>
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-success text-white">
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+                  <path d="M4 6h12M4 10h12M4 14h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </span>
+            </div>
+            <p className="relative mt-3 text-3xl leading-none font-medium text-success-text">{data?.subscriptions.length ?? 0}</p>
+            <p className="relative mt-2 text-xs text-neutral-400">{t('planning.alerts.next_7_days_count', { count: dueSoonSubscriptionsCount })}</p>
           </article>
-          <article className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-gradient-to-b from-brand-light/35 to-white p-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ring-1 ring-brand/20">
+          <article className="group relative overflow-hidden rounded-2xl border border-brand/35 bg-gradient-to-b from-brand-light/60 to-white p-4 md:p-5 shadow-sm ring-1 ring-brand/20 transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:border-brand/55 hover:shadow-md">
             <div className="absolute left-0 right-0 top-0 h-1.5 bg-brand" />
-            <p className="app-label uppercase tracking-wide">{t('planning.alerts.annual_total')}</p>
-            <p className="mt-1 text-xl font-medium text-neutral-900">
+            <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-brand-light/80 blur-2xl" aria-hidden="true" />
+            <div className="relative flex items-start justify-between gap-2">
+              <p className="app-label uppercase tracking-wide text-brand-text">{t('planning.alerts.annual_total')}</p>
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-light text-brand">
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+                  <path d="M10 3v14M7 6.5C7 5.12 8.34 4 10 4s3 1.12 3 2.5S11.66 9 10 9s-3 1.12-3 2.5S8.34 14 10 14s3-1.12 3-2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </span>
+            </div>
+            <p className="relative mt-3 text-[1.85rem] leading-none font-medium tracking-tight text-brand-text">
               {formatCurrency(Number(data?.subscriptions_annual_total ?? 0), 'COP')}
             </p>
           </article>
         </div>
       </section>
 
-      <section className="app-card rounded-2xl p-4 md:p-5 space-y-3">
-        <h2 className="app-section-title">{t('planning.alerts.switches_title')}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {[
-            { key: 'budget', label: t('planning.alerts.switch_budget') },
-            { key: 'reminders', label: t('planning.alerts.switch_reminders') },
-            { key: 'atypical', label: t('planning.alerts.switch_atypical') },
-          ].map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => togglePreference(item.key as keyof AlertPreferences)}
-              className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left shadow-sm transition-[transform,box-shadow,border-color,background-color] hover:-translate-y-0.5 hover:shadow-md ${preferences[item.key as keyof AlertPreferences] ? 'border-neutral-100 bg-gradient-to-b from-brand-light/30 to-white ring-1 ring-brand/20' : 'border-neutral-100 bg-gradient-to-b from-white to-neutral-50/70 hover:border-neutral-400'}`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-neutral-700">{item.label}</span>
-                <Badge variant={preferences[item.key as keyof AlertPreferences] ? 'positive' : 'neutral'}>
-                  {preferences[item.key as keyof AlertPreferences] ? t('planning.alerts.enabled') : t('planning.alerts.disabled')}
-                </Badge>
+      <section className="space-y-2">
+        <FilterCard
+          activeFilters={[]}
+          onReset={undefined}
+          className="gap-3"
+        >
+          <div className="w-full space-y-2">
+            <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center">
+              {t('planning.alerts.switches_title')}
+            </span>
+            <div className="flex w-full flex-wrap items-center gap-2 md:flex-nowrap">
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { key: 'budget' as const, label: t('planning.alerts.switch_budget') },
+                  { key: 'reminders' as const, label: t('planning.alerts.switch_reminders') },
+                  { key: 'atypical' as const, label: t('planning.alerts.switch_atypical') },
+                ].map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setPreference(item.key, !preferences[item.key])}
+                    aria-pressed={preferences[item.key]}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2 ${
+                      preferences[item.key]
+                        ? 'bg-brand text-white hover:bg-brand-hover'
+                        : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
               </div>
-              <span
-                className={`inline-flex h-5 w-9 rounded-full p-0.5 transition-colors ${preferences[item.key as keyof AlertPreferences] ? 'bg-brand' : 'bg-neutral-100'}`}
-                aria-hidden="true"
-              >
-                <span
-                  className={`h-4 w-4 rounded-full bg-white shadow transition-transform ${preferences[item.key as keyof AlertPreferences] ? 'translate-x-4' : 'translate-x-0'}`}
-                />
-              </span>
-            </button>
-          ))}
-        </div>
+              {hasDisabledPreferences && (
+                <button
+                  type="button"
+                  onClick={enableAllAlertTypes}
+                  className="md:ml-auto rounded-md border border-brand bg-brand px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-brand-hover hover:border-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2"
+                >
+                  {t('planning.alerts.enable_all')}
+                </button>
+              )}
+            </div>
+          </div>
+        </FilterCard>
       </section>
 
       <section className="app-card rounded-2xl p-4 md:p-5 space-y-3">
@@ -326,61 +344,16 @@ export default function SmartAlertsPage() {
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="app-section-title">{t('planning.alerts.alerts_title')}</h2>
-          <p className="text-xs text-neutral-400">
-            {filteredAlerts.length} / {activeAlerts.length}
-          </p>
+          <Badge variant="neutral">{t('planning.alerts.alerts_count', { count: activeAlerts.length })}</Badge>
         </div>
 
-        {severityCounts.high > 0 && (
-          <InlineAlert
-            variant="warning"
-            message={`${severityCounts.high} ${t('planning.alerts.filter_high')} · ${t('planning.alerts.quick_filter_example_high')}`}
-          />
-        )}
-
-        <div className="app-card rounded-2xl bg-gradient-to-b from-white to-neutral-50/60 p-2 md:p-3 ring-1 ring-neutral-100/70">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2" role="tablist" aria-label={t('planning.alerts.quick_filters_title')}>
-            {[
-              { key: 'all', label: t('planning.alerts.filter_all'), example: t('planning.alerts.quick_filter_example_all') },
-              { key: 'high', label: t('planning.alerts.filter_high'), example: t('planning.alerts.quick_filter_example_high') },
-              { key: 'medium', label: t('planning.alerts.filter_medium'), example: t('planning.alerts.quick_filter_example_medium') },
-              { key: 'low', label: t('planning.alerts.filter_low'), example: t('planning.alerts.quick_filter_example_low') },
-            ].map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                role="tab"
-                aria-selected={severityFilter === item.key}
-                onClick={() => setSeverityFilter(item.key as AlertSeverityFilter)}
-                className={`rounded-xl px-3 py-2 text-left shadow-sm transition-all ${
-                  severityFilter === item.key
-                    ? 'bg-brand text-white shadow-md ring-2 ring-brand-light'
-                    : 'border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/70 text-neutral-700 hover:-translate-y-0.5 hover:border-brand hover:text-brand hover:shadow-md'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium">{item.label}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] ${severityFilter === item.key ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-600'}`}>
-                    {severityCounts[item.key as AlertSeverityFilter]}
-                  </span>
-                </div>
-                <p className={`mt-1 text-[11px] ${severityFilter === item.key ? 'text-white/90' : 'text-neutral-500'}`}>
-                  {item.example}
-                </p>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {filteredAlerts.length === 0 && (
+        {activeAlerts.length === 0 && (
           <div className="space-y-2">
             <InlineAlert
               message={
                 preferenceFiltersHideAlerts
                   ? t('planning.alerts.hidden_by_filters')
-                  : severityFilterHideAlerts
-                    ? t('planning.alerts.hidden_by_severity_filter')
-                    : t('planning.alerts.empty_alerts')
+                  : t('planning.alerts.empty_alerts')
               }
               variant="info"
             />
@@ -396,7 +369,7 @@ export default function SmartAlertsPage() {
           </div>
         )}
 
-        {filteredAlerts.length > 0 && (
+        {activeAlerts.length > 0 && (
           <div className="flex items-center justify-start gap-2 -mx-2 mb-2">
             <ViewToggle
               value={alertViewMode}
@@ -411,7 +384,7 @@ export default function SmartAlertsPage() {
 
         {alertViewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {filteredAlerts.map((alert, index) => {
+          {activeAlerts.map((alert, index) => {
           const action = resolveAlertAction(alert)
           const severityUi = getSeverityClasses(alert.severity)
 
@@ -458,32 +431,43 @@ export default function SmartAlertsPage() {
         </div>        ) : (
           <div className="app-card rounded-2xl bg-gradient-to-b from-white to-neutral-50/70 p-3 ring-1 ring-neutral-100/70">
             <div className="app-table-wrap overflow-x-auto">
-              <table className="app-table text-sm">
-                <thead>
+              <table className="app-table smart-alerts-table table-auto text-sm min-w-[880px]">
+                <colgroup>
+                  <col className="w-[10%]" />
+                  <col className="w-[21%]" />
+                  <col className="w-[32%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[12%]" />
+                </colgroup>
+                <thead className="bg-brand text-white">
                   <tr>
-                    <th className="px-3 py-2 text-center font-medium align-middle whitespace-nowrap">{t('planning.alerts.severity_label')}</th>
-                    <th className="px-3 py-2 text-center font-medium align-middle">{t('common.title')}</th>
-                    <th className="px-3 py-2 text-center font-medium align-middle max-w-xs">{t('common.detail')}</th>
-                    <th className="px-3 py-2 text-center font-medium align-middle">{t('common.amount')}</th>
-                    <th className="px-3 py-2 text-center font-medium align-middle whitespace-nowrap">{t('common.due_date')}</th>
-                    <th className="px-3 py-2 text-center font-medium align-middle">{t('common.action')}</th>
+                    <th className="px-3 py-2.5 text-center font-medium align-middle whitespace-nowrap">{t('planning.alerts.severity_label')}</th>
+                    <th className="px-3 py-2.5 text-center font-medium align-middle whitespace-nowrap">{t('common.title')}</th>
+                    <th className="px-3 py-2.5 text-center font-medium align-middle">{t('common.detail')}</th>
+                    <th className="col-amount px-3 py-2.5 text-center font-medium align-middle whitespace-nowrap">{t('common.amount')}</th>
+                    <th className="col-due px-3 py-2.5 text-center font-medium align-middle whitespace-nowrap">{t('planning.alerts.due_short')}</th>
+                    <th className="px-3 py-2.5 text-center font-medium align-middle whitespace-nowrap">{t('common.action')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAlerts.map((alert, index) => {
+                  {activeAlerts.map((alert, index) => {
                     const action = resolveAlertAction(alert)
                     const severityUi = getSeverityClasses(alert.severity)
                     return (
-                      <tr key={`${alert.code}-${alert.transaction_id ?? index}`}>
-                        <td className="px-3 py-2">
+                      <tr
+                        key={`${alert.code}-${alert.transaction_id ?? index}`}
+                        className={`border-b border-neutral-100 transition-colors hover:bg-brand-light/25 ${index % 2 === 0 ? 'bg-white' : 'bg-neutral-50/60'}`}
+                      >
+                        <td className="px-3 py-2.5 text-center align-middle">
                           <Badge variant={severityUi.badge}>
                             {getLocalizedSeverityLabel(alert.severity, t)}
                           </Badge>
                         </td>
-                        <td className="px-3 py-2 text-neutral-900 font-medium">{getLocalizedAlertText(alert, t).title}</td>
-                        <td className="px-3 py-2 text-neutral-700 text-sm max-w-xs truncate" title={getLocalizedAlertText(alert, t).detail}>{getLocalizedAlertText(alert, t).detail}</td>
-                        <td className="px-3 py-2 text-neutral-900 font-medium">{alert.amount ? formatCurrency(Number(alert.amount), 'COP') : '-'}</td>
-                        <td className="px-3 py-2 text-neutral-700">
+                        <td className="px-3 py-2.5 text-neutral-900 font-medium align-middle">{getLocalizedAlertText(alert, t).title}</td>
+                        <td className="px-3 py-2.5 text-neutral-700 text-sm leading-relaxed" title={getLocalizedAlertText(alert, t).detail}>{getLocalizedAlertText(alert, t).detail}</td>
+                        <td className="col-amount px-3 py-2.5 text-neutral-900 font-medium align-middle whitespace-nowrap">{alert.amount ? formatCurrency(Number(alert.amount), 'COP') : '-'}</td>
+                        <td className="col-due px-3 py-2.5 text-neutral-700 align-middle whitespace-nowrap">
                           {alert.due_date ? (
                             <Badge variant={alert.severity === 'high' ? 'warning' : 'neutral'}>
                               {formatIsoDate(alert.due_date)}
@@ -492,7 +476,7 @@ export default function SmartAlertsPage() {
                             <span className="text-xs text-neutral-500">{t('planning.alerts.no_due_date')}</span>
                           )}
                         </td>
-                        <td className="px-3 py-2 text-center">
+                        <td className="px-3 py-2.5 text-center align-middle whitespace-nowrap">
                           {action && (
                             <button
                               type="button"
@@ -500,7 +484,7 @@ export default function SmartAlertsPage() {
                                 trackUxEvent('smart_alert_action_clicked', { code: alert.code, to: action.to })
                                 navigate(action.to)
                               }}
-                              className="rounded-md border border-neutral-100 bg-white px-2 py-1 text-xs font-medium text-neutral-700 transition-all hover:border-brand hover:text-brand hover:shadow-sm"
+                              className="rounded-md border border-neutral-100 bg-white px-2.5 py-1.5 text-xs font-medium text-neutral-700 transition-all hover:border-brand hover:text-brand hover:shadow-sm"
                             >
                               {action.label}
                             </button>
@@ -520,10 +504,7 @@ export default function SmartAlertsPage() {
           <h2 className="app-section-title">{t('planning.alerts.subscriptions_title')}</h2>
           <div className="flex items-center gap-2">
             <Badge variant="neutral">{data?.subscriptions.length ?? 0}</Badge>
-            <Badge variant={dueSoonSubscriptionsCount > 0 ? 'warning' : 'positive'}>{dueSoonSubscriptionsCount} próximos</Badge>
-            <p className="text-sm text-neutral-700">
-              {t('planning.alerts.annual_total')}: <span className="font-medium text-neutral-900">{formatCurrency(Number(data?.subscriptions_annual_total ?? 0), 'COP')}</span>
-            </p>
+            <Badge variant={dueSoonSubscriptionsCount > 0 ? 'warning' : 'positive'}>{t('planning.alerts.due_soon_count', { count: dueSoonSubscriptionsCount })}</Badge>
           </div>
         </div>
 
@@ -552,7 +533,7 @@ export default function SmartAlertsPage() {
                   </div>
                   <div className="mt-3">
                     <div className="flex items-center justify-between text-[11px] text-neutral-500">
-                      <span>Confianza</span>
+                      <span>{t('planning.alerts.confidence_label')}</span>
                       <span>{Math.round(Number(subscription.confidence) * 100)}%</span>
                     </div>
                     <div className="mt-1 h-1.5 w-full rounded-full bg-neutral-100">

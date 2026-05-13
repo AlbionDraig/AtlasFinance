@@ -228,6 +228,19 @@ body {
     white-space: normal !important;
   }
 
+  .app-table.smart-alerts-table thead th {
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+  }
+
+  .app-table.smart-alerts-table .col-amount,
+  .app-table.smart-alerts-table .col-due {
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+  }
+
   @media (max-width: 1024px) {
     .app-table th,
     .app-table td {
