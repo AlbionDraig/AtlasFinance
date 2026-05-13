@@ -342,13 +342,12 @@ export default function SmartAlertsPage() {
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="app-section-title">{t('planning.alerts.alerts_title')}</h2>
-          <Badge variant="neutral">{t('planning.alerts.alerts_count', { count: activeAlerts.length })}</Badge>
-        </div>
-
         {activeAlerts.length === 0 && (
-          <div className="space-y-2">
+          <div className="app-card rounded-2xl p-4 md:p-5 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="app-section-title">{t('planning.alerts.alerts_title')}</h2>
+              <Badge variant="neutral">{t('planning.alerts.alerts_count', { count: activeAlerts.length })}</Badge>
+            </div>
             <InlineAlert
               message={
                 preferenceFiltersHideAlerts
@@ -361,7 +360,7 @@ export default function SmartAlertsPage() {
               <button
                 type="button"
                 onClick={enableAllAlertTypes}
-                className="app-btn-secondary"
+                className="rounded-md border border-brand bg-brand px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-brand-hover hover:border-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2"
               >
                 {t('planning.alerts.enable_all')}
               </button>
@@ -370,19 +369,23 @@ export default function SmartAlertsPage() {
         )}
 
         {activeAlerts.length > 0 && (
-          <div className="flex items-center justify-start gap-2 -mx-2 mb-2">
-            <ViewToggle
-              value={alertViewMode}
-              onChange={(m) => setAlertViewMode(m as 'grid' | 'table')}
-              options={[
-                { value: 'grid', labelKey: 'common.view_cards', icon: '⊞' },
-                { value: 'table', labelKey: 'common.view_table', icon: '≡' },
-              ]}
-            />
-          </div>
-        )}
+          <div className="app-card rounded-2xl bg-gradient-to-b from-white to-neutral-50/70 p-3 ring-1 ring-neutral-100/70 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="app-section-title">{t('planning.alerts.alerts_title')}</h2>
+              <Badge variant="neutral">{t('planning.alerts.alerts_count', { count: activeAlerts.length })}</Badge>
+            </div>
+            <div className="flex items-center justify-start gap-2">
+              <ViewToggle
+                value={alertViewMode}
+                onChange={(m) => setAlertViewMode(m as 'grid' | 'table')}
+                options={[
+                  { value: 'grid', labelKey: 'common.view_cards', icon: '⊞' },
+                  { value: 'table', labelKey: 'common.view_table', icon: '≡' },
+                ]}
+              />
+            </div>
 
-        {alertViewMode === 'grid' ? (
+            {alertViewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {activeAlerts.map((alert, index) => {
           const action = resolveAlertAction(alert)
@@ -429,7 +432,6 @@ export default function SmartAlertsPage() {
           )
           })}
         </div>        ) : (
-          <div className="app-card rounded-2xl bg-gradient-to-b from-white to-neutral-50/70 p-3 ring-1 ring-neutral-100/70">
             <div className="app-table-wrap overflow-x-auto">
               <table className="app-table smart-alerts-table table-auto text-sm min-w-[880px]">
                 <colgroup>
@@ -496,6 +498,7 @@ export default function SmartAlertsPage() {
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         )}      </section>
 
