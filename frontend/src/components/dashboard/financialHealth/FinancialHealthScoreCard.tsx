@@ -1,6 +1,6 @@
 ﻿import type { FinancialHealthSnapshot } from '@/types'
 import { scoreLevelLabel } from './helpers'
-import { FinancialHealthHelpTooltip } from './shared'
+import { FinancialHealthHelpTooltip, FinancialHealthStatusIcon } from './shared'
 import type { DeltaBadge } from './types'
 
 interface FinancialHealthScoreCardProps {
@@ -74,13 +74,6 @@ export default function FinancialHealthScoreCard({
     neutral: 'bg-neutral-50 text-neutral-700 ring-neutral-100',
   }
 
-  const toneIcon = {
-    positive: '▲',
-    negative: '▼',
-    flat: '●',
-    neutral: '●',
-  }
-
   if (compact) {
     return (
       <div className="app-card w-full ring-2 ring-brand/20 relative overflow-hidden bg-gradient-to-br from-brand-light/70 via-white to-white">
@@ -121,7 +114,7 @@ export default function FinancialHealthScoreCard({
                   </span>
                   <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500 leading-tight">{card.label}</p>
                   <p className={`inline-flex items-center gap-1 text-base font-bold leading-tight tabular-nums ${toneClass[card.tone]}`}>
-                    <span aria-hidden="true" className="text-[11px] leading-none">{toneIcon[card.tone]}</span>
+                    <FinancialHealthStatusIcon tone={card.tone} className="h-3 w-3" />
                     <span>{card.value}</span>
                   </p>
                 </div>
@@ -137,7 +130,7 @@ export default function FinancialHealthScoreCard({
                 </span>
                 <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500 leading-tight">{card.label}</p>
                 <p className={`inline-flex items-center gap-1 text-base font-bold leading-tight tabular-nums ${toneClass[card.tone]}`}>
-                  <span aria-hidden="true" className="text-[11px] leading-none">{toneIcon[card.tone]}</span>
+                  <FinancialHealthStatusIcon tone={card.tone} className="h-3 w-3" />
                   <span>{card.value}</span>
                 </p>
               </div>
@@ -193,7 +186,7 @@ export default function FinancialHealthScoreCard({
             </span>
             <p className="app-label text-[10px] uppercase tracking-wider leading-tight">{card.label}</p>
             <p className={`inline-flex items-center gap-1 text-sm font-bold leading-tight tabular-nums ${toneClass[card.tone]}`}>
-              <span aria-hidden="true" className="text-[11px] leading-none">{toneIcon[card.tone]}</span>
+              <FinancialHealthStatusIcon tone={card.tone} className="h-3 w-3" />
               <span>{card.value}</span>
             </p>
             <span className={`mt-0.5 inline-flex h-1.5 w-10 rounded-full ${toneBadgeClass[card.tone]}`} />

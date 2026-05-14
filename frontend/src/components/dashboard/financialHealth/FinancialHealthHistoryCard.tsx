@@ -11,7 +11,7 @@ import {
 } from 'recharts'
 import { CHART_GRID, CHART_TICK, CHART_TOOLTIP_STYLE } from '@/lib/chartTheme'
 import { historyChangeLabel, historyDeltaTone } from './helpers'
-import { FinancialHealthHelpTooltip } from './shared'
+import { FinancialHealthHelpTooltip, FinancialHealthStatusIcon } from './shared'
 import type { HealthHistoryPointView } from './types'
 
 interface FinancialHealthHistoryCardProps {
@@ -49,16 +49,16 @@ export default function FinancialHealthHistoryCard({
     return 'border-l-4 border-l-warning'
   }
 
-  const scoreStatusIcon = (score: number): string => {
-    if (score >= 80) return '▲'
-    if (score >= 60) return '●'
-    return '▼'
+  const scoreStatusTone = (score: number): 'positive' | 'flat' | 'negative' => {
+    if (score >= 80) return 'positive'
+    if (score >= 60) return 'flat'
+    return 'negative'
   }
 
-  const directionIcon = (direction: 'up' | 'down' | 'stable'): string => {
-    if (direction === 'up') return '▲'
-    if (direction === 'down') return '▼'
-    return '●'
+  const directionTone = (direction: 'up' | 'down' | 'stable'): 'positive' | 'flat' | 'negative' => {
+    if (direction === 'up') return 'positive'
+    if (direction === 'down') return 'negative'
+    return 'flat'
   }
 
   return (
@@ -134,7 +134,7 @@ export default function FinancialHealthHistoryCard({
                       {point.label}
                     </span>
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${scoreBadgeClass(point.score)}`}>
-                      <span aria-hidden="true" className="text-[9px] leading-none">{scoreStatusIcon(point.score)}</span>
+                      <FinancialHealthStatusIcon tone={scoreStatusTone(point.score)} className="h-2.5 w-2.5" />
                       <span>{point.score}/100</span>
                     </span>
                   </div>
@@ -143,7 +143,7 @@ export default function FinancialHealthHistoryCard({
                   </p>
                 </div>
                 <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 shadow-sm ${deltaBadgeClass(point.change_direction)} ${historyDeltaTone(point.change_direction)}`}>
-                  <span aria-hidden="true" className="text-[10px] leading-none">{directionIcon(point.change_direction)}</span>
+                  <FinancialHealthStatusIcon tone={directionTone(point.change_direction)} className="h-3 w-3" />
                   <span>{formatScoreDelta(point.delta)}</span>
                 </span>
               </div>

@@ -1,6 +1,8 @@
 import AppTooltip from '@/components/ui/Tooltip'
 import type { HealthBadgeVariant } from './types'
 
+type FinancialHealthTone = 'positive' | 'flat' | 'negative' | 'neutral'
+
 interface BadgeProps {
   text: string
   variant: HealthBadgeVariant
@@ -46,5 +48,37 @@ export function FinancialHealthHelpTooltip({ text, compact = false }: { text: st
         ?
       </span>
     </AppTooltip>
+  )
+}
+
+interface FinancialHealthStatusIconProps {
+  tone: FinancialHealthTone
+  className?: string
+}
+
+export function FinancialHealthStatusIcon({
+  tone,
+  className = 'h-3.5 w-3.5',
+}: FinancialHealthStatusIconProps) {
+  if (tone === 'positive') {
+    return (
+      <svg viewBox="0 0 12 12" aria-hidden="true" className={className}>
+        <path d="M2 8 L6 4 L10 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
+  if (tone === 'negative') {
+    return (
+      <svg viewBox="0 0 12 12" aria-hidden="true" className={className}>
+        <path d="M2 4 L6 8 L10 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg viewBox="0 0 12 12" aria-hidden="true" className={className}>
+      <circle cx="6" cy="6" r="2.1" fill="currentColor" />
+    </svg>
   )
 }
