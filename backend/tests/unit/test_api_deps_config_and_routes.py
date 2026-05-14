@@ -54,6 +54,11 @@ def test_backend_cors_origins_list_supports_csv_and_json_and_cache_clear():
     config_module.get_settings.cache_clear()
 
 
+def test_auth_token_defaults_are_long_enough_for_normal_spa_use():
+    assert config_module.Settings().access_token_expire_minutes >= 480
+    assert config_module.Settings().refresh_token_expire_minutes >= 10080
+
+
 def test_get_token_from_bearer_or_cookie_prefers_bearer_and_requires_one():
     assert deps_module.get_token_from_bearer_or_cookie("bearer-token", "cookie-token") == "bearer-token"
     assert deps_module.get_token_from_bearer_or_cookie(None, "cookie-token") == "cookie-token"

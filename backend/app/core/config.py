@@ -8,6 +8,7 @@ import json
 import os
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,8 +32,10 @@ class Settings(BaseSettings):
     secret_key: str = "change-this-in-production"
     algorithm: str = "HS256"
     # Leídas con os.getenv para soportar override sin reiniciar pydantic settings cache.
-    access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 120))
-    refresh_token_expire_minutes: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_MINUTES", 1440))  # 1 día: balance entre UX y exposición.
+    # Si un entorno inyecta valores demasiado bajos, aplicamos un mínimo para evitar sesiones
+    # que se sientan arbitrariamente cortas en la SPA.
+    access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 480))
+    refresh_token_expire_minutes: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_MINUTES", 10080))  # 7 días: balance entre UX y exposición.
 
     default_currency: str = "COP"
     # Rate limits por IP para endpoints sensibles (slowapi formato "N/segundos|minutos|hour").
@@ -83,6 +86,16 @@ class Settings(BaseSettings):
 
     # extra="ignore" evita que .env con vars sobrantes (de otros servicios) rompa el arranque.
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    @field_validator("access_token_expire_minutes", mode="before")
+    @classmethod
+    def _enforce_access_token_minimum(cls, value: object) -> int:
+        return max(int(value), 480)
+
+    @field_validator("refresh_token_expire_minutes", mode="before")
+    @classmethod
+    def _enforce_refresh_token_minimum(cls, value: object) -> int:
+        return max(int(value), 10080)
 
 
 @lru_cache
