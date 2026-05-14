@@ -62,16 +62,23 @@ export default function FinancialHealthScoreCard({
 
   const toneClass = {
     positive: 'text-success',
-    negative: 'text-warning',
-    flat: 'text-neutral-700',
+    negative: 'text-brand',
+    flat: 'text-warning',
     neutral: 'text-neutral-900',
   }
 
   const toneBadgeClass = {
     positive: 'bg-success-bg/70 text-success-text ring-success/10',
-    negative: 'bg-warning-bg/70 text-warning-text ring-warning/10',
-    flat: 'bg-neutral-100 text-neutral-700 ring-neutral-200',
+    negative: 'bg-brand-light/70 text-brand-text ring-brand/20',
+    flat: 'bg-warning-bg/70 text-warning-text ring-warning/20',
     neutral: 'bg-neutral-50 text-neutral-700 ring-neutral-100',
+  }
+
+  const toneIcon = {
+    positive: '▲',
+    negative: '▼',
+    flat: '●',
+    neutral: '●',
   }
 
   if (compact) {
@@ -113,7 +120,10 @@ export default function FinancialHealthScoreCard({
                     <FinancialHealthHelpTooltip text={card.help} compact />
                   </span>
                   <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500 leading-tight">{card.label}</p>
-                  <p className={`text-base font-bold leading-tight tabular-nums ${toneClass[card.tone]}`}>{card.value}</p>
+                  <p className={`inline-flex items-center gap-1 text-base font-bold leading-tight tabular-nums ${toneClass[card.tone]}`}>
+                    <span aria-hidden="true" className="text-[11px] leading-none">{toneIcon[card.tone]}</span>
+                    <span>{card.value}</span>
+                  </p>
                 </div>
               ))}
             </div>
@@ -126,7 +136,10 @@ export default function FinancialHealthScoreCard({
                   <FinancialHealthHelpTooltip text={card.help} compact />
                 </span>
                 <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500 leading-tight">{card.label}</p>
-                <p className={`text-base font-bold leading-tight tabular-nums ${toneClass[card.tone]}`}>{card.value}</p>
+                <p className={`inline-flex items-center gap-1 text-base font-bold leading-tight tabular-nums ${toneClass[card.tone]}`}>
+                  <span aria-hidden="true" className="text-[11px] leading-none">{toneIcon[card.tone]}</span>
+                  <span>{card.value}</span>
+                </p>
               </div>
             ))}
           </div>
@@ -179,7 +192,10 @@ export default function FinancialHealthScoreCard({
               <FinancialHealthHelpTooltip text={card.help} compact />
             </span>
             <p className="app-label text-[10px] uppercase tracking-wider leading-tight">{card.label}</p>
-            <p className={`text-sm font-bold leading-tight tabular-nums ${toneClass[card.tone]}`}>{card.value}</p>
+            <p className={`inline-flex items-center gap-1 text-sm font-bold leading-tight tabular-nums ${toneClass[card.tone]}`}>
+              <span aria-hidden="true" className="text-[11px] leading-none">{toneIcon[card.tone]}</span>
+              <span>{card.value}</span>
+            </p>
             <span className={`mt-0.5 inline-flex h-1.5 w-10 rounded-full ${toneBadgeClass[card.tone]}`} />
           </div>
         ))}

@@ -31,10 +31,43 @@ export default function FinancialHealthHistoryCard({
     return `${delta > 0 ? '+' : ''}${normalized} ${t('dashboard.health_points_short')}`
   }
 
+  const scoreBadgeClass = (score: number): string => {
+    if (score >= 80) return 'bg-success-bg text-success-text ring-success/20'
+    if (score >= 60) return 'bg-warning-bg text-warning-text ring-warning/20'
+    return 'bg-brand-light text-brand-text ring-brand/20'
+  }
+
+  const deltaBadgeClass = (direction: 'up' | 'down' | 'stable'): string => {
+    if (direction === 'up') return 'bg-success-bg text-success-text ring-success/20'
+    if (direction === 'down') return 'bg-brand-light text-brand-text ring-brand/20'
+    return 'bg-warning-bg text-warning-text ring-warning/20'
+  }
+
+  const rowAccentClass = (direction: 'up' | 'down' | 'stable'): string => {
+    if (direction === 'up') return 'border-l-4 border-l-success'
+    if (direction === 'down') return 'border-l-4 border-l-brand'
+    return 'border-l-4 border-l-warning'
+  }
+
+  const scoreStatusIcon = (score: number): string => {
+    if (score >= 80) return '▲'
+    if (score >= 60) return '●'
+    return '▼'
+  }
+
+  const directionIcon = (direction: 'up' | 'down' | 'stable'): string => {
+    if (direction === 'up') return '▲'
+    if (direction === 'down') return '▼'
+    return '●'
+  }
+
   return (
-    <div className="app-card p-4 space-y-3 bg-white/90 ring-1 ring-neutral-100">
+    <div className="app-card p-4 space-y-3 bg-gradient-to-br from-white via-neutral-50/60 to-brand-light/25 ring-1 ring-neutral-100 shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        <p className="app-label uppercase tracking-wider">{t('dashboard.health_history_title')}</p>
+        <div className="space-y-0.5">
+          <p className="app-label uppercase tracking-wider">{t('dashboard.health_history_title')}</p>
+          {!compact && <p className="text-[11px] text-neutral-600">Últimos 3 cambios registrados</p>}
+        </div>
         {!compact && <FinancialHealthHelpTooltip text={t('dashboard.health_history_help')} />}
       </div>
 
@@ -89,15 +122,30 @@ export default function FinancialHealthHistoryCard({
               />
             </AreaChart>
           </ResponsiveContainer>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {history.slice(-3).reverse().map((point) => (
-              <div key={point.month} className="flex items-center justify-between gap-3 text-xs border border-neutral-100 rounded-md px-2.5 py-1.5 bg-white">
-                <p className="app-subtitle">
-                  {point.label}: {historyChangeLabel(point, t)}
-                </p>
-                <p className={`font-medium ${historyDeltaTone(point.change_direction)}`}>
-                  {formatScoreDelta(point.delta)}
-                </p>
+              <div
+                key={point.month}
+                className={`group grid grid-cols-[1fr_auto] items-start gap-3 text-xs rounded-xl px-3 py-2.5 bg-gradient-to-r from-white to-neutral-50 border border-neutral-100 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${rowAccentClass(point.change_direction)}`}
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-neutral-100 text-neutral-700">
+                      {point.label}
+                    </span>
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${scoreBadgeClass(point.score)}`}>
+                      <span aria-hidden="true" className="text-[9px] leading-none">{scoreStatusIcon(point.score)}</span>
+                      <span>{point.score}/100</span>
+                    </span>
+                  </div>
+                  <p className="app-subtitle mt-1 leading-relaxed text-neutral-700">
+                    {historyChangeLabel(point, t)}
+                  </p>
+                </div>
+                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 shadow-sm ${deltaBadgeClass(point.change_direction)} ${historyDeltaTone(point.change_direction)}`}>
+                  <span aria-hidden="true" className="text-[10px] leading-none">{directionIcon(point.change_direction)}</span>
+                  <span>{formatScoreDelta(point.delta)}</span>
+                </span>
               </div>
             ))}
           </div>
