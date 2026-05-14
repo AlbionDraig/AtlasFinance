@@ -1,5 +1,6 @@
 ﻿import type { FinancialHealthSnapshot } from '@/types'
 import { scoreLevelLabel } from './helpers'
+import { FinancialHealthHelpTooltip } from './shared'
 import type { DeltaBadge } from './types'
 
 interface FinancialHealthScoreCardProps {
@@ -8,6 +9,15 @@ interface FinancialHealthScoreCardProps {
   deltaBadge: DeltaBadge
   t: (key: string, params?: Record<string, string | number>) => string
   compact?: boolean
+}
+
+type MiniCardTone = DeltaBadge['tone']
+
+interface MiniCard {
+  label: string
+  help: string
+  value: string
+  tone: MiniCardTone
 }
 
 export default function FinancialHealthScoreCard({
@@ -20,6 +30,7 @@ export default function FinancialHealthScoreCard({
   const healthScore = financialHealth?.score ?? 0
   const healthLevel = financialHealth?.level ?? 'attention'
   const factors = financialHealth?.factors ?? []
+  const factorCount = factors.length
   const strengths = factors.filter((factor) => factor.score >= 80).length
   const focus = factors.filter((factor) => factor.score < 60).length
   const levelCls = {
@@ -27,6 +38,41 @@ export default function FinancialHealthScoreCard({
     stable: 'bg-brand-light text-brand-text',
     attention: 'bg-warning-bg text-warning-text',
   }[healthLevel]
+
+  const miniCards: MiniCard[] = [
+    {
+      label: t('dashboard.health_mini_delta'),
+      help: t('dashboard.health_mini_delta_help'),
+      value: deltaBadge.text,
+      tone: deltaBadge.tone,
+    },
+    {
+      label: t('dashboard.health_mini_strengths'),
+      help: t('dashboard.health_mini_strengths_help'),
+      value: String(strengths),
+      tone: strengths >= Math.max(1, Math.ceil(factorCount / 2)) ? 'positive' : strengths > 0 ? 'flat' : 'negative',
+    },
+    {
+      label: t('dashboard.health_mini_focus'),
+      help: t('dashboard.health_mini_focus_help'),
+      value: String(focus),
+      tone: focus === 0 ? 'positive' : focus === 1 ? 'flat' : 'negative',
+    },
+  ]
+
+  const toneClass = {
+    positive: 'text-success',
+    negative: 'text-warning',
+    flat: 'text-neutral-700',
+    neutral: 'text-neutral-900',
+  }
+
+  const toneBadgeClass = {
+    positive: 'bg-success-bg/70 text-success-text ring-success/10',
+    negative: 'bg-warning-bg/70 text-warning-text ring-warning/10',
+    flat: 'bg-neutral-100 text-neutral-700 ring-neutral-200',
+    neutral: 'bg-neutral-50 text-neutral-700 ring-neutral-100',
+  }
 
   if (compact) {
     return (
@@ -61,34 +107,28 @@ export default function FinancialHealthScoreCard({
             </div>
 
             <div className="hidden md:grid grid-cols-3 gap-1.5 self-center">
-              <div className="rounded-md border border-neutral-100 bg-white/85 px-2 py-1.5 text-center">
-                <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500">{t('dashboard.health_mini_delta')}</p>
-                <p className="text-sm text-neutral-900 font-semibold leading-tight">{deltaBadge.text}</p>
-              </div>
-              <div className="rounded-md border border-neutral-100 bg-white/85 px-2 py-1.5 text-center">
-                <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500">{t('dashboard.health_mini_strengths')}</p>
-                <p className="text-sm text-neutral-900 font-semibold leading-tight">{strengths}</p>
-              </div>
-              <div className="rounded-md border border-neutral-100 bg-white/85 px-2 py-1.5 text-center">
-                <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500">{t('dashboard.health_mini_focus')}</p>
-                <p className="text-sm text-neutral-900 font-semibold leading-tight">{focus}</p>
-              </div>
+              {miniCards.map((card) => (
+                <div key={card.label} className="relative rounded-md border border-neutral-100 bg-white/90 px-2.5 py-1.5 text-center shadow-sm flex flex-col items-center justify-start gap-0.5">
+                  <span className="absolute top-1.5 right-1.5 opacity-80">
+                    <FinancialHealthHelpTooltip text={card.help} compact />
+                  </span>
+                  <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500 leading-tight">{card.label}</p>
+                  <p className={`text-base font-bold leading-tight tabular-nums ${toneClass[card.tone]}`}>{card.value}</p>
+                </div>
+              ))}
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-1.5 md:hidden">
-            <div className="rounded-md border border-neutral-100 bg-white/85 px-2 py-1.5 text-center">
-              <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500">{t('dashboard.health_mini_delta')}</p>
-              <p className="text-sm text-neutral-900 font-semibold leading-tight">{deltaBadge.text}</p>
-            </div>
-            <div className="rounded-md border border-neutral-100 bg-white/85 px-2 py-1.5 text-center">
-              <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500">{t('dashboard.health_mini_strengths')}</p>
-              <p className="text-sm text-neutral-900 font-semibold leading-tight">{strengths}</p>
-            </div>
-            <div className="rounded-md border border-neutral-100 bg-white/85 px-2 py-1.5 text-center">
-              <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500">{t('dashboard.health_mini_focus')}</p>
-              <p className="text-sm text-neutral-900 font-semibold leading-tight">{focus}</p>
-            </div>
+            {miniCards.map((card) => (
+              <div key={card.label} className="relative rounded-md border border-neutral-100 bg-white/90 px-2.5 py-1.5 text-center shadow-sm flex flex-col items-center justify-start gap-0.5">
+                <span className="absolute top-1.5 right-1.5 opacity-80">
+                  <FinancialHealthHelpTooltip text={card.help} compact />
+                </span>
+                <p className="app-label text-[10px] uppercase tracking-wider text-neutral-500 leading-tight">{card.label}</p>
+                <p className={`text-base font-bold leading-tight tabular-nums ${toneClass[card.tone]}`}>{card.value}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -133,18 +173,16 @@ export default function FinancialHealthScoreCard({
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-2">
-        <div className="rounded-lg border border-neutral-100 bg-white/90 px-2 py-1.5 text-center">
-          <p className="app-label text-[10px] uppercase tracking-wider">{t('dashboard.health_mini_delta')}</p>
-          <p className="text-xs text-neutral-900 font-medium mt-0.5">{deltaBadge.text}</p>
-        </div>
-        <div className="rounded-lg border border-neutral-100 bg-white/90 px-2 py-1.5 text-center">
-          <p className="app-label text-[10px] uppercase tracking-wider">{t('dashboard.health_mini_strengths')}</p>
-          <p className="text-xs text-neutral-900 font-medium mt-0.5">{strengths}</p>
-        </div>
-        <div className="rounded-lg border border-neutral-100 bg-white/90 px-2 py-1.5 text-center">
-          <p className="app-label text-[10px] uppercase tracking-wider">{t('dashboard.health_mini_focus')}</p>
-          <p className="text-xs text-neutral-900 font-medium mt-0.5">{focus}</p>
-        </div>
+        {miniCards.map((card) => (
+          <div key={card.label} className="relative rounded-lg border border-neutral-100 bg-white/90 px-2.5 py-1.5 text-center shadow-sm flex flex-col items-center justify-start gap-0.5">
+            <span className="absolute top-1.5 right-1.5 opacity-80">
+              <FinancialHealthHelpTooltip text={card.help} compact />
+            </span>
+            <p className="app-label text-[10px] uppercase tracking-wider leading-tight">{card.label}</p>
+            <p className={`text-sm font-bold leading-tight tabular-nums ${toneClass[card.tone]}`}>{card.value}</p>
+            <span className={`mt-0.5 inline-flex h-1.5 w-10 rounded-full ${toneBadgeClass[card.tone]}`} />
+          </div>
+        ))}
       </div>
     </div>
   )

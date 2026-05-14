@@ -35,10 +35,14 @@ export function FinancialHealthBadge({ text, variant, hint }: BadgeProps) {
   )
 }
 
-export function FinancialHealthHelpTooltip({ text }: { text: string }) {
+export function FinancialHealthHelpTooltip({ text, compact = false }: { text: string; compact?: boolean }) {
+  const iconClass = compact
+    ? 'w-3.5 h-3.5 rounded-full bg-white border border-neutral-400 text-neutral-600 text-[9px] flex items-center justify-center cursor-help select-none leading-none font-semibold'
+    : 'w-4 h-4 rounded-full bg-transparent border border-neutral-900 text-neutral-900 text-[10px] flex items-center justify-center cursor-help select-none leading-none font-medium'
+
   return (
     <AppTooltip content={text} ariaLabel={text}>
-      <span className="w-4 h-4 rounded-full bg-transparent border border-neutral-900 text-neutral-900 text-[10px] flex items-center justify-center cursor-help select-none leading-none font-medium">
+      <span className={iconClass}>
         ?
       </span>
     </AppTooltip>
