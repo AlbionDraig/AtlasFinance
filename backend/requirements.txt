@@ -26,5 +26,5 @@ pre-commit==4.6.0
 mypy==1.13.0
 types-passlib==1.7.7.20240819
 types-python-jose==3.5.0.20260408
-types-requests==2.33.0.20260508
+types-requests==2.33.0.20260518
 pyasn1==0.6.3
