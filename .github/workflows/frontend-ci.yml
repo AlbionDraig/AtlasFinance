@@ -2,15 +2,10 @@ name: Atlas Finance Frontend CI
 
 on:
   push:
-    branches: ["main"]
-    paths:
-      - "frontend/**"
-      - ".github/workflows/frontend-ci.yml"
-  pull_request:
-    branches: ["main"]
+    branches: ["**"]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
