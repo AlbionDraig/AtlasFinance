@@ -9,6 +9,7 @@ import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
 import PageSkeleton from '@/components/ui/PageSkeleton'
+import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import Select from '@/components/ui/Select'
 import TableActionGroup from '@/components/ui/TableActionGroup'
 import ViewToggle from '@/components/ui/ViewToggle'
@@ -26,6 +27,8 @@ interface BudgetFormData extends BudgetCreatePayload {
   categoryId?: number
 }
 
+type BudgetStatusFilter = 'all' | BudgetRead['status']
+
 /**
  * Budgets management page - display monthly budgets with traffic light status.
  */
@@ -36,6 +39,10 @@ export default function BudgetsPage() {
   const [year, setYear] = useState(currentDate.getFullYear())
   const [month, setMonth] = useState(currentDate.getMonth() + 1)
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
+  const [statusFilter, setStatusFilter] = useState<BudgetStatusFilter>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const currentYear = currentDate.getFullYear()
+  const currentMonth = currentDate.getMonth() + 1
 
   const [formMode, setFormMode] = useState<BudgetFormMode>(null)
   const [editingBudget, setEditingBudget] = useState<BudgetRead | null>(null)
@@ -57,24 +64,6 @@ export default function BudgetsPage() {
   const categoryMap = categories
     ? Object.fromEntries(categories.map((cat: Category) => [cat.id, cat.name]))
     : {}
-
-  const handlePreviousMonth = () => {
-    if (month === 1) {
-      setMonth(12)
-      setYear(year - 1)
-    } else {
-      setMonth(month - 1)
-    }
-  }
-
-  const handleNextMonth = () => {
-    if (month === 12) {
-      setMonth(1)
-      setYear(year + 1)
-    } else {
-      setMonth(month + 1)
-    }
-  }
 
   const handleCreateNew = () => {
     setEditingBudget(null)
@@ -154,6 +143,18 @@ export default function BudgetsPage() {
     month: 'long',
     year: 'numeric',
   })
+  const monthOptions = Array.from({ length: 12 }, (_, index) => ({
+    value: String(index + 1),
+    label: new Date(2000, index, 1).toLocaleDateString(monthLocale, { month: 'long' }),
+  }))
+  const baseYearOptions = Array.from({ length: 5 }, (_, index) => currentYear - 2 + index)
+  const yearOptions = Array.from(new Set([...baseYearOptions, year]))
+    .sort((a, b) => a - b)
+    .map((y) => ({ value: String(y), label: String(y) }))
+  const activePeriodFilters = year !== currentYear || month !== currentMonth
+    ? [{ id: 'period', label: monthName }]
+    : []
+
   const totalLimit = Number(budgetData?.total_limit ?? 0)
   const totalSpent = Number(budgetData?.total_spent ?? 0)
   const totalRemaining = totalLimit - totalSpent
@@ -182,6 +183,50 @@ export default function BudgetsPage() {
     return categoryMap[categoryId] || `${t('planning.budget.category')} #${categoryId}`
   }
 
+  const filteredBudgets = (budgetData?.budgets ?? []).filter((budget) => {
+    if (statusFilter !== 'all' && budget.status !== statusFilter) return false
+    if (categoryFilter !== 'all' && String(budget.category_id) !== categoryFilter) return false
+    return true
+  })
+
+  const categoryFilterOptions = (() => {
+    const uniqueIds = new Set<number>((budgetData?.budgets ?? []).map((budget) => budget.category_id))
+    if (categoryFilter !== 'all') uniqueIds.add(Number(categoryFilter))
+
+    return [
+      { value: 'all', label: t('planning.budget.filter_category_all') },
+      ...Array.from(uniqueIds)
+        .sort((a, b) => getCategoryName(a).localeCompare(getCategoryName(b)))
+        .map((id) => ({
+          value: String(id),
+          label: getCategoryName(id),
+        })),
+    ]
+  })()
+
+  const activeFilters: Array<{ id: string; label: string }> = [
+    ...activePeriodFilters,
+    ...(statusFilter !== 'all' ? [{ id: 'status', label: getBudgetStatusLabel(statusFilter) }] : []),
+    ...(categoryFilter !== 'all' ? [{ id: 'category', label: getCategoryName(Number(categoryFilter)) }] : []),
+  ]
+
+  const handleResetPeriod = () => {
+    setYear(currentYear)
+    setMonth(currentMonth)
+  }
+
+  const handleResetFilters = () => {
+    handleResetPeriod()
+    setStatusFilter('all')
+    setCategoryFilter('all')
+  }
+
+  const handleRemoveFilter = (id: string) => {
+    if (id === 'period') handleResetPeriod()
+    if (id === 'status') setStatusFilter('all')
+    if (id === 'category') setCategoryFilter('all')
+  }
+
   if (budgetsLoading) {
     return <PageSkeleton cards={3} rows={4} columns={6} />
   }
@@ -196,24 +241,87 @@ export default function BudgetsPage() {
         </p>
       </div>
 
-      {/* Month Selector */}
-      <div className="app-card p-4 flex items-center justify-between gap-3">
-        <button
-          onClick={handlePreviousMonth}
-          className="h-9 w-9 rounded-lg border border-neutral-100 text-neutral-700 hover:bg-neutral-50 transition-colors"
-        >
-          ←
-        </button>
-        <div className="text-center flex-1">
-          <p className="font-medium capitalize text-neutral-900">{monthName}</p>
+      {budgetData && budgetData.budgets.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+          <div className={`${summaryCardClass} border-l-4 border-l-neutral-400 ring-1 ring-neutral-100`}>
+            <p className="app-label uppercase tracking-wider">{t('planning.budget.total_limit')}</p>
+            <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">{formatCurrency(totalLimit, 'COP')}</p>
+          </div>
+          <div className={`${summaryCardClass} border-l-4 border-l-warning ring-1 ring-warning/20`}>
+            <p className="app-label uppercase tracking-wider">{t('planning.budget.total_spent')}</p>
+            <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">{formatCurrency(totalSpent, 'COP')}</p>
+          </div>
+          <div className={`${summaryCardClass} border-l-4 ${totalRemaining >= 0 ? 'border-l-success ring-1 ring-success/20' : 'border-l-warning ring-1 ring-warning/20'}`}>
+            <p className="app-label uppercase tracking-wider">{t('planning.budget.total_remaining')}</p>
+            <p
+              className={`text-2xl font-medium leading-none mt-1 ${
+                totalRemaining >= 0
+                  ? 'text-success'
+                  : 'text-warning'
+              }`}
+            >
+              {formatCurrency(totalRemaining, 'COP')}
+            </p>
+          </div>
         </div>
-        <button
-          onClick={handleNextMonth}
-          className="h-9 w-9 rounded-lg border border-neutral-100 text-neutral-700 hover:bg-neutral-50 transition-colors"
-        >
-          →
-        </button>
-      </div>
+      )}
+
+      <ResponsiveFilters
+        activeFilters={activeFilters}
+        onResetFilters={activeFilters.length > 0 ? handleResetFilters : undefined}
+        onRemoveFilter={handleRemoveFilter}
+        mobileTitle={t('planning.budgets.title')}
+        stickyDesktop={false}
+      >
+        <div className="flex flex-col gap-1 w-48">
+          <label className="app-label">{t('planning.budget.filter_month')}</label>
+          <Select
+            value={String(month)}
+            onChange={(value) => setMonth(Number(value))}
+            options={monthOptions}
+            className="w-full"
+            active={month !== currentMonth}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1 w-32">
+          <label className="app-label">{t('planning.budget.filter_year')}</label>
+          <Select
+            value={String(year)}
+            onChange={(value) => setYear(Number(value))}
+            options={yearOptions}
+            className="w-full"
+            active={year !== currentYear}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1 w-44">
+          <label className="app-label">{t('planning.budget.filter_status_label')}</label>
+          <Select
+            value={statusFilter}
+            onChange={(value) => setStatusFilter(value as BudgetStatusFilter)}
+            options={[
+              { value: 'all', label: t('planning.budget.filter_status_all') },
+              { value: 'ok', label: t('planning.budget.status_ok') },
+              { value: 'warning', label: t('planning.budget.status_warning') },
+              { value: 'exceeded', label: t('planning.budget.status_exceeded') },
+            ]}
+            className="w-full"
+            active={statusFilter !== 'all'}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1 w-56">
+          <label className="app-label">{t('planning.budget.filter_category_label')}</label>
+          <Select
+            value={categoryFilter}
+            onChange={setCategoryFilter}
+            options={categoryFilterOptions}
+            className="w-full"
+            active={categoryFilter !== 'all'}
+          />
+        </div>
+      </ResponsiveFilters>
 
 
 
@@ -224,38 +332,18 @@ export default function BudgetsPage() {
         </div>
       ) : (
         <>
-          {/* Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-            <div className={`${summaryCardClass} border-l-4 border-l-neutral-400 ring-1 ring-neutral-100`}>
-              <p className="app-label uppercase tracking-wider">{t('planning.budget.total_limit')}</p>
-              <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">{formatCurrency(totalLimit, 'COP')}</p>
-            </div>
-            <div className={`${summaryCardClass} border-l-4 border-l-warning ring-1 ring-warning/20`}>
-              <p className="app-label uppercase tracking-wider">{t('planning.budget.total_spent')}</p>
-              <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">{formatCurrency(totalSpent, 'COP')}</p>
-            </div>
-            <div className={`${summaryCardClass} border-l-4 ${totalRemaining >= 0 ? 'border-l-success ring-1 ring-success/20' : 'border-l-warning ring-1 ring-warning/20'}`}>
-              <p className="app-label uppercase tracking-wider">{t('planning.budget.total_remaining')}</p>
-              <p
-                className={`text-2xl font-medium leading-none mt-1 ${
-                  totalRemaining >= 0
-                    ? 'text-success'
-                    : 'text-warning'
-                }`}
-              >
-                {formatCurrency(totalRemaining, 'COP')}
-              </p>
-            </div>
-          </div>
-
           <div className="app-card rounded-2xl p-3 md:p-4 space-y-3">
             <div className="flex justify-start">
               <ViewToggle value={viewMode} onChange={(m) => setViewMode(m as 'cards' | 'table')} />
             </div>
 
-            {viewMode === 'cards' ? (
+            {filteredBudgets.length === 0 ? (
+              <div className="rounded-xl border border-neutral-100 bg-white p-6 text-center text-sm text-neutral-400">
+                {t('planning.budget.empty_filter')}
+              </div>
+            ) : viewMode === 'cards' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {budgetData.budgets.map((budget) => (
+                {filteredBudgets.map((budget) => (
                   <BudgetCard
                     key={budget.id}
                     budget={budget}
@@ -279,7 +367,7 @@ export default function BudgetsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {budgetData.budgets.map((budget, index) => (
+                    {filteredBudgets.map((budget, index) => (
                       <tr
                         key={budget.id}
                         className={`border-b border-neutral-100 last:border-b-0 transition-colors hover:bg-brand-light/35 ${index % 2 === 0 ? 'bg-white' : 'bg-brand-light/10'}`}
