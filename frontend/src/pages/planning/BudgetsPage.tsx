@@ -273,21 +273,19 @@ export default function BudgetsPage() {
         </p>
       </div>
 
-      {budgetData && budgetData.budgets.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-          {budgetKpis.map((kpi) => (
-            <article key={kpi.key} className="app-card relative p-5 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
-              <div className={`absolute top-0 left-0 right-0 h-1.5 ${kpi.accent}`} />
-              <div className="flex items-center gap-1.5 mb-1">
-                <p className="app-label uppercase tracking-wider">{kpi.title}</p>
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+        {budgetKpis.map((kpi) => (
+          <article key={kpi.key} className="app-card relative p-5 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
+            <div className={`absolute top-0 left-0 right-0 h-1.5 ${kpi.accent}`} />
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="app-label uppercase tracking-wider">{kpi.title}</p>
+            </div>
 
-              <p className={`text-2xl font-medium leading-none ${kpi.valueClass}`}>{kpi.value}</p>
+            <p className={`text-2xl font-medium leading-none ${kpi.valueClass}`}>{kpi.value}</p>
 
-            </article>
-          ))}
-        </div>
-      )}
+          </article>
+        ))}
+      </div>
 
       <ResponsiveFilters
         activeFilters={activeFilters}
