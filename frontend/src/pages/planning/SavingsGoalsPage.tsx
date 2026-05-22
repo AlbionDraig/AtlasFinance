@@ -187,7 +187,6 @@ export default function SavingsGoalsPage() {
       }
     : { total_goals: 0, completed: 0, total_target: 0, total_saved: 0 }
 
-  const statsCardClass = 'bg-white border border-neutral-100 rounded-2xl p-4 md:p-5 shadow-sm relative overflow-hidden transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md'
   const hasSavedAmount = stats.total_saved > 0
 
   // Opciones de bolsillos vinculados a metas
@@ -297,27 +296,35 @@ export default function SavingsGoalsPage() {
 
       {/* Statistics Cards */}
       {goals && goals.length > 0 && (
-        <div className="grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className={`${statsCardClass}`}>
-            <span className="absolute left-0 top-0 block h-1 w-full bg-neutral-400" aria-hidden="true" />
-            <p className="text-xs font-medium uppercase tracking-wider text-neutral-600">{t('planning.goals.total_goals')}</p>
-            <p className="mt-2 text-4xl font-semibold leading-none text-neutral-900 tabular-nums">{stats.total_goals}</p>
-          </div>
-          <div className={`${statsCardClass}`}>
-            <span className="absolute left-0 top-0 block h-1 w-full bg-success/70" aria-hidden="true" />
-            <p className="text-xs font-medium uppercase tracking-wider text-neutral-600">{t('planning.goals.completed')}</p>
-            <p className="mt-2 text-4xl font-semibold leading-none text-success tabular-nums">{stats.completed}</p>
-          </div>
-          <div className={`${statsCardClass}`}>
-            <span className="absolute left-0 top-0 block h-1 w-full bg-brand" aria-hidden="true" />
-            <p className="text-xs font-medium uppercase tracking-wider text-neutral-600">{t('planning.goals.total_target')}</p>
-            <p className="mt-2 text-3xl font-semibold leading-none text-neutral-900 tabular-nums">${stats.total_target.toFixed(2)}</p>
-          </div>
-          <div className={`${statsCardClass}`}>
-            <span className={`absolute left-0 top-0 block h-1 w-full ${hasSavedAmount ? 'bg-success' : 'bg-neutral-400'}`} aria-hidden="true" />
-            <p className="text-xs font-medium uppercase tracking-wider text-neutral-600">{t('planning.goals.total_saved')}</p>
-            <p className={`mt-2 text-3xl font-semibold leading-none tabular-nums ${hasSavedAmount ? 'text-success-text' : 'text-neutral-900'}`}>${stats.total_saved.toFixed(2)}</p>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <article className="app-card relative p-5 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-brand" />
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="app-label uppercase tracking-wider">{t('planning.goals.total_goals')}</p>
+            </div>
+            <p className="text-2xl font-medium leading-none text-brand tabular-nums">{stats.total_goals}</p>
+          </article>
+          <article className="app-card relative p-5 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-success" />
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="app-label uppercase tracking-wider">{t('planning.goals.completed')}</p>
+            </div>
+            <p className="text-2xl font-medium leading-none text-success-text tabular-nums">{stats.completed}</p>
+          </article>
+          <article className="app-card relative p-5 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-brand" />
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="app-label uppercase tracking-wider">{t('planning.goals.total_target')}</p>
+            </div>
+            <p className="text-2xl font-medium leading-none text-brand tabular-nums">${stats.total_target.toFixed(2)}</p>
+          </article>
+          <article className="app-card relative p-5 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
+            <div className={`absolute top-0 left-0 right-0 h-1.5 ${hasSavedAmount ? 'bg-success' : 'bg-neutral-400'}`} />
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="app-label uppercase tracking-wider">{t('planning.goals.total_saved')}</p>
+            </div>
+            <p className={`text-2xl font-medium leading-none tabular-nums ${hasSavedAmount ? 'text-success-text' : 'text-neutral-900'}`}>${stats.total_saved.toFixed(2)}</p>
+          </article>
         </div>
       )}
 
