@@ -9,6 +9,7 @@ function ToastHarness() {
     <div>
       <button type="button" onClick={() => toast('ok', 'success')}>success</button>
       <button type="button" onClick={() => toast('err', 'error')}>error</button>
+      <button type="button" onClick={() => toast('dup', 'error')}>dup-error</button>
       <button type="button" onClick={() => {
         toast('1', 'success')
         toast('2', 'success')
@@ -20,6 +21,7 @@ function ToastHarness() {
       <button type="button" onClick={() => toasts[0] && dismiss(toasts[0].id)}>dismiss-first</button>
       <span data-testid="count">{toasts.length}</span>
       <span data-testid="variants">{toasts.map((t) => t.variant).join(',')}</span>
+      <span data-testid="messages">{toasts.map((t) => t.message).join(',')}</span>
     </div>
   )
 }
@@ -55,5 +57,20 @@ describe('useToast', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'many' }))
     expect(screen.getByTestId('count')).toHaveTextContent('3')
+  })
+
+  it('does not duplicate the same error toast message', () => {
+    render(
+      <ToastProvider>
+        <ToastHarness />
+      </ToastProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'dup-error' }))
+    fireEvent.click(screen.getByRole('button', { name: 'dup-error' }))
+
+    expect(screen.getByTestId('count')).toHaveTextContent('1')
+    expect(screen.getByTestId('variants')).toHaveTextContent('error')
+    expect(screen.getByTestId('messages')).toHaveTextContent('dup')
   })
 })

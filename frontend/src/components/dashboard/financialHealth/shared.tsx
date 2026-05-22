@@ -1,6 +1,8 @@
 import AppTooltip from '@/components/ui/Tooltip'
 import type { HealthBadgeVariant } from './types'
 
+type FinancialHealthTone = 'positive' | 'flat' | 'negative' | 'neutral'
+
 interface BadgeProps {
   text: string
   variant: HealthBadgeVariant
@@ -35,12 +37,48 @@ export function FinancialHealthBadge({ text, variant, hint }: BadgeProps) {
   )
 }
 
-export function FinancialHealthHelpTooltip({ text }: { text: string }) {
+export function FinancialHealthHelpTooltip({ text, compact = false }: { text: string; compact?: boolean }) {
+  const iconClass = compact
+    ? 'w-3.5 h-3.5 rounded-full bg-white border border-neutral-400 text-neutral-600 text-[9px] flex items-center justify-center cursor-help select-none leading-none font-semibold'
+    : 'w-4 h-4 rounded-full bg-transparent border border-neutral-900 text-neutral-900 text-[10px] flex items-center justify-center cursor-help select-none leading-none font-medium'
+
   return (
     <AppTooltip content={text} ariaLabel={text}>
-      <span className="w-4 h-4 rounded-full bg-transparent border border-neutral-900 text-neutral-900 text-[10px] flex items-center justify-center cursor-help select-none leading-none font-medium">
+      <span className={iconClass}>
         ?
       </span>
     </AppTooltip>
+  )
+}
+
+interface FinancialHealthStatusIconProps {
+  tone: FinancialHealthTone
+  className?: string
+}
+
+export function FinancialHealthStatusIcon({
+  tone,
+  className = 'h-3.5 w-3.5',
+}: FinancialHealthStatusIconProps) {
+  if (tone === 'positive') {
+    return (
+      <svg viewBox="0 0 12 12" aria-hidden="true" className={className}>
+        <path d="M2 8 L6 4 L10 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
+  if (tone === 'negative') {
+    return (
+      <svg viewBox="0 0 12 12" aria-hidden="true" className={className}>
+        <path d="M2 4 L6 8 L10 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg viewBox="0 0 12 12" aria-hidden="true" className={className}>
+      <circle cx="6" cy="6" r="2.1" fill="currentColor" />
+    </svg>
   )
 }

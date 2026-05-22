@@ -1,4 +1,4 @@
-import { useRef, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
+import { useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AxiosError } from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
@@ -20,6 +20,7 @@ import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
 import TableActionGroup from '@/components/ui/TableActionGroup'
 import Select from '@/components/ui/Select'
+import ViewToggle from '@/components/ui/ViewToggle'
 import AmountInput from '@/components/ui/AmountInput'
 import DatePicker from '@/components/ui/DatePicker'
 import { daysSinceInvestment, formatInvestmentDate, renderInstrumentBadge } from './investmentDisplay'
@@ -198,46 +199,33 @@ interface KpiCardProps {
   value: string
   accent: 'brand' | 'success' | 'warning'
   sub?: string
-  subColor?: string
-  icon?: ReactNode
+  unit?: string
 }
-function KpiCard({ label, value, accent, sub, subColor, icon }: KpiCardProps) {
-  const accentStyles = {
-    brand: {
-      line: 'bg-brand',
-      ring: 'ring-brand/15',
-      glow: 'bg-brand/10',
-      icon: 'bg-brand-light text-brand',
-    },
-    success: {
-      line: 'bg-success',
-      ring: 'ring-success/15',
-      glow: 'bg-success/10',
-      icon: 'bg-success-bg text-success',
-    },
-    warning: {
-      line: 'bg-warning',
-      ring: 'ring-warning/15',
-      glow: 'bg-warning/10',
-      icon: 'bg-warning-bg text-warning',
-    },
+function KpiCard({ label, value, accent, sub, unit }: KpiCardProps) {
+  const styles = {
+    brand: { line: 'bg-brand', value: 'text-brand' },
+    success: { line: 'bg-success', value: 'text-success-text' },
+    warning: { line: 'bg-warning', value: 'text-warning-text' },
   }[accent]
 
   return (
-    <div className={`relative overflow-hidden rounded-xl border border-neutral-100 bg-gradient-to-b from-white to-neutral-50/80 p-4 shadow-sm ring-1 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md ${accentStyles.ring}`}>
-      <div className={`absolute inset-x-0 top-0 h-1.5 ${accentStyles.line}`} />
-      <div className={`absolute -right-8 -top-8 h-20 w-20 rounded-full blur-2xl ${accentStyles.glow}`} aria-hidden="true" />
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] font-medium tracking-[0.14em] uppercase text-neutral-700">{label}</p>
-        {icon && (
-          <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${accentStyles.icon}`}>
-            {icon}
-          </span>
-        )}
+    <article className="app-card relative p-5 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
+      <div className={`absolute top-0 left-0 right-0 h-1.5 ${styles.line}`} />
+      <div className="flex items-center gap-1.5 mb-1">
+        <p className="app-label uppercase tracking-wider">{label}</p>
       </div>
-      <p className="mt-2 text-[1.7rem] font-medium tracking-tight text-neutral-900">{value}</p>
-      {sub && <p className={`mt-1 text-[13px] ${subColor ?? 'text-neutral-400'}`}>{sub}</p>}
-    </div>
+      <p className={`text-2xl font-medium leading-none ${styles.value}`}>{value}</p>
+      {(sub || unit) && (
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          {sub && <p className="app-subtitle text-xs leading-snug">{sub}</p>}
+          {unit && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-700 uppercase tracking-wide">
+              {unit}
+            </span>
+          )}
+        </div>
+      )}
+    </article>
   )
 }
 
@@ -288,7 +276,7 @@ export default function InvestmentsPage() {
     totalInvested,
     totalCurrent,
     sortOptions,
-    selectedSortLabel,
+
     entityFilterOptions,
     typeFilterOptions,
     currencyFilterOptions,
@@ -400,41 +388,25 @@ export default function InvestmentsPage() {
       </div>
 
       {/* KPI summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
         <KpiCard
           label={t('investments.kpi_invested')}
           value={formatCurrency(totalInvested, 'COP')}
           accent="brand"
-          icon={
-            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
-              <path d="M10 2v16M5 7l5-5 5 5M5 17h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          }
+          unit="COP"
         />
         <KpiCard
           label={t('investments.kpi_current')}
           value={formatCurrency(totalCurrent, 'COP')}
           accent="success"
-          icon={
-            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
-              <path d="M3 13l4-4 4 4 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          }
+          unit="COP"
         />
         <KpiCard
           label={t('investments.kpi_gain')}
           value={`${gainPositive ? '+' : ''}${formatCurrency(totalGain, 'COP')}`}
           accent={gainPositive ? 'success' : 'warning'}
           sub={t('investments.kpi_return', { sign: gainPositive ? '+' : '', pct: returnPct })}
-          subColor={gainPositive ? 'text-success' : 'text-warning'}
-          icon={
-            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
-              {gainPositive
-                ? <path d="M4 14l4-4 4 4 5-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                : <path d="M4 6l4 4 4-4 5 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              }
-            </svg>
-          }
+          unit="COP"
         />
       </div>
 
@@ -495,37 +467,13 @@ export default function InvestmentsPage() {
         </div>
       </ResponsiveFilters>
 
-      <div className="flex flex-col gap-2 rounded-lg border border-brand/20 bg-gradient-to-r from-brand-light/70 to-white px-3 py-2 text-xs text-brand-text sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <p>
-            {filtered.length === investments.length
-              ? t('investments.results_count_total', { total: investments.length })
-              : t('investments.results_count_filtered', { shown: filtered.length, total: investments.length })}
-          </p>
-          {selectedSortLabel && <p className="text-neutral-700">{t('investments.chip_sort', { value: selectedSortLabel })}</p>}
+      <div className="space-y-3">
+        <div className="flex justify-start">
+          <ViewToggle value={viewMode} onChange={(m) => setViewMode(m as 'cards' | 'table')} />
         </div>
-        <div className="inline-flex rounded-lg border border-brand/20 bg-white/80 p-0.5">
-          <button
-            type="button"
-            onClick={() => setViewMode('cards')}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'cards' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
-            aria-pressed={viewMode === 'cards'}
-          >
-            {t('investments.view_cards')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('table')}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${viewMode === 'table' ? 'bg-brand text-white shadow-sm' : 'text-brand-text hover:bg-brand-light hover:text-brand-text'}`}
-            aria-pressed={viewMode === 'table'}
-          >
-            {t('investments.view_table')}
-          </button>
-        </div>
-      </div>
 
-      {/* Cards grid */}
-      {filtered.length === 0 ? (
+        {/* Cards grid */}
+        {filtered.length === 0 ? (
         <div className="app-card">
           <EmptyState
             title={investments.length === 0 ? t('investments.empty_no_investments') : t('investments.empty_no_results')}
@@ -690,6 +638,7 @@ export default function InvestmentsPage() {
           </table>
         </div>
       )}
+      </div>
 
       {/* FAB */}
       <FloatingActionMenu

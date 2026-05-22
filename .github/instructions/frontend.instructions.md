@@ -31,6 +31,13 @@ applyTo: "frontend/src/**/*.{ts,tsx}"
 - Typography: only `font-normal` and `font-medium` — never `font-bold` or `font-semibold`.
 - Never use default Tailwind color scales (`red-500`, `green-600`, etc.).
 
+## Internationalisation (i18n)
+- All user-visible strings must go through `useTranslation` — never hardcode text in JSX.
+- Add keys to **both** `src/i18n/locales/es.json` and `src/i18n/locales/en.json` simultaneously.
+- Key naming: `section.component.description` in camelCase, e.g. `budgets.form.titleLabel`.
+- Never use interpolation with raw HTML — use `Trans` component when markup is needed inside a translation.
+- Do not store locale in component state — the global `i18n` instance manages it via `localStorage` key `atlas-lang`.
+
 ## Accessibility
 - Use semantic HTML elements (`button`, `nav`, `main`, `section`).
 - Interactive elements must be keyboard-reachable with visible focus.

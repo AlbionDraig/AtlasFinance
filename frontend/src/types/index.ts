@@ -151,6 +151,44 @@ export interface DashboardAggregates {
   financial_health: FinancialHealthSnapshot
 }
 
+export interface SmartAlertItem {
+  code: 'budget_overrun' | 'budget_near_limit' | 'fixed_payment_due_soon' | 'fixed_payment_overdue' | 'atypical_movement' | string
+  title: string
+  severity: 'high' | 'medium' | 'low' | string
+  detail: string
+  amount: number | null
+  category_id: number | null
+  transaction_id: number | null
+  due_date: string | null
+}
+
+export interface SubscriptionCenterItem {
+  key: string
+  name: string
+  category_id: number | null
+  monthly_estimate: number
+  annual_cost: number
+  last_charge_at: string
+  next_due_date: string | null
+  confidence: number
+}
+
+export interface SmartAlertsKpiItem {
+  key: string
+  title: string
+  description: string
+  value: number
+  unit: string
+}
+
+export interface SmartAlertsSummary {
+  generated_at: string
+  alerts: SmartAlertItem[]
+  subscriptions: SubscriptionCenterItem[]
+  subscriptions_annual_total: number
+  kpis: SmartAlertsKpiItem[]
+}
+
 // Re-exports from api modules to allow single-import patterns in hooks/pages.
 export type { Category, CategoryPayload } from '@/api/categories'
 export type { InvestmentEntity, InvestmentEntityPayload, InvestmentEntityType } from '@/api/investmentEntities'

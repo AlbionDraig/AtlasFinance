@@ -41,7 +41,7 @@ python -m ruff check backend/app backend/tests
 python -m pylint backend/app --disable=missing-module-docstring,missing-class-docstring,missing-function-docstring,too-few-public-methods --fail-under=8.0
 python -m bandit -q -r backend/app -ll
 python -m pip_audit -r backend/requirements.txt
-python -m pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-fail-under=85
+python -m pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-fail-under=92
 python -m compileall backend/app
 ```
 
@@ -51,7 +51,7 @@ python -m compileall backend/app
 cd frontend
 npm ci
 npm run lint
-npm run test:coverage
+npm run test:coverage  # cobertura unitaria de modulos criticos; flujos de pagina se validan por Playwright
 npm run build
 # E2E (requiere backend levantado en :8000)
 npm run test:e2e

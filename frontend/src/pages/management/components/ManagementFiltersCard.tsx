@@ -29,7 +29,6 @@ export default function ManagementFiltersCard({
       activeFilters={activeFilters}
       onResetFilters={onResetFilters}
       mobileTitle={t('management.title')}
-      stickyDesktop={false}
     >
       <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
         <label className="app-label">{t('common.search')}</label>

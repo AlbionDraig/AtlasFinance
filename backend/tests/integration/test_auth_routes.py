@@ -140,23 +140,30 @@ def test_login_emits_refresh_cookie_and_rotation_revokes_previous(client):
     )
     assert login.status_code == 200
 
-    first_refresh = client.cookies.get("refresh_token")
+    first_refresh = login.cookies.get("refresh_token") or client.cookies.get("refresh_token")
     assert first_refresh, "Login debe emitir cookie refresh_token"
+
+    # El TestClient no siempre conserva el path de la cookie como lo hace el navegador.
+    # La fijamos explícitamente para validar el contrato real del endpoint.
+    client.cookies.clear()
+    client.cookies.set("refresh_token", first_refresh, path="/api/v1/auth")
 
     # Primera rotación: emite uno nuevo y revoca el anterior.
     rotated = client.post("/api/v1/auth/refresh")
     assert rotated.status_code == 200
-    second_refresh = client.cookies.get("refresh_token")
+    second_refresh = rotated.cookies.get("refresh_token") or client.cookies.get("refresh_token")
     assert second_refresh and second_refresh != first_refresh
 
     # Reutilizar el primero (ya revocado) debe fallar con detección de reuso.
-    client.cookies.set("refresh_token", first_refresh)
+    client.cookies.clear()
+    client.cookies.set("refresh_token", first_refresh, path="/api/v1/auth")
     reused = client.post("/api/v1/auth/refresh")
     assert reused.status_code == 401
     assert reused.json()["detail"] == "Refresh token reuse detected"
 
     # Tras detectar reuso, el segundo (que era válido) también queda revocado.
-    client.cookies.set("refresh_token", second_refresh)
+    client.cookies.clear()
+    client.cookies.set("refresh_token", second_refresh, path="/api/v1/auth")
     after_reuse = client.post("/api/v1/auth/refresh")
     assert after_reuse.status_code == 401
 

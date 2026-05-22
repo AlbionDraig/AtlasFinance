@@ -35,6 +35,7 @@ const PocketsPage = lazy(() => import('@/pages/pockets/PocketsPage'))
 const InvestmentsPage = lazy(() => import('@/pages/investments/InvestmentsPage'))
 const BudgetsPage = lazy(() => import('@/pages/planning/BudgetsPage'))
 const SavingsGoalsPage = lazy(() => import('@/pages/planning/SavingsGoalsPage'))
+const SmartAlertsPage = lazy(() => import('@/pages/planning/SmartAlertsPage'))
 const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'))
 const AdminPage = lazy(() => import('@/pages/admin/AdminPage'))
 const ManagementPage = lazy(() => import('@/pages/management/ManagementPage'))
@@ -117,6 +118,14 @@ export default function App() {
                 element={
                   <PageErrorBoundary labelKey="errors.page_label_savings_goals" invalidateKeys={[QUERY_KEYS.categories]}>
                     <LazyPage><SavingsGoalsPage /></LazyPage>
+                  </PageErrorBoundary>
+                }
+              />
+              <Route
+                path="/planning/smart-alerts"
+                element={
+                  <PageErrorBoundary labelKey="errors.page_label_smart_alerts" invalidateKeys={[QUERY_KEYS.categories]}>
+                    <LazyPage><SmartAlertsPage /></LazyPage>
                   </PageErrorBoundary>
                 }
               />

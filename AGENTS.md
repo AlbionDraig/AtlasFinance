@@ -49,11 +49,36 @@ Detailed layer-specific rules live in `.github/instructions/`.
 - Make changes unrelated to the current task.
 - Use `any` / untyped `dict` where explicit types are required.
 
+## Available agents
+
+Use the most specific agent for the task. Prefer specialized agents over the generic Implementer.
+
+| Agent | File | When to use |
+|---|---|---|
+| **Backend Implementer** | `.github/agents/backend-implementer.agent.md` | FastAPI routers, services, repositories, schemas, models, migrations, backend tests. |
+| **Frontend Implementer** | `.github/agents/frontend-implementer.agent.md` | React pages, components, hooks, styles, frontend tests. |
+| **Implementer** | `.github/agents/implementer.agent.md` | Cross-cutting or full-stack changes that touch both backend and frontend simultaneously. |
+| **Reviewer** | `.github/agents/reviewer.agent.md` | Code review, architecture audit, security analysis, quality assessment. |
+| **Explore** | `.github/agents/explore.agent.md` | Read-only codebase exploration; safe to invoke in parallel. |
+
+> **Rule:** If the task is scoped to a single layer, use Backend Implementer or Frontend Implementer.
+> Only escalate to the generic Implementer when a single change necessarily spans both stacks.
+
 ## Validation before closing a task
 
-1. Run relevant tests and confirm they pass.
-2. Run lint / type-check for the modified files.
-3. State what changed, why, and any residual risks or open TODOs.
+**Backend scope:**
+1. `ruff check backend/app backend/tests`
+2. `pylint backend/app --fail-under=8.0`
+3. `bandit -q -r backend/app -ll`
+4. `pytest backend/tests --cov=backend/app --cov-fail-under=85`
+
+**Frontend scope:**
+1. `npm run lint`
+2. `npm run typecheck`
+3. `npm run test:coverage`
+4. `npm run build`
+
+**Always:** state what changed, why, and any residual risks or open TODOs.
 
 ## Detailed instructions
 
@@ -64,5 +89,6 @@ Detailed layer-specific rules live in `.github/instructions/`.
 | Frontend TypeScript/React | `.github/instructions/frontend.instructions.md` |
 | Tests | `.github/instructions/testing.instructions.md` |
 | DB / Migrations | `.github/instructions/database.instructions.md` |
+| Security (OWASP, auth, headers, secrets) | `.github/instructions/security.instructions.md` |
 | Config files / CI | `.github/instructions/project-config.instructions.md` |
 | Git & commits | `.github/instructions/git.instructions.md` |

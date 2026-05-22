@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/store/authStore'
 import { authApi } from '@/api/auth'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
+import BrandLogo from '@/components/ui/BrandLogo'
 
 // CatÃ¡logo declarativo de items del sidebar. Mantenerlo aquÃ­ (vs. en cada NavLink)
 // permite reordenar/agregar entradas sin tocar el JSX del render.
@@ -78,6 +79,16 @@ const navItems = [
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+    ),
+  },
+  {
+    to: '/planning/smart-alerts',
+    labelKey: 'nav.planning_alerts',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3a6 6 0 00-6 6v3.2l-1.5 2.5A1 1 0 005.35 16h13.3a1 1 0 00.85-1.5L18 12.2V9a6 6 0 00-6-6z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10 19a2 2 0 004 0" />
       </svg>
     ),
   },
@@ -378,12 +389,11 @@ export default function AppLayout() {
         >
           {/* Logo */}
           <div className={`${collapsed ? 'px-2 py-3 flex-col items-center gap-2' : 'px-4 py-4 items-center gap-2'} border-b border-white/10 flex`}>
-            <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center shrink-0">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V17a1 1 0 11-2 0v-.07A7.003 7.003 0 015 10h1a6 6 0 0012 0h1a7.003 7.003 0 01-6 6.93z" />
-              </svg>
-            </div>
-            {!collapsed && <span className="text-base font-medium tracking-tight text-neutral-50">{t('common.atlasFinance')}</span>}
+            <BrandLogo
+              showText={!collapsed}
+              text={t('common.atlasFinance')}
+              iconSizeClassName="h-8 w-8"
+            />
             <button
               type="button"
               onClick={handleTogglePin}
@@ -440,12 +450,7 @@ export default function AppLayout() {
           />
           <aside className="fixed inset-y-0 left-0 z-[130] w-72 max-w-[85vw] bg-neutral-900 text-neutral-50 border-r border-neutral-100 flex flex-col shadow-lg lg:hidden">
             <div className="px-4 py-4 items-center gap-2 border-b border-white/10 flex">
-              <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V17a1 1 0 11-2 0v-.07A7.003 7.003 0 015 10h1a6 6 0 0012 0h1a7.003 7.003 0 01-6 6.93z" />
-                </svg>
-              </div>
-              <span className="text-base font-medium tracking-tight text-neutral-50">{t('common.atlasFinance')}</span>
+              <BrandLogo text={t('common.atlasFinance')} iconSizeClassName="h-8 w-8" />
               <button
                 type="button"
                 className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-50 hover:bg-white/10 transition-colors"

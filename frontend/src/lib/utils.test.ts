@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { AxiosError } from 'axios'
-import { formatCurrency, getApiErrorMessage } from './utils'
+import { formatCurrency, formatSavingsGoalDescription, getApiErrorMessage } from './utils'
 
 describe('formatCurrency', () => {
   it('formats COP amounts with thousand separators and no decimals', () => {
@@ -76,5 +76,38 @@ describe('getApiErrorMessage', () => {
       config: {} as never,
     }
     expect(getApiErrorMessage(err, 'fallback')).toBe('fallback')
+  })
+})
+
+describe('formatSavingsGoalDescription', () => {
+  it('returns null when description is nullish or empty', () => {
+    expect(formatSavingsGoalDescription(null, 'es-CO')).toBeNull()
+    expect(formatSavingsGoalDescription(undefined, 'en-US')).toBeNull()
+    expect(formatSavingsGoalDescription('', 'es')).toBeNull()
+  })
+
+  it('returns raw description when it does not match legacy seed pattern', () => {
+    const desc = 'Meta para viajar en diciembre'
+    expect(formatSavingsGoalDescription(desc, 'es-CO')).toBe(desc)
+  })
+
+  it('maps known legacy code to spanish text', () => {
+    const desc = '[seed-state] partial_90_urgent - technical fallback'
+    expect(formatSavingsGoalDescription(desc, 'es-CO')).toBe('Casi completada y con fecha objetivo urgente.')
+  })
+
+  it('maps known legacy code to english text', () => {
+    const desc = '[seed-state] overdue - technical fallback'
+    expect(formatSavingsGoalDescription(desc, 'en-US')).toBe('The target date has passed and the goal is overdue.')
+  })
+
+  it('falls back to legacy message for unknown legacy codes', () => {
+    const desc = '[seed-state] custom_unknown - visible fallback message'
+    expect(formatSavingsGoalDescription(desc, 'es-CO')).toBe('visible fallback message')
+  })
+
+  it('returns null for unknown code when fallback is blank', () => {
+    const desc = '[seed-state] custom_unknown -    '
+    expect(formatSavingsGoalDescription(desc, 'es-CO')).toBeNull()
   })
 })

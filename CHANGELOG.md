@@ -8,15 +8,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ### Added
 
+- _No entries yet._
+
+---
+
+## [1.0.5] - 2026-05-22
+
+### Added
+
 - Financial health score module in dashboard metrics with deterministic backend scoring for savings, debt, liquidity and diversification.
 - Weekly improvement plan with prioritized actions and expected score gain.
 - Financial health history visualization with monthly evolution context.
+- Shared responsive filters now support rendering quick presets inside the main filter card container.
 
 ### Changed
 
 - Dashboard financial health UI refined with responsive compact/rich layouts and improved accessibility for small-text labels.
 - Weekly plan priority indicators now use clearer semantic color mapping (high, medium, low) across badges and card accents.
 - Health level descriptive copy was simplified in Spanish and English to remove redundant status wording.
+- Sticky filter behavior was standardized across pages using `ResponsiveFilters` and `StickyBar` integration.
+- KPI cards in planning savings goals, investments, pockets and smart alerts were unified with a consistent visual style.
+- Frontend package version was updated to `1.0.5`.
+
+### Security
+
+- Backend dependency `starlette` was upgraded to `1.0.1` to address `PYSEC-2026-161` and unblock security CI scans.
 
 ### Tests
 

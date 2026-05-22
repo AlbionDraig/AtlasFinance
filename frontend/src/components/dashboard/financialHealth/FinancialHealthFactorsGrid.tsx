@@ -19,17 +19,17 @@ export default function FinancialHealthFactorsGrid({
         const barCls = {
           positive: 'bg-success',
           negative: 'bg-warning',
-          flat: 'bg-brand-deep',
+          flat: 'bg-success',
         }[tone]
         const cardToneCls = {
           positive: 'border-l-4 border-l-success ring-1 ring-success/20',
           negative: 'border-l-4 border-l-warning ring-1 ring-warning/20',
-          flat: 'border-l-4 border-l-brand-deep ring-1 ring-brand-deep/20',
+          flat: 'border-l-4 border-l-success ring-1 ring-success/20',
         }[tone]
         const scoreToneCls = {
           positive: 'text-success',
           negative: 'text-warning',
-          flat: 'text-brand-deep',
+          flat: 'text-success',
         }[tone]
 
         return (

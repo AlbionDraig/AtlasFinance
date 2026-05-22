@@ -30,16 +30,18 @@ export default function ResponsiveFilters({
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
   const desktopContent = (
-    <div className="space-y-3">
-      {presets && <div className="flex flex-wrap gap-2 px-4">{presets}</div>}
-      <FilterCard activeFilters={activeFilters} onReset={onResetFilters} onRemoveFilter={onRemoveFilter}>
-        {children}
-      </FilterCard>
-    </div>
+    <FilterCard
+      activeFilters={activeFilters}
+      onReset={onResetFilters}
+      onRemoveFilter={onRemoveFilter}
+      presets={presets}
+    >
+      {children}
+    </FilterCard>
   )
 
   return (
-    <div className="space-y-3">
+    <>
       <div className="px-4 md:hidden">
         <button
           type="button"
@@ -57,9 +59,11 @@ export default function ResponsiveFilters({
         </button>
       </div>
 
-      <div className="hidden md:block">
-        {stickyDesktop ? <StickyBar>{desktopContent}</StickyBar> : desktopContent}
-      </div>
+      {stickyDesktop ? (
+        <StickyBar className="hidden md:block">{desktopContent}</StickyBar>
+      ) : (
+        <div className="hidden md:block">{desktopContent}</div>
+      )}
 
       {mobileFiltersOpen && (
         <Modal onClose={() => setMobileFiltersOpen(false)} maxWidth="max-w-2xl">
@@ -76,14 +80,17 @@ export default function ResponsiveFilters({
               </button>
             </div>
 
-            {presets && <div className="mb-3">{presets}</div>}
-
-            <FilterCard activeFilters={activeFilters} onReset={onResetFilters} onRemoveFilter={onRemoveFilter}>
+            <FilterCard
+              activeFilters={activeFilters}
+              onReset={onResetFilters}
+              onRemoveFilter={onRemoveFilter}
+              presets={presets}
+            >
               {children}
             </FilterCard>
           </section>
         </Modal>
       )}
-    </div>
+    </>
   )
 }

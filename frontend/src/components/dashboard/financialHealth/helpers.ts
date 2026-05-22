@@ -31,8 +31,8 @@ export function historyChangeLabel(
 
 export function historyDeltaTone(direction: 'up' | 'down' | 'stable'): string {
   if (direction === 'up') return 'text-success'
-  if (direction === 'down') return 'text-warning'
-  return 'text-neutral-700'
+  if (direction === 'down') return 'text-brand'
+  return 'text-warning'
 }
 
 export function actionDescription(

@@ -46,7 +46,7 @@ jobs:
       - name: Unit tests
         run: npm run test:run
 
-      - name: Coverage report
+      - name: Coverage report (critical modules)
         run: npm run test:coverage
 
       - name: Build

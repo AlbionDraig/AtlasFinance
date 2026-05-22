@@ -1,5 +1,5 @@
 import apiClient from '@/lib/axios'
-import type { DashboardAggregates, DashboardMetrics } from '@/types'
+import type { DashboardAggregates, DashboardMetrics, SmartAlertsSummary } from '@/types'
 
 // Dashboard-specific endpoints (headline metrics + comparative aggregates).
 export const metricsApi = {
@@ -13,4 +13,7 @@ export const metricsApi = {
     prev_start_date: string
     prev_end_date: string
   }) => apiClient.get<DashboardAggregates>('/metrics/aggregates', { params }),
+
+  smartAlerts: (params?: { lookback_days?: number; reminder_window_days?: number }) =>
+    apiClient.get<SmartAlertsSummary>('/metrics/smart-alerts', { params }),
 }

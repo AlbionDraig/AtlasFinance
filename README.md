@@ -36,7 +36,7 @@ Repositorio: <https://github.com/AlbionDraig/AtlasFinance>
 
 ### Backend
 
-- **FastAPI 0.136** + **Starlette 0.49** — framework HTTP async.
+- **FastAPI 0.136** + **Starlette 1.0** — framework HTTP async.
 - **SQLAlchemy 2.0** ORM con `DeclarativeBase` y tipado `Mapped[...]`.
 - **PostgreSQL 16** en producción / Docker; **SQLite en memoria** en CI.
 - **Pydantic v2** + **pydantic-settings** para schemas y configuración.

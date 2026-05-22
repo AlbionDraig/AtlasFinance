@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { authApi } from '@/api/auth'
 import AuthLoadingOverlay from '@/components/ui/AuthLoadingOverlay'
+import BrandLogo from '@/components/ui/BrandLogo'
 import FormField from '@/components/ui/FormField'
 import { useAuthStore } from '@/store/authStore'
 import { useToast } from '@/hooks/useToast'
@@ -99,11 +100,7 @@ export default function RegisterPage() {
       <div className="relative w-full max-w-sm app-panel p-8">
         {/* Logo */}
         <div className="flex justify-center mb-4">
-          <div className="w-12 h-12 rounded-xl bg-[var(--af-accent)] flex items-center justify-center">
-            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V17a1 1 0 11-2 0v-.07A7.003 7.003 0 015 10h1a6 6 0 0012 0h1a7.003 7.003 0 01-6 6.93z" />
-            </svg>
-          </div>
+          <BrandLogo showText={false} iconSizeClassName="h-12 w-12" className="flex justify-center" />
         </div>
 
         <h1 className="app-title text-2xl text-center mb-1 tracking-tight">

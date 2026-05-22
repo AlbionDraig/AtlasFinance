@@ -4,6 +4,7 @@
 // (importante en filtros dentro de modales o cards cercanas al pie de página).
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 
 interface SelectOption {
   value: string
@@ -18,19 +19,41 @@ interface SelectProps {
   disabled?: boolean
   visibleItems?: number
   active?: boolean
+  searchable?: boolean
+  searchPlaceholder?: string
+  noResultsText?: string
 }
 
-export default function Select({ value, onChange, options, className = '', disabled = false, visibleItems, active = false }: SelectProps) {
+export default function Select({
+  value,
+  onChange,
+  options,
+  className = '',
+  disabled = false,
+  visibleItems,
+  active = false,
+  searchable = true,
+  searchPlaceholder,
+  noResultsText,
+}: SelectProps) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   // openUpward: true cuando no hay espacio suficiente abajo y sí arriba.
   // Lo guardamos en estado para que el primer render del dropdown ya use la posición correcta
   // y evitar el "salto" visual de re-medir después del mount.
   const [openUpward, setOpenUpward] = useState(false)
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 0 })
   const ref = useRef<HTMLDivElement>(null)
-  const menuRef = useRef<HTMLUListElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const menuMaxHeight = visibleItems ? visibleItems * 36 + 8 : 208
+  const resolvedSearchPlaceholder = searchPlaceholder ?? t('common.search')
+  const resolvedNoResultsText = noResultsText ?? t('common.noResults')
+  const normalizedQuery = searchQuery.trim().toLowerCase()
+  const filteredOptions = searchable && normalizedQuery
+    ? options.filter((opt) => opt.label.toLowerCase().includes(normalizedQuery))
+    : options
 
   useLayoutEffect(() => {
     if (!open || !ref.current) return
@@ -86,6 +109,12 @@ export default function Select({ value, onChange, options, className = '', disab
   const selected = options.find(o => o.value === value) ?? options[0] ?? { value: '', label: 'Sin opciones' }
   const isDisabled = disabled || options.length === 0
 
+  useEffect(() => {
+    if (!open) {
+      setSearchQuery('')
+    }
+  }, [open])
+
   function handleOpen() {
     if (isDisabled) return
     setOpen(prev => !prev)
@@ -118,36 +147,50 @@ export default function Select({ value, onChange, options, className = '', disab
 
       {/* Dropdown */}
       {open && !isDisabled && createPortal(
-        <ul
+        <div
           ref={menuRef}
           data-testid="select-menu"
-          className="app-menu fixed z-[400] overflow-y-auto py-1 text-xs"
+          className="app-menu fixed z-[400] overflow-hidden text-xs"
           style={{
             top: openUpward ? 'auto' : `${menuPosition.top}px`,
             bottom: openUpward ? `${Math.max(8, window.innerHeight - menuPosition.top)}px` : 'auto',
             left: `${menuPosition.left}px`,
             width: `${menuPosition.width}px`,
-            maxHeight: `${menuMaxHeight}px`,
           }}
         >
-          {options.map(opt => (
-            <li key={opt.value}>
-              <button
-                type="button"
-                onClick={() => { onChange(opt.value); setOpen(false) }}
-                data-testid={`select-option-${opt.value}`}
-                data-value={opt.value}
-                className={`w-full text-left px-3 py-2 transition-colors cursor-pointer
-                  ${opt.value === value
-                    ? 'bg-tone-neutral text-[var(--af-accent)]'
-                    : 'hover:bg-[var(--af-surface-alt)] text-[var(--af-text)]'
-                  }`}
-              >
-                {opt.label}
-              </button>
-            </li>
-          ))}
-        </ul>,
+          {searchable && (
+            <div className="border-b border-neutral-100 p-2">
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder={resolvedSearchPlaceholder}
+                className="app-control h-9 w-full text-xs"
+                autoFocus
+              />
+            </div>
+          )}
+
+          <ul className="overflow-y-auto py-1" style={{ maxHeight: `${menuMaxHeight}px` }}>
+            {filteredOptions.map(opt => (
+              <li key={opt.value}>
+                <button
+                  type="button"
+                  onClick={() => { onChange(opt.value); setOpen(false) }}
+                  data-testid={`select-option-${opt.value}`}
+                  data-value={opt.value}
+                  className={`w-full text-left px-3 py-2 transition-colors cursor-pointer
+                    ${opt.value === value
+                      ? 'bg-tone-neutral text-[var(--af-accent)]'
+                      : 'hover:bg-[var(--af-surface-alt)] text-[var(--af-text)]'
+                    }`}
+                >
+                  {opt.label}
+                </button>
+              </li>
+            ))}
+            {filteredOptions.length === 0 && <li className="px-3 py-2 text-neutral-400">{resolvedNoResultsText}</li>}
+          </ul>
+        </div>,
         document.body
       )}
     </div>
