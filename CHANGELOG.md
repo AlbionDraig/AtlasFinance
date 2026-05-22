@@ -12,6 +12,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
+## [1.0.7] - 2026-05-22
+
+### Changed
+
+- CI workflows were standardized to run on `push` across all branches, ensuring PRs show push pipeline results before merge without duplicate `pull_request` runs.
+- Workflow concurrency groups were aligned to `github.ref` for push-only execution mode.
+
+### Fixed
+
+- Token TTL settings validators in backend config were updated with explicit type coercion to satisfy strict `mypy` checks and restore `code-smell-scan` stability.
+
+---
+
 ## [1.0.5] - 2026-05-22
 
 ### Added
