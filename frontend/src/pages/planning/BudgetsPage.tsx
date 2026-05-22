@@ -158,8 +158,40 @@ export default function BudgetsPage() {
   const totalLimit = Number(budgetData?.total_limit ?? 0)
   const totalSpent = Number(budgetData?.total_spent ?? 0)
   const totalRemaining = totalLimit - totalSpent
-
-  const summaryCardClass = 'bg-white border border-neutral-100 rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md'
+  const totalRemainingTone = totalRemaining > 0 ? 'positive' : totalRemaining < 0 ? 'negative' : 'neutral'
+  const budgetKpis = [
+    {
+      key: 'total_limit',
+      title: t('planning.budget.total_limit'),
+      value: formatCurrency(totalLimit, 'COP'),
+      accent: 'bg-brand',
+      valueClass: 'text-brand-text',
+    },
+    {
+      key: 'total_spent',
+      title: t('planning.budget.total_spent'),
+      value: formatCurrency(totalSpent, 'COP'),
+      accent: 'bg-warning',
+      valueClass: 'text-warning-text',
+    },
+    {
+      key: 'total_remaining',
+      title: t('planning.budget.total_remaining'),
+      value: formatCurrency(totalRemaining, 'COP'),
+      accent:
+        totalRemainingTone === 'positive'
+          ? 'bg-success'
+          : totalRemainingTone === 'negative'
+            ? 'bg-warning'
+            : 'bg-neutral-400',
+      valueClass:
+        totalRemainingTone === 'positive'
+          ? 'text-success'
+          : totalRemainingTone === 'negative'
+            ? 'text-warning'
+            : 'text-neutral-900',
+    },
+  ]
 
   const getBudgetStatusLabel = (status: BudgetRead['status']) => {
     switch (status) {
@@ -243,26 +275,17 @@ export default function BudgetsPage() {
 
       {budgetData && budgetData.budgets.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-          <div className={`${summaryCardClass} border-l-4 border-l-neutral-400 ring-1 ring-neutral-100`}>
-            <p className="app-label uppercase tracking-wider">{t('planning.budget.total_limit')}</p>
-            <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">{formatCurrency(totalLimit, 'COP')}</p>
-          </div>
-          <div className={`${summaryCardClass} border-l-4 border-l-warning ring-1 ring-warning/20`}>
-            <p className="app-label uppercase tracking-wider">{t('planning.budget.total_spent')}</p>
-            <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">{formatCurrency(totalSpent, 'COP')}</p>
-          </div>
-          <div className={`${summaryCardClass} border-l-4 ${totalRemaining >= 0 ? 'border-l-success ring-1 ring-success/20' : 'border-l-warning ring-1 ring-warning/20'}`}>
-            <p className="app-label uppercase tracking-wider">{t('planning.budget.total_remaining')}</p>
-            <p
-              className={`text-2xl font-medium leading-none mt-1 ${
-                totalRemaining >= 0
-                  ? 'text-success'
-                  : 'text-warning'
-              }`}
-            >
-              {formatCurrency(totalRemaining, 'COP')}
-            </p>
-          </div>
+          {budgetKpis.map((kpi) => (
+            <article key={kpi.key} className="app-card relative p-5 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
+              <div className={`absolute top-0 left-0 right-0 h-1.5 ${kpi.accent}`} />
+              <div className="flex items-center gap-1.5 mb-1">
+                <p className="app-label uppercase tracking-wider">{kpi.title}</p>
+              </div>
+
+              <p className={`text-2xl font-medium leading-none ${kpi.valueClass}`}>{kpi.value}</p>
+
+            </article>
+          ))}
         </div>
       )}
 
