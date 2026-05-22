@@ -1,4 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none">
-	<rect x="4" y="4" width="40" height="40" rx="10" fill="currentColor"/>
-	<path d="M14 31.5L21 16.5H27L34 31.5H29.5L28 28H20L18.5 31.5H14ZM21.7 23.9H26.3L24 18.4L21.7 23.9Z" fill="white"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+	<defs>
+		<linearGradient id="atlas-hybrid-red-favicon" x1="8" y1="7" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+			<stop stop-color="#EB3B61"/>
+			<stop offset="1" stop-color="#7D0A22"/>
+		</linearGradient>
+		<linearGradient id="atlas-top-sheen-favicon" x1="32" y1="6" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+			<stop stop-color="#FFFFFF" stop-opacity="0.22"/>
+			<stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+		</linearGradient>
+		<linearGradient id="atlas-bars-favicon" x1="17" y1="44" x2="44" y2="21" gradientUnits="userSpaceOnUse">
+			<stop stop-color="#FFD1DC"/>
+			<stop offset="1" stop-color="#FFF3F7"/>
+		</linearGradient>
+	</defs>
+
+	<path d="M32 4L54 17V47L32 60L10 47V17L32 4Z" fill="url(#atlas-hybrid-red-favicon)"/>
+	<path d="M32 6.8L51.6 18.2V45.8L32 57.2L12.4 45.8V18.2L32 6.8Z" stroke="#FFD3DD" stroke-opacity="0.35" stroke-width="1.2"/>
+	<path d="M32 4L54 17V25L32 12L10 25V17L32 4Z" fill="url(#atlas-top-sheen-favicon)"/>
+	<path d="M32 10.9L34.8 14.2L32 17.5L29.2 14.2L32 10.9Z" fill="#FFEAF0" fill-opacity="0.95"/>
+
+	<rect x="17.2" y="37.8" width="4.8" height="6.4" rx="1.4" fill="url(#atlas-bars-favicon)"/>
+	<rect x="24.4" y="33.1" width="4.8" height="11.1" rx="1.4" fill="url(#atlas-bars-favicon)"/>
+	<rect x="31.6" y="27.2" width="4.8" height="17" rx="1.4" fill="url(#atlas-bars-favicon)"/>
+	<rect x="38.8" y="22" width="4.8" height="22.2" rx="1.4" fill="url(#atlas-bars-favicon)"/>
+
 </svg>
