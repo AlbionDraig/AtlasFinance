@@ -3,14 +3,12 @@ name: CodeQL
 on:
   push:
     branches: ["**"]
-  pull_request:
-    branches: ["**"]
   schedule:
     # Weekly Monday 07:00 UTC scan to catch new advisories on stale code.
     - cron: "0 7 * * 1"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
