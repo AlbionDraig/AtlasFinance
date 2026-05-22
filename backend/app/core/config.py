@@ -87,15 +87,29 @@ class Settings(BaseSettings):
     # extra="ignore" evita que .env con vars sobrantes (de otros servicios) rompa el arranque.
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
+    @staticmethod
+    def _coerce_minutes(value: object) -> int:
+        """Convierte valores de settings a minutos enteros de forma estricta."""
+        if isinstance(value, bool):
+            raise ValueError("boolean values are not valid for minute-based settings")
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip()
+            if not normalized:
+                raise ValueError("minute-based settings cannot be empty")
+            return int(normalized)
+        raise ValueError("minute-based settings must be int or numeric string")
+
     @field_validator("access_token_expire_minutes", mode="before")
     @classmethod
     def _enforce_access_token_minimum(cls, value: object) -> int:
-        return max(int(value), 480)
+        return max(cls._coerce_minutes(value), 480)
 
     @field_validator("refresh_token_expire_minutes", mode="before")
     @classmethod
     def _enforce_refresh_token_minimum(cls, value: object) -> int:
-        return max(int(value), 10080)
+        return max(cls._coerce_minutes(value), 10080)
 
 
 @lru_cache
