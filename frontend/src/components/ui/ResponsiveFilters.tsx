@@ -30,12 +30,14 @@ export default function ResponsiveFilters({
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
   const desktopContent = (
-    <div className="space-y-3">
-      {presets && <div className="flex flex-wrap gap-2 px-4">{presets}</div>}
-      <FilterCard activeFilters={activeFilters} onReset={onResetFilters} onRemoveFilter={onRemoveFilter}>
-        {children}
-      </FilterCard>
-    </div>
+    <FilterCard
+      activeFilters={activeFilters}
+      onReset={onResetFilters}
+      onRemoveFilter={onRemoveFilter}
+      presets={presets}
+    >
+      {children}
+    </FilterCard>
   )
 
   return (
@@ -78,9 +80,12 @@ export default function ResponsiveFilters({
               </button>
             </div>
 
-            {presets && <div className="mb-3">{presets}</div>}
-
-            <FilterCard activeFilters={activeFilters} onReset={onResetFilters} onRemoveFilter={onRemoveFilter}>
+            <FilterCard
+              activeFilters={activeFilters}
+              onReset={onResetFilters}
+              onRemoveFilter={onRemoveFilter}
+              presets={presets}
+            >
               {children}
             </FilterCard>
           </section>

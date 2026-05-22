@@ -22,6 +22,8 @@ interface FilterCardProps {
   sticky?: boolean
   /** Clases extra para el wrapper sticky */
   stickyClassName?: string
+  /** Fila opcional de presets rápidos renderizada encima de los campos */
+  presets?: ReactNode
 }
 
 export default function FilterCard({
@@ -32,6 +34,7 @@ export default function FilterCard({
   className = '',
   sticky = false,
   stickyClassName,
+  presets,
 }: FilterCardProps) {
   const { t } = useTranslation()
   const normalizedFilters: FilterChip[] = activeFilters.map((chip) => {
@@ -43,6 +46,7 @@ export default function FilterCard({
 
   const content = (
     <div className="app-filter-card space-y-4">
+      {presets && <div>{presets}</div>}
       {/* Fila de campos */}
       <div className={`flex flex-wrap items-end gap-3 ${className}`}>
         {children}
