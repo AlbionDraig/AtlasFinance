@@ -44,7 +44,6 @@ export default function SavingsGoalsFiltersCard({
       onResetFilters={activeFilters.length > 0 ? onResetFilters : undefined}
       onRemoveFilter={onRemoveFilter}
       mobileTitle={t('planning.goals.title')}
-      stickyDesktop={false}
     >
       {/* Búsqueda */}
       <div className="flex flex-col gap-1 flex-1 min-w-[180px]">

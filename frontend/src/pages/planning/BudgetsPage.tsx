@@ -292,7 +292,6 @@ export default function BudgetsPage() {
         onResetFilters={activeFilters.length > 0 ? handleResetFilters : undefined}
         onRemoveFilter={handleRemoveFilter}
         mobileTitle={t('planning.budgets.title')}
-        stickyDesktop={false}
       >
         <div className="flex flex-col gap-1 w-48">
           <label className="app-label">{t('planning.budget.filter_month')}</label>

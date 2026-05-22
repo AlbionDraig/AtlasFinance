@@ -39,7 +39,7 @@ export default function ResponsiveFilters({
   )
 
   return (
-    <div className="space-y-3">
+    <>
       <div className="px-4 md:hidden">
         <button
           type="button"
@@ -57,9 +57,11 @@ export default function ResponsiveFilters({
         </button>
       </div>
 
-      <div className="hidden md:block">
-        {stickyDesktop ? <StickyBar>{desktopContent}</StickyBar> : desktopContent}
-      </div>
+      {stickyDesktop ? (
+        <StickyBar className="hidden md:block">{desktopContent}</StickyBar>
+      ) : (
+        <div className="hidden md:block">{desktopContent}</div>
+      )}
 
       {mobileFiltersOpen && (
         <Modal onClose={() => setMobileFiltersOpen(false)} maxWidth="max-w-2xl">
@@ -84,6 +86,6 @@ export default function ResponsiveFilters({
           </section>
         </Modal>
       )}
-    </div>
+    </>
   )
 }

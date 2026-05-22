@@ -19,7 +19,7 @@ interface StickyBarProps {
 export default function StickyBar({ children, className }: StickyBarProps) {
   return (
     <div
-      className={`sticky top-[-1.5rem] z-50 relative -mx-4 md:-mx-6 px-4 md:px-6 pt-0 pb-0 bg-transparent ${className ?? ''}`}
+      className={`sticky top-[-1.5rem] z-30 -mx-4 md:-mx-6 px-4 md:px-6 pt-0 pb-0 bg-transparent ${className ?? ''}`}
     >
       {children}
     </div>

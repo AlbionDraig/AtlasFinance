@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import Badge from '@/components/ui/Badge'
-import FilterCard from '@/components/ui/FilterCard'
 import InlineAlert from '@/components/ui/InlineAlert'
 import PageSkeleton from '@/components/ui/PageSkeleton'
+import ResponsiveFilters from '@/components/ui/ResponsiveFilters'
 import { useSmartAlertsData } from '@/hooks/useSmartAlertsData'
 import { trackUxEvent } from '@/lib/uxTelemetry'
 import { formatCurrency } from '@/lib/utils'
@@ -257,51 +257,45 @@ export default function SmartAlertsPage() {
         })}
       </div>
 
-      <section className="space-y-2">
-        <FilterCard
-          activeFilters={[]}
-          onReset={undefined}
-          className="gap-3"
-        >
-          <div className="w-full space-y-2">
-            <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center">
-              {t('planning.alerts.switches_title')}
-            </span>
-            <div className="flex w-full flex-wrap items-center gap-2 md:flex-nowrap">
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { key: 'budget' as const, label: t('planning.alerts.switch_budget') },
-                  { key: 'reminders' as const, label: t('planning.alerts.switch_reminders') },
-                  { key: 'atypical' as const, label: t('planning.alerts.switch_atypical') },
-                ].map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => setPreference(item.key, !preferences[item.key])}
-                    aria-pressed={preferences[item.key]}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2 ${
-                      preferences[item.key]
-                        ? 'bg-brand text-white hover:bg-brand-hover'
-                        : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-              {hasDisabledPreferences && (
+      <ResponsiveFilters mobileTitle={t('planning.alerts.switches_title')}>
+        <div className="w-full space-y-2">
+          <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center">
+            {t('planning.alerts.switches_title')}
+          </span>
+          <div className="flex w-full flex-wrap items-center gap-2 md:flex-nowrap">
+            <div className="flex flex-wrap gap-2">
+              {[
+                { key: 'budget' as const, label: t('planning.alerts.switch_budget') },
+                { key: 'reminders' as const, label: t('planning.alerts.switch_reminders') },
+                { key: 'atypical' as const, label: t('planning.alerts.switch_atypical') },
+              ].map((item) => (
                 <button
+                  key={item.key}
                   type="button"
-                  onClick={enableAllAlertTypes}
-                  className="md:ml-auto rounded-md border border-brand bg-brand px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-brand-hover hover:border-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2"
+                  onClick={() => setPreference(item.key, !preferences[item.key])}
+                  aria-pressed={preferences[item.key]}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2 ${
+                    preferences[item.key]
+                      ? 'bg-brand text-white hover:bg-brand-hover'
+                      : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                  }`}
                 >
-                  {t('planning.alerts.enable_all')}
+                  {item.label}
                 </button>
-              )}
+              ))}
             </div>
+            {hasDisabledPreferences && (
+              <button
+                type="button"
+                onClick={enableAllAlertTypes}
+                className="md:ml-auto rounded-md border border-brand bg-brand px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-brand-hover hover:border-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2"
+              >
+                {t('planning.alerts.enable_all')}
+              </button>
+            )}
           </div>
-        </FilterCard>
-      </section>
+        </div>
+      </ResponsiveFilters>
 
       <section className="app-card rounded-2xl p-4 md:p-5 space-y-3">
         <h2 className="app-section-title">{t('planning.alerts.guide_title')}</h2>
