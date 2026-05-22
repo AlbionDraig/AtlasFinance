@@ -8,13 +8,14 @@ import EditButton from '@/components/ui/EditButton'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
+import PageSkeleton from '@/components/ui/PageSkeleton'
 import Select from '@/components/ui/Select'
 import TableActionGroup from '@/components/ui/TableActionGroup'
 import ViewToggle from '@/components/ui/ViewToggle'
 import { useToast } from '@/hooks/useToast'
 import { useBudgetsByMonth, useCreateBudget, useDeleteBudget, useUpdateBudget } from '@/hooks/useBudgets'
 import { useCategoriesData } from '@/hooks/useCategoriesData'
-import { getApiErrorMessage } from '@/lib/utils'
+import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import type { Category } from '@/api/categories'
 import type { FormEvent } from 'react'
 import type { BudgetCreatePayload, BudgetRead } from '@/api/budgets'
@@ -29,9 +30,9 @@ interface BudgetFormData extends BudgetCreatePayload {
  * Budgets management page - display monthly budgets with traffic light status.
  */
 export default function BudgetsPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { toast } = useToast()
-  const [currentDate] = useState(new Date())
+  const currentDate = new Date()
   const [year, setYear] = useState(currentDate.getFullYear())
   const [month, setMonth] = useState(currentDate.getMonth() + 1)
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
@@ -104,7 +105,7 @@ export default function BudgetsPage() {
   const handleConfirmDeleteBudget = () => {
     if (!deletingBudget) return
 
-    const budgetLabel = categoryMap[deletingBudget.category_id] || `Category ${deletingBudget.category_id}`
+    const budgetLabel = getCategoryName(deletingBudget.category_id)
 
     deleteBudget.mutate(deletingBudget.id, {
       onSuccess: () => {
@@ -148,10 +149,14 @@ export default function BudgetsPage() {
     }
   }
 
-  const monthName = new Date(year, month - 1).toLocaleDateString('es-CO', {
+  const monthLocale = i18n.resolvedLanguage?.startsWith('es') ? 'es-CO' : 'en-US'
+  const monthName = new Date(year, month - 1).toLocaleDateString(monthLocale, {
     month: 'long',
     year: 'numeric',
   })
+  const totalLimit = Number(budgetData?.total_limit ?? 0)
+  const totalSpent = Number(budgetData?.total_spent ?? 0)
+  const totalRemaining = totalLimit - totalSpent
 
   const summaryCardClass = 'bg-white border border-neutral-100 rounded-xl p-4 shadow-sm relative transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md'
 
@@ -171,6 +176,14 @@ export default function BudgetsPage() {
       return 'bg-success-bg text-success-text'
     }
     return 'bg-warning-bg text-warning-text'
+  }
+
+  const getCategoryName = (categoryId: number) => {
+    return categoryMap[categoryId] || `${t('planning.budget.category')} #${categoryId}`
+  }
+
+  if (budgetsLoading) {
+    return <PageSkeleton cards={3} rows={4} columns={6} />
   }
 
   return (
@@ -205,11 +218,7 @@ export default function BudgetsPage() {
 
 
       {/* Budgets Grid */}
-      {budgetsLoading ? (
-        <div className="text-center py-8 text-neutral-400">
-          {t('common.loading')}
-        </div>
-      ) : !budgetData || budgetData.budgets.length === 0 ? (
+      {!budgetData || budgetData.budgets.length === 0 ? (
         <div className="text-center py-12 text-neutral-400">
           <p>{t('planning.budget.empty')}</p>
         </div>
@@ -219,27 +228,27 @@ export default function BudgetsPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
             <div className={`${summaryCardClass} border-l-4 border-l-neutral-400 ring-1 ring-neutral-100`}>
               <p className="app-label uppercase tracking-wider">{t('planning.budget.total_limit')}</p>
-              <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">${budgetData.total_limit}</p>
+              <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">{formatCurrency(totalLimit, 'COP')}</p>
             </div>
             <div className={`${summaryCardClass} border-l-4 border-l-warning ring-1 ring-warning/20`}>
               <p className="app-label uppercase tracking-wider">{t('planning.budget.total_spent')}</p>
-              <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">${budgetData.total_spent}</p>
+              <p className="text-2xl font-medium leading-none text-neutral-900 mt-1">{formatCurrency(totalSpent, 'COP')}</p>
             </div>
-            <div className={`${summaryCardClass} border-l-4 ${budgetData.total_limit - budgetData.total_spent >= 0 ? 'border-l-success ring-1 ring-success/20' : 'border-l-warning ring-1 ring-warning/20'}`}>
+            <div className={`${summaryCardClass} border-l-4 ${totalRemaining >= 0 ? 'border-l-success ring-1 ring-success/20' : 'border-l-warning ring-1 ring-warning/20'}`}>
               <p className="app-label uppercase tracking-wider">{t('planning.budget.total_remaining')}</p>
               <p
                 className={`text-2xl font-medium leading-none mt-1 ${
-                  budgetData.total_limit - budgetData.total_spent >= 0
+                  totalRemaining >= 0
                     ? 'text-success'
                     : 'text-warning'
                 }`}
               >
-                ${budgetData.total_limit - budgetData.total_spent}
+                {formatCurrency(totalRemaining, 'COP')}
               </p>
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="app-card rounded-2xl p-3 md:p-4 space-y-3">
             <div className="flex justify-start">
               <ViewToggle value={viewMode} onChange={(m) => setViewMode(m as 'cards' | 'table')} />
             </div>
@@ -250,7 +259,7 @@ export default function BudgetsPage() {
                   <BudgetCard
                     key={budget.id}
                     budget={budget}
-                    categoryName={categoryMap[budget.category_id] || `Category ${budget.category_id}`}
+                    categoryName={getCategoryName(budget.category_id)}
                     onEdit={handleEditBudget}
                     onDelete={handleDeleteBudget}
                   />
@@ -275,16 +284,16 @@ export default function BudgetsPage() {
                         key={budget.id}
                         className={`border-b border-neutral-100 last:border-b-0 transition-colors hover:bg-brand-light/35 ${index % 2 === 0 ? 'bg-white' : 'bg-brand-light/10'}`}
                       >
-                        <td className="px-3 py-2 text-neutral-900 font-medium">{categoryMap[budget.category_id] || `Category ${budget.category_id}`}</td>
+                        <td className="px-3 py-2 text-neutral-900 font-medium">{getCategoryName(budget.category_id)}</td>
                         <td className="px-3 py-2 text-center align-middle">
                           <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${getBudgetStatusBadgeClass(budget.status)}`}>
                             {getBudgetStatusLabel(budget.status)}
                           </span>
                         </td>
-                        <td className="px-3 py-2 text-neutral-700 tabular-nums text-center align-middle">${Number(budget.current_spent).toFixed(2)}</td>
-                        <td className="px-3 py-2 text-neutral-700 tabular-nums text-center align-middle">${Number(budget.amount_limit).toFixed(2)}</td>
+                        <td className="px-3 py-2 text-neutral-700 tabular-nums text-center align-middle">{formatCurrency(Number(budget.current_spent), 'COP')}</td>
+                        <td className="px-3 py-2 text-neutral-700 tabular-nums text-center align-middle">{formatCurrency(Number(budget.amount_limit), 'COP')}</td>
                         <td className={`px-3 py-2 tabular-nums text-center align-middle ${budget.remaining >= 0 ? 'text-success' : 'text-warning'}`}>
-                          ${Number(budget.remaining).toFixed(2)}
+                          {formatCurrency(Number(budget.remaining), 'COP')}
                         </td>
                         <td className="px-3 py-2 text-center align-middle">
                           <TableActionGroup>
@@ -304,7 +313,7 @@ export default function BudgetsPage() {
 
       {deletingBudget && (
         <ConfirmDeleteModal
-          title={t('common.delete_item', { name: categoryMap[deletingBudget.category_id] || `Category ${deletingBudget.category_id}` })}
+          title={t('common.delete_item', { name: getCategoryName(deletingBudget.category_id) })}
           description={t('planning.budget.confirm_delete')}
           loading={deleteBudget.isPending}
           onConfirm={handleConfirmDeleteBudget}

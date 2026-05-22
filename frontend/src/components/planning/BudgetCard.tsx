@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import DeleteButton from '@/components/ui/DeleteButton'
 import EditButton from '@/components/ui/EditButton'
+import { formatCurrency } from '@/lib/utils'
 import type { BudgetRead } from '@/api/budgets'
 
 interface BudgetCardProps {
@@ -76,16 +77,16 @@ export default function BudgetCard({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
         <div>
           <p className="app-label uppercase tracking-wider">{t('planning.budget.spent')}</p>
-          <p className="font-medium text-neutral-900 mt-1">${budget.current_spent}</p>
+          <p className="font-medium text-neutral-900 mt-1">{formatCurrency(Number(budget.current_spent), 'COP')}</p>
         </div>
         <div>
           <p className="app-label uppercase tracking-wider">{t('planning.budget.limit')}</p>
-          <p className="font-medium text-neutral-900 mt-1">${budget.amount_limit}</p>
+          <p className="font-medium text-neutral-900 mt-1">{formatCurrency(Number(budget.amount_limit), 'COP')}</p>
         </div>
         <div>
           <p className="app-label uppercase tracking-wider">{t('planning.budget.remaining')}</p>
           <p className={`font-medium mt-1 ${budget.remaining >= 0 ? 'text-success' : 'text-warning'}`}>
-            ${budget.remaining}
+            {formatCurrency(Number(budget.remaining), 'COP')}
           </p>
         </div>
       </div>
