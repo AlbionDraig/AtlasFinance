@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import type { Account } from '@/types'
+import type { Category } from '@/api/categories'
 import { getAccountName, getCategoryName, getCompactAccountName, normalizeTransactionType, toDateInputValue, toTimeInputValue } from './transactionUtils'
 
 describe('transactionUtils', () => {
@@ -16,8 +18,8 @@ describe('transactionUtils', () => {
   })
 
   it('resolves category and account display names', () => {
-    const categories = [{ id: 1, name: 'Food' }]
-    const accounts = [{ id: 7, name: 'Main account', currency: 'COP' }]
+    const categories = [{ id: 1, name: 'Food', description: '', is_fixed: false, category_type: 'income' }] as Category[]
+    const accounts = [{ id: 7, name: 'Main account', currency: 'COP', bank_id: 1, account_type: 'checking', balance: 0 }] as Account[]
 
     expect(getCategoryName(1, categories, 'No category')).toBe('Food')
     expect(getCategoryName(null, categories, 'No category')).toBe('No category')
