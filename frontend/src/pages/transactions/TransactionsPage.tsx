@@ -16,6 +16,8 @@ import { useToast } from '@/hooks/useToast'
 import { QUERY_KEYS } from '@/hooks/useCatalogQueries'
 import { useTransactionsCatalogs, useTransactionsList } from '@/hooks/useTransactionsData'
 import { trackUxEvent } from '@/lib/uxTelemetry'
+import { downloadBlobFile } from '@/lib/download'
+import { invalidateQueryKeys } from '@/lib/reactQuery'
 import { formatCurrency, getApiErrorMessage } from '@/lib/utils'
 import { buildTransactionPayload } from './transactionPayload'
 import { getCategoryName, getCompactAccountName, normalizeTransactionType, toDateInputValue } from './transactionUtils'
@@ -132,12 +134,7 @@ export default function TransactionsPage() {
         currency: filters.currency !== 'all' ? filters.currency : undefined,
       }
       const response = await transactionsApi.export(params)
-      const url = URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }))
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = 'transactions.csv'
-      anchor.click()
-      URL.revokeObjectURL(url)
+      downloadBlobFile(new Blob([response.data], { type: 'text/csv' }), 'transactions.csv')
     } catch (exportError) {
       toast(getApiErrorMessage(exportError, t('transactions.toast_export_error')), 'error')
     } finally {
@@ -178,9 +175,7 @@ export default function TransactionsPage() {
         toast(t('transactions.toast_saved'))
       }
       resetForm()
-      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.transactions })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
+      await invalidateQueryKeys(queryClient, [QUERY_KEYS.transactions, QUERY_KEYS.accounts, QUERY_KEYS.pockets])
     } catch (submitError) {
       toast(getApiErrorMessage(submitError, t('transactions.toast_save_error')), 'error')
     } finally {
@@ -205,8 +200,7 @@ export default function TransactionsPage() {
       })
       toast(t('transactions.toast_transfer_ok'))
       setTransferOpen(false)
-      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.transactions })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
+      await invalidateQueryKeys(queryClient, [QUERY_KEYS.transactions, QUERY_KEYS.accounts])
     } catch (transferError) {
       toast(getApiErrorMessage(transferError, t('transactions.toast_transfer_error')), 'error')
     } finally {
@@ -231,9 +225,7 @@ export default function TransactionsPage() {
       })
       setMoveToPocketOpen(false)
       toast(t('transactions.toast_pocket_ok'))
-      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.transactions })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
+      await invalidateQueryKeys(queryClient, [QUERY_KEYS.transactions, QUERY_KEYS.accounts, QUERY_KEYS.pockets])
     } catch (moveError) {
       toast(getApiErrorMessage(moveError, t('transactions.toast_pocket_error')), 'error')
     } finally {
@@ -257,9 +249,7 @@ export default function TransactionsPage() {
       try {
         await transactionsApi.delete(transactionId)
         if (editingId === transactionId) resetForm()
-        await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.transactions })
-        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.accounts })
-        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pockets })
+        await invalidateQueryKeys(queryClient, [QUERY_KEYS.transactions, QUERY_KEYS.accounts, QUERY_KEYS.pockets])
       } catch (deleteError) {
         setPendingDeletedIds((current) => {
           const next = new Set(current)
