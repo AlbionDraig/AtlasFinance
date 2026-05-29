@@ -12,6 +12,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ---
 
+## [1.0.8] - 2026-05-29
+
+### Changed
+
+- Shared UI primitives were localized and made more consistent across the app, including toasts, search inputs, skeletons, date picker labels and loading copy.
+- Planning, management, investments and transactions screens were aligned to use standardized loading and empty-state patterns.
+- Auth and profile forms now surface inline validation and API errors in addition to toast feedback.
+
+### Fixed
+
+- Management empty states no longer show loading copy when there are no active filters.
+
+### Tests
+
+- Added and updated Vitest and Playwright coverage for inline auth/profile errors and transaction loading precedence.
+
+---
+
 ## [1.0.7] - 2026-05-22
 
 ### Changed
