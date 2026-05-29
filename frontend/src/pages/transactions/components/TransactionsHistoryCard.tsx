@@ -64,8 +64,9 @@ export default function TransactionsHistoryCard({
   currency,
   onCreate,
 }: TransactionsHistoryCardProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   type MetricVariant = 'neutral' | 'positive' | 'negative'
+  const locale = i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'es-CO'
 
   function isTransferTransaction(transaction: Transaction): boolean {
     return transaction.description.startsWith('Transferencia: ')
@@ -135,7 +136,11 @@ export default function TransactionsHistoryCard({
       </div>
 
       {/* Empty state */}
-      {!paginatedTransactions.length ? (
+      {loading ? (
+        <div className="p-2">
+          <SkeletonTable rows={8} columns={6} />
+        </div>
+      ) : !paginatedTransactions.length ? (
         <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -152,10 +157,6 @@ export default function TransactionsHistoryCard({
             </button>
           )}
         </div>
-      ) : loading ? (
-        <div className="p-2">
-          <SkeletonTable rows={8} columns={6} />
-        </div>
       ) : (
         <>
           <div className="space-y-3 p-4 md:hidden">
@@ -168,9 +169,9 @@ export default function TransactionsHistoryCard({
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-neutral-900" title={transaction.description}>{transaction.description}</p>
                       <p className="mt-1 text-xs text-neutral-400">
-                        {new Date(transaction.occurred_at).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        {new Date(transaction.occurred_at).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                         {' · '}
-                        {new Date(transaction.occurred_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(transaction.occurred_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                     <p className={`shrink-0 text-sm font-medium ${isIncome ? 'text-success' : 'text-warning'}`}>
@@ -229,10 +230,10 @@ export default function TransactionsHistoryCard({
                     <td className="px-5 py-3 whitespace-nowrap align-middle">
                       <div className="flex flex-col gap-0.5">
                         <span className="text-xs font-medium text-neutral-900">
-                          {new Date(transaction.occurred_at).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          {new Date(transaction.occurred_at).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                         </span>
                         <span className="text-xs text-neutral-500">
-                          {new Date(transaction.occurred_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(transaction.occurred_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                     </td>

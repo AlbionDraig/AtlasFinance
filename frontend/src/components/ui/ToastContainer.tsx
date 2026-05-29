@@ -2,6 +2,7 @@
 // Va fuera del Router para que las notificaciones sobrevivan a la navegación
 // (ej. crear una transacción y navegar mientras se muestra el confirm).
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { TOAST_DURATION_MS } from '@/config/toast'
 import { useToast, type Toast } from '@/hooks/useToast'
 
@@ -9,6 +10,7 @@ import { useToast, type Toast } from '@/hooks/useToast'
 const DURATION = TOAST_DURATION_MS
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
+  const { t } = useTranslation()
   // visible controla la animación de entrada (slide+fade) vía clases condicionales.
   const [visible, setVisible] = useState(false)
   const [progress, setProgress] = useState(100)
@@ -83,7 +85,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
         {/* Text */}
         <div className="flex-1 min-w-0">
           <p className="text-xs font-medium text-neutral-900 leading-snug">
-            {isError ? 'Ha ocurrido un error' : 'Operación exitosa'}
+            {isError ? t('common.toastErrorTitle') : t('common.toastSuccessTitle')}
           </p>
           <p className="mt-0.5 text-xs text-neutral-700 leading-relaxed">{toast.message}</p>
           {toast.actionLabel && toast.onAction && (
@@ -103,7 +105,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
         {/* Close */}
         <button
           type="button"
-          aria-label="Cerrar notificación"
+          aria-label={t('common.closeNotification')}
           onClick={() => onDismiss(toast.id)}
           className="ml-1 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
         >

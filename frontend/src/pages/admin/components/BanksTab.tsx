@@ -77,8 +77,8 @@ export default function BanksTab({ countryCatalogOptions }: BanksTabProps) {
 
   const countryOptions = useMemo(() => {
     const values = Array.from(new Set(banks.map((bank) => bank.country_code))).sort()
-    return [{ value: 'all', label: 'Todos' }, ...values.map((value) => ({ value, label: value }))]
-  }, [banks])
+    return [{ value: 'all', label: t('common.all') }, ...values.map((value) => ({ value, label: value }))]
+  }, [banks, t])
 
   const filteredBanks = useMemo(() => {
     return [...banks]

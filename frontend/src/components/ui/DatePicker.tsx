@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface DatePickerProps {
   label: string
@@ -9,9 +10,6 @@ interface DatePickerProps {
   className?: string
   disabled?: boolean
 }
-
-const WEEK_DAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
-const MONTH_NAMES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
 function parseIsoDate(value: string): Date {
   const [year, month, day] = value.split('-').map(Number)
@@ -51,6 +49,7 @@ function buildCalendarDays(viewDate: Date): Date[] {
 }
 
 export default function DatePicker({ label, value, onChange, min, max, className = '', disabled = false }: DatePickerProps) {
+  const { t, i18n } = useTranslation()
   const triggerId = useId()
   const labelId = useId()
   const dialogId = useId()
@@ -84,14 +83,27 @@ export default function DatePicker({ label, value, onChange, min, max, className
     }
   }, [])
 
+  const locale = i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'es-CO'
+
   const days = useMemo(() => buildCalendarDays(viewDate), [viewDate])
-  const monthLabel = `${MONTH_NAMES[viewDate.getMonth()]} ${viewDate.getFullYear()}`
+  const monthLabel = viewDate.toLocaleDateString(locale, {
+    month: 'long',
+    year: 'numeric',
+  })
+  const weekDays = useMemo(() => {
+    const weekStart = new Date(Date.UTC(2024, 0, 1))
+    return Array.from({ length: 7 }, (_, index) => {
+      const day = new Date(weekStart)
+      day.setUTCDate(weekStart.getUTCDate() + index)
+      return new Intl.DateTimeFormat(locale, { weekday: 'narrow', timeZone: 'UTC' }).format(day)
+    })
+  }, [locale])
 
   const prevMonth = () => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))
   const nextMonth = () => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))
 
   const display = value
-    ? selectedDate.toLocaleDateString('es-CO', {
+    ? selectedDate.toLocaleDateString(locale, {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -134,7 +146,7 @@ export default function DatePicker({ label, value, onChange, min, max, className
             <line x1="8" y1="2" x2="8" y2="6" />
             <line x1="3" y1="10" x2="21" y2="10" />
           </svg>
-          <span className={`truncate ${!display ? 'text-neutral-400' : ''}`}>{display ?? 'Selecciona una fecha'}</span>
+          <span className={`truncate ${!display ? 'text-neutral-400' : ''}`}>{display ?? t('common.selectDate')}</span>
           {disabled && (
             <svg className="h-3 w-3 text-neutral-400 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="3" y="11" width="18" height="10" rx="2" ry="2" />
@@ -157,7 +169,7 @@ export default function DatePicker({ label, value, onChange, min, max, className
               type="button"
               onClick={prevMonth}
               className="rounded-md border border-[var(--af-border)] bg-[var(--af-surface-alt)] px-2 py-1 text-xs app-subtitle hover:bg-[var(--af-bg-soft)]"
-              aria-label="Mes anterior"
+              aria-label={t('common.prevMonth')}
             >
               {'<'}
             </button>
@@ -166,14 +178,14 @@ export default function DatePicker({ label, value, onChange, min, max, className
               type="button"
               onClick={nextMonth}
               className="rounded-md border border-[var(--af-border)] bg-[var(--af-surface-alt)] px-2 py-1 text-xs app-subtitle hover:bg-[var(--af-bg-soft)]"
-              aria-label="Mes siguiente"
+              aria-label={t('common.nextMonth')}
             >
               {'>'}
             </button>
           </div>
 
           <div className="grid grid-cols-7 gap-1">
-            {WEEK_DAYS.map(day => (
+            {weekDays.map(day => (
               <div key={day} className="pb-1 text-center text-[10px] font-semibold uppercase tracking-wider app-subtitle">
                 {day}
               </div>
@@ -189,7 +201,7 @@ export default function DatePicker({ label, value, onChange, min, max, className
                   key={day.toISOString()}
                   type="button"
                   disabled={disabled}
-                  aria-label={day.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}
+                  aria-label={day.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' })}
                   onClick={() => {
                     onChange(toIsoDate(day))
                     setOpen(false)
