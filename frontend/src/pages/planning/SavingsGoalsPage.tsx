@@ -12,6 +12,7 @@ import EditButton from '@/components/ui/EditButton'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import FormField from '@/components/ui/FormField'
 import Modal from '@/components/ui/Modal'
+import PageSkeleton from '@/components/ui/PageSkeleton'
 import Select from '@/components/ui/Select'
 import TableActionGroup from '@/components/ui/TableActionGroup'
 import ViewToggle from '@/components/ui/ViewToggle'
@@ -343,9 +344,7 @@ export default function SavingsGoalsPage() {
 
       {/* Goals List */}
       {isLoading ? (
-        <div className="text-center py-8 text-neutral-400">
-          {t('common.loading')}
-        </div>
+        <PageSkeleton cards={4} rows={6} columns={6} />
       ) : !goals || goals.length === 0 ? (
         <EmptyState
           title={t('planning.goal.empty')}
