@@ -3,6 +3,7 @@ import Badge from '@/components/ui/Badge'
 import Tooltip from '@/components/ui/Tooltip'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
+import EmptyState from '@/components/ui/EmptyState'
 import SkeletonTable from '@/components/ui/SkeletonTable'
 import TableActionGroup from '@/components/ui/TableActionGroup'
 import { useTranslation } from 'react-i18next'
@@ -141,22 +142,15 @@ export default function TransactionsHistoryCard({
           <SkeletonTable rows={8} columns={6} />
         </div>
       ) : !paginatedTransactions.length ? (
-        <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-neutral-900">{t('transactions.table_empty_title')}</p>
-            <p className="mt-1 text-xs text-neutral-400">{t('transactions.table_empty_desc')}</p>
-          </div>
-          {onCreate && total === 0 && (
+        <EmptyState
+          title={t('transactions.table_empty_title')}
+          description={t('transactions.table_empty_desc')}
+          action={onCreate && total === 0 ? (
             <button type="button" className="app-btn-primary" onClick={onCreate}>
               {t('transactions.fab_register')}
             </button>
-          )}
-        </div>
+          ) : undefined}
+        />
       ) : (
         <>
           <div className="space-y-3 p-4 md:hidden">
