@@ -2,7 +2,8 @@
 // Reimplementamos en lugar de usar <select> nativo para que el estilo coincida con
 // el resto del design system y para soportar abrir hacia arriba si no hay espacio abajo
 // (importante en filtros dentro de modales o cards cercanas al pie de página).
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 
@@ -44,8 +45,10 @@ export default function Select({
   // y evitar el "salto" visual de re-medir después del mount.
   const [openUpward, setOpenUpward] = useState(false)
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 0 })
+  const [highlightedIndex, setHighlightedIndex] = useState(0)
   const ref = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+  const listboxId = `${useId()}-listbox`
 
   const menuMaxHeight = visibleItems ? visibleItems * 36 + 8 : 208
   const resolvedSearchPlaceholder = searchPlaceholder ?? t('common.search')
@@ -97,7 +100,7 @@ export default function Select({
   }, [])
 
   useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
+    function handleKeyDown(event: globalThis.KeyboardEvent) {
       if (event.key === 'Escape') setOpen(false)
     }
 
@@ -106,8 +109,14 @@ export default function Select({
   }, [])
 
   // Si options está vacío evitamos que el componente se rompa: mostramos placeholder sin error.
-  const selected = options.find(o => o.value === value) ?? options[0] ?? { value: '', label: 'Sin opciones' }
+  const selected = options.find(o => o.value === value) ?? options[0] ?? { value: '', label: resolvedNoResultsText }
   const isDisabled = disabled || options.length === 0
+
+  useEffect(() => {
+    if (!open) return
+    const selectedIndex = filteredOptions.findIndex((opt) => opt.value === value)
+    setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0)
+  }, [open, filteredOptions, value])
 
   useEffect(() => {
     if (!open) {
@@ -120,14 +129,72 @@ export default function Select({
     setOpen(prev => !prev)
   }
 
+  function selectOption(optionValue: string) {
+    onChange(optionValue)
+    setOpen(false)
+  }
+
+  function handleTriggerKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
+    if (isDisabled) return
+
+    if (event.key === 'Escape') {
+      setOpen(false)
+      return
+    }
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      if (!open) {
+        setOpen(true)
+        return
+      }
+
+      const nextIndex = event.key === 'ArrowDown'
+        ? Math.min(filteredOptions.length - 1, highlightedIndex + 1)
+        : Math.max(0, highlightedIndex - 1)
+      setHighlightedIndex(nextIndex)
+      return
+    }
+
+    if (event.key === 'Home' && open) {
+      event.preventDefault()
+      setHighlightedIndex(0)
+      return
+    }
+
+    if (event.key === 'End' && open) {
+      event.preventDefault()
+      setHighlightedIndex(Math.max(0, filteredOptions.length - 1))
+      return
+    }
+
+    if ((event.key === 'Enter' || event.key === ' ') && open) {
+      event.preventDefault()
+      const highlighted = filteredOptions[highlightedIndex]
+      if (highlighted) {
+        selectOption(highlighted.value)
+      }
+      return
+    }
+
+    if ((event.key === 'Enter' || event.key === ' ') && !open) {
+      event.preventDefault()
+      setOpen(true)
+    }
+  }
+
   return (
     <div ref={ref} className={`relative ${open ? 'z-[260]' : 'z-10'} isolate [transform:translateZ(0)] [backface-visibility:hidden] ${className}`}>
       {/* Trigger */}
       <button
         type="button"
         onClick={handleOpen}
+        onKeyDown={handleTriggerKeyDown}
         disabled={isDisabled}
         data-testid="select-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? listboxId : undefined}
         className={`flex items-center justify-between gap-2 text-xs [transform:translateZ(0)] [backface-visibility:hidden] transition-colors ${
           isDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
         } ${
@@ -164,24 +231,37 @@ export default function Select({
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder={resolvedSearchPlaceholder}
+                aria-label={resolvedSearchPlaceholder}
                 className="app-control h-9 w-full text-xs"
                 autoFocus
               />
             </div>
           )}
 
-          <ul className="overflow-y-auto py-1" style={{ maxHeight: `${menuMaxHeight}px` }}>
-            {filteredOptions.map(opt => (
-              <li key={opt.value}>
+          <ul
+            id={listboxId}
+            role="listbox"
+            aria-activedescendant={filteredOptions[highlightedIndex] ? `${listboxId}-option-${filteredOptions[highlightedIndex].value}` : undefined}
+            className="overflow-y-auto py-1"
+            style={{ maxHeight: `${menuMaxHeight}px` }}
+          >
+            {filteredOptions.map((opt, idx) => (
+              <li key={opt.value} role="presentation">
                 <button
                   type="button"
-                  onClick={() => { onChange(opt.value); setOpen(false) }}
+                  id={`${listboxId}-option-${opt.value}`}
+                  role="option"
+                  aria-selected={opt.value === value}
+                  onMouseEnter={() => setHighlightedIndex(idx)}
+                  onClick={() => { selectOption(opt.value) }}
                   data-testid={`select-option-${opt.value}`}
                   data-value={opt.value}
                   className={`w-full text-left px-3 py-2 transition-colors cursor-pointer
                     ${opt.value === value
                       ? 'bg-tone-neutral text-[var(--af-accent)]'
-                      : 'hover:bg-[var(--af-surface-alt)] text-[var(--af-text)]'
+                      : idx === highlightedIndex
+                        ? 'bg-[var(--af-surface-alt)] text-[var(--af-text)]'
+                        : 'hover:bg-[var(--af-surface-alt)] text-[var(--af-text)]'
                     }`}
                 >
                   {opt.label}
