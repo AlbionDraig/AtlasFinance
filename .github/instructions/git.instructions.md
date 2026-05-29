@@ -19,6 +19,13 @@ docs/<short-description>       # documentation only
 - Branch from `develop` (or `main` if `develop` does not exist).
 - One PR = one focused objective. Keep branches short-lived.
 
+## Gitflow policy (mandatory for agents)
+
+- The only long-lived branches are `develop` and `main` (or `master` where applicable).
+- Agents must execute work directly on `develop` by default.
+- Promotion flow is `develop` -> `main`/`master` via pull request.
+- Agents must not create additional branches unless the user explicitly requests it.
+
 ## Commit messages — Conventional Commits (English)
 
 ```

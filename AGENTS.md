@@ -21,6 +21,13 @@ Detailed layer-specific rules live in `.github/instructions/`.
 - **KISS / YAGNI** — solve with minimum necessary complexity.
 - **Security-first** — validate inputs, no hardcoded secrets, least privilege.
 
+## Gitflow policy (mandatory)
+
+- The only long-lived branches are `develop` and `main` (or `master` if `main` does not exist).
+- Agents must perform implementation work on `develop` by default.
+- Integration to production branch must happen via PR from `develop` to `main`/`master`.
+- Agents must not create extra working branches unless the user explicitly requests it.
+
 ## Language conventions
 
 - Docstrings (functions, classes, modules): **English**.

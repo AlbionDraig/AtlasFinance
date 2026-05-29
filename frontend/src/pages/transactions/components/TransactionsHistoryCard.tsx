@@ -3,6 +3,7 @@ import Badge from '@/components/ui/Badge'
 import Tooltip from '@/components/ui/Tooltip'
 import EditButton from '@/components/ui/EditButton'
 import DeleteButton from '@/components/ui/DeleteButton'
+import EmptyState from '@/components/ui/EmptyState'
 import SkeletonTable from '@/components/ui/SkeletonTable'
 import TableActionGroup from '@/components/ui/TableActionGroup'
 import { useTranslation } from 'react-i18next'
@@ -64,8 +65,9 @@ export default function TransactionsHistoryCard({
   currency,
   onCreate,
 }: TransactionsHistoryCardProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   type MetricVariant = 'neutral' | 'positive' | 'negative'
+  const locale = i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'es-CO'
 
   function isTransferTransaction(transaction: Transaction): boolean {
     return transaction.description.startsWith('Transferencia: ')
@@ -135,27 +137,20 @@ export default function TransactionsHistoryCard({
       </div>
 
       {/* Empty state */}
-      {!paginatedTransactions.length ? (
-        <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-neutral-900">{t('transactions.table_empty_title')}</p>
-            <p className="mt-1 text-xs text-neutral-400">{t('transactions.table_empty_desc')}</p>
-          </div>
-          {onCreate && total === 0 && (
-            <button type="button" className="app-btn-primary" onClick={onCreate}>
-              {t('transactions.fab_register')}
-            </button>
-          )}
-        </div>
-      ) : loading ? (
+      {loading ? (
         <div className="p-2">
           <SkeletonTable rows={8} columns={6} />
         </div>
+      ) : !paginatedTransactions.length ? (
+        <EmptyState
+          title={t('transactions.table_empty_title')}
+          description={t('transactions.table_empty_desc')}
+          action={onCreate && total === 0 ? (
+            <button type="button" className="app-btn-primary" onClick={onCreate}>
+              {t('transactions.fab_register')}
+            </button>
+          ) : undefined}
+        />
       ) : (
         <>
           <div className="space-y-3 p-4 md:hidden">
@@ -168,9 +163,9 @@ export default function TransactionsHistoryCard({
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-neutral-900" title={transaction.description}>{transaction.description}</p>
                       <p className="mt-1 text-xs text-neutral-400">
-                        {new Date(transaction.occurred_at).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        {new Date(transaction.occurred_at).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                         {' · '}
-                        {new Date(transaction.occurred_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(transaction.occurred_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                     <p className={`shrink-0 text-sm font-medium ${isIncome ? 'text-success' : 'text-warning'}`}>
@@ -229,10 +224,10 @@ export default function TransactionsHistoryCard({
                     <td className="px-5 py-3 whitespace-nowrap align-middle">
                       <div className="flex flex-col gap-0.5">
                         <span className="text-xs font-medium text-neutral-900">
-                          {new Date(transaction.occurred_at).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          {new Date(transaction.occurred_at).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                         </span>
                         <span className="text-xs text-neutral-500">
-                          {new Date(transaction.occurred_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(transaction.occurred_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                     </td>

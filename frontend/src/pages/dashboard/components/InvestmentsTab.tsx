@@ -13,6 +13,13 @@ import {
   CHART_PALETTE,
   CHART_TOOLTIP_STYLE,
 } from '@/lib/chartTheme'
+import {
+  compareInvestmentsByCurrentValueDesc,
+  compareInvestmentsByReturnAsc,
+  compareInvestmentsByReturnDesc,
+  compareInvestmentsByStartedAtAsc,
+  groupCurrentValueByInstrumentType,
+} from './investmentsUtils'
 
 import { fmt, fmtDate, fmtDateNumeric } from './dashboardUtils'
 
@@ -105,15 +112,7 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
   const investmentRows = useMemo(() => {
     return [...investments]
       .filter((inv) => inv.currency === currency)
-      .sort((a, b) => {
-        const retA = Number(a.amount_invested) > 0
-          ? (Number(a.current_value) - Number(a.amount_invested)) / Number(a.amount_invested)
-          : 0
-        const retB = Number(b.amount_invested) > 0
-          ? (Number(b.current_value) - Number(b.amount_invested)) / Number(b.amount_invested)
-          : 0
-        return retB - retA
-      })
+      .sort(compareInvestmentsByReturnDesc)
   }, [investments, currency])
 
   const totalInvested = useMemo(
@@ -130,13 +129,7 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
   const totalReturnPct = totalInvested > 0 ? (totalReturn / totalInvested) * 100 : 0
 
   const investmentsByType = useMemo(() => {
-    const grouped = new Map<string, number>()
-    for (const inv of investmentRows) {
-      grouped.set(inv.instrument_type, (grouped.get(inv.instrument_type) ?? 0) + Number(inv.current_value))
-    }
-    return Array.from(grouped.entries())
-      .map(([type, value]) => ({ type, value }))
-      .sort((a, b) => b.value - a.value)
+    return groupCurrentValueByInstrumentType(investmentRows)
   }, [investmentRows])
 
   const topPerformer = useMemo(() => {
@@ -146,27 +139,19 @@ export default function InvestmentsTab({ currency, onCurrencyChange }: Investmen
 
   const worstPerformer = useMemo(() => {
     if (investmentRows.length === 0) return null
-    return [...investmentRows].sort((a, b) => {
-      const retA = Number(a.amount_invested) > 0
-        ? (Number(a.current_value) - Number(a.amount_invested)) / Number(a.amount_invested)
-        : 0
-      const retB = Number(b.amount_invested) > 0
-        ? (Number(b.current_value) - Number(b.amount_invested)) / Number(b.amount_invested)
-        : 0
-      return retA - retB
-    })[0]
+    return [...investmentRows].sort(compareInvestmentsByReturnAsc)[0]
   }, [investmentRows])
 
   // Mayor posición por capital actual
   const largestPosition = useMemo(() => {
     if (investmentRows.length === 0) return null
-    return [...investmentRows].sort((a, b) => Number(b.current_value) - Number(a.current_value))[0]
+    return [...investmentRows].sort(compareInvestmentsByCurrentValueDesc)[0]
   }, [investmentRows])
 
   // Posición más antigua
   const oldestPosition = useMemo(() => {
     if (investmentRows.length === 0) return null
-    return [...investmentRows].sort((a, b) => a.started_at.localeCompare(b.started_at))[0]
+    return [...investmentRows].sort(compareInvestmentsByStartedAtAsc)[0]
   }, [investmentRows])
 
   // Entidad con más capital actual

@@ -6,6 +6,7 @@ import { authApi } from '@/api/auth'
 import AuthLoadingOverlay from '@/components/ui/AuthLoadingOverlay'
 import BrandLogo from '@/components/ui/BrandLogo'
 import FormField from '@/components/ui/FormField'
+import InlineAlert from '@/components/ui/InlineAlert'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
 import { useAuthStore } from '@/store/authStore'
 import { useToast } from '@/hooks/useToast'
@@ -18,6 +19,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -44,6 +46,7 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setSubmitError(null)
     setLoading(true)
     try {
       // Login endpoint sets auth cookie; then /me hydrates app user state.
@@ -65,18 +68,30 @@ export default function LoginPage() {
 
       if (status === 401 || status === 403) {
         if (detail?.toLowerCase().includes('invalid credentials')) {
-          toast(t('auth.login.error_invalid'), 'error')
+          const message = t('auth.login.error_invalid')
+          setSubmitError(message)
+          toast(message, 'error')
         } else {
-          toast(detail ?? t('auth.login.error_bad_credentials'), 'error')
+          const message = detail ?? t('auth.login.error_bad_credentials')
+          setSubmitError(message)
+          toast(message, 'error')
         }
       } else if (status === 422) {
-        toast(t('auth.login.error_wrong_credentials'), 'error')
+        const message = t('auth.login.error_wrong_credentials')
+        setSubmitError(message)
+        toast(message, 'error')
       } else if (status && status >= 500) {
-        toast(t('auth.login.error_server'), 'error')
+        const message = t('auth.login.error_server')
+        setSubmitError(message)
+        toast(message, 'error')
       } else if (status) {
-        toast(detail ?? t('auth.login.error_unexpected'), 'error')
+        const message = detail ?? t('auth.login.error_unexpected')
+        setSubmitError(message)
+        toast(message, 'error')
       } else {
-        toast(t('auth.login.error_network'), 'error')
+        const message = t('auth.login.error_network')
+        setSubmitError(message)
+        toast(message, 'error')
       }
     } finally {
       setLoading(false)
@@ -114,13 +129,18 @@ export default function LoginPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {submitError && <InlineAlert message={submitError} variant="warning" />}
+
           <FormField
             label={t('auth.login.email_label')}
             type="email"
             required
             autoComplete="username"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              if (submitError) setSubmitError(null)
+            }}
             placeholder={t('auth.login.email_placeholder')}
           />
           <FormField
@@ -129,7 +149,10 @@ export default function LoginPage() {
             required
             autoComplete="current-password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              if (submitError) setSubmitError(null)
+            }}
             placeholder={t('auth.login.password_placeholder')}
           />
           <button

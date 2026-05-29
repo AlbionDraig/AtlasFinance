@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 interface SearchInputProps {
   value: string
   onChange: (value: string) => void
@@ -5,7 +7,10 @@ interface SearchInputProps {
   className?: string
 }
 
-export default function SearchInput({ value, onChange, placeholder = 'Buscar…', className = '' }: SearchInputProps) {
+export default function SearchInput({ value, onChange, placeholder, className = '' }: SearchInputProps) {
+  const { t } = useTranslation()
+  const effectivePlaceholder = placeholder ?? `${t('common.search')}…`
+
   return (
     <div className={`relative ${className}`}>
       <svg
@@ -22,14 +27,14 @@ export default function SearchInput({ value, onChange, placeholder = 'Buscar…'
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
+        placeholder={effectivePlaceholder}
         className="app-control app-control-icon-left w-full pr-10"
       />
       {value && (
         <button
           type="button"
           onClick={() => onChange('')}
-          aria-label="Limpiar búsqueda"
+          aria-label={t('common.clearSearch')}
           className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-md text-brand hover:bg-brand-light hover:text-brand-text transition-colors"
         >
           <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" aria-hidden="true">

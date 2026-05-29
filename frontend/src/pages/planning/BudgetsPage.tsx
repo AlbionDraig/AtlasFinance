@@ -4,6 +4,7 @@ import BudgetCard from '@/components/planning/BudgetCard'
 import AmountInput from '@/components/ui/AmountInput'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import DeleteButton from '@/components/ui/DeleteButton'
+import EmptyState from '@/components/ui/EmptyState'
 import EditButton from '@/components/ui/EditButton'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import FormField from '@/components/ui/FormField'
@@ -347,9 +348,14 @@ export default function BudgetsPage() {
 
       {/* Budgets Grid */}
       {!budgetData || budgetData.budgets.length === 0 ? (
-        <div className="text-center py-12 text-neutral-400">
-          <p>{t('planning.budget.empty')}</p>
-        </div>
+        <EmptyState
+          title={t('planning.budget.empty')}
+          action={
+            <button type="button" className="app-btn-primary" onClick={handleCreateNew}>
+              {t('planning.budget.new')}
+            </button>
+          }
+        />
       ) : (
         <>
           <div className="app-card rounded-2xl p-3 md:p-4 space-y-3">
@@ -358,9 +364,7 @@ export default function BudgetsPage() {
             </div>
 
             {filteredBudgets.length === 0 ? (
-              <div className="rounded-xl border border-neutral-100 bg-white p-6 text-center text-sm text-neutral-400">
-                {t('planning.budget.empty_filter')}
-              </div>
+              <EmptyState title={t('planning.budget.empty_filter')} />
             ) : viewMode === 'cards' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredBudgets.map((budget) => (

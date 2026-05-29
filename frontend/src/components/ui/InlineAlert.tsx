@@ -30,7 +30,11 @@ const VARIANT_STYLES: Record<AlertVariant, { wrapper: string; iconColor: string;
 export default function InlineAlert({ message, variant = 'warning', className = '' }: InlineAlertProps) {
   const styles = VARIANT_STYLES[variant]
   return (
-    <div className={`flex items-start gap-2 rounded-lg px-3 py-2 ${styles.wrapper} ${className}`}>
+    <div
+      role="alert"
+      aria-live="polite"
+      className={`flex items-start gap-2 rounded-lg px-3 py-2 ${styles.wrapper} ${className}`}
+    >
       <span className={`mt-0.5 text-sm leading-none ${styles.iconColor}`}>{styles.icon}</span>
       <p className={`text-xs ${styles.text}`}>{message}</p>
     </div>

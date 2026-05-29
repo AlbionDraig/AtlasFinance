@@ -5,6 +5,7 @@ import { authApi } from '@/api/auth'
 import AuthLoadingOverlay from '@/components/ui/AuthLoadingOverlay'
 import BrandLogo from '@/components/ui/BrandLogo'
 import FormField from '@/components/ui/FormField'
+import InlineAlert from '@/components/ui/InlineAlert'
 import { useAuthStore } from '@/store/authStore'
 import { useToast } from '@/hooks/useToast'
 import { getPasswordChecks, getPasswordStrength } from '@/lib/passwordStrength'
@@ -19,24 +20,32 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const checks = getPasswordChecks(password)
   const strength = getPasswordStrength(password)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setSubmitError(null)
     if (fullName.trim().length < 2) {
-      toast(t('auth.register.error_name_short'), 'error')
+      const message = t('auth.register.error_name_short')
+      setSubmitError(message)
+      toast(message, 'error')
       return
     }
 
     if (password.length < 8) {
-      toast(t('auth.register.error_password_short'), 'error')
+      const message = t('auth.register.error_password_short')
+      setSubmitError(message)
+      toast(message, 'error')
       return
     }
 
     if (password !== confirmPassword) {
-      toast(t('auth.register.error_passwords_mismatch'), 'error')
+      const message = t('auth.register.error_passwords_mismatch')
+      setSubmitError(message)
+      toast(message, 'error')
       return
     }
 
@@ -69,15 +78,25 @@ export default function RegisterPage() {
             : undefined
 
       if (status === 409 || (typeof detail === 'string' && detail.toLowerCase().includes('already'))) {
-        toast(t('auth.register.error_email_taken'), 'error')
+        const message = t('auth.register.error_email_taken')
+        setSubmitError(message)
+        toast(message, 'error')
       } else if (status === 422) {
-        toast(t('auth.register.error_invalid_data'), 'error')
+        const message = t('auth.register.error_invalid_data')
+        setSubmitError(message)
+        toast(message, 'error')
       } else if (status && status >= 500) {
-        toast(t('auth.register.error_server'), 'error')
+        const message = t('auth.register.error_server')
+        setSubmitError(message)
+        toast(message, 'error')
       } else if (!status) {
-        toast(t('auth.register.error_network'), 'error')
+        const message = t('auth.register.error_network')
+        setSubmitError(message)
+        toast(message, 'error')
       } else {
-        toast(detail ?? t('auth.register.error_generic'), 'error')
+        const message = detail ?? t('auth.register.error_generic')
+        setSubmitError(message)
+        toast(message, 'error')
       }
     } finally {
       setLoading(false)
@@ -111,13 +130,18 @@ export default function RegisterPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {submitError && <InlineAlert message={submitError} variant="warning" />}
+
           <FormField
             label={t('auth.register.fullname_label')}
             type="text"
             required
             autoComplete="name"
             value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
+            onChange={(e) => {
+              setFullName(e.target.value)
+              if (submitError) setSubmitError(null)
+            }}
             placeholder={t('auth.register.fullname_placeholder')}
           />
 
@@ -127,7 +151,10 @@ export default function RegisterPage() {
             required
             autoComplete="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              if (submitError) setSubmitError(null)
+            }}
             placeholder={t('auth.register.email_placeholder')}
           />
 
@@ -138,7 +165,10 @@ export default function RegisterPage() {
               minLength={8}
               autoComplete="new-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value)
+                if (submitError) setSubmitError(null)
+              }}
               placeholder={t('auth.register.password_placeholder')}
               className="app-control"
             />
@@ -182,7 +212,10 @@ export default function RegisterPage() {
               minLength={8}
               autoComplete="new-password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value)
+                if (submitError) setSubmitError(null)
+              }}
               placeholder={t('auth.register.confirm_placeholder')}
               className="app-control"
             />

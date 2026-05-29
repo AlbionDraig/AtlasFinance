@@ -1,5 +1,6 @@
 import SkeletonCard from './SkeletonCard'
 import SkeletonTable from './SkeletonTable'
+import { useTranslation } from 'react-i18next'
 
 interface PageSkeletonProps {
   /** Number of KPI/summary cards to render at the top. */
@@ -23,10 +24,12 @@ export default function PageSkeleton({
   columns = 5,
   showHeader = true,
 }: PageSkeletonProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="app-shell w-full mx-auto space-y-7 md:space-y-8 max-w-[1440px] p-4 md:p-6 pb-20">
       {showHeader && (
-        <div className="animate-pulse" aria-busy="true" aria-label="Cargando…">
+        <div className="animate-pulse" aria-busy="true" aria-label={t('common.loading')}>
           <div className="h-5 w-48 rounded bg-neutral-100 mb-2" />
           <div className="h-3 w-64 rounded bg-neutral-100" />
         </div>

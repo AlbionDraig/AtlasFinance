@@ -5,6 +5,8 @@
 //   2) ProtectedRoute: gate de autenticación (redirige a /login si no hay user).
 //   3) AppLayout: chrome compartido (sidebar, topbar) para todas las páginas privadas.
 import { lazy, Suspense } from 'react'
+import type { ReactNode } from 'react'
+import type { QueryKey } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import AdminRoute from '@/components/AdminRoute'
@@ -40,9 +42,98 @@ const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'))
 const AdminPage = lazy(() => import('@/pages/admin/AdminPage'))
 const ManagementPage = lazy(() => import('@/pages/management/ManagementPage'))
 
+type AppRouteConfig = {
+  path: string
+  labelKey: string
+  element: ReactNode
+  invalidateKeys?: QueryKey[]
+  adminOnly?: boolean
+}
+
 function LazyPage({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<PageSkeleton />}>{children}</Suspense>
 }
+
+function AppRouteElement({
+  labelKey,
+  invalidateKeys,
+  element,
+}: Pick<AppRouteConfig, 'labelKey' | 'invalidateKeys' | 'element'>) {
+  return (
+    <PageErrorBoundary labelKey={labelKey} invalidateKeys={invalidateKeys}>
+      <LazyPage>{element}</LazyPage>
+    </PageErrorBoundary>
+  )
+}
+
+const APP_ROUTES: AppRouteConfig[] = [
+  {
+    path: '/dashboard',
+    labelKey: 'errors.page_label_dashboard',
+    invalidateKeys: [QUERY_KEYS.accounts],
+    element: <DashboardPage />,
+  },
+  {
+    path: '/transactions',
+    labelKey: 'errors.page_label_transactions',
+    invalidateKeys: [QUERY_KEYS.accounts, QUERY_KEYS.categories],
+    element: <TransactionsPage />,
+  },
+  {
+    path: '/accounts',
+    labelKey: 'errors.page_label_accounts',
+    invalidateKeys: [QUERY_KEYS.accounts, QUERY_KEYS.banks],
+    element: <AccountsPage />,
+  },
+  {
+    path: '/pockets',
+    labelKey: 'errors.page_label_pockets',
+    invalidateKeys: [QUERY_KEYS.pockets, QUERY_KEYS.accounts],
+    element: <PocketsPage />,
+  },
+  {
+    path: '/investments',
+    labelKey: 'errors.page_label_investments',
+    invalidateKeys: [QUERY_KEYS.investments, QUERY_KEYS.investmentEntities],
+    element: <InvestmentsPage />,
+  },
+  {
+    path: '/planning/budgets',
+    labelKey: 'errors.page_label_budgets',
+    invalidateKeys: [QUERY_KEYS.categories],
+    element: <BudgetsPage />,
+  },
+  {
+    path: '/planning/savings-goals',
+    labelKey: 'errors.page_label_savings_goals',
+    invalidateKeys: [QUERY_KEYS.categories],
+    element: <SavingsGoalsPage />,
+  },
+  {
+    path: '/planning/smart-alerts',
+    labelKey: 'errors.page_label_smart_alerts',
+    invalidateKeys: [QUERY_KEYS.categories],
+    element: <SmartAlertsPage />,
+  },
+  {
+    path: '/admin',
+    labelKey: 'errors.page_label_admin',
+    invalidateKeys: [QUERY_KEYS.banks, QUERY_KEYS.countries, QUERY_KEYS.categories, QUERY_KEYS.investmentEntities],
+    element: <AdminPage />,
+    adminOnly: true,
+  },
+  {
+    path: '/management',
+    labelKey: 'errors.page_label_management',
+    element: <ManagementPage />,
+    adminOnly: true,
+  },
+  {
+    path: '/profile',
+    labelKey: 'errors.page_label_profile',
+    element: <ProfilePage />,
+  },
+]
 
 // Exposes build marker on window for diagnostic tooling (dev/staging only)
 if (import.meta.env.DEV) {
@@ -56,119 +147,33 @@ export default function App() {
     <ErrorBoundary>
       <ToastProvider>
         <BrowserRouter>
-        <Routes>
-          {/* Rutas públicas: accesibles sin sesión */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
-          {/* Rutas privadas: ProtectedRoute valida sesión antes de renderizar */}
-          <Route element={<ProtectedRoute />}>
-            {/* AppLayout aporta sidebar + topbar; envolver aquí evita repetirlo en cada página */}
-            <Route element={<AppLayout />}>
-              <Route
-                path="/dashboard"
-                element={
-                  <PageErrorBoundary labelKey="errors.page_label_dashboard" invalidateKeys={[QUERY_KEYS.accounts]}>
-                    <LazyPage><DashboardPage /></LazyPage>
-                  </PageErrorBoundary>
-                }
-              />
-              <Route
-                path="/transactions"
-                element={
-                  <PageErrorBoundary labelKey="errors.page_label_transactions" invalidateKeys={[QUERY_KEYS.accounts, QUERY_KEYS.categories]}>
-                    <LazyPage><TransactionsPage /></LazyPage>
-                  </PageErrorBoundary>
-                }
-              />
-              <Route
-                path="/accounts"
-                element={
-                  <PageErrorBoundary labelKey="errors.page_label_accounts" invalidateKeys={[QUERY_KEYS.accounts, QUERY_KEYS.banks]}>
-                    <LazyPage><AccountsPage /></LazyPage>
-                  </PageErrorBoundary>
-                }
-              />
-              <Route
-                path="/pockets"
-                element={
-                  <PageErrorBoundary labelKey="errors.page_label_pockets" invalidateKeys={[QUERY_KEYS.pockets, QUERY_KEYS.accounts]}>
-                    <LazyPage><PocketsPage /></LazyPage>
-                  </PageErrorBoundary>
-                }
-              />
-              <Route
-                path="/investments"
-                element={
-                  <PageErrorBoundary labelKey="errors.page_label_investments" invalidateKeys={[QUERY_KEYS.investments, QUERY_KEYS.investmentEntities]}>
-                    <LazyPage><InvestmentsPage /></LazyPage>
-                  </PageErrorBoundary>
-                }
-              />
-              <Route
-                path="/planning/budgets"
-                element={
-                  <PageErrorBoundary labelKey="errors.page_label_budgets" invalidateKeys={[QUERY_KEYS.categories]}>
-                    <LazyPage><BudgetsPage /></LazyPage>
-                  </PageErrorBoundary>
-                }
-              />
-              <Route
-                path="/planning/savings-goals"
-                element={
-                  <PageErrorBoundary labelKey="errors.page_label_savings_goals" invalidateKeys={[QUERY_KEYS.categories]}>
-                    <LazyPage><SavingsGoalsPage /></LazyPage>
-                  </PageErrorBoundary>
-                }
-              />
-              <Route
-                path="/planning/smart-alerts"
-                element={
-                  <PageErrorBoundary labelKey="errors.page_label_smart_alerts" invalidateKeys={[QUERY_KEYS.categories]}>
-                    <LazyPage><SmartAlertsPage /></LazyPage>
-                  </PageErrorBoundary>
-                }
-              />
-              {/* /categories quedó fusionada en /admin como tab; se redirige por compat. con bookmarks. */}
-              <Route path="/categories" element={<Navigate to="/admin?tab=categories" replace />} />
-              <Route
-                path="/admin"
-                element={
-                  <AdminRoute>
-                    <PageErrorBoundary labelKey="errors.page_label_admin" invalidateKeys={[QUERY_KEYS.banks, QUERY_KEYS.countries, QUERY_KEYS.categories, QUERY_KEYS.investmentEntities]}>
-                      <LazyPage><AdminPage /></LazyPage>
-                    </PageErrorBoundary>
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/management"
-                element={
-                  <AdminRoute>
-                    <PageErrorBoundary labelKey="errors.page_label_management">
-                      <LazyPage><ManagementPage /></LazyPage>
-                    </PageErrorBoundary>
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <PageErrorBoundary labelKey="errors.page_label_profile">
-                    <LazyPage><ProfilePage /></LazyPage>
-                  </PageErrorBoundary>
-                }
-              />
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AppLayout />}>
+                {APP_ROUTES.map(({ path, labelKey, invalidateKeys, element, adminOnly }) => {
+                  const routeElement = <AppRouteElement labelKey={labelKey} invalidateKeys={invalidateKeys} element={element} />
+
+                  return (
+                    <Route
+                      key={path}
+                      path={path}
+                      element={adminOnly ? <AdminRoute>{routeElement}</AdminRoute> : routeElement}
+                    />
+                  )
+                })}
+
+                <Route path="/categories" element={<Navigate to="/admin?tab=categories" replace />} />
+              </Route>
             </Route>
-          </Route>
 
-          {/* Catch-all: cualquier ruta desconocida cae al dashboard (autenticado) o a /login (no autenticado, vía ProtectedRoute). */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </BrowserRouter>
-      {/* ToastContainer va FUERA del Router para que los toasts persistan al navegar. */}
-      <ToastContainer />
-    </ToastProvider>
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </BrowserRouter>
+        <ToastContainer />
+      </ToastProvider>
     </ErrorBoundary>
   )
 }
