@@ -76,6 +76,8 @@
     "clearFilters": "Limpiar filtros",
     "removeFilter": "Remover filtro: {{value}}",
     "openFilters": "Abrir filtros",
+    "quickActionsOpen": "Abrir acciones rápidas",
+    "quickActionsClose": "Cerrar menú de acciones",
     "activeCount": "{{count}} activos",
     "atlasFinance": "Atlas Finance",
     "confirmDelete": "Sí, eliminar",

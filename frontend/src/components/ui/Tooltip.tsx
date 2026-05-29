@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
 interface TooltipProps {
@@ -21,6 +21,7 @@ export default function Tooltip({
   widthClassName = 'w-44',
 }: TooltipProps) {
   const [open, setOpen] = useState(false)
+  const tooltipId = useId()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const tooltipRef = useRef<HTMLSpanElement>(null)
   const [tooltipPos, setTooltipPos] = useState({
@@ -98,13 +99,21 @@ export default function Tooltip({
         ref={triggerRef}
         type="button"
         className="rounded-full focus:outline-none focus-visible:ring-1 focus-visible:ring-brand"
-        aria-label={ariaLabel}
+        aria-label={ariaLabel ?? (typeof content === 'string' ? content : undefined)}
+        aria-describedby={open ? tooltipId : undefined}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            setOpen(false)
+          }
+        }}
       >
         {children}
       </button>
 
       {open && createPortal(
         <span
+          id={tooltipId}
+          role="tooltip"
           ref={tooltipRef}
           className="fixed z-50 bg-neutral-900 text-white text-xs rounded-xl px-3 py-2.5 shadow-xl leading-relaxed pointer-events-none whitespace-normal"
           style={{
