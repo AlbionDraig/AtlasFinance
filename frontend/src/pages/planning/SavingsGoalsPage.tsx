@@ -7,6 +7,7 @@ import AmountInput from '@/components/ui/AmountInput'
 import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal'
 import DatePicker from '@/components/ui/DatePicker'
 import DeleteButton from '@/components/ui/DeleteButton'
+import EmptyState from '@/components/ui/EmptyState'
 import EditButton from '@/components/ui/EditButton'
 import FloatingActionMenu from '@/components/ui/FloatingActionMenu'
 import FormField from '@/components/ui/FormField'
@@ -346,9 +347,14 @@ export default function SavingsGoalsPage() {
           {t('common.loading')}
         </div>
       ) : !goals || goals.length === 0 ? (
-        <div className="text-center py-12 text-neutral-400">
-          <p>{t('planning.goal.empty')}</p>
-        </div>
+        <EmptyState
+          title={t('planning.goal.empty')}
+          action={
+            <button type="button" className="app-btn-primary" onClick={handleCreateNew}>
+              {t('planning.goal.new')}
+            </button>
+          }
+        />
       ) : (
         <div className="space-y-3">
           <div className="app-card rounded-2xl p-3 md:p-4">
@@ -357,9 +363,7 @@ export default function SavingsGoalsPage() {
             </div>
 
             {filteredGoals.length === 0 ? (
-              <div className="rounded-xl border border-neutral-100 bg-white p-6 text-center text-sm text-neutral-400">
-                {t('planning.goal.empty_filter')}
-              </div>
+              <EmptyState title={t('planning.goal.empty_filter')} />
             ) : viewMode === 'cards' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredGoals.map((goal: SavingsGoalRead) => (
