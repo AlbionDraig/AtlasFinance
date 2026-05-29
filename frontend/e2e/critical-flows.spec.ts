@@ -34,6 +34,7 @@ test.describe('Authentication', () => {
     const alert = page.getByRole('alert').first()
     await expect(alert).toBeVisible({ timeout: 5_000 })
     await expect(alert).toContainText(/credenciales|credentials|incorrect|invalid|wrong|conectar|connect/i)
+    await expect(page).toHaveURL(/\/login/)
   })
 
   test('shows inline validation error in register when full name is too short', async ({ page }) => {
