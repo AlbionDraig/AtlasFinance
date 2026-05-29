@@ -30,8 +30,23 @@ test.describe('Authentication', () => {
     await page.goto('/login')
     await fillLoginForm(page, 'wrong@example.com', 'wrongpassword')
     await page.getByRole('button', { name: /iniciar sesión|sign in|log in/i }).click()
-    // Some kind of error feedback should appear
-    await expect(page.getByRole('alert').or(page.locator('[data-testid="toast"]')).or(page.locator('.text-brand'))).toBeVisible({ timeout: 5_000 })
+    // We now expect explicit inline feedback in addition to toast feedback.
+    const alert = page.getByRole('alert').first()
+    await expect(alert).toBeVisible({ timeout: 5_000 })
+    await expect(alert).toContainText(/credenciales|credentials|incorrect|invalid|wrong|conectar|connect/i)
+  })
+
+  test('shows inline validation error in register when full name is too short', async ({ page }) => {
+    await page.goto('/register')
+    await page.getByLabel(/full name|nombre completo/i).fill('A')
+    await page.getByLabel(/email/i).fill('short-name@example.com')
+    await page.getByPlaceholder(/at least 8 characters|mínimo 8 caracteres/i).fill('Password1!')
+    await page.getByPlaceholder(/repeat your password|repite tu contraseña/i).fill('Password1!')
+    await page.getByRole('button', { name: /crear cuenta|create account/i }).click()
+
+    const alert = page.getByRole('alert').first()
+    await expect(alert).toBeVisible({ timeout: 5_000 })
+    await expect(alert).toContainText(/al menos 2 caracteres|at least 2 characters/i)
   })
 
   test('can log in and reach the dashboard', async ({ page }) => {
