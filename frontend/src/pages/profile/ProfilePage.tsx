@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { authApi } from '@/api/auth'
+import InlineAlert from '@/components/ui/InlineAlert'
 import { useAuthStore } from '@/store/authStore'
 import { useToast } from '@/hooks/useToast'
 import { getPasswordChecks, getPasswordStrength } from '@/lib/passwordStrength'
@@ -30,6 +31,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
   const [errors, setErrors] = useState<ProfileFormErrors>({})
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const pwChecks = useMemo(() => getPasswordChecks(form.new_password), [form.new_password])
   const pwStrength = useMemo(() => getPasswordStrength(form.new_password), [form.new_password])
@@ -45,10 +47,12 @@ export default function ProfilePage() {
     const field = e.target.name as keyof FormState
     setForm((f) => ({ ...f, [field]: e.target.value }))
     setErrors((current) => ({ ...current, [field]: undefined }))
+    if (submitError) setSubmitError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitError(null)
 
     const nextErrors: ProfileFormErrors = {}
     if (form.full_name.trim().length < 2) nextErrors.full_name = t('profile.toast_name_short')
@@ -94,20 +98,34 @@ export default function ProfilePage() {
 
       if (status === 400) {
         if (detail?.includes('already in use') || detail?.includes('already registered')) {
-          toast(t('profile.toast_email_taken'), 'error')
+          const message = t('profile.toast_email_taken')
+          setSubmitError(message)
+          toast(message, 'error')
         } else if (detail?.includes('Incorrect current password')) {
-          toast(t('profile.toast_wrong_password'), 'error')
+          const message = t('profile.toast_wrong_password')
+          setSubmitError(message)
+          toast(message, 'error')
         } else if (detail?.includes('current_password is required')) {
-          toast(t('profile.toast_current_password_missing'), 'error')
+          const message = t('profile.toast_current_password_missing')
+          setSubmitError(message)
+          toast(message, 'error')
         } else {
-          toast(detail ?? t('profile.toast_save_error'), 'error')
+          const message = detail ?? t('profile.toast_save_error')
+          setSubmitError(message)
+          toast(message, 'error')
         }
       } else if (status && status >= 500) {
-        toast(t('profile.toast_server_error'), 'error')
+        const message = t('profile.toast_server_error')
+        setSubmitError(message)
+        toast(message, 'error')
       } else if (!status) {
-        toast(t('profile.toast_network_error'), 'error')
+        const message = t('profile.toast_network_error')
+        setSubmitError(message)
+        toast(message, 'error')
       } else {
-        toast(t('profile.toast_save_error'), 'error')
+        const message = t('profile.toast_save_error')
+        setSubmitError(message)
+        toast(message, 'error')
       }
     } finally {
       setLoading(false)
@@ -145,6 +163,11 @@ export default function ProfilePage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="bg-white border border-neutral-100 rounded-xl overflow-hidden">
+          {submitError && (
+            <div className="px-6 pt-5">
+              <InlineAlert message={submitError} variant="warning" />
+            </div>
+          )}
 
           {/* Sección: Información personal */}
           <div className="px-6 pt-5 pb-1">
