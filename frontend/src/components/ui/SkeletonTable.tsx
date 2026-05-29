@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 /**
  * Placeholder animado para tablas de datos mientras cargan.
  * Renderiza `rows` filas con columnas de ancho variable simulando contenido.
@@ -8,10 +10,11 @@ interface SkeletonTableProps {
 }
 
 export default function SkeletonTable({ rows = 6, columns = 5 }: SkeletonTableProps) {
+  const { t } = useTranslation()
   const widths = ['w-24', 'w-32', 'w-20', 'w-28', 'w-16', 'w-36', 'w-14']
 
   return (
-    <div className="animate-pulse" aria-busy="true" aria-label="Cargando tabla…">
+    <div className="animate-pulse" aria-busy="true" aria-label={t('common.loadingTable')}>
       {/* Header */}
       <div className="flex gap-4 px-4 py-2 border-b border-neutral-100">
         {Array.from({ length: columns }).map((_, i) => (

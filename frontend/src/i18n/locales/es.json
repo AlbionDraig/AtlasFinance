@@ -94,6 +94,7 @@
     "entity": "Entidad",
     "sort": "Ordenar",
     "loading": "Cargando...",
+    "loadingTable": "Cargando tabla...",
     "toastErrorTitle": "Ha ocurrido un error",
     "toastSuccessTitle": "Operación exitosa",
     "closeNotification": "Cerrar notificación",

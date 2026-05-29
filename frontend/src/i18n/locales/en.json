@@ -94,6 +94,7 @@
     "entity": "Entity",
     "sort": "Sort",
     "loading": "Loading...",
+    "loadingTable": "Loading table...",
     "toastErrorTitle": "An error occurred",
     "toastSuccessTitle": "Operation successful",
     "closeNotification": "Close notification",

@@ -57,7 +57,7 @@ describe('TransactionsHistoryCard', () => {
   it('shows loading skeleton when loading is true even if there are no rows', () => {
     render(<TransactionsHistoryCard {...buildProps({ loading: true })} />)
 
-    expect(screen.getByLabelText('Cargando tabla…')).toBeInTheDocument()
+    expect(screen.getByLabelText(/Cargando tabla|Loading table/i)).toBeInTheDocument()
     expect(screen.queryByText('No hay movimientos')).not.toBeInTheDocument()
   })
 
