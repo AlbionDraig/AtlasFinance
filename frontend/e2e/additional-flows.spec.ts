@@ -42,6 +42,27 @@ test.describe('Accounts page', () => {
   })
 })
 
+test.describe('Profile UX', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/profile')
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10_000 })
+  })
+
+  test('shows inline error when current password is incorrect', async ({ page }) => {
+    await page.getByRole('button', { name: /^change$|^cambiar$/i }).click()
+    await page.getByLabel(/^current password$|^contraseña actual$/i).fill('wrong-password')
+    await page.getByLabel(/^new password$|^nueva contraseña$/i).fill('Password1!')
+    await page.getByLabel(/confirm.*password|confirmar.*contraseña/i).fill('Password1!')
+
+    await page.getByRole('button', { name: /save changes|guardar cambios/i }).click()
+
+    const alert = page.getByRole('alert').first()
+    await expect(alert).toBeVisible({ timeout: 5_000 })
+    await expect(alert).toContainText(/contraseña actual es incorrecta|current password is incorrect/i)
+    await expect(page).toHaveURL(/\/profile/)
+  })
+})
+
 test.describe('Transactions filters in URL', () => {
   test('persists transaction type filter in URL after reload', async ({ page }) => {
     await page.goto('/transactions?type=INCOME')
