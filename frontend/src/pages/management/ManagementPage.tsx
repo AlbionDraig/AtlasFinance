@@ -169,7 +169,7 @@ export default function ManagementPage() {
             ) : filteredUsers.length === 0 ? (
               <EmptyState
                 title={hasActiveFilters ? t('common.no_results') : t('management.empty_users')}
-                description={hasActiveFilters ? t('management.empty_filtered_desc') : t('management.loading_users')}
+                description={hasActiveFilters ? t('management.empty_filtered_desc') : undefined}
                 icon={(
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5V4H2v16h5m10 0v-5a3 3 0 10-6 0v5m6 0H11" />
