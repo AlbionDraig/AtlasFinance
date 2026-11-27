@@ -13,6 +13,14 @@ Repositorio: <https://github.com/AlbionDraig/AtlasFinance>
 
 ---
 
+## Capturas
+
+| Dashboard | Movimientos | Bolsillos |
+|---|---|---|
+| ![Dashboard con KPIs financieros](docs/screenshots/dashboard.png) | ![Historial de movimientos con filtros y exportación CSV](docs/screenshots/transactions.png) | ![Bolsillos agrupados por cuenta y moneda](docs/screenshots/pockets.png) |
+
+<sub>Capturas con los datos demo del seed (`SEED_DEMO_DATA=true`).</sub>
+
 ## Tabla de contenido
 
 1. [Stack](#1-stack)
@@ -100,8 +108,8 @@ Repositorio: <https://github.com/AlbionDraig/AtlasFinance>
 | `db/seed.py` | Datos demo opcionales (`SEED_DEMO_DATA=true`). |
 | `models/` | Entidades ORM (User, Account, Pocket, Transaction, …). |
 | `schemas/` | Modelos Pydantic de request/response. |
-| `services/` | Lógica de negocio: `auth_service`, `finance_service`, `currency_service`. |
-| `etl/` | Parsers de extractos bancarios y normalización. |
+| `services/` | Lógica de negocio por dominio: `accounts_service`, `transactions_service`, `budgets_service`, `savings_goals_service`, `metrics_service`, … |
+| `repositories/` | Acceso a datos por entidad sobre SQLAlchemy (patrón repositorio). |
 
 ### Capas frontend (`frontend/src/`)
 
@@ -123,8 +131,8 @@ Repositorio: <https://github.com/AlbionDraig/AtlasFinance>
 1. Componente React llama a `transactionsApi.list(filters)` (axios).
 2. Interceptor adjunta `Authorization: Bearer <jwt>` desde el store.
 3. FastAPI resuelve `Depends(get_current_user)` decodificando el JWT.
-4. Endpoint en `routes/transactions.py` valida con Pydantic y llama al `finance_service`.
-5. Service interactúa con SQLAlchemy y devuelve modelos.
+4. Endpoint en `routes/transactions.py` valida con Pydantic y llama a `transactions_service`.
+5. El service aplica las reglas de negocio y usa el repositorio, que consulta SQLAlchemy y devuelve modelos.
 6. La respuesta se serializa con `response_model` Pydantic y vuelve al cliente.
 7. React Query cachea según `queryKey`; mutaciones invalidan caches relacionados.
 
@@ -145,17 +153,19 @@ AtlasFinance/
 │   │   │           ├── accounts.py
 │   │   │           ├── auth.py          # /register /login /refresh /logout /me
 │   │   │           ├── banks.py
+│   │   │           ├── budgets.py       # presupuestos mensuales
 │   │   │           ├── categories.py
 │   │   │           ├── countries.py
 │   │   │           ├── investments.py
 │   │   │           ├── investment_entities.py
-│   │   │           ├── metrics.py       # /dashboard /aggregates
+│   │   │           ├── metrics.py       # /dashboard /aggregates /smart-alerts
 │   │   │           ├── pockets.py       # incluye /move-funds
+│   │   │           ├── savings_goals.py # metas de ahorro + /simulate/scenario
 │   │   │           └── transactions.py  # incluye /transfer y /export (CSV)
 │   │   ├── core/                        # config + security
 │   │   ├── db/                          # base + init_db + seed
-│   │   ├── etl/                         # parsers bancarios
 │   │   ├── models/                      # SQLAlchemy
+│   │   ├── repositories/                # Acceso a datos por entidad
 │   │   ├── schemas/                     # Pydantic
 │   │   ├── services/                    # Lógica de negocio
 │   │   └── main.py                      # FastAPI app + lifespan
@@ -197,7 +207,6 @@ AtlasFinance/
 │   ├── workflows/                       # ci.yml, frontend-ci.yml, security.yml, …
 │   ├── copilot-instructions.md          # Tokens de diseño + reglas UI
 │   └── prompts/                         # Plantillas Copilot por tipo de cambio
-├── data/                                # Archivos de ejemplo ETL
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── SECURITY.md
@@ -295,7 +304,7 @@ O ejecuta una vez:
 docker exec atlas-backend python seed_demo.py
 ```
 
-Credenciales demo: `jane.doe@sgb.co` / `Demo1234!`
+Credenciales demo: `jane.doe@sgb.co` / `Strong/Pass|123` (definidas en `backend/app/db/seed.py`)
 
 ### Reconstruir tras cambios de dependencias
 
@@ -368,7 +377,7 @@ Prefijo global: **`/api/v1`**. Documentación interactiva: <http://localhost:800
 
 ### Recursos CRUD (todos requieren JWT)
 
-`/banks`, `/accounts`, `/pockets`, `/categories`, `/countries`, `/investment-entities`, `/investments` siguen el patrón:
+`/banks`, `/accounts`, `/pockets`, `/categories`, `/countries`, `/investment-entities`, `/investments`, `/savings-goals` siguen el patrón:
 
 - `POST /` — crear
 - `GET /` — listar (filtros vía query params)
@@ -385,6 +394,10 @@ Prefijo global: **`/api/v1`**. Documentación interactiva: <http://localhost:800
 | GET | `/transactions/export` | Descarga CSV con los filtros activos |
 | GET | `/metrics/dashboard?currency=COP` | KPIs principales del dashboard |
 | GET | `/metrics/aggregates` | Agregados por categoría / período |
+| GET | `/metrics/smart-alerts` | Alertas inteligentes sobre gastos, presupuestos y metas |
+| POST/PUT/DELETE | `/budgets/`, `/budgets/{id}` | Gestión de presupuestos mensuales por categoría |
+| GET | `/budgets/{year}/{month}` | Presupuestos de un mes con su ejecución |
+| POST | `/savings-goals/simulate/scenario` | Simula escenarios de ahorro para una meta |
 
 Paginación de transacciones: `?skip=&limit=` con `total` en headers o body según endpoint.
 
@@ -400,7 +413,10 @@ Paginación de transacciones: `?skip=&limit=` con `total` en headers o body seg�
 - **`/accounts`** — CRUD de cuentas bancarias.
 - **`/pockets`** — bolsillos agrupados por cuenta + transferencias.
 - **`/investments`** — inversiones con cálculo de rendimiento.
-- **`/categories`** — catálogo de categorías.
+- **`/planning/budgets`** — presupuestos mensuales por categoría.
+- **`/planning/savings-goals`** — metas de ahorro vinculadas a bolsillos, con simulador de escenarios.
+- **`/planning/smart-alerts`** — alertas inteligentes de salud financiera.
+- **`/categories`** — redirige al catálogo de categorías en `/admin?tab=categories`.
 - **`/admin`** — bancos, países, entidades de inversión.
 - **`/profile`** — datos personales y cambio de contraseña.
 - **`/management`** — administración de la sesión actual.
@@ -458,10 +474,10 @@ cd backend
 python -m pytest                                                    # Todos
 python -m pytest tests/unit                                         # Unit
 python -m pytest tests/integration                                  # Integration
-python -m pytest --cov=app --cov-report=term-missing --cov-fail-under=85
+python -m pytest --cov=app --cov-report=term-missing --cov-fail-under=92
 ```
 
-Cobertura objetivo: **≥ 85%**. Test fixtures usan SQLite en memoria (ver `tests/conftest.py`).
+Cobertura mínima exigida en CI: **≥ 92%**. Test fixtures usan SQLite en memoria (ver `tests/conftest.py`).
 
 ### Frontend — Vitest
 
@@ -530,7 +546,7 @@ python -m ruff check backend/app backend/tests
 python -m pylint backend/app --disable=missing-module-docstring,missing-class-docstring,missing-function-docstring,too-few-public-methods --fail-under=8.0
 python -m bandit -q -r backend/app -ll
 python -m pip_audit -r backend/requirements.txt
-python -m pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-fail-under=85
+python -m pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-fail-under=92
 python -m compileall backend/app
 ```
 
