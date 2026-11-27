@@ -5,7 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException, Response, status
-from jose import ExpiredSignatureError, JWTError
+from jwt import ExpiredSignatureError
+from jwt import PyJWTError as JWTError
 
 from app.api import deps as deps_module
 from app.api.v1.routes import (
