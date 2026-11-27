@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from uuid import uuid4
 
-from jose import jwt
+import jwt
 
 from app.api.deps import get_current_user
 from app.core.config import get_settings

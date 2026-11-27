@@ -2,9 +2,10 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Annotated
 
+import jwt
 from fastapi import Cookie, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from jwt import PyJWTError as JWTError
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings

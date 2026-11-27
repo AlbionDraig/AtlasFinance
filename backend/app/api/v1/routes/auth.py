@@ -1,8 +1,10 @@
 from datetime import datetime, timezone
 from typing import Annotated
 
+import jwt
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
-from jose import ExpiredSignatureError, JWTError, jwt
+from jwt import ExpiredSignatureError
+from jwt import PyJWTError as JWTError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_admin_user, get_current_user, get_token_from_bearer_or_cookie

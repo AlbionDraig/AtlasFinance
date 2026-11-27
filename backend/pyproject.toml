@@ -22,7 +22,6 @@ exclude = "(^tests/|^seed_demo\\.py$)"
 [[tool.mypy.overrides]]
 module = [
     "passlib.*",
-    "jose.*",
     "pandas.*",
     "openpyxl.*",
 ]
